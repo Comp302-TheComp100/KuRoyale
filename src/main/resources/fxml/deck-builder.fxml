@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<StackPane fx:id="rootPane" xmlns="http://javafx.com/javafx"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.kuroyale.controller.DeckBuilderController"
+           styleClass="deck-builder">
+    
+    <BorderPane>
+        <!-- Top: Title and Deck Slots -->
+        <top>
+            <VBox spacing="15" styleClass="deck-slots-container">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                
+                <Label text="YOUR DECK" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                
+                <HBox fx:id="deckSlotsContainer" spacing="10" alignment="CENTER"/>
+            </VBox>
+        </top>
+        
+        <!-- Center: Cards Grid -->
+        <center>
+            <VBox>
+                <Label text="ALL CARDS" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white; -fx-padding: 15 0 10 20;"/>
+                
+                <ScrollPane fx:id="cardsScrollPane" 
+                           fitToWidth="true" 
+                           styleClass="cards-scroll-pane"
+                           VBox.vgrow="ALWAYS">
+                    <GridPane fx:id="cardsGrid" styleClass="cards-grid"/>
+                </ScrollPane>
+            </VBox>
+        </center>
+        
+        <!-- Bottom: Back Button -->
+        <bottom>
+            <HBox alignment="CENTER_LEFT" style="-fx-padding: 15;">
+                <Button fx:id="backButton" 
+                        text="BACK" 
+                        onAction="#handleBack"
+                        styleClass="back-button"/>
+            </HBox>
+        </bottom>
+    </BorderPane>
+    
+</StackPane>
+
