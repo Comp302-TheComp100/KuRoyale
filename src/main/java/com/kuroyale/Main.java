@@ -18,10 +18,10 @@ public class Main extends Application {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
             Parent root = loader.load();
 
-            // Create scene with CSS styling
-            Scene scene = new Scene(root, 800, 600);
+            // Create scene with CSS styling (1280x720 HD resolution)
+            Scene scene = new Scene(root, 1280, 720);
             scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
-
+            
             primaryStage.setTitle("KU Royale - Clash Royale Clone");
             primaryStage.setScene(scene);
             primaryStage.setResizable(false);

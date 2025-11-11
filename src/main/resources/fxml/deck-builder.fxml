@@ -1,54 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
 
 <StackPane fx:id="rootPane" xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.kuroyale.controller.DeckBuilderController"
-           styleClass="deck-builder">
+           prefWidth="1280" prefHeight="720">
     
-    <BorderPane>
-        <!-- Top: Title and Deck Slots -->
-        <top>
-            <VBox spacing="15" styleClass="deck-slots-container">
-                <padding>
-                    <Insets top="20" right="20" bottom="20" left="20"/>
-                </padding>
-                
-                <Label text="YOUR DECK" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                
-                <HBox fx:id="deckSlotsContainer" spacing="10" alignment="CENTER"/>
-            </VBox>
-        </top>
+    <AnchorPane style="-fx-background-color: #1e3a8a;">
         
-        <!-- Center: Cards Grid -->
-        <center>
-            <VBox>
-                <Label text="ALL CARDS" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white; -fx-padding: 15 0 10 20;"/>
-                
-                <ScrollPane fx:id="cardsScrollPane" 
-                           fitToWidth="true" 
-                           styleClass="cards-scroll-pane"
-                           VBox.vgrow="ALWAYS">
-                    <GridPane fx:id="cardsGrid" styleClass="cards-grid"/>
-                </ScrollPane>
-            </VBox>
-        </center>
+        <!-- Deck Slots Area - 4x2 grid at top -->
+        <GridPane fx:id="deckSlotsContainer" 
+              layoutX="240" layoutY="100"
+              hgap="10" vgap="10"
+              alignment="CENTER"
+              prefWidth="800">
+            <columnConstraints>
+                <ColumnConstraints/>
+                <ColumnConstraints/>
+                <ColumnConstraints/>
+                <ColumnConstraints/>
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints/>
+                <RowConstraints/>
+            </rowConstraints>
+        </GridPane>
         
-        <!-- Bottom: Back Button -->
-        <bottom>
-            <HBox alignment="CENTER_LEFT" style="-fx-padding: 15;">
-                <Button fx:id="backButton" 
-                        text="BACK" 
-                        onAction="#handleBack"
-                        styleClass="back-button"/>
-            </HBox>
-        </bottom>
-    </BorderPane>
+        <!-- Cards Grid Area - centered below deck with more gap -->
+        <ScrollPane fx:id="cardsScrollPane" 
+                   layoutX="140" layoutY="470"
+                   prefWidth="1000" prefHeight="200"
+                   fitToWidth="true" 
+                   styleClass="cards-scroll-pane"
+                   style="-fx-background-color: transparent; -fx-background: transparent;">
+            <GridPane fx:id="cardsGrid" styleClass="cards-grid" alignment="CENTER"/>
+        </ScrollPane>
+        
+        <!-- Back Button -->
+        <Button fx:id="backButton" 
+                layoutX="50" layoutY="670"
+                text="BACK" 
+                onAction="#handleBack"
+                styleClass="back-button"/>
+    </AnchorPane>
     
 </StackPane>
 

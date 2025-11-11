@@ -5,7 +5,9 @@
 
 /* Main Menu Styling */
 .main-menu {
-    -fx-background-color: linear-gradient(to bottom, #1e3a8a 0%, #3b82f6 100%);
+    -fx-background-image: url('/images/main_menu_background.png');
+    -fx-background-size: cover;
+    -fx-background-position: center;
 }
 
 .title-label {
@@ -41,22 +43,21 @@
 
 /* Deck Builder Styling */
 .deck-builder {
-    -fx-background-color: linear-gradient(to bottom, #0f172a 0%, #1e293b 100%);
+    -fx-background-color: #1e293b;
 }
 
 .deck-slots-container {
-    -fx-background-color: rgba(30, 58, 138, 0.3);
-    -fx-background-radius: 10;
+    -fx-background-color: transparent;
     -fx-padding: 15;
     -fx-spacing: 10;
 }
 
 .deck-slot {
-    -fx-background-color: rgba(100, 116, 139, 0.3);
+    -fx-background-color: rgba(0, 0, 0, 0.8);
     -fx-background-radius: 8;
-    -fx-border-color: #94a3b8;
+    -fx-border-color: #64748b;
     -fx-border-width: 2;
-    -fx-border-style: dashed;
+    -fx-border-style: solid;
     -fx-border-radius: 8;
     -fx-pref-width: 120;
     -fx-pref-height: 160;

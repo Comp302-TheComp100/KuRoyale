@@ -33,7 +33,7 @@ public class MainMenuController {
             Parent root = loader.load();
             
             Stage stage = (Stage) deckBuilderButton.getScene().getWindow();
-            Scene scene = new Scene(root, 1200, 800);
+            Scene scene = new Scene(root, 1280, 720);
             scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
             stage.setScene(scene);
             stage.setTitle("KU Royale - Deck Builder");
