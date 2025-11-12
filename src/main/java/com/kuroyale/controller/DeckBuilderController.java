@@ -10,6 +10,7 @@ import java.util.Map;
 import com.kuroyale.model.Card;
 import com.kuroyale.model.CardFactory;
 import com.kuroyale.model.Deck;
+import com.kuroyale.service.UserService;
 import com.kuroyale.util.ButtonFactory;
 import com.kuroyale.util.StyleHelper;
 import com.kuroyale.view.CardInfoDialog;
@@ -108,6 +109,9 @@ public class DeckBuilderController {
 
         // Load all 28 cards
         loadAllCards();
+
+        // Load user's saved deck if exists
+        loadUserDeck();
 
         // Initialize average elixir cost display
         updateAverageElixirCost();
@@ -582,6 +586,9 @@ public class DeckBuilderController {
 
             // Update average elixir cost
             updateAverageElixirCost();
+
+            // Auto-save deck
+            saveDeck();
         }
     }
 
@@ -606,6 +613,9 @@ public class DeckBuilderController {
 
             // Update average elixir cost
             updateAverageElixirCost();
+
+            // Auto-save deck
+            saveDeck();
         }
     }
 
@@ -670,6 +680,9 @@ public class DeckBuilderController {
 
             // Update average elixir cost
             updateAverageElixirCost();
+
+            // Auto-save deck
+            saveDeck();
         }
     }
 
@@ -744,6 +757,68 @@ public class DeckBuilderController {
         if (averageElixirValue != null) {
             double avgCost = deck.getAverageElixirCost();
             averageElixirValue.setText(String.format(Locale.ENGLISH, "%.1f", avgCost));
+        }
+    }
+
+    /**
+     * Loads the user's saved deck from their account
+     */
+    private void loadUserDeck() {
+        com.kuroyale.model.User currentUser = UserService.getCurrentUser();
+        if (currentUser == null || currentUser.getDeck() == null || currentUser.getDeck().isEmpty()) {
+            return; // No saved deck
+        }
+
+        // Get all available cards
+        List<Card> allCards = CardFactory.getAllCards();
+        Map<String, Card> cardMap = new HashMap<>();
+        for (Card card : allCards) {
+            cardMap.put(card.getName(), card);
+        }
+
+        // Load cards from saved deck
+        for (String cardName : currentUser.getDeck()) {
+            Card card = cardMap.get(cardName);
+            if (card != null && !deck.isFull()) {
+                deck.addCard(card);
+                // Find first empty slot and add card
+                for (DeckSlotView slot : deckSlots) {
+                    if (slot.isEmpty()) {
+                        slot.setCard(card);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Reorganize grid to hide loaded cards
+        reorganizeCardGrid();
+    }
+
+    /**
+     * Saves the current deck to the user's account
+     */
+    private void saveDeck() {
+        com.kuroyale.model.User currentUser = UserService.getCurrentUser();
+        if (currentUser == null) {
+            return; // No user logged in
+        }
+
+        // Convert deck to list of card names
+        List<String> cardNames = new ArrayList<>();
+        for (Card card : deck.getCards()) {
+            cardNames.add(card.getName());
+        }
+
+        // Update user's deck
+        currentUser.setDeck(cardNames);
+
+        // Save user
+        try {
+            UserService.saveUser(currentUser);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Failed to save deck: " + e.getMessage());
         }
     }
 

@@ -470,4 +470,133 @@ public class StyleHelper {
         innerShadow.setOffsetY(2);
         return innerShadow;
     }
+
+    /**
+     * Apply login title style
+     */
+    public static void applyLoginTitleStyle(Label label) {
+        label.setStyle(
+                "-fx-font-size: 60px;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-family: '" + FONT_FAMILY + "', Arial;" +
+                        "-fx-text-fill: white;");
+
+        // Drop shadow effect
+        DropShadow dropShadow = new DropShadow();
+        dropShadow.setColor(Color.rgb(0, 0, 0, 0.5));
+        dropShadow.setRadius(10);
+        dropShadow.setOffsetY(3);
+        label.setEffect(dropShadow);
+    }
+
+    /**
+     * Apply login form field style (for TextField and PasswordField)
+     */
+    public static void applyLoginFormStyle(javafx.scene.Node node) {
+        String baseStyle = "-fx-background-color: " + COLOR_BROWN_LIGHT + ";" +
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 18px;" +
+                "-fx-font-family: '" + FONT_FAMILY + "', Arial;" +
+                "-fx-background-radius: 8;" +
+                "-fx-border-color: " + COLOR_BROWN_DARK + ";" +
+                "-fx-border-width: 2;" +
+                "-fx-border-radius: 8;" +
+                "-fx-padding: 10 15 10 15;" +
+                "-fx-prompt-text-fill: rgba(255, 255, 255, 0.7);";
+
+        node.setStyle(baseStyle);
+
+        // Drop shadow effect
+        DropShadow dropShadow = new DropShadow();
+        dropShadow.setColor(Color.rgb(0, 0, 0, 0.3));
+        dropShadow.setRadius(5);
+        dropShadow.setOffsetY(2);
+        node.setEffect(dropShadow);
+
+        // Hover effects
+        node.setOnMouseEntered(e -> {
+            String hoverStyle = baseStyle.replace(COLOR_BROWN_LIGHT, COLOR_BROWN_LIGHTER);
+            node.setStyle(hoverStyle);
+        });
+
+        node.setOnMouseExited(e -> {
+            node.setStyle(baseStyle);
+        });
+    }
+
+    /**
+     * Apply login button style with brown colors
+     */
+    public static void applyLoginButtonStyle(Button button) {
+        String baseStyle = "-fx-background-color: linear-gradient(to bottom, " + COLOR_BROWN_DARK + " 0%, " + COLOR_BROWN_LIGHT + " 100%);" +
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 24px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-family: '" + FONT_FAMILY + "', Arial;" +
+                "-fx-background-radius: 10;" +
+                "-fx-border-radius: 10;" +
+                "-fx-border-color: " + COLOR_BROWN_DARK + ";" +
+                "-fx-border-width: 3;" +
+                "-fx-cursor: hand;";
+
+        button.setStyle(baseStyle);
+
+        // Drop shadow effect
+        DropShadow dropShadow = new DropShadow();
+        dropShadow.setColor(Color.rgb(0, 0, 0, 0.4));
+        dropShadow.setRadius(8);
+        dropShadow.setOffsetY(3);
+        button.setEffect(dropShadow);
+
+        // Hover effects
+        button.setOnMouseEntered(e -> {
+            button.setStyle(baseStyle.replace(
+                    "linear-gradient(to bottom, " + COLOR_BROWN_DARK + " 0%, " + COLOR_BROWN_LIGHT + " 100%)",
+                    "linear-gradient(to bottom, " + COLOR_BROWN_LIGHT + " 0%, " + COLOR_BROWN_LIGHTER + " 100%)"));
+            button.setScaleX(1.05);
+            button.setScaleY(1.05);
+        });
+
+        button.setOnMouseExited(e -> {
+            button.setStyle(baseStyle);
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+        });
+
+        button.setOnMousePressed(e -> {
+            button.setStyle(baseStyle.replace(
+                    "linear-gradient(to bottom, " + COLOR_BROWN_DARK + " 0%, " + COLOR_BROWN_LIGHT + " 100%)",
+                    "linear-gradient(to bottom, " + COLOR_BROWN_DARK + " 0%, " + COLOR_BROWN_DARK + " 100%)"));
+            button.setTranslateY(2);
+        });
+
+        button.setOnMouseReleased(e -> {
+            button.setTranslateY(0);
+            // Check if mouse is still over button
+            if (button.isHover()) {
+                button.setStyle(baseStyle.replace(
+                        "linear-gradient(to bottom, " + COLOR_BROWN_DARK + " 0%, " + COLOR_BROWN_LIGHT + " 100%)",
+                        "linear-gradient(to bottom, " + COLOR_BROWN_LIGHT + " 0%, " + COLOR_BROWN_LIGHTER + " 100%)"));
+            } else {
+                button.setStyle(baseStyle);
+            }
+        });
+    }
+
+    /**
+     * Apply error label style
+     */
+    public static void applyErrorLabelStyle(Label label) {
+        label.setStyle(
+                "-fx-font-size: 14px;" +
+                        "-fx-font-family: '" + FONT_FAMILY + "', Arial;" +
+                        "-fx-text-fill: " + COLOR_RED + ";");
+
+        // Drop shadow effect for better visibility
+        DropShadow dropShadow = new DropShadow();
+        dropShadow.setColor(Color.rgb(0, 0, 0, 0.5));
+        dropShadow.setRadius(3);
+        dropShadow.setOffsetY(1);
+        label.setEffect(dropShadow);
+    }
 }

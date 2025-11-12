@@ -1,6 +1,6 @@
 package com.kuroyale;
 
-import com.kuroyale.controller.MainMenuController;
+import com.kuroyale.controller.LoginController;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -21,12 +21,12 @@ public class Main extends Application {
             Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Regular.otf"), 12);
             Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Bold.otf"), 12);
 
-            // Load main menu
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
+            // Load login page first
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
             Parent root = loader.load();
 
             // Get controller and initialize styles
-            MainMenuController controller = loader.getController();
+            LoginController controller = loader.getController();
             controller.initializeStyles();
 
             // Create scene (1280x720 HD resolution)
