@@ -1,6 +1,7 @@
 package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
+import com.kuroyale.model.SpeedType;
 
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Insets;
@@ -157,7 +158,7 @@ public class CardInfoDialog extends StackPane {
             addStat(statsBox, "Range", card.getRange() + " tiles");
         }
 
-        if (card.getSpeed().toString() != "NONE") {
+        if (card.getSpeed() != SpeedType.NONE) {
             addStat(statsBox, "Speed", formatSpeed(card.getSpeed().toString()));
         }
 
@@ -223,13 +224,16 @@ public class CardInfoDialog extends StackPane {
         imageView.setFitWidth(200);
         imageView.setFitHeight(200);
         imageView.setPreserveRatio(true);
+        imageView.setSmooth(true); // Better image quality
 
         try {
             String imagePath = card.getImagePath();
-            Image image = new Image(getClass().getResourceAsStream(imagePath));
+            Image image = new Image(getClass().getResourceAsStream(imagePath), 200, 200, true, true);
             imageView.setImage(image);
         } catch (Exception e) {
-            // Placeholder
+            // Placeholder - show error message
+            System.err.println("Failed to load image for card: " + card.getName() + " at path: " + card.getImagePath());
+            e.printStackTrace();
             imageView.setFitWidth(150);
             imageView.setFitHeight(150);
         }

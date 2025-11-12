@@ -8,7 +8,6 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 
 /**
  * Simple card view component showing only image, name, and cost
@@ -26,7 +25,7 @@ public class CardView extends StackPane {
 
         // Apply style classes
         getStyleClass().add("card-view");
-        getStyleClass().add("card-" + card.getType().toString().toLowerCase());
+        getStyleClass().add("card-" + card.getType().toString().toLowerCase(java.util.Locale.ENGLISH));
 
         // Card image fills entire space
         ImageView imageView = createCardImage();
@@ -74,46 +73,18 @@ public class CardView extends StackPane {
         imageView.setFitWidth(120);
         imageView.setFitHeight(160);
         imageView.setPreserveRatio(false); // Fill entire card space
+        imageView.setSmooth(true); // Better image quality
 
         try {
             String imagePath = card.getImagePath();
-            Image image = new Image(getClass().getResourceAsStream(imagePath));
+            Image image = new Image(getClass().getResourceAsStream(imagePath), 120, 160, false, true);
             imageView.setImage(image);
         } catch (Exception e) {
-            // Create placeholder colored rectangle
-            StackPane placeholder = new StackPane();
-            placeholder.setPrefSize(120, 160);
-            placeholder.setStyle(getPlaceholderStyle());
-
-            Label placeholderLabel = new Label(
-                    card.getName().substring(0, Math.min(3, card.getName().length())).toUpperCase());
-            placeholderLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
-            placeholder.getChildren().add(placeholderLabel);
-
-            // Can't return StackPane from ImageView method, so create a container
-            VBox container = new VBox(placeholder);
-            return new ImageView(); // Return empty, placeholder will be shown differently
+            // Image failed to load - return empty ImageView
+            // The card will still display with elixir cost overlay
         }
 
         return imageView;
-    }
-
-    private String getPlaceholderStyle() {
-        String color;
-        switch (card.getType()) {
-            case TROOP:
-                color = "#f97316";
-                break;
-            case BUILDING:
-                color = "#92400e";
-                break;
-            case SPELL:
-                color = "#8b5cf6";
-                break;
-            default:
-                color = "#64748b";
-        }
-        return "-fx-background-color: " + color + "; -fx-background-radius: 8;";
     }
 
     public Card getCard() {

@@ -46,18 +46,35 @@
     -fx-background-color: #1e293b;
 }
 
-.deck-slots-container {
-    -fx-background-color: transparent;
-    -fx-padding: 15;
-    -fx-spacing: 10;
+.deck-builder-main-background {
+    -fx-background-image: url('/images/main_menu_background.png');
+    -fx-background-size: cover;
+    -fx-background-position: center;
+    -fx-background-repeat: no-repeat;
+}
+
+.deck-slots-background {
+    -fx-background-color: #654321;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0, 0, 2);
+}
+
+/* Recessed rectangle style for deck slot backgrounds */
+.deck-slot-recess {
+    -fx-background-color: #A0826D;
+    -fx-background-radius: 6;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.5), 8, 0, 2, 2);
+    -fx-border-color: rgba(0, 0, 0, 0.3);
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
 }
 
 .deck-slot {
-    -fx-background-color: rgba(0, 0, 0, 0.8);
+    -fx-background-color: #A0826D;
     -fx-background-radius: 8;
-    -fx-border-color: #64748b;
-    -fx-border-width: 2;
-    -fx-border-style: solid;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-style: none;
     -fx-border-radius: 8;
     -fx-pref-width: 120;
     -fx-pref-height: 160;
@@ -66,27 +83,41 @@
 }
 
 .deck-slot:hover {
-    -fx-border-color: #cbd5e1;
-    -fx-background-color: rgba(100, 116, 139, 0.5);
+    -fx-background-color: #B89880;
 }
 
 .deck-slot-filled {
-    -fx-background-color: rgba(59, 130, 246, 0.2);
-    -fx-border-style: solid;
-    -fx-border-color: #3b82f6;
+    -fx-background-color: #A0826D;
+    -fx-border-width: 0;
+    -fx-border-color: transparent;
 }
 
 .deck-slot-filled:hover {
-    -fx-background-color: rgba(59, 130, 246, 0.3);
+    -fx-background-color: #B89880;
+}
+
+.deck-slot-replace-highlight {
+    -fx-border-color: #fbbf24 !important;
+    -fx-border-width: 4 !important;
+    -fx-background-color: rgba(251, 191, 36, 0.3) !important;
+    -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.8), 15, 0, 0, 0);
+}
+
+.deck-slot-replace-highlight:hover {
+    -fx-border-color: #f59e0b !important;
+    -fx-background-color: rgba(251, 191, 36, 0.5) !important;
+    -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 1.0), 20, 0, 0, 0);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
 }
 
 /* Card View Styling */
 .card-view {
-    -fx-background-color: white;
+    -fx-background-color: transparent;
     -fx-background-radius: 12;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 2);
     -fx-cursor: hand;
-    -fx-padding: 8;
+    -fx-padding: 0;
 }
 
 .card-view:hover {
@@ -95,7 +126,8 @@
     -fx-scale-y: 1.02;
 }
 
-.card-troop {
+/* Removed colored borders on cards */
+/*.card-troop {
     -fx-border-color: #f97316;
     -fx-border-width: 3;
     -fx-border-radius: 12;
@@ -111,7 +143,7 @@
     -fx-border-color: #8b5cf6;
     -fx-border-width: 3;
     -fx-border-radius: 12;
-}
+}*/
 
 .card-name {
     -fx-font-size: 14px;
@@ -157,21 +189,59 @@
     -fx-wrap-text: true;
 }
 
+/* Battle Deck Title */
+.battle-deck-title {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 5, 0, 0, 2);
+}
+
+/* Average Elixir Cost Display */
+.average-elixir-container {
+    -fx-alignment: center-left;
+}
+
+.average-elixir-label {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #8b5cf6;
+}
+
+.average-elixir-value {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #8b5cf6;
+}
+
+.average-elixir-icon {
+    -fx-fit-width: 25;
+    -fx-fit-height: 25;
+}
+
 /* Card Grid */
 .cards-scroll-pane {
     -fx-background-color: transparent;
-    -fx-background: transparent;
 }
 
 .cards-scroll-pane .viewport {
     -fx-background-color: transparent;
 }
 
-.cards-grid {
+.cards-container-wrapper {
     -fx-background-color: transparent;
+    -fx-padding: 20;
+    -fx-alignment: center;
+}
+
+.cards-grid {
+    -fx-background-color: #654321;
+    -fx-background-radius: 8;
     -fx-hgap: 15;
     -fx-vgap: 15;
     -fx-padding: 20;
+    -fx-pref-width: 800;
+    -fx-max-width: 800;
 }
 
 /* Overlay */
