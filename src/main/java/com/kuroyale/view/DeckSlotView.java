@@ -28,9 +28,9 @@ public class DeckSlotView extends StackPane {
 
     public DeckSlotView() {
         // Set size
-        setPrefSize(120, 160);
-        setMinSize(120, 160);
-        setMaxSize(120, 160);
+        setPrefSize(90, 120);
+        setMinSize(90, 120);
+        setMaxSize(90, 120);
 
         // Apply empty slot style
         StyleHelper.applyDeckSlotEmptyStyle(this);
@@ -106,20 +106,20 @@ public class DeckSlotView extends StackPane {
 
         // Make card fill entire slot, overlaid with elixir cost
         javafx.scene.image.ImageView cardImage = new javafx.scene.image.ImageView();
-        cardImage.setFitWidth(120);
-        cardImage.setFitHeight(160);
+        cardImage.setFitWidth(90);
+        cardImage.setFitHeight(120);
         cardImage.setPreserveRatio(false); // Fill entire slot
         cardImage.setSmooth(true); // Better image quality
         cardImage.setStyle("-fx-background-color: transparent;");
 
         try {
             javafx.scene.image.Image image = new javafx.scene.image.Image(
-                    getClass().getResourceAsStream(card.getImagePath()), 120, 160, false, true);
+                    getClass().getResourceAsStream(card.getImagePath()), 90, 120, false, true);
             cardImage.setImage(image);
         } catch (Exception e) {
             // Fallback placeholder
             StackPane placeholder = new StackPane();
-            placeholder.setPrefSize(120, 160);
+            placeholder.setPrefSize(90, 120);
             String color = getPlaceholderColor(card.getType());
             placeholder.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 8;");
 
@@ -134,34 +134,34 @@ public class DeckSlotView extends StackPane {
         // Elixir cost overlay
         StackPane costPane = new StackPane();
         costPane.setAlignment(javafx.geometry.Pos.CENTER);
-        costPane.setPrefSize(35, 35);
-        costPane.setMinSize(35, 35);
-        costPane.setMaxSize(35, 35);
+        costPane.setPrefSize(30, 30);
+        costPane.setMinSize(30, 30);
+        costPane.setMaxSize(30, 30);
         costPane.setStyle("-fx-background-color: transparent;");
 
         try {
             javafx.scene.image.ImageView elixirIcon = new javafx.scene.image.ImageView(
                     new javafx.scene.image.Image(getClass().getResourceAsStream("/images/card_elixir.png")));
-            elixirIcon.setFitWidth(35);
-            elixirIcon.setFitHeight(35);
+            elixirIcon.setFitWidth(30);
+            elixirIcon.setFitHeight(30);
             elixirIcon.setPreserveRatio(true);
 
             Label costLabel = new Label(String.valueOf(card.getCost()));
-            costLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+            costLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
             StackPane.setAlignment(costLabel, javafx.geometry.Pos.CENTER);
 
             costPane.getChildren().addAll(elixirIcon, costLabel);
         } catch (Exception e) {
             Label costLabel = new Label(String.valueOf(card.getCost()));
-            costLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #fbbf24;");
+            costLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #fbbf24;");
             costPane.getChildren().add(costLabel);
         }
 
         // Create highlight overlay (initially hidden)
         highlightOverlay = new StackPane();
-        highlightOverlay.setPrefSize(120, 160);
-        highlightOverlay.setMinSize(120, 160);
-        highlightOverlay.setMaxSize(120, 160);
+        highlightOverlay.setPrefSize(90, 120);
+        highlightOverlay.setMinSize(90, 120);
+        highlightOverlay.setMaxSize(90, 120);
         highlightOverlay.setStyle(
                 "-fx-background-color: transparent; " +
                         "-fx-border-color: #fbbf24; " +

@@ -10,8 +10,8 @@ import javafx.scene.image.ImageView;
  */
 public class ButtonFactory {
 
-    private static final int BUTTON_WIDTH = 70;
-    private static final int BUTTON_HEIGHT = 35;
+    private static final int BUTTON_WIDTH = 50;
+    private static final int BUTTON_HEIGHT = 25;
 
     /**
      * Button type enum for different button styles
@@ -59,13 +59,13 @@ public class ButtonFactory {
             button.setStyle("-fx-background-color: transparent; -fx-cursor: hand; -fx-border-width: 0;");
             button.setText(text);
             button.setTextFill(javafx.scene.paint.Color.WHITE);
-            button.setFont(javafx.scene.text.Font.font("Clash", javafx.scene.text.FontWeight.BOLD, 11));
+            button.setFont(javafx.scene.text.Font.font("Clash", javafx.scene.text.FontWeight.BOLD, 9));
             button.setContentDisplay(javafx.scene.control.ContentDisplay.CENTER);
         } catch (Exception e) {
             // Fallback to colored background
             button.setText(text);
             button.setStyle(
-                    "-fx-font-family: 'Clash'; -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: white; " +
+                    "-fx-font-family: 'Clash'; -fx-font-size: 9px; -fx-font-weight: bold; -fx-text-fill: white; " +
                             "-fx-cursor: hand; -fx-background-color: " + type.getFallbackColor()
                             + "; -fx-background-radius: 5;");
         }
@@ -101,3 +101,4 @@ public class ButtonFactory {
         return createButton(ButtonType.REMOVE, "REMOVE");
     }
 }
+

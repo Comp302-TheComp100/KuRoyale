@@ -20,9 +20,9 @@ public class CardView extends StackPane {
         this.card = card;
 
         // Set preferred size (same as deck slots)
-        setPrefSize(120, 160);
-        setMinSize(120, 160);
-        setMaxSize(120, 160);
+        setPrefSize(90, 120);
+        setMinSize(90, 120);
+        setMaxSize(90, 120);
 
         // Apply card view style
         StyleHelper.applyCardViewStyle(this);
@@ -70,14 +70,14 @@ public class CardView extends StackPane {
 
     private ImageView createCardImage() {
         ImageView imageView = new ImageView();
-        imageView.setFitWidth(120);
-        imageView.setFitHeight(160);
+        imageView.setFitWidth(90);
+        imageView.setFitHeight(120);
         imageView.setPreserveRatio(false); // Fill entire card space
         imageView.setSmooth(true); // Better image quality
 
         try {
             String imagePath = card.getImagePath();
-            Image image = new Image(getClass().getResourceAsStream(imagePath), 120, 160, false, true);
+            Image image = new Image(getClass().getResourceAsStream(imagePath), 90, 120, false, true);
             imageView.setImage(image);
         } catch (Exception e) {
             // Image failed to load - return empty ImageView

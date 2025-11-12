@@ -312,8 +312,8 @@ public class StyleHelper {
                         "-fx-border-color: transparent;" +
                         "-fx-border-width: 0;" +
                         "-fx-border-radius: 8;" +
-                        "-fx-pref-width: 120;" +
-                        "-fx-pref-height: 160;" +
+                        "-fx-pref-width: 90;" +
+                        "-fx-pref-height: 120;" +
                         "-fx-alignment: center;" +
                         "-fx-cursor: hand;");
     }
@@ -328,8 +328,8 @@ public class StyleHelper {
                         "-fx-border-width: 0;" +
                         "-fx-border-color: transparent;" +
                         "-fx-border-radius: 8;" +
-                        "-fx-pref-width: 120;" +
-                        "-fx-pref-height: 160;" +
+                        "-fx-pref-width: 90;" +
+                        "-fx-pref-height: 120;" +
                         "-fx-alignment: center;" +
                         "-fx-cursor: hand;");
     }
@@ -352,8 +352,8 @@ public class StyleHelper {
                         "-fx-border-color: " + COLOR_YELLOW + ";" +
                         "-fx-border-width: 4;" +
                         "-fx-border-radius: 8;" +
-                        "-fx-pref-width: 120;" +
-                        "-fx-pref-height: 160;" +
+                        "-fx-pref-width: 90;" +
+                        "-fx-pref-height: 120;" +
                         "-fx-alignment: center;" +
                         "-fx-cursor: hand;");
 
@@ -374,8 +374,8 @@ public class StyleHelper {
                         "-fx-border-color: " + COLOR_YELLOW_DARK + ";" +
                         "-fx-border-width: 4;" +
                         "-fx-border-radius: 8;" +
-                        "-fx-pref-width: 120;" +
-                        "-fx-pref-height: 160;" +
+                        "-fx-pref-width: 90;" +
+                        "-fx-pref-height: 120;" +
                         "-fx-alignment: center;" +
                         "-fx-cursor: hand;");
 

@@ -16,7 +16,7 @@
         
         <!-- Battle Deck Title - Centered -->
         <HBox fx:id="battleDeckTitleContainer" 
-              layoutY="30"
+              layoutY="20"
               alignment="CENTER"
               prefWidth="1280">
             <Label fx:id="battleDeckTitle" text="Battle Deck"/>
@@ -24,12 +24,12 @@
         
         <!-- Deck Slots Background Area - shows empty rectangles -->
         <AnchorPane fx:id="deckSlotsBackground" 
-                    layoutX="240" layoutY="70"
-                    prefWidth="800" prefHeight="420">
+                    layoutX="310" layoutY="60"
+                    prefWidth="660" prefHeight="340">
             
             <!-- Average Elixir Cost Display - Centered inside brown area at bottom -->
             <HBox fx:id="averageElixirContainer" 
-                  layoutY="380" 
+                  layoutY="300" 
                   spacing="5" 
                   alignment="CENTER">
                 <Label text="Average Elixir cost:"/>
@@ -44,15 +44,15 @@
         
         <!-- Deck Slots Container - transparent, slots positioned individually, moved down -->
         <AnchorPane fx:id="deckSlotsContainer" 
-              layoutX="240" layoutY="90"
-              prefWidth="800" prefHeight="360"
+              layoutX="310" layoutY="80"
+              prefWidth="660" prefHeight="280"
               style="-fx-background-color: transparent;">
         </AnchorPane>
         
         <!-- Cards Grid Area - main menu background with brown box for cards -->
         <ScrollPane fx:id="cardsScrollPane" 
-                   layoutX="0" layoutY="540"
-                   prefWidth="1280" prefHeight="180"
+                   layoutX="0" layoutY="420"
+                   prefWidth="1280" prefHeight="300"
                    fitToWidth="true">
             <VBox alignment="CENTER" style="-fx-background-color: transparent; -fx-padding: 20;">
                 <GridPane fx:id="cardsGrid" alignment="CENTER"/>

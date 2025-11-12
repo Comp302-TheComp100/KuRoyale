@@ -19,7 +19,6 @@ import com.kuroyale.view.DeckSlotView;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
-import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -44,11 +43,10 @@ public class DeckBuilderController {
     private static final int CARDS_PER_ROW = 4;
     private static final int DECK_SLOT_ROWS = 2;
     private static final int DECK_SLOT_COLS = 4;
-    private static final int BUTTON_GAP = 10;
-    private static final int BUTTONS_WIDTH = 150; // Two buttons + gap
+    private static final int BUTTON_GAP = 5;
+    private static final int BUTTONS_WIDTH = 105; // Two buttons + gap (50 + 5 + 50)
     private static final int BUTTON_OFFSET_Y = 5; // Pixels below card
     private static final int CARD_CONTAINER_SPACING = 5;
-    private static final int BUTTON_PADDING_TOP = 5;
 
     @FXML
     private AnchorPane deckSlotsBackground;
@@ -163,8 +161,8 @@ public class DeckBuilderController {
      */
     private void createRecessedRectangles() {
         // Slot dimensions (must match createDeckSlots exactly)
-        final int SLOT_WIDTH = 120;
-        final int SLOT_HEIGHT = 160;
+        final int SLOT_WIDTH = 90;
+        final int SLOT_HEIGHT = 120;
         final int SLOT_GAP_X = 20;
         final int SLOT_GAP_Y = 20;
         final int START_X = 0;
@@ -173,8 +171,8 @@ public class DeckBuilderController {
         // Calculate center offset (must match createDeckSlots exactly)
         final int TOTAL_WIDTH = (DECK_SLOT_COLS * SLOT_WIDTH) + ((DECK_SLOT_COLS - 1) * SLOT_GAP_X);
         final int TOTAL_HEIGHT = (DECK_SLOT_ROWS * SLOT_HEIGHT) + ((DECK_SLOT_ROWS - 1) * SLOT_GAP_Y);
-        final int OFFSET_X = (800 - TOTAL_WIDTH) / 2;
-        final int OFFSET_Y = (360 - TOTAL_HEIGHT) / 2; // Use 360px to match deck slots container height
+        final int OFFSET_X = (660 - TOTAL_WIDTH) / 2;
+        final int OFFSET_Y = (280 - TOTAL_HEIGHT) / 2; // Use 280px to match deck slots container height
 
         for (int row = 0; row < DECK_SLOT_ROWS; row++) {
             for (int col = 0; col < DECK_SLOT_COLS; col++) {
@@ -202,19 +200,19 @@ public class DeckBuilderController {
 
     private void createDeckSlots() {
         // Slot dimensions
-        final int SLOT_WIDTH = 120;
-        final int SLOT_HEIGHT = 160;
+        final int SLOT_WIDTH = 90;
+        final int SLOT_HEIGHT = 120;
         final int SLOT_GAP_X = 20; // Horizontal gap between slots
         final int SLOT_GAP_Y = 20; // Vertical gap between slots
         final int START_X = 0; // Starting X position within container
         final int START_Y = 0; // Starting Y position within container
 
         // Calculate center offset to center the 4x2 grid
-        // Note: Container height is 360px (not 400) because slots are moved down 20px
+        // Note: Container height is 280px (adjusted for smaller cards)
         final int TOTAL_WIDTH = (DECK_SLOT_COLS * SLOT_WIDTH) + ((DECK_SLOT_COLS - 1) * SLOT_GAP_X);
         final int TOTAL_HEIGHT = (DECK_SLOT_ROWS * SLOT_HEIGHT) + ((DECK_SLOT_ROWS - 1) * SLOT_GAP_Y);
-        final int OFFSET_X = (800 - TOTAL_WIDTH) / 2; // Center horizontally in 800px container
-        final int OFFSET_Y = (360 - TOTAL_HEIGHT) / 2; // Center vertically in 360px container
+        final int OFFSET_X = (660 - TOTAL_WIDTH) / 2; // Center horizontally in 660px container
+        final int OFFSET_Y = (280 - TOTAL_HEIGHT) / 2; // Center vertically in 280px container
 
         for (int row = 0; row < DECK_SLOT_ROWS; row++) {
             for (int col = 0; col < DECK_SLOT_COLS; col++) {
@@ -402,14 +400,13 @@ public class DeckBuilderController {
     }
 
     /**
-     * Removes card buttons and resets selection state
+     * Removes card buttons from the overlay
      */
     private void removeCardButtons() {
-        if (selectedCardView != null && cardButtonsBox != null) {
-            VBox prevContainer = (VBox) selectedCardView.getParent();
-            if (prevContainer != null) {
-                prevContainer.getChildren().remove(cardButtonsBox);
-            }
+        if (cardButtonsBox != null) {
+            // Remove from AnchorPane overlay
+            AnchorPane mainPane = getMainAnchorPane();
+            mainPane.getChildren().remove(cardButtonsBox);
             cardButtonsBox = null;
             selectedCardView = null;
         }
@@ -439,19 +436,40 @@ public class DeckBuilderController {
     }
 
     /**
-     * Shows action buttons for a card
+     * Shows action buttons for a card (overlaid, not affecting layout)
      */
     private void showCardButtons(Card card, VBox cardContainer) {
         HBox buttonsBox = new HBox(BUTTON_GAP);
         buttonsBox.setAlignment(Pos.CENTER);
-        buttonsBox.setPadding(new Insets(BUTTON_PADDING_TOP, 0, 0, 0));
 
         Button infoButton = ButtonFactory.createInfoButton();
         infoButton.setOnAction(e -> showCardInfo(card));
 
         Button actionButton = createCardActionButton(card, cardContainer);
         buttonsBox.getChildren().addAll(infoButton, actionButton);
-        cardContainer.getChildren().add(buttonsBox);
+
+        // Position buttons as overlay on AnchorPane instead of in container
+        AnchorPane mainPane = getMainAnchorPane();
+
+        // Get the CardView from the container (first child)
+        CardView cardView = (CardView) cardContainer.getChildren().get(0);
+
+        // Calculate button position relative to card
+        Bounds cardBoundsInScene = cardView.localToScene(cardView.getBoundsInLocal());
+        Point2D cardPointInAnchorPane = mainPane.sceneToLocal(
+                cardBoundsInScene.getMinX(),
+                cardBoundsInScene.getMinY());
+
+        double cardWidth = cardView.getWidth();
+        double cardHeight = cardView.getHeight();
+        double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2);
+        double buttonY = cardPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
+
+        // Add buttons to AnchorPane as overlay
+        mainPane.getChildren().add(buttonsBox);
+        AnchorPane.setLeftAnchor(buttonsBox, buttonX);
+        AnchorPane.setTopAnchor(buttonsBox, buttonY);
+
         cardButtonsBox = buttonsBox;
     }
 
