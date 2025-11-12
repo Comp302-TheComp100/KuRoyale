@@ -438,7 +438,7 @@ public class DeckBuilderController {
 
             double cardWidth = selectedCardView.getWidth();
             double cardHeight = selectedCardView.getHeight();
-            double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 10;
+            double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 18;
             double buttonY = cardPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
 
             // Update button position
@@ -497,7 +497,7 @@ public class DeckBuilderController {
 
         double cardWidth = cardView.getWidth();
         double cardHeight = cardView.getHeight();
-        double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 10;
+        double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 18;
         double buttonY = cardPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
 
         // Add buttons to AnchorPane as overlay
