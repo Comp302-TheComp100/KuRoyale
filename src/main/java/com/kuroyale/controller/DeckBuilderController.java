@@ -44,7 +44,7 @@ public class DeckBuilderController {
     private static final int DECK_SLOT_ROWS = 2;
     private static final int DECK_SLOT_COLS = 4;
     private static final int BUTTON_GAP = 5;
-    private static final int BUTTONS_WIDTH = 105; // Two buttons + gap (50 + 5 + 50)
+    private static final int BUTTONS_WIDTH = 121; // Two buttons + gap (58 + 5 + 58)
     private static final int BUTTON_OFFSET_Y = 5; // Pixels below card
     private static final int CARD_CONTAINER_SPACING = 5;
 
@@ -84,6 +84,7 @@ public class DeckBuilderController {
     private HBox deckSlotButtonsBox;
     private boolean replaceMode; // Track if we're in replace mode
     private Card cardToReplace; // Card selected for replacement
+    private VBox currentCardContainer; // Track the current card container for button repositioning
 
     @FXML
     private void initialize() {
@@ -110,6 +111,11 @@ public class DeckBuilderController {
 
         // Initialize average elixir cost display
         updateAverageElixirCost();
+
+        // Add scroll listener to update button positions when scrolling
+        cardsScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
+            updateCardButtonPositions();
+        });
     }
 
     /**
@@ -409,6 +415,31 @@ public class DeckBuilderController {
             mainPane.getChildren().remove(cardButtonsBox);
             cardButtonsBox = null;
             selectedCardView = null;
+            currentCardContainer = null;
+        }
+    }
+
+    /**
+     * Updates card button positions when scrolling occurs
+     */
+    private void updateCardButtonPositions() {
+        if (cardButtonsBox != null && selectedCardView != null && currentCardContainer != null) {
+            AnchorPane mainPane = getMainAnchorPane();
+
+            // Recalculate button position relative to card
+            Bounds cardBoundsInScene = selectedCardView.localToScene(selectedCardView.getBoundsInLocal());
+            Point2D cardPointInAnchorPane = mainPane.sceneToLocal(
+                    cardBoundsInScene.getMinX(),
+                    cardBoundsInScene.getMinY());
+
+            double cardWidth = selectedCardView.getWidth();
+            double cardHeight = selectedCardView.getHeight();
+            double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 10;
+            double buttonY = cardPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
+
+            // Update button position
+            AnchorPane.setLeftAnchor(cardButtonsBox, buttonX);
+            AnchorPane.setTopAnchor(cardButtonsBox, buttonY);
         }
     }
 
@@ -462,7 +493,7 @@ public class DeckBuilderController {
 
         double cardWidth = cardView.getWidth();
         double cardHeight = cardView.getHeight();
-        double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2);
+        double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 10;
         double buttonY = cardPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
 
         // Add buttons to AnchorPane as overlay
@@ -471,6 +502,7 @@ public class DeckBuilderController {
         AnchorPane.setTopAnchor(buttonsBox, buttonY);
 
         cardButtonsBox = buttonsBox;
+        currentCardContainer = cardContainer;
     }
 
     /**
