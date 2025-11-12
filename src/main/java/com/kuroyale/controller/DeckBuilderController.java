@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.kuroyale.model.Card;
@@ -23,7 +24,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import java.util.Locale;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
@@ -123,7 +123,7 @@ public class DeckBuilderController {
         final int SLOT_GAP_Y = 20;
         final int START_X = 0;
         final int SLOT_OFFSET_Y = 20; // Deck slots are 20px lower than brown background
-        
+
         // Calculate center offset (must match createDeckSlots exactly)
         final int TOTAL_WIDTH = (DECK_SLOT_COLS * SLOT_WIDTH) + ((DECK_SLOT_COLS - 1) * SLOT_GAP_X);
         final int TOTAL_HEIGHT = (DECK_SLOT_ROWS * SLOT_HEIGHT) + ((DECK_SLOT_ROWS - 1) * SLOT_GAP_Y);
@@ -135,11 +135,11 @@ public class DeckBuilderController {
                 // Create rectangle for this slot position
                 Rectangle recess = new Rectangle(SLOT_WIDTH, SLOT_HEIGHT);
                 recess.getStyleClass().add("deck-slot-recess");
-                
+
                 // Calculate position (must match createDeckSlots exactly, with 20px offset)
                 double x = START_X + OFFSET_X + (col * (SLOT_WIDTH + SLOT_GAP_X));
                 double y = SLOT_OFFSET_Y + OFFSET_Y + (row * (SLOT_HEIGHT + SLOT_GAP_Y));
-                
+
                 // Add to background AnchorPane
                 deckSlotsBackground.getChildren().add(recess);
                 AnchorPane.setLeftAnchor(recess, x);
@@ -461,15 +461,16 @@ public class DeckBuilderController {
             button.setStyle("-fx-background-color: transparent; -fx-cursor: hand; -fx-border-width: 0;");
             button.setText(text);
             button.setTextFill(javafx.scene.paint.Color.WHITE);
-            button.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 11));
+            button.setFont(javafx.scene.text.Font.font("Clash", javafx.scene.text.FontWeight.BOLD, 11));
             button.setContentDisplay(javafx.scene.control.ContentDisplay.CENTER);
         } catch (Exception e) {
             e.printStackTrace();
             // Fallback to colored background
             button.setText(text);
             String color = getButtonColor(imagePath);
-            button.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: white; " +
-                    "-fx-cursor: hand; -fx-background-color: " + color + "; -fx-background-radius: 5;");
+            button.setStyle(
+                    "-fx-font-family: 'Clash'; -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: white; " +
+                            "-fx-cursor: hand; -fx-background-color: " + color + "; -fx-background-radius: 5;");
         }
 
         return button;
@@ -642,7 +643,6 @@ public class DeckBuilderController {
             deckSlots.get(i).setCard(currentCards.get(i));
         }
     }
-
 
     /**
      * Centers the average elixir cost display within the brown background area

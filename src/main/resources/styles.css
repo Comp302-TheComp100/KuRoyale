@@ -1,6 +1,21 @@
+/* Custom Fonts */
+@font-face {
+    font-family: 'Clash';
+    src: url('/fonts/Clash_Regular.otf');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Clash';
+    src: url('/fonts/Clash_Bold.otf');
+    font-weight: bold;
+    font-style: normal;
+}
+
 /* Clash Royale Color Scheme */
 .root {
-    -fx-font-family: "Arial";
+    -fx-font-family: "Clash", "Arial";
 }
 
 /* Main Menu Styling */
