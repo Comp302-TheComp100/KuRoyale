@@ -2,6 +2,7 @@ package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
 import com.kuroyale.model.SpeedType;
+import com.kuroyale.util.StyleHelper;
 
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Insets;
@@ -33,15 +34,14 @@ public class CardInfoDialog extends StackPane {
         this.card = card;
 
         // Full screen overlay
-        setStyle("-fx-background-color: rgba(0, 0, 0, 0.7);");
+        StyleHelper.applyOverlayBackground(this);
 
         // Main container
         VBox mainContainer = new VBox(15);
         mainContainer.setAlignment(Pos.CENTER);
         mainContainer.setMaxWidth(350);
         mainContainer.setMaxHeight(550);
-        mainContainer.setStyle("-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 20;");
-        mainContainer.setEffect(new javafx.scene.effect.DropShadow(15, javafx.scene.paint.Color.BLACK));
+        StyleHelper.applyOverlayCardContainer(mainContainer);
 
         // Content pane for swipeable pages
         contentPane = new StackPane();
@@ -59,8 +59,9 @@ public class CardInfoDialog extends StackPane {
 
         // Close button
         Button closeButton = new Button("CLOSE");
-        closeButton.setStyle(
-                "-fx-background-color: #64748b; -fx-text-fill: white; -fx-font-weight: bold; -fx-pref-width: 150; -fx-pref-height: 40; -fx-background-radius: 8; -fx-cursor: hand;");
+        StyleHelper.applyOverlayButtonStyle(closeButton);
+        closeButton.setPrefWidth(150);
+        closeButton.setPrefHeight(40);
         closeButton.setOnAction(e -> onClose.run());
 
         mainContainer.getChildren().addAll(contentPane, pageIndicator, closeButton);
@@ -88,7 +89,9 @@ public class CardInfoDialog extends StackPane {
 
         // Card name
         Label nameLabel = new Label(card.getName());
-        nameLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        nameLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; " +
+                "-fx-font-family: '" + StyleHelper.FONT_FAMILY + "', Arial; " +
+                "-fx-text-fill: " + StyleHelper.COLOR_DARK + ";");
         nameLabel.setWrapText(true);
         nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setMaxWidth(300);
@@ -114,8 +117,11 @@ public class CardInfoDialog extends StackPane {
 
         // Type badge
         Label typeLabel = new Label(card.getType().toString());
-        typeLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: " +
-                getTypeColor() + "; -fx-padding: 5 15 5 15; -fx-background-radius: 5;");
+        typeLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; " +
+                "-fx-font-family: '" + StyleHelper.FONT_FAMILY + "', Arial; " +
+                "-fx-text-fill: " + StyleHelper.COLOR_WHITE + "; " +
+                "-fx-background-color: " + getTypeColor() + "; " +
+                "-fx-padding: 5 15 5 15; -fx-background-radius: 5;");
 
         page.getChildren().addAll(imageView, nameLabel, costBox, typeLabel);
 
@@ -209,13 +215,13 @@ public class CardInfoDialog extends StackPane {
     private String getTypeColor() {
         switch (card.getType()) {
             case TROOP:
-                return "#f97316";
+                return StyleHelper.COLOR_PRIMARY;
             case BUILDING:
                 return "#92400e";
             case SPELL:
-                return "#8b5cf6";
+                return StyleHelper.COLOR_PURPLE;
             default:
-                return "#64748b";
+                return StyleHelper.COLOR_SECONDARY;
         }
     }
 
@@ -249,8 +255,8 @@ public class CardInfoDialog extends StackPane {
         Circle dot2 = new Circle(5);
 
         // Apply page indicator styles
-        dot1.setStyle("-fx-fill: #3b82f6;"); // Active style
-        dot2.setStyle("-fx-fill: #cbd5e1;"); // Inactive style
+        dot1.setStyle("-fx-fill: " + StyleHelper.COLOR_BLUE + ";"); // Active style
+        dot2.setStyle("-fx-fill: " + StyleHelper.COLOR_GRAY + ";"); // Inactive style
 
         indicator.getChildren().addAll(dot1, dot2);
         return indicator;
@@ -299,11 +305,11 @@ public class CardInfoDialog extends StackPane {
         Circle dot2 = (Circle) pageIndicator.getChildren().get(1);
 
         if (pageIndex == 0) {
-            dot1.setStyle("-fx-fill: #3b82f6;"); // Active
-            dot2.setStyle("-fx-fill: #cbd5e1;"); // Inactive
+            dot1.setStyle("-fx-fill: " + StyleHelper.COLOR_BLUE + ";"); // Active
+            dot2.setStyle("-fx-fill: " + StyleHelper.COLOR_GRAY + ";"); // Inactive
         } else {
-            dot1.setStyle("-fx-fill: #cbd5e1;"); // Inactive
-            dot2.setStyle("-fx-fill: #3b82f6;"); // Active
+            dot1.setStyle("-fx-fill: " + StyleHelper.COLOR_GRAY + ";"); // Inactive
+            dot2.setStyle("-fx-fill: " + StyleHelper.COLOR_BLUE + ";"); // Active
         }
     }
 }

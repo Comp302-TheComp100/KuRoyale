@@ -414,78 +414,49 @@ public class StyleHelper {
     }
 
     /**
-     * Apply overlay button style
+     * Generic helper to apply button style with hover effect
+     */
+    private static void applyButtonStyle(Button button, String color, String hoverColor) {
+        String baseStyle = "-fx-background-color: " + color + ";" +
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 16px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-family: '" + FONT_FAMILY + "', Arial;" +
+                "-fx-background-radius: 8;" +
+                "-fx-pref-width: 120;" +
+                "-fx-pref-height: 45;" +
+                "-fx-cursor: hand;";
+
+        button.setStyle(baseStyle);
+
+        button.setOnMouseEntered(e -> {
+            button.setStyle(baseStyle.replace(color, hoverColor));
+        });
+
+        button.setOnMouseExited(e -> {
+            button.setStyle(baseStyle);
+        });
+    }
+
+    /**
+     * Apply overlay button style (blue)
      */
     public static void applyOverlayButtonStyle(Button button) {
-        String baseStyle = "-fx-background-color: " + COLOR_BLUE + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 16px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-font-family: '" + FONT_FAMILY + "', Arial;" +
-                "-fx-background-radius: 8;" +
-                "-fx-pref-width: 120;" +
-                "-fx-pref-height: 45;" +
-                "-fx-cursor: hand;";
-
-        button.setStyle(baseStyle);
-
-        button.setOnMouseEntered(e -> {
-            button.setStyle(baseStyle.replace(COLOR_BLUE, COLOR_BLUE_DARK));
-        });
-
-        button.setOnMouseExited(e -> {
-            button.setStyle(baseStyle);
-        });
+        applyButtonStyle(button, COLOR_BLUE, COLOR_BLUE_DARK);
     }
 
     /**
-     * Apply overlay "Use" button style
+     * Apply overlay "Use" button style (green)
      */
     public static void applyOverlayUseButtonStyle(Button button) {
-        String baseStyle = "-fx-background-color: " + COLOR_GREEN + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 16px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-font-family: '" + FONT_FAMILY + "', Arial;" +
-                "-fx-background-radius: 8;" +
-                "-fx-pref-width: 120;" +
-                "-fx-pref-height: 45;" +
-                "-fx-cursor: hand;";
-
-        button.setStyle(baseStyle);
-
-        button.setOnMouseEntered(e -> {
-            button.setStyle(baseStyle.replace(COLOR_GREEN, COLOR_GREEN_DARK));
-        });
-
-        button.setOnMouseExited(e -> {
-            button.setStyle(baseStyle);
-        });
+        applyButtonStyle(button, COLOR_GREEN, COLOR_GREEN_DARK);
     }
 
     /**
-     * Apply overlay "Remove" button style
+     * Apply overlay "Remove" button style (red)
      */
     public static void applyOverlayRemoveButtonStyle(Button button) {
-        String baseStyle = "-fx-background-color: " + COLOR_RED + ";" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 16px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-font-family: '" + FONT_FAMILY + "', Arial;" +
-                "-fx-background-radius: 8;" +
-                "-fx-pref-width: 120;" +
-                "-fx-pref-height: 45;" +
-                "-fx-cursor: hand;";
-
-        button.setStyle(baseStyle);
-
-        button.setOnMouseEntered(e -> {
-            button.setStyle(baseStyle.replace(COLOR_RED, COLOR_RED_DARK));
-        });
-
-        button.setOnMouseExited(e -> {
-            button.setStyle(baseStyle);
-        });
+        applyButtonStyle(button, COLOR_RED, COLOR_RED_DARK);
     }
 
     /**

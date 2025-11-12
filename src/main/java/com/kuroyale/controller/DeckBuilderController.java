@@ -8,7 +8,9 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.kuroyale.model.Card;
+import com.kuroyale.model.CardFactory;
 import com.kuroyale.model.Deck;
+import com.kuroyale.util.ButtonFactory;
 import com.kuroyale.util.StyleHelper;
 import com.kuroyale.view.CardInfoDialog;
 import com.kuroyale.view.CardView;
@@ -25,8 +27,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -44,8 +44,6 @@ public class DeckBuilderController {
     private static final int CARDS_PER_ROW = 4;
     private static final int DECK_SLOT_ROWS = 2;
     private static final int DECK_SLOT_COLS = 4;
-    private static final int BUTTON_WIDTH = 70;
-    private static final int BUTTON_HEIGHT = 35;
     private static final int BUTTON_GAP = 10;
     private static final int BUTTONS_WIDTH = 150; // Two buttons + gap
     private static final int BUTTON_OFFSET_Y = 5; // Pixels below card
@@ -237,7 +235,7 @@ public class DeckBuilderController {
     }
 
     private void loadAllCards() {
-        List<Card> allCards = Card.getAllCards();
+        List<Card> allCards = CardFactory.getAllCards();
 
         // Store all cards for later reorganization
         for (Card card : allCards) {
@@ -263,12 +261,16 @@ public class DeckBuilderController {
 
     /**
      * Reorganizes the bottom card grid so visible cards fill rows of 4
+     * Cards are always shown in the same consistent order (from
+     * CardFactory.getAllCards())
+     * Only cards NOT in the deck are displayed
      */
     private void reorganizeCardGrid() {
         // Clear the grid
         cardsGrid.getChildren().clear();
 
-        List<Card> allCards = Card.getAllCards();
+        // Get all cards in consistent order: Troops, Buildings, Spells
+        List<Card> allCards = CardFactory.getAllCards();
         int column = 0;
         int row = 0;
 
@@ -337,10 +339,15 @@ public class DeckBuilderController {
 
     /**
      * Handles deck slot click when in replace mode
+     * The clicked slot's card will be swapped with the card selected from bottom
+     * grid
+     * The new card takes the exact position of the old card
      */
     private void handleReplaceModeClick(DeckSlotView slot) {
         if (!slot.isEmpty() && cardToReplace != null) {
-            replaceCardInDeck(slot.getCard(), cardToReplace);
+            Card oldCard = slot.getCard(); // Card currently in the clicked slot
+            Card newCard = cardToReplace; // Card selected from bottom to replace with
+            replaceCardInDeck(oldCard, newCard);
             exitReplaceMode();
         } else if (slot.isEmpty()) {
             // Cancel replace mode if clicking empty slot
@@ -381,10 +388,10 @@ public class DeckBuilderController {
         HBox buttonsBox = new HBox(BUTTON_GAP);
         buttonsBox.setAlignment(Pos.CENTER);
 
-        Button infoButton = createImageButton("/images/button_blue.png", "INFO");
+        Button infoButton = ButtonFactory.createInfoButton();
         infoButton.setOnAction(e -> showCardInfo(card));
 
-        Button removeButton = createImageButton("/images/button_red.png", "REMOVE");
+        Button removeButton = ButtonFactory.createRemoveButton();
         removeButton.setOnAction(e -> {
             removeCardFromDeck(card);
             removeDeckSlotButtons();
@@ -439,7 +446,7 @@ public class DeckBuilderController {
         buttonsBox.setAlignment(Pos.CENTER);
         buttonsBox.setPadding(new Insets(BUTTON_PADDING_TOP, 0, 0, 0));
 
-        Button infoButton = createImageButton("/images/button_blue.png", "INFO");
+        Button infoButton = ButtonFactory.createInfoButton();
         infoButton.setOnAction(e -> showCardInfo(card));
 
         Button actionButton = createCardActionButton(card, cardContainer);
@@ -465,7 +472,7 @@ public class DeckBuilderController {
      * Creates a REMOVE button for a card already in deck
      */
     private Button createRemoveButton(Card card, VBox cardContainer) {
-        Button removeButton = createImageButton("/images/button_red.png", "REMOVE");
+        Button removeButton = ButtonFactory.createRemoveButton();
         removeButton.setOnAction(e -> {
             removeCardFromDeck(card);
             removeCardButtons();
@@ -477,7 +484,7 @@ public class DeckBuilderController {
      * Creates a REPLACE button when deck is full
      */
     private Button createReplaceButton(Card card, VBox cardContainer) {
-        Button replaceButton = createImageButton("/images/button_yellow.png", "REPLACE");
+        Button replaceButton = ButtonFactory.createReplaceButton();
         replaceButton.setOnAction(e -> {
             enterReplaceMode(card);
             removeCardButtons();
@@ -489,58 +496,12 @@ public class DeckBuilderController {
      * Creates a USE button to add card to deck
      */
     private Button createUseButton(Card card, VBox cardContainer) {
-        Button useButton = createImageButton("/images/button_yellow.png", "USE");
+        Button useButton = ButtonFactory.createUseButton();
         useButton.setOnAction(e -> {
             addCardToDeck(card);
             removeCardButtons();
         });
         return useButton;
-    }
-
-    private Button createImageButton(String imagePath, String text) {
-        Button button = new Button();
-        button.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
-        button.setMinSize(BUTTON_WIDTH, BUTTON_HEIGHT);
-        button.setMaxSize(BUTTON_WIDTH, BUTTON_HEIGHT);
-
-        try {
-            Image buttonImage = new Image(getClass().getResourceAsStream(imagePath));
-            ImageView buttonImageView = new ImageView(buttonImage);
-            buttonImageView.setFitWidth(BUTTON_WIDTH);
-            buttonImageView.setFitHeight(BUTTON_HEIGHT);
-            buttonImageView.setPreserveRatio(false);
-            button.setGraphic(buttonImageView);
-
-            // Make button transparent and show text on top
-            button.setStyle("-fx-background-color: transparent; -fx-cursor: hand; -fx-border-width: 0;");
-            button.setText(text);
-            button.setTextFill(javafx.scene.paint.Color.WHITE);
-            button.setFont(javafx.scene.text.Font.font("Clash", javafx.scene.text.FontWeight.BOLD, 11));
-            button.setContentDisplay(javafx.scene.control.ContentDisplay.CENTER);
-        } catch (Exception e) {
-            e.printStackTrace();
-            // Fallback to colored background
-            button.setText(text);
-            String color = getButtonColor(imagePath);
-            button.setStyle(
-                    "-fx-font-family: 'Clash'; -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: white; " +
-                            "-fx-cursor: hand; -fx-background-color: " + color + "; -fx-background-radius: 5;");
-        }
-
-        return button;
-    }
-
-    /**
-     * Gets the fallback color for a button based on its image path
-     */
-    private String getButtonColor(String imagePath) {
-        if (imagePath.contains("blue")) {
-            return "#3b82f6";
-        } else if (imagePath.contains("yellow")) {
-            return "#fbbf24";
-        } else {
-            return "#ef4444";
-        }
     }
 
     private void showCardInfo(Card card) {
@@ -629,30 +590,37 @@ public class DeckBuilderController {
 
     /**
      * Replaces a card in the deck with a new card
+     * The new card takes the exact position of the old card in the deck
      */
     private void replaceCardInDeck(Card oldCard, Card newCard) {
-        // Remove old card from deck
-        deck.removeCard(oldCard);
-
-        // Add new card to deck
-        deck.addCard(newCard);
-
-        // Find the slot with the old card and replace it
+        // Find the slot with the old card FIRST (before modifying deck)
+        DeckSlotView targetSlot = null;
         for (DeckSlotView slot : deckSlots) {
             if (!slot.isEmpty() && slot.getCard().equals(oldCard)) {
-                slot.setCard(newCard);
+                targetSlot = slot;
                 break;
             }
         }
 
-        // Reorganize bottom grid to reflect changes
-        reorganizeCardGrid();
+        // If we found the slot, perform the replacement
+        if (targetSlot != null) {
+            // Update the deck data structure
+            deck.removeCard(oldCard);
+            deck.addCard(newCard);
 
-        // Update button states
-        updateCardButtons();
+            // Replace the card in the UI at the SAME position
+            targetSlot.setCard(newCard);
 
-        // Update average elixir cost
-        updateAverageElixirCost();
+            // Reorganize bottom grid to reflect changes
+            // (oldCard will now appear in bottom, newCard will be hidden)
+            reorganizeCardGrid();
+
+            // Update button states
+            updateCardButtons();
+
+            // Update average elixir cost
+            updateAverageElixirCost();
+        }
     }
 
     /**
