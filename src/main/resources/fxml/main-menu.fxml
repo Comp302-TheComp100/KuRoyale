@@ -5,31 +5,28 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.geometry.Insets?>
 
-<VBox xmlns="http://javafx.com/javafx"
+<VBox fx:id="root" xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.kuroyale.controller.MainMenuController"
       alignment="CENTER"
-      spacing="30"
-      styleClass="main-menu">
+      spacing="30">
     
     <padding>
         <Insets top="50" right="50" bottom="50" left="50"/>
     </padding>
     
-    <Label text="KU ROYALE" styleClass="title-label"/>
+    <Label fx:id="titleLabel" text="KU ROYALE"/>
     
     <VBox alignment="CENTER" spacing="20">
         <Button fx:id="deckBuilderButton" 
                 text="DECK BUILDER" 
                 onAction="#handleDeckBuilder"
-                styleClass="menu-button"
                 prefWidth="300"
                 prefHeight="60"/>
         
         <Button fx:id="startMatchButton" 
                 text="START MATCH" 
                 onAction="#handleStartMatch"
-                styleClass="menu-button"
                 prefWidth="300"
                 prefHeight="60"/>
     </VBox>

@@ -1,9 +1,12 @@
 package com.kuroyale;
 
+import com.kuroyale.controller.MainMenuController;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 /**
@@ -14,14 +17,21 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
+            // Load custom fonts
+            Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Regular.otf"), 12);
+            Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Bold.otf"), 12);
+
             // Load main menu
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
             Parent root = loader.load();
 
-            // Create scene with CSS styling (1280x720 HD resolution)
+            // Get controller and initialize styles
+            MainMenuController controller = loader.getController();
+            controller.initializeStyles();
+
+            // Create scene (1280x720 HD resolution)
             Scene scene = new Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
-            
+
             primaryStage.setTitle("KU Royale - Clash Royale Clone");
             primaryStage.setScene(scene);
             primaryStage.setResizable(false);

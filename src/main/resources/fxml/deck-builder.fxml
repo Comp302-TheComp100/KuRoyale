@@ -12,30 +12,28 @@
            fx:controller="com.kuroyale.controller.DeckBuilderController"
            prefWidth="1280" prefHeight="720">
     
-    <AnchorPane prefWidth="1280" prefHeight="720" styleClass="deck-builder-main-background">
+    <AnchorPane prefWidth="1280" prefHeight="720">
         
         <!-- Battle Deck Title - Centered -->
         <HBox fx:id="battleDeckTitleContainer" 
               layoutY="30"
               alignment="CENTER"
               prefWidth="1280">
-            <Label fx:id="battleDeckTitle" text="Battle Deck" styleClass="battle-deck-title"/>
+            <Label fx:id="battleDeckTitle" text="Battle Deck"/>
         </HBox>
         
         <!-- Deck Slots Background Area - shows empty rectangles -->
         <AnchorPane fx:id="deckSlotsBackground" 
                     layoutX="240" layoutY="70"
-                    prefWidth="800" prefHeight="420"
-                    styleClass="deck-slots-background">
+                    prefWidth="800" prefHeight="420">
             
             <!-- Average Elixir Cost Display - Centered inside brown area at bottom -->
             <HBox fx:id="averageElixirContainer" 
                   layoutY="380" 
                   spacing="5" 
-                  alignment="CENTER"
-                  styleClass="average-elixir-container">
-                <Label text="Average Elixir cost:" styleClass="average-elixir-label"/>
-                <Label fx:id="averageElixirValue" text="0.0" styleClass="average-elixir-value"/>
+                  alignment="CENTER">
+                <Label text="Average Elixir cost:"/>
+                <Label fx:id="averageElixirValue" text="0.0"/>
                 <ImageView fitWidth="25" fitHeight="25" preserveRatio="true">
                     <image>
                         <Image url="@/images/card_elixir.png"/>
@@ -55,10 +53,9 @@
         <ScrollPane fx:id="cardsScrollPane" 
                    layoutX="0" layoutY="540"
                    prefWidth="1280" prefHeight="180"
-                   fitToWidth="true" 
-                   styleClass="cards-scroll-pane">
-            <VBox alignment="CENTER" styleClass="cards-container-wrapper">
-                <GridPane fx:id="cardsGrid" styleClass="cards-grid" alignment="CENTER"/>
+                   fitToWidth="true">
+            <VBox alignment="CENTER" style="-fx-background-color: transparent; -fx-padding: 20;">
+                <GridPane fx:id="cardsGrid" alignment="CENTER"/>
             </VBox>
         </ScrollPane>
         
@@ -66,8 +63,7 @@
         <Button fx:id="backButton" 
                 layoutX="50" layoutY="670"
                 text="BACK" 
-                onAction="#handleBack"
-                styleClass="back-button"/>
+                onAction="#handleBack"/>
     </AnchorPane>
     
 </StackPane>

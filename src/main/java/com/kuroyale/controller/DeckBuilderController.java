@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.kuroyale.model.Card;
 import com.kuroyale.model.Deck;
+import com.kuroyale.util.StyleHelper;
 import com.kuroyale.view.CardInfoDialog;
 import com.kuroyale.view.CardView;
 import com.kuroyale.view.DeckSlotView;
@@ -96,6 +97,9 @@ public class DeckBuilderController {
         replaceMode = false;
         cardToReplace = null;
 
+        // Apply styles
+        applyStyles();
+
         // Create recessed rectangles for deck slot backgrounds
         createRecessedRectangles();
 
@@ -110,6 +114,50 @@ public class DeckBuilderController {
 
         // Initialize average elixir cost display
         updateAverageElixirCost();
+    }
+
+    /**
+     * Apply styles to deck builder components
+     */
+    private void applyStyles() {
+        // Apply background to main anchor pane
+        AnchorPane mainBackground = getMainAnchorPane();
+        if (mainBackground != null) {
+            StyleHelper.applyDeckBuilderBackground(mainBackground);
+        }
+
+        // Apply deck slots background style
+        StyleHelper.applyDeckSlotsBackground(deckSlotsBackground);
+
+        // Apply title style
+        if (battleDeckTitle != null) {
+            StyleHelper.applyBattleDeckTitleStyle(battleDeckTitle);
+        }
+
+        // Apply back button style
+        StyleHelper.applyBackButtonStyle(backButton);
+
+        // Apply scroll pane style (deferred to ensure viewport is available)
+        javafx.application.Platform.runLater(() -> {
+            StyleHelper.applyScrollPaneStyle(cardsScrollPane);
+        });
+
+        // Apply cards grid style
+        StyleHelper.applyCardsGridStyle(cardsGrid);
+
+        // Apply average elixir label styles
+        if (averageElixirContainer != null) {
+            for (javafx.scene.Node node : averageElixirContainer.getChildren()) {
+                if (node instanceof Label) {
+                    Label label = (Label) node;
+                    if (label.getText().startsWith("Average")) {
+                        StyleHelper.applyAverageElixirLabelStyle(label);
+                    } else if (label == averageElixirValue) {
+                        StyleHelper.applyAverageElixirValueStyle(label);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -134,7 +182,13 @@ public class DeckBuilderController {
             for (int col = 0; col < DECK_SLOT_COLS; col++) {
                 // Create rectangle for this slot position
                 Rectangle recess = new Rectangle(SLOT_WIDTH, SLOT_HEIGHT);
-                recess.getStyleClass().add("deck-slot-recess");
+
+                // Apply recessed rectangle style
+                recess.setStyle(
+                        "-fx-fill: " + StyleHelper.COLOR_BROWN_LIGHT + ";" +
+                                "-fx-arc-width: 12;" +
+                                "-fx-arc-height: 12;");
+                recess.setEffect(StyleHelper.getInnerShadowEffect());
 
                 // Calculate position (must match createDeckSlots exactly, with 20px offset)
                 double x = START_X + OFFSET_X + (col * (SLOT_WIDTH + SLOT_GAP_X));
@@ -687,9 +741,12 @@ public class DeckBuilderController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
             Parent root = loader.load();
 
+            // Get controller and initialize styles
+            MainMenuController controller = loader.getController();
+            controller.initializeStyles();
+
             Stage stage = (Stage) backButton.getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
             stage.setScene(scene);
             stage.setTitle("KU Royale");
         } catch (IOException e) {

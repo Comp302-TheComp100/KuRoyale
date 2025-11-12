@@ -1,6 +1,7 @@
 package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
+import com.kuroyale.util.StyleHelper;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -23,9 +24,8 @@ public class CardView extends StackPane {
         setMinSize(120, 160);
         setMaxSize(120, 160);
 
-        // Apply style classes
-        getStyleClass().add("card-view");
-        getStyleClass().add("card-" + card.getType().toString().toLowerCase(java.util.Locale.ENGLISH));
+        // Apply card view style
+        StyleHelper.applyCardViewStyle(this);
 
         // Card image fills entire space
         ImageView imageView = createCardImage();
@@ -61,7 +61,7 @@ public class CardView extends StackPane {
         } catch (Exception e) {
             // Fallback without icon
             Label costLabel = new Label(String.valueOf(card.getCost()));
-            costLabel.getStyleClass().add("card-cost");
+            costLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #fbbf24;");
             pane.getChildren().add(costLabel);
         }
 

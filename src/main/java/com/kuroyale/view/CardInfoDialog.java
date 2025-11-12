@@ -248,8 +248,9 @@ public class CardInfoDialog extends StackPane {
         Circle dot1 = new Circle(5);
         Circle dot2 = new Circle(5);
 
-        dot1.getStyleClass().addAll("page-indicator", "page-indicator-active");
-        dot2.getStyleClass().add("page-indicator");
+        // Apply page indicator styles
+        dot1.setStyle("-fx-fill: #3b82f6;"); // Active style
+        dot2.setStyle("-fx-fill: #cbd5e1;"); // Inactive style
 
         indicator.getChildren().addAll(dot1, dot2);
         return indicator;
@@ -298,11 +299,11 @@ public class CardInfoDialog extends StackPane {
         Circle dot2 = (Circle) pageIndicator.getChildren().get(1);
 
         if (pageIndex == 0) {
-            dot1.getStyleClass().add("page-indicator-active");
-            dot2.getStyleClass().remove("page-indicator-active");
+            dot1.setStyle("-fx-fill: #3b82f6;"); // Active
+            dot2.setStyle("-fx-fill: #cbd5e1;"); // Inactive
         } else {
-            dot1.getStyleClass().remove("page-indicator-active");
-            dot2.getStyleClass().add("page-indicator-active");
+            dot1.setStyle("-fx-fill: #cbd5e1;"); // Inactive
+            dot2.setStyle("-fx-fill: #3b82f6;"); // Active
         }
     }
 }

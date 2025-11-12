@@ -2,7 +2,9 @@ package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
 import com.kuroyale.model.CardType;
+import com.kuroyale.util.StyleHelper;
 
+import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -14,11 +16,15 @@ import javafx.scene.text.Font;
  * Custom JavaFX component for displaying a deck slot
  */
 public class DeckSlotView extends StackPane {
+    private static final PseudoClass FILLED_PSEUDO_CLASS = PseudoClass.getPseudoClass("filled");
+    private static final PseudoClass HIGHLIGHT_PSEUDO_CLASS = PseudoClass.getPseudoClass("highlight");
+    
     private Card card;
     private final VBox content;
     private final Label placeholderLabel;
     private final VBox cardContent;
     private StackPane highlightOverlay; // Yellow border overlay for replace mode
+    private boolean isHighlighted = false;
 
     public DeckSlotView() {
         // Set size
@@ -27,7 +33,7 @@ public class DeckSlotView extends StackPane {
         setMaxSize(120, 160);
 
         // Apply empty slot style
-        getStyleClass().add("deck-slot");
+        StyleHelper.applyDeckSlotEmptyStyle(this);
 
         // Create placeholder (+ icon) - transparent to blend with background
         placeholderLabel = new Label("+");
@@ -48,14 +54,26 @@ public class DeckSlotView extends StackPane {
 
         getChildren().add(content);
 
-        // Add hover effect
+        // Add hover effect with PseudoClass-based styling
         setOnMouseEntered(e -> {
-            if (card != null) {
-                setStyle("-fx-cursor: hand;");
+            if (isHighlighted) {
+                StyleHelper.applyDeckSlotReplaceHighlightHoverStyle(this);
+            } else {
+                StyleHelper.applyDeckSlotHoverStyle(this);
             }
         });
 
-        setOnMouseExited(e -> setStyle(""));
+        setOnMouseExited(e -> {
+            if (isHighlighted) {
+                StyleHelper.applyDeckSlotReplaceHighlightStyle(this);
+            } else {
+                if (card != null) {
+                    StyleHelper.applyDeckSlotFilledStyle(this);
+                } else {
+                    StyleHelper.applyDeckSlotEmptyStyle(this);
+                }
+            }
+        });
     }
 
     /**
@@ -66,15 +84,15 @@ public class DeckSlotView extends StackPane {
 
         if (card == null) {
             // Show empty state
-            getStyleClass().remove("deck-slot-filled");
+            pseudoClassStateChanged(FILLED_PSEUDO_CLASS, false);
+            StyleHelper.applyDeckSlotEmptyStyle(this);
             placeholderLabel.setVisible(true);
             cardContent.setVisible(false);
             cardContent.getChildren().clear();
         } else {
             // Show filled state
-            if (!getStyleClass().contains("deck-slot-filled")) {
-                getStyleClass().add("deck-slot-filled");
-            }
+            pseudoClassStateChanged(FILLED_PSEUDO_CLASS, true);
+            StyleHelper.applyDeckSlotFilledStyle(this);
             placeholderLabel.setVisible(false);
             cardContent.setVisible(true);
 
@@ -185,7 +203,8 @@ public class DeckSlotView extends StackPane {
      */
     public void clear() {
         card = null;
-        getStyleClass().remove("deck-slot-filled");
+        pseudoClassStateChanged(FILLED_PSEUDO_CLASS, false);
+        StyleHelper.applyDeckSlotEmptyStyle(this);
         placeholderLabel.setVisible(true);
         cardContent.setVisible(false);
         content.getChildren().clear();
@@ -197,7 +216,9 @@ public class DeckSlotView extends StackPane {
      */
     public void highlightForReplace() {
         if (!isEmpty()) {
-            getStyleClass().add("deck-slot-replace-highlight");
+            isHighlighted = true;
+            pseudoClassStateChanged(HIGHLIGHT_PSEUDO_CLASS, true);
+            StyleHelper.applyDeckSlotReplaceHighlightStyle(this);
             // Show the overlay on top of the card image
             if (highlightOverlay != null) {
                 highlightOverlay.setVisible(true);
@@ -209,7 +230,12 @@ public class DeckSlotView extends StackPane {
      * Removes highlight from the slot
      */
     public void removeHighlight() {
-        getStyleClass().remove("deck-slot-replace-highlight");
+        isHighlighted = false;
+        pseudoClassStateChanged(HIGHLIGHT_PSEUDO_CLASS, false);
+        // Restore normal filled style
+        if (!isEmpty()) {
+            StyleHelper.applyDeckSlotFilledStyle(this);
+        }
         // Hide the overlay
         if (highlightOverlay != null) {
             highlightOverlay.setVisible(false);
