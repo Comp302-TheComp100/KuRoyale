@@ -762,6 +762,7 @@ public class DeckBuilderController {
 
     /**
      * Loads the user's saved deck from their account
+     * Preserves the exact slot positions of cards
      */
     private void loadUserDeck() {
         com.kuroyale.model.User currentUser = UserService.getCurrentUser();
@@ -776,19 +777,19 @@ public class DeckBuilderController {
             cardMap.put(card.getName(), card);
         }
 
-        // Load cards from saved deck
-        for (String cardName : currentUser.getDeck()) {
-            Card card = cardMap.get(cardName);
-            if (card != null && !deck.isFull()) {
-                deck.addCard(card);
-                // Find first empty slot and add card
-                for (DeckSlotView slot : deckSlots) {
-                    if (slot.isEmpty()) {
-                        slot.setCard(card);
-                        break;
-                    }
+        // Load cards from saved deck, placing them in exact slot positions
+        // The saved deck list corresponds to slot positions (index 0 = slot 0, etc.)
+        for (int i = 0; i < currentUser.getDeck().size() && i < deckSlots.size(); i++) {
+            String cardName = currentUser.getDeck().get(i);
+            if (cardName != null && !cardName.isEmpty()) {
+                Card card = cardMap.get(cardName);
+                if (card != null) {
+                    deck.addCard(card);
+                    // Place card in the exact same slot position
+                    deckSlots.get(i).setCard(card);
                 }
             }
+            // If cardName is null or empty, that slot remains empty (preserving position)
         }
 
         // Reorganize grid to hide loaded cards
@@ -797,6 +798,8 @@ public class DeckBuilderController {
 
     /**
      * Saves the current deck to the user's account
+     * Saves cards in their exact slot positions (left to right, top to bottom)
+     * Empty slots are saved as empty strings to preserve positions
      */
     private void saveDeck() {
         com.kuroyale.model.User currentUser = UserService.getCurrentUser();
@@ -804,10 +807,15 @@ public class DeckBuilderController {
             return; // No user logged in
         }
 
-        // Convert deck to list of card names
+        // Convert deck slots to list of card names, preserving exact slot positions
+        // Empty slots are saved as empty strings to maintain position mapping
         List<String> cardNames = new ArrayList<>();
-        for (Card card : deck.getCards()) {
-            cardNames.add(card.getName());
+        for (DeckSlotView slot : deckSlots) {
+            if (!slot.isEmpty()) {
+                cardNames.add(slot.getCard().getName());
+            } else {
+                cardNames.add(""); // Empty string for empty slot to preserve position
+            }
         }
 
         // Update user's deck
