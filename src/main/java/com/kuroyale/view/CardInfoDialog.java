@@ -101,7 +101,7 @@ public class CardInfoDialog extends StackPane {
         costBox.setAlignment(Pos.CENTER);
 
         try {
-            ImageView elixirIcon = new ImageView(new Image(getClass().getResourceAsStream("/images/card_elixir.png")));
+            ImageView elixirIcon = new ImageView(new Image(getClass().getResourceAsStream("/images/cost.png")));
             elixirIcon.setFitWidth(30);
             elixirIcon.setFitHeight(30);
 

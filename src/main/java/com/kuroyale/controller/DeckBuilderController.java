@@ -134,7 +134,7 @@ public class DeckBuilderController {
 
         // Add scroll listener to update button positions when scrolling
         cardsScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
-            updateCardButtonPositions();
+            removeCardButtons();
         });
     }
 
@@ -344,6 +344,8 @@ public class DeckBuilderController {
         }
 
         if (slot.isEmpty()) {
+            removeDeckSlotButtons();
+            removeCardButtons();
             return; // Do nothing if slot is empty
         }
 
@@ -391,6 +393,7 @@ public class DeckBuilderController {
     }
 
     /**
+     *
      * Creates action buttons for a deck slot
      */
     private HBox createDeckSlotButtons(Card card) {
@@ -402,8 +405,9 @@ public class DeckBuilderController {
 
         Button removeButton = ButtonFactory.createRemoveButton();
         removeButton.setOnAction(e -> {
-            removeCardFromDeck(card);
             removeDeckSlotButtons();
+            removeCardButtons();     // This stops the ghost buttons from the library
+            removeCardFromDeck(card);
         });
 
         buttonsBox.getChildren().addAll(infoButton, removeButton);
@@ -447,21 +451,6 @@ public class DeckBuilderController {
         mainPane.getChildren().add(buttonsBox);
         AnchorPane.setLeftAnchor(buttonsBox, buttonX);
         AnchorPane.setTopAnchor(buttonsBox, buttonY);
-    }
-
-    /**
-     * Updates card button positions when scrolling occurs
-     */
-    private void updateCardButtonPositions() {
-        if (cardButtonsBox != null && selectedCardView != null) {
-            AnchorPane mainPane = getMainAnchorPane();
-            
-            // Remove buttons from their current position
-            mainPane.getChildren().remove(cardButtonsBox);
-            
-            // Reposition using helper method
-            positionButtons(cardButtonsBox, selectedCardView, 18);
-        }
     }
 
     private void handleCardClick(CardView cardView, VBox cardContainer) {

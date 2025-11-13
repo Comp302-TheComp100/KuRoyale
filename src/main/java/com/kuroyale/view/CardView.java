@@ -47,7 +47,7 @@ public class CardView extends StackPane {
 
         try {
             // Load elixir icon
-            ImageView elixirIcon = new ImageView(new Image(getClass().getResourceAsStream("/images/card_elixir.png")));
+            ImageView elixirIcon = new ImageView(new Image(getClass().getResourceAsStream("/images/cost.png")));
             elixirIcon.setFitWidth(35);
             elixirIcon.setFitHeight(35);
             elixirIcon.setPreserveRatio(true);
