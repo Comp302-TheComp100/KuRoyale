@@ -37,6 +37,9 @@ public class Main extends Application {
 
             // Create scene (1280x720 HD resolution)
             Scene scene = new Scene(root, 1280, 720);
+            
+            // Load application stylesheet
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
 
             primaryStage.setTitle("KU Royale - Clash Royale Clone");
             primaryStage.setScene(scene);

@@ -142,30 +142,29 @@ public class DeckBuilderController {
      * Apply styles to deck builder components
      */
     private void applyStyles() {
-        // Apply background to main anchor pane
+        // Apply CSS classes
         AnchorPane mainBackground = getMainAnchorPane();
         if (mainBackground != null) {
-            StyleHelper.applyDeckBuilderBackground(mainBackground);
+            mainBackground.getStyleClass().add("deck-builder-background");
         }
 
-        // Apply deck slots background style
-        StyleHelper.applyDeckSlotsBackground(deckSlotsBackground);
+        deckSlotsBackground.getStyleClass().add("deck-slots-background");
 
-        // Apply title style
         if (battleDeckTitle != null) {
-            StyleHelper.applyBattleDeckTitleStyle(battleDeckTitle);
+            battleDeckTitle.getStyleClass().add("battle-deck-title-label");
         }
 
-        // Apply back button style
-        StyleHelper.applyBackButtonStyle(backButton);
+        backButton.getStyleClass().add("back-button");
 
         // Apply scroll pane style (deferred to ensure viewport is available)
         javafx.application.Platform.runLater(() -> {
-            StyleHelper.applyScrollPaneStyle(cardsScrollPane);
+            cardsScrollPane.getStyleClass().add("scroll-pane-transparent");
+            // Hide scrollbars completely
+            cardsScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            cardsScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         });
 
-        // Apply cards grid style
-        StyleHelper.applyCardsGridStyle(cardsGrid);
+        cardsGrid.getStyleClass().add("cards-grid");
 
         // Apply average elixir label styles
         if (averageElixirContainer != null) {
@@ -173,9 +172,9 @@ public class DeckBuilderController {
                 if (node instanceof Label) {
                     Label label = (Label) node;
                     if (label.getText().startsWith("Average")) {
-                        StyleHelper.applyAverageElixirLabelStyle(label);
+                        label.getStyleClass().add("average-elixir-label");
                     } else if (label == averageElixirValue) {
-                        StyleHelper.applyAverageElixirValueStyle(label);
+                        label.getStyleClass().add("average-elixir-value");
                     }
                 }
             }
@@ -796,6 +795,8 @@ public class DeckBuilderController {
 
             Stage stage = (Stage) backButton.getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);
+            // Load stylesheet for new scene
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
             stage.setScene(scene);
             stage.setTitle("KU Royale");
         } catch (IOException e) {

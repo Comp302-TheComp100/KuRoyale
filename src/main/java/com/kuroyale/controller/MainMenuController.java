@@ -2,8 +2,6 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
-import com.kuroyale.util.StyleHelper;
-
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -32,6 +30,7 @@ public class MainMenuController {
 
     @FXML
     private Button startMatchButton;
+    
     @FXML
     private void initialize() {
         initializeStyles();
@@ -41,17 +40,43 @@ public class MainMenuController {
      * Initialize styles after FXML is loaded
      */
     private void initializeStyles() {
-        // Apply main menu background
-        StyleHelper.applyMainMenuBackground(root);
-
-        // Apply title style
+        // Apply CSS classes
+        root.getStyleClass().add("main-menu-background");
+        
         if (titleLabel != null) {
-            StyleHelper.applyTitleStyle(titleLabel);
+            titleLabel.getStyleClass().add("title-label");
         }
 
-        // Apply button styles
-        StyleHelper.applyMenuButtonStyle(deckBuilderButton);
-        StyleHelper.applyMenuButtonStyle(startMatchButton);
+        // Apply button CSS classes
+        deckBuilderButton.getStyleClass().add("menu-button");
+        startMatchButton.getStyleClass().add("menu-button");
+        
+        // Add programmatic hover effects for scale transforms (CSS can't handle this easily)
+        addMenuButtonHoverEffects(deckBuilderButton);
+        addMenuButtonHoverEffects(startMatchButton);
+    }
+    
+    /**
+     * Add programmatic hover effects for menu buttons (scale transforms)
+     */
+    private void addMenuButtonHoverEffects(Button button) {
+        button.setOnMouseEntered(e -> {
+            button.setScaleX(1.05);
+            button.setScaleY(1.05);
+        });
+        
+        button.setOnMouseExited(e -> {
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+        });
+        
+        button.setOnMousePressed(e -> {
+            button.setTranslateY(2);
+        });
+        
+        button.setOnMouseReleased(e -> {
+            button.setTranslateY(0);
+        });
     }
 
     @FXML
@@ -64,6 +89,8 @@ public class MainMenuController {
 
             Stage stage = (Stage) deckBuilderButton.getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);
+            // Load stylesheet for new scene
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
             stage.setScene(scene);
             stage.setTitle("KU Royale - Deck Builder");
         } catch (IOException e) {

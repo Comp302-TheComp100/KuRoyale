@@ -2,7 +2,6 @@ package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
 import com.kuroyale.model.CardType;
-import com.kuroyale.util.StyleHelper;
 
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
@@ -32,8 +31,8 @@ public class DeckSlotView extends StackPane {
         setMinSize(90, 120);
         setMaxSize(90, 120);
 
-        // Apply empty slot style
-        StyleHelper.applyDeckSlotEmptyStyle(this);
+        // Apply CSS class for deck slot
+        getStyleClass().add("deck-slot");
 
         // Create placeholder (+ icon) - transparent to blend with background
         placeholderLabel = new Label("+");
@@ -54,24 +53,20 @@ public class DeckSlotView extends StackPane {
 
         getChildren().add(content);
 
-        // Add hover effect with PseudoClass-based styling
+        // Hover effects are handled by CSS, but we need to manage highlight state
+        // CSS will handle normal hover, but highlight hover needs programmatic handling
         setOnMouseEntered(e -> {
             if (isHighlighted) {
-                StyleHelper.applyDeckSlotReplaceHighlightHoverStyle(this);
-            } else {
-                StyleHelper.applyDeckSlotHoverStyle(this);
+                // Add scale transform for highlighted hover
+                setScaleX(1.05);
+                setScaleY(1.05);
             }
         });
 
         setOnMouseExited(e -> {
             if (isHighlighted) {
-                StyleHelper.applyDeckSlotReplaceHighlightStyle(this);
-            } else {
-                if (card != null) {
-                    StyleHelper.applyDeckSlotFilledStyle(this);
-                } else {
-                    StyleHelper.applyDeckSlotEmptyStyle(this);
-                }
+                setScaleX(1.0);
+                setScaleY(1.0);
             }
         });
     }
@@ -85,14 +80,16 @@ public class DeckSlotView extends StackPane {
         if (card == null) {
             // Show empty state
             pseudoClassStateChanged(FILLED_PSEUDO_CLASS, false);
-            StyleHelper.applyDeckSlotEmptyStyle(this);
+            getStyleClass().remove("filled");
             placeholderLabel.setVisible(true);
             cardContent.setVisible(false);
             cardContent.getChildren().clear();
         } else {
             // Show filled state
             pseudoClassStateChanged(FILLED_PSEUDO_CLASS, true);
-            StyleHelper.applyDeckSlotFilledStyle(this);
+            if (!getStyleClass().contains("filled")) {
+                getStyleClass().add("filled");
+            }
             placeholderLabel.setVisible(false);
             cardContent.setVisible(true);
 
@@ -204,7 +201,7 @@ public class DeckSlotView extends StackPane {
     public void clear() {
         card = null;
         pseudoClassStateChanged(FILLED_PSEUDO_CLASS, false);
-        StyleHelper.applyDeckSlotEmptyStyle(this);
+        getStyleClass().remove("filled");
         placeholderLabel.setVisible(true);
         cardContent.setVisible(false);
         content.getChildren().clear();
@@ -218,7 +215,9 @@ public class DeckSlotView extends StackPane {
         if (!isEmpty()) {
             isHighlighted = true;
             pseudoClassStateChanged(HIGHLIGHT_PSEUDO_CLASS, true);
-            StyleHelper.applyDeckSlotReplaceHighlightStyle(this);
+            if (!getStyleClass().contains("highlight")) {
+                getStyleClass().add("highlight");
+            }
             // Show the overlay on top of the card image
             if (highlightOverlay != null) {
                 highlightOverlay.setVisible(true);
@@ -232,10 +231,7 @@ public class DeckSlotView extends StackPane {
     public void removeHighlight() {
         isHighlighted = false;
         pseudoClassStateChanged(HIGHLIGHT_PSEUDO_CLASS, false);
-        // Restore normal filled style
-        if (!isEmpty()) {
-            StyleHelper.applyDeckSlotFilledStyle(this);
-        }
+        getStyleClass().remove("highlight");
         // Hide the overlay
         if (highlightOverlay != null) {
             highlightOverlay.setVisible(false);

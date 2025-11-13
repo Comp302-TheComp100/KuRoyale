@@ -1,7 +1,6 @@
 package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
-import com.kuroyale.util.StyleHelper;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -24,8 +23,19 @@ public class CardView extends StackPane {
         setMinSize(90, 120);
         setMaxSize(90, 120);
 
-        // Apply card view style
-        StyleHelper.applyCardViewStyle(this);
+        // Apply CSS class
+        getStyleClass().add("card-view");
+        
+        // Add programmatic hover effects for scale transforms
+        setOnMouseEntered(e -> {
+            setScaleX(1.02);
+            setScaleY(1.02);
+        });
+        
+        setOnMouseExited(e -> {
+            setScaleX(1.0);
+            setScaleY(1.0);
+        });
 
         // Card image fills entire space
         ImageView imageView = createCardImage();

@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.util.ServiceFactory;
-import com.kuroyale.util.StyleHelper;
 import com.kuroyale.util.ValidationUtil;
 
 import javafx.fxml.FXML;
@@ -61,20 +60,50 @@ public class LoginController {
      * UI concern - appropriate for controller
      */
     public void initializeStyles() {
-        // Apply main menu background
-        StyleHelper.applyMainMenuBackground(root);
-
-        // Apply title style
+        // Apply CSS classes
+        root.getStyleClass().add("main-menu-background");
+        
         if (titleLabel != null) {
-            StyleHelper.applyLoginTitleStyle(titleLabel);
+            titleLabel.getStyleClass().add("login-title-label");
         }
 
-        // Apply login form styles
-        StyleHelper.applyLoginFormStyle(usernameField);
-        StyleHelper.applyLoginFormStyle(passwordField);
-        StyleHelper.applyLoginButtonStyle(createAccountButton);
-        StyleHelper.applyLoginButtonStyle(loginButton);
-        StyleHelper.applyErrorLabelStyle(errorLabel);
+        // Apply form field CSS classes
+        usernameField.getStyleClass().add("login-form-field");
+        passwordField.getStyleClass().add("login-form-field");
+        
+        // Apply button CSS classes
+        createAccountButton.getStyleClass().add("login-button");
+        loginButton.getStyleClass().add("login-button");
+        
+        // Apply error label CSS class
+        errorLabel.getStyleClass().add("error-label");
+        
+        // Add programmatic hover effects for login buttons (scale transforms)
+        addLoginButtonHoverEffects(createAccountButton);
+        addLoginButtonHoverEffects(loginButton);
+    }
+    
+    /**
+     * Add programmatic hover effects for login buttons (scale transforms)
+     */
+    private void addLoginButtonHoverEffects(Button button) {
+        button.setOnMouseEntered(e -> {
+            button.setScaleX(1.05);
+            button.setScaleY(1.05);
+        });
+        
+        button.setOnMouseExited(e -> {
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+        });
+        
+        button.setOnMousePressed(e -> {
+            button.setTranslateY(2);
+        });
+        
+        button.setOnMouseReleased(e -> {
+            button.setTranslateY(0);
+        });
     }
 
     @FXML
@@ -177,6 +206,8 @@ public class LoginController {
 
             Stage stage = (Stage) loginButton.getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);
+            // Load stylesheet for new scene
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
             stage.setScene(scene);
             stage.setTitle("KU Royale");
         } catch (IOException e) {

@@ -33,15 +33,15 @@ public class CardInfoDialog extends StackPane {
     public CardInfoDialog(Card card, Runnable onClose) {
         this.card = card;
 
-        // Full screen overlay
-        StyleHelper.applyOverlayBackground(this);
+        // Full screen overlay - apply CSS class
+        getStyleClass().add("overlay-background");
 
-        // Main container
+        // Main container - apply CSS class
         VBox mainContainer = new VBox(15);
         mainContainer.setAlignment(Pos.CENTER);
         mainContainer.setMaxWidth(350);
         mainContainer.setMaxHeight(550);
-        StyleHelper.applyOverlayCardContainer(mainContainer);
+        mainContainer.getStyleClass().add("overlay-card-container");
 
         // Content pane for swipeable pages
         contentPane = new StackPane();
@@ -57,9 +57,9 @@ public class CardInfoDialog extends StackPane {
         // Create page indicator
         pageIndicator = createPageIndicator();
 
-        // Close button
+        // Close button - apply CSS class
         Button closeButton = new Button("CLOSE");
-        StyleHelper.applyOverlayButtonStyle(closeButton);
+        closeButton.getStyleClass().add("overlay-button");
         closeButton.setPrefWidth(150);
         closeButton.setPrefHeight(40);
         closeButton.setOnAction(e -> onClose.run());
