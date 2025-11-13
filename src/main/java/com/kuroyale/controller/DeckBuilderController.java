@@ -96,7 +96,6 @@ public class DeckBuilderController {
     private HBox deckSlotButtonsBox;
     private boolean replaceMode; // Track if we're in replace mode
     private Card cardToReplace; // Card selected for replacement
-    private VBox currentCardContainer; // Track the current card container for button repositioning
 
     @FXML
     private void initialize() {
@@ -387,24 +386,7 @@ public class DeckBuilderController {
      */
     private void showDeckSlotButtons(DeckSlotView slot, Card card) {
         HBox buttonsBox = createDeckSlotButtons(card);
-        AnchorPane mainPane = getMainAnchorPane();
-
-        // Calculate button position
-        Bounds slotBoundsInScene = slot.localToScene(slot.getBoundsInLocal());
-        Point2D slotPointInAnchorPane = mainPane.sceneToLocal(
-                slotBoundsInScene.getMinX(),
-                slotBoundsInScene.getMinY());
-
-        double cardWidth = slot.getWidth();
-        double cardHeight = slot.getHeight();
-        double buttonX = slotPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2);
-        double buttonY = slotPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
-
-        // Add buttons to AnchorPane
-        mainPane.getChildren().add(buttonsBox);
-        AnchorPane.setLeftAnchor(buttonsBox, buttonX);
-        AnchorPane.setTopAnchor(buttonsBox, buttonY);
-
+        positionButtons(buttonsBox, slot, 0); // 0 offset for deck slots
         deckSlotButtonsBox = buttonsBox;
     }
 
@@ -438,31 +420,47 @@ public class DeckBuilderController {
             mainPane.getChildren().remove(cardButtonsBox);
             cardButtonsBox = null;
             selectedCardView = null;
-            currentCardContainer = null;
         }
+    }
+
+    /**
+     * Helper method to position buttons below a node (card or deck slot)
+     * @param buttonsBox The HBox containing the buttons
+     * @param node The node (CardView or DeckSlotView) to position buttons below
+     * @param xOffset Additional X offset to center buttons (0 for deck slots, 18 for cards)
+     */
+    private void positionButtons(HBox buttonsBox, javafx.scene.Node node, double xOffset) {
+        AnchorPane mainPane = getMainAnchorPane();
+        
+        // Calculate button position relative to node
+        Bounds nodeBoundsInScene = node.localToScene(node.getBoundsInLocal());
+        Point2D nodePointInAnchorPane = mainPane.sceneToLocal(
+                nodeBoundsInScene.getMinX(),
+                nodeBoundsInScene.getMinY());
+
+        double nodeWidth = node.getBoundsInLocal().getWidth();
+        double nodeHeight = node.getBoundsInLocal().getHeight();
+        double buttonX = nodePointInAnchorPane.getX() + (nodeWidth / 2) - (BUTTONS_WIDTH / 2) + xOffset;
+        double buttonY = nodePointInAnchorPane.getY() + nodeHeight + BUTTON_OFFSET_Y;
+
+        // Add buttons to AnchorPane as overlay
+        mainPane.getChildren().add(buttonsBox);
+        AnchorPane.setLeftAnchor(buttonsBox, buttonX);
+        AnchorPane.setTopAnchor(buttonsBox, buttonY);
     }
 
     /**
      * Updates card button positions when scrolling occurs
      */
     private void updateCardButtonPositions() {
-        if (cardButtonsBox != null && selectedCardView != null && currentCardContainer != null) {
+        if (cardButtonsBox != null && selectedCardView != null) {
             AnchorPane mainPane = getMainAnchorPane();
-
-            // Recalculate button position relative to card
-            Bounds cardBoundsInScene = selectedCardView.localToScene(selectedCardView.getBoundsInLocal());
-            Point2D cardPointInAnchorPane = mainPane.sceneToLocal(
-                    cardBoundsInScene.getMinX(),
-                    cardBoundsInScene.getMinY());
-
-            double cardWidth = selectedCardView.getWidth();
-            double cardHeight = selectedCardView.getHeight();
-            double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 18;
-            double buttonY = cardPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
-
-            // Update button position
-            AnchorPane.setLeftAnchor(cardButtonsBox, buttonX);
-            AnchorPane.setTopAnchor(cardButtonsBox, buttonY);
+            
+            // Remove buttons from their current position
+            mainPane.getChildren().remove(cardButtonsBox);
+            
+            // Reposition using helper method
+            positionButtons(cardButtonsBox, selectedCardView, 18);
         }
     }
 
@@ -499,82 +497,48 @@ public class DeckBuilderController {
         Button infoButton = ButtonFactory.createInfoButton();
         infoButton.setOnAction(e -> showCardInfo(card));
 
-        Button actionButton = createCardActionButton(card, cardContainer);
+        Button actionButton = createCardActionButton(card);
         buttonsBox.getChildren().addAll(infoButton, actionButton);
-
-        // Position buttons as overlay on AnchorPane instead of in container
-        AnchorPane mainPane = getMainAnchorPane();
 
         // Get the CardView from the container (first child)
         CardView cardView = (CardView) cardContainer.getChildren().get(0);
-
-        // Calculate button position relative to card
-        Bounds cardBoundsInScene = cardView.localToScene(cardView.getBoundsInLocal());
-        Point2D cardPointInAnchorPane = mainPane.sceneToLocal(
-                cardBoundsInScene.getMinX(),
-                cardBoundsInScene.getMinY());
-
-        double cardWidth = cardView.getWidth();
-        double cardHeight = cardView.getHeight();
-        double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 18;
-        double buttonY = cardPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
-
-        // Add buttons to AnchorPane as overlay
-        mainPane.getChildren().add(buttonsBox);
-        AnchorPane.setLeftAnchor(buttonsBox, buttonX);
-        AnchorPane.setTopAnchor(buttonsBox, buttonY);
-
+        
+        // Position buttons using helper method with 18px offset for cards
+        positionButtons(buttonsBox, cardView, 18);
+        
         cardButtonsBox = buttonsBox;
-        currentCardContainer = cardContainer;
     }
 
     /**
      * Creates the appropriate action button (USE/REMOVE/REPLACE) for a card
      */
-    private Button createCardActionButton(Card card, VBox cardContainer) {
+    private Button createCardActionButton(Card card) {
+        Button actionButton;
+        
         if (deck.contains(card)) {
-            return createRemoveButton(card, cardContainer);
+            // Card is in deck - create REMOVE button
+            actionButton = ButtonFactory.createRemoveButton();
+            actionButton.setOnAction(e -> {
+                removeCardFromDeck(card);
+                removeCardButtons();
+            });
         } else if (deck.isFull()) {
-            return createReplaceButton(card, cardContainer);
+            // Deck is full - create REPLACE button
+            actionButton = ButtonFactory.createReplaceButton();
+            actionButton.setOnAction(e -> {
+                enterReplaceMode(card);
+                removeCardButtons();
+            });
         } else {
-            return createUseButton(card, cardContainer);
+            // Deck has space - create USE button
+            actionButton = ButtonFactory.createUseButton();
+            actionButton.setOnAction(e -> {
+                addCardToDeck(card);
+                removeCardButtons();
+            });
         }
-    }
-
-    /**
-     * Creates a REMOVE button for a card already in deck
-     */
-    private Button createRemoveButton(Card card, VBox cardContainer) {
-        Button removeButton = ButtonFactory.createRemoveButton();
-        removeButton.setOnAction(e -> {
-            removeCardFromDeck(card);
-            removeCardButtons();
-        });
-        return removeButton;
-    }
-
-    /**
-     * Creates a REPLACE button when deck is full
-     */
-    private Button createReplaceButton(Card card, VBox cardContainer) {
-        Button replaceButton = ButtonFactory.createReplaceButton();
-        replaceButton.setOnAction(e -> {
-            enterReplaceMode(card);
-            removeCardButtons();
-        });
-        return replaceButton;
-    }
-
-    /**
-     * Creates a USE button to add card to deck
-     */
-    private Button createUseButton(Card card, VBox cardContainer) {
-        Button useButton = ButtonFactory.createUseButton();
-        useButton.setOnAction(e -> {
-            addCardToDeck(card);
-            removeCardButtons();
-        });
-        return useButton;
+        
+        return actionButton;
     }
 
     private void showCardInfo(Card card) {
@@ -706,21 +670,11 @@ public class DeckBuilderController {
 
     /**
      * Updates button states for cards (USE vs REPLACE)
+     * Removes current buttons to force refresh on next interaction
      */
     private void updateCardButtons() {
-        // If a card has buttons showing, update them
-        if (selectedCardView != null && cardButtonsBox != null) {
-            CardView cardViewToUpdate = selectedCardView;
-            VBox cardContainer = (VBox) cardViewToUpdate.getParent();
-
-            // Remove old buttons
-            cardContainer.getChildren().remove(cardButtonsBox);
-            cardButtonsBox = null;
-            selectedCardView = null;
-
-            // Re-trigger click to show updated buttons
-            handleCardClick(cardViewToUpdate, cardContainer);
-        }
+        // Simply remove current buttons - they'll be recreated with correct state on next click
+        removeCardButtons();
     }
 
     /**
@@ -850,10 +804,6 @@ public class DeckBuilderController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
             Parent root = loader.load();
-
-            // Get controller and initialize styles
-            MainMenuController controller = loader.getController();
-            controller.initializeStyles();
 
             Stage stage = (Stage) backButton.getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);

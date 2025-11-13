@@ -2,8 +2,6 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.StyleHelper;
 
 import javafx.fxml.FXML;
@@ -34,20 +32,15 @@ public class MainMenuController {
 
     @FXML
     private Button startMatchButton;
-    
-    // Service dependencies (injected via ServiceFactory)
-    private AuthenticationService authService;
-
     @FXML
     private void initialize() {
-        // Get service from factory (dependency injection)
-        this.authService = ServiceFactory.getInstance().getAuthenticationService();
+        initializeStyles();
     }
 
     /**
      * Initialize styles after FXML is loaded
      */
-    public void initializeStyles() {
+    private void initializeStyles() {
         // Apply main menu background
         StyleHelper.applyMainMenuBackground(root);
 

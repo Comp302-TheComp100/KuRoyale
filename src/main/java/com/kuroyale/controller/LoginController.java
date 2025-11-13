@@ -175,10 +175,6 @@ public class LoginController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
             Parent root = loader.load();
 
-            // Get controller and initialize styles
-            MainMenuController controller = loader.getController();
-            controller.initializeStyles();
-
             Stage stage = (Stage) loginButton.getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);
             stage.setScene(scene);
@@ -189,4 +185,3 @@ public class LoginController {
         }
     }
 }
-
