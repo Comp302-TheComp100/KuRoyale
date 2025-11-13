@@ -141,7 +141,7 @@ public class DeckSlotView extends StackPane {
 
         try {
             javafx.scene.image.ImageView elixirIcon = new javafx.scene.image.ImageView(
-                    new javafx.scene.image.Image(getClass().getResourceAsStream("/images/card_elixir.png")));
+                    new javafx.scene.image.Image(getClass().getResourceAsStream("/images/cost.png")));
             elixirIcon.setFitWidth(30);
             elixirIcon.setFitHeight(30);
             elixirIcon.setPreserveRatio(true);

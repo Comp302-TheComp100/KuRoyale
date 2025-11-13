@@ -135,7 +135,7 @@ public class DeckBuilderController {
 
         // Add scroll listener to update button positions when scrolling
         cardsScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
-            updateCardButtonPositions();
+            removeCardButtons();
         });
     }
 
@@ -345,6 +345,8 @@ public class DeckBuilderController {
         }
 
         if (slot.isEmpty()) {
+            removeDeckSlotButtons();
+            removeCardButtons();
             return; // Do nothing if slot is empty
         }
 
@@ -409,6 +411,7 @@ public class DeckBuilderController {
     }
 
     /**
+     *
      * Creates action buttons for a deck slot
      */
     private HBox createDeckSlotButtons(Card card) {
@@ -420,8 +423,9 @@ public class DeckBuilderController {
 
         Button removeButton = ButtonFactory.createRemoveButton();
         removeButton.setOnAction(e -> {
-            removeCardFromDeck(card);
             removeDeckSlotButtons();
+            removeCardButtons();     // This stops the ghost buttons from the library
+            removeCardFromDeck(card);
         });
 
         buttonsBox.getChildren().addAll(infoButton, removeButton);
@@ -447,22 +451,45 @@ public class DeckBuilderController {
      */
     private void updateCardButtonPositions() {
         if (cardButtonsBox != null && selectedCardView != null && currentCardContainer != null) {
+            if (selectedCardView.getScene() == null) {
+                // This card is no longer in the scene, so just hide the buttons.
+                cardButtonsBox.setVisible(false);
+                return; // Stop here.
+            }
             AnchorPane mainPane = getMainAnchorPane();
 
             // Recalculate button position relative to card
             Bounds cardBoundsInScene = selectedCardView.localToScene(selectedCardView.getBoundsInLocal());
-            Point2D cardPointInAnchorPane = mainPane.sceneToLocal(
-                    cardBoundsInScene.getMinX(),
-                    cardBoundsInScene.getMinY());
 
-            double cardWidth = selectedCardView.getWidth();
-            double cardHeight = selectedCardView.getHeight();
-            double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 18;
-            double buttonY = cardPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
 
-            // Update button position
-            AnchorPane.setLeftAnchor(cardButtonsBox, buttonX);
-            AnchorPane.setTopAnchor(cardButtonsBox, buttonY);
+            Bounds viewportBoundsInScene = cardsScrollPane.localToScene(cardsScrollPane.getViewportBounds());
+
+            // 3. Check if the card's bounds are intersecting the visible viewport's bounds
+            if (viewportBoundsInScene.intersects(cardBoundsInScene)) {
+                // Card IS visible: Calculate position and show the buttons
+
+                // Convert scene bounds back to the mainPane's local coordinates for anchoring
+                Point2D cardPointInAnchorPane = mainPane.sceneToLocal(
+                        cardBoundsInScene.getMinX(),
+                        cardBoundsInScene.getMinY());
+
+                double cardWidth = selectedCardView.getWidth();
+                double cardHeight = selectedCardView.getHeight();
+                double buttonX = cardPointInAnchorPane.getX() + (cardWidth / 2) - (BUTTONS_WIDTH / 2) + 18;
+                double buttonY = cardPointInAnchorPane.getY() + cardHeight + BUTTON_OFFSET_Y;
+
+                // Update button position and make sure it's visible
+                AnchorPane.setLeftAnchor(cardButtonsBox, buttonX);
+                AnchorPane.setTopAnchor(cardButtonsBox, buttonY);
+                cardButtonsBox.setVisible(true);
+
+            } else {
+                // Card is NOT visible (scrolled out of view): Hide the buttons
+                cardButtonsBox.setVisible(false);
+            }
+        }else {
+            // Card is NOT visible (scrolled out of view): Hide the buttons
+            cardButtonsBox.setVisible(false);
         }
     }
 
@@ -547,8 +574,8 @@ public class DeckBuilderController {
     private Button createRemoveButton(Card card, VBox cardContainer) {
         Button removeButton = ButtonFactory.createRemoveButton();
         removeButton.setOnAction(e -> {
-            removeCardFromDeck(card);
             removeCardButtons();
+            removeCardFromDeck(card);
         });
         return removeButton;
     }
@@ -571,8 +598,8 @@ public class DeckBuilderController {
     private Button createUseButton(Card card, VBox cardContainer) {
         Button useButton = ButtonFactory.createUseButton();
         useButton.setOnAction(e -> {
-            addCardToDeck(card);
             removeCardButtons();
+            addCardToDeck(card);
         });
         return useButton;
     }
