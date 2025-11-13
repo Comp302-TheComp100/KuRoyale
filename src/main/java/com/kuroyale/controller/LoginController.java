@@ -2,8 +2,10 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
-import com.kuroyale.service.UserService;
+import com.kuroyale.service.AuthenticationService;
+import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.StyleHelper;
+import com.kuroyale.util.ValidationUtil;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,6 +20,9 @@ import javafx.stage.Stage;
 
 /**
  * Controller for the login/sign-in screen
+ * Follows Controller GRASP pattern - thin controller that delegates to services
+ * Follows Low Coupling - uses services via dependency injection
+ * Follows High Cohesion - focused only on UI concerns
  */
 public class LoginController {
 
@@ -41,14 +46,19 @@ public class LoginController {
 
     @FXML
     private Label titleLabel;
+    
+    // Service dependencies (injected via ServiceFactory)
+    private AuthenticationService authService;
 
     @FXML
     private void initialize() {
-        // Initialization logic
+        // Get service from factory (dependency injection)
+        this.authService = ServiceFactory.getInstance().getAuthenticationService();
     }
 
     /**
      * Initialize styles after FXML is loaded
+     * UI concern - appropriate for controller
      */
     public void initializeStyles() {
         // Apply main menu background
@@ -72,38 +82,36 @@ public class LoginController {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
-        // Clear previous error
-        errorLabel.setText("");
-        errorLabel.setVisible(false);
+        // Clear previous error (UI concern)
+        clearError();
 
-        // Validate input
+        // Basic UI validation - fields not empty
         if (username.isEmpty() || password.isEmpty()) {
             showError("Please enter both username and password");
             return;
         }
 
-        // Validate password requirements
-        if (!isValidPassword(password)) {
-            showError("Password must be at least 8 characters and contain at least one number and one letter");
+        // Validate using ValidationUtil (business rule)
+        if (!ValidationUtil.isValidUsername(username)) {
+            showError(ValidationUtil.getUsernameRequirements());
+            return;
+        }
+        
+        if (!ValidationUtil.isValidPassword(password)) {
+            showError(ValidationUtil.getPasswordRequirements());
             return;
         }
 
         try {
-            // Check if username already exists
-            if (UserService.findUserByUsername(username) != null) {
-                showError("Username already exists. Please choose a different username.");
-                return;
-            }
-
-            // Create user
-            com.kuroyale.model.User user = UserService.createUser(username, password);
+            // Delegate to service (Controller pattern)
+            com.kuroyale.model.User user = authService.register(username, password);
             if (user != null) {
                 // Set as current user
-                UserService.setCurrentUser(user);
-                // Navigate to main menu
+                authService.setCurrentUser(user);
+                // Navigate to main menu (UI concern)
                 navigateToMainMenu();
             } else {
-                showError("Failed to create account. Username may already exist.");
+                showError("Username already exists. Please choose a different username.");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -116,23 +124,22 @@ public class LoginController {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
-        // Clear previous error
-        errorLabel.setText("");
-        errorLabel.setVisible(false);
+        // Clear previous error (UI concern)
+        clearError();
 
-        // Validate input
+        // Basic UI validation - fields not empty
         if (username.isEmpty() || password.isEmpty()) {
             showError("Please enter both username and password");
             return;
         }
 
         try {
-            // Attempt login
-            com.kuroyale.model.User user = UserService.login(username, password);
+            // Delegate to service (Controller pattern)
+            com.kuroyale.model.User user = authService.authenticate(username, password);
             if (user != null) {
                 // Set as current user
-                UserService.setCurrentUser(user);
-                // Navigate to main menu
+                authService.setCurrentUser(user);
+                // Navigate to main menu (UI concern)
                 navigateToMainMenu();
             } else {
                 showError("Invalid username or password");
@@ -144,32 +151,15 @@ public class LoginController {
     }
 
     /**
-     * Validates password requirements
-     * @param password The password to validate
-     * @return true if password meets requirements, false otherwise
+     * Clears error message (UI concern)
      */
-    private boolean isValidPassword(String password) {
-        if (password.length() < 8) {
-            return false;
-        }
-
-        boolean hasNumber = false;
-        boolean hasLetter = false;
-
-        for (char c : password.toCharArray()) {
-            if (Character.isDigit(c)) {
-                hasNumber = true;
-            }
-            if (Character.isLetter(c)) {
-                hasLetter = true;
-            }
-        }
-
-        return hasNumber && hasLetter;
+    private void clearError() {
+        errorLabel.setText("");
+        errorLabel.setVisible(false);
     }
 
     /**
-     * Shows an error message
+     * Shows an error message (UI concern)
      * @param message The error message to display
      */
     private void showError(String message) {
@@ -178,7 +168,7 @@ public class LoginController {
     }
 
     /**
-     * Navigates to the main menu
+     * Navigates to the main menu (UI concern)
      */
     private void navigateToMainMenu() {
         try {

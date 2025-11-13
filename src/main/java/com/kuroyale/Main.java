@@ -1,6 +1,7 @@
 package com.kuroyale;
 
 import com.kuroyale.controller.LoginController;
+import com.kuroyale.util.ServiceFactory;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -11,12 +12,17 @@ import javafx.stage.Stage;
 
 /**
  * Main entry point for KU Royale application
+ * Initializes the ServiceFactory for dependency injection
  */
 public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
         try {
+            // Initialize ServiceFactory (dependency injection container)
+            // Follows Low Coupling - centralized service management
+            ServiceFactory.initialize();
+            
             // Load custom fonts
             Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Regular.otf"), 12);
             Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Bold.otf"), 12);

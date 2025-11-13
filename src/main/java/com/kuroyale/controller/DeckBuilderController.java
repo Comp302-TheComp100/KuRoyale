@@ -8,10 +8,13 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.kuroyale.model.Card;
-import com.kuroyale.model.CardFactory;
 import com.kuroyale.model.Deck;
-import com.kuroyale.service.UserService;
+import com.kuroyale.model.User;
+import com.kuroyale.service.AuthenticationService;
+import com.kuroyale.service.CardCatalog;
+import com.kuroyale.service.DeckManagementService;
 import com.kuroyale.util.ButtonFactory;
+import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.StyleHelper;
 import com.kuroyale.view.CardInfoDialog;
 import com.kuroyale.view.CardView;
@@ -37,6 +40,9 @@ import javafx.stage.Stage;
 
 /**
  * Controller for the deck builder screen
+ * Follows Controller GRASP pattern - thin controller that delegates to services
+ * Follows Low Coupling - uses services via dependency injection
+ * Follows High Cohesion - focused on UI presentation and user interactions
  */
 public class DeckBuilderController {
 
@@ -76,6 +82,11 @@ public class DeckBuilderController {
     @FXML
     private HBox averageElixirContainer;
 
+    // Service dependencies (injected via ServiceFactory)
+    private AuthenticationService authService;
+    private DeckManagementService deckService;
+    private CardCatalog cardCatalog;
+    
     private Deck deck;
     private List<DeckSlotView> deckSlots;
     private CardView selectedCardView;
@@ -89,6 +100,12 @@ public class DeckBuilderController {
 
     @FXML
     private void initialize() {
+        // Get services from factory (dependency injection)
+        ServiceFactory factory = ServiceFactory.getInstance();
+        this.authService = factory.getAuthenticationService();
+        this.deckService = factory.getDeckManagementService();
+        this.cardCatalog = factory.getCardCatalog();
+        
         deck = new Deck();
         deckSlots = new ArrayList<>();
         cardContainerMap = new HashMap<>();
@@ -243,7 +260,8 @@ public class DeckBuilderController {
     }
 
     private void loadAllCards() {
-        List<Card> allCards = CardFactory.getAllCards();
+        // Delegate to CardCatalog service (Indirection pattern)
+        List<Card> allCards = cardCatalog.getAllCards();
 
         // Store all cards for later reorganization
         for (Card card : allCards) {
@@ -269,16 +287,17 @@ public class DeckBuilderController {
 
     /**
      * Reorganizes the bottom card grid so visible cards fill rows of 4
-     * Cards are always shown in the same consistent order (from
-     * CardFactory.getAllCards())
+     * Cards are always shown in the same consistent order (from CardCatalog)
      * Only cards NOT in the deck are displayed
+     * UI concern - appropriate for controller
      */
     private void reorganizeCardGrid() {
         // Clear the grid
         cardsGrid.getChildren().clear();
 
         // Get all cards in consistent order: Troops, Buildings, Spells
-        List<Card> allCards = CardFactory.getAllCards();
+        // Delegate to CardCatalog (Indirection pattern)
+        List<Card> allCards = cardCatalog.getAllCards();
         int column = 0;
         int row = 0;
 
@@ -664,11 +683,10 @@ public class DeckBuilderController {
 
         // If we found the slot, perform the replacement
         if (targetSlot != null) {
-            // Update the deck data structure
-            deck.removeCard(oldCard);
-            deck.addCard(newCard);
+            // Delegate to service (Controller pattern)
+            deckService.replaceCardInDeck(deck, oldCard, newCard);
 
-            // Replace the card in the UI at the SAME position
+            // Replace the card in the UI at the SAME position (UI concern)
             targetSlot.setCard(newCard);
 
             // Reorganize bottom grid to reflect changes
@@ -752,10 +770,12 @@ public class DeckBuilderController {
 
     /**
      * Updates the average elixir cost display
+     * UI concern - appropriate for controller
      */
     private void updateAverageElixirCost() {
         if (averageElixirValue != null) {
-            double avgCost = deck.getAverageElixirCost();
+            // Delegate calculation to service (Information Expert)
+            double avgCost = deckService.getDeckAverageElixirCost(deck);
             averageElixirValue.setText(String.format(Locale.ENGLISH, "%.1f", avgCost));
         }
     }
@@ -763,36 +783,29 @@ public class DeckBuilderController {
     /**
      * Loads the user's saved deck from their account
      * Preserves the exact slot positions of cards
+     * Delegates to service (Controller pattern)
      */
     private void loadUserDeck() {
-        com.kuroyale.model.User currentUser = UserService.getCurrentUser();
-        if (currentUser == null || currentUser.getDeck() == null || currentUser.getDeck().isEmpty()) {
-            return; // No saved deck
+        User currentUser = authService.getCurrentUser();
+        if (currentUser == null) {
+            return; // No user logged in
         }
 
-        // Get all available cards
-        List<Card> allCards = CardFactory.getAllCards();
-        Map<String, Card> cardMap = new HashMap<>();
-        for (Card card : allCards) {
-            cardMap.put(card.getName(), card);
-        }
-
-        // Load cards from saved deck, placing them in exact slot positions
-        // The saved deck list corresponds to slot positions (index 0 = slot 0, etc.)
-        for (int i = 0; i < currentUser.getDeck().size() && i < deckSlots.size(); i++) {
-            String cardName = currentUser.getDeck().get(i);
-            if (cardName != null && !cardName.isEmpty()) {
-                Card card = cardMap.get(cardName);
-                if (card != null) {
-                    deck.addCard(card);
-                    // Place card in the exact same slot position
-                    deckSlots.get(i).setCard(card);
-                }
+        // Delegate to service (Controller pattern)
+        Map<Integer, Card> deckMap = deckService.loadUserDeckWithPositions(currentUser);
+        
+        // Update UI with loaded cards
+        for (Map.Entry<Integer, Card> entry : deckMap.entrySet()) {
+            int slotIndex = entry.getKey();
+            Card card = entry.getValue();
+            
+            if (slotIndex < deckSlots.size()) {
+                deck.addCard(card);
+                deckSlots.get(slotIndex).setCard(card);
             }
-            // If cardName is null or empty, that slot remains empty (preserving position)
         }
 
-        // Reorganize grid to hide loaded cards
+        // Reorganize grid to hide loaded cards (UI concern)
         reorganizeCardGrid();
     }
 
@@ -800,30 +813,26 @@ public class DeckBuilderController {
      * Saves the current deck to the user's account
      * Saves cards in their exact slot positions (left to right, top to bottom)
      * Empty slots are saved as empty strings to preserve positions
+     * Delegates to service (Controller pattern)
      */
     private void saveDeck() {
-        com.kuroyale.model.User currentUser = UserService.getCurrentUser();
+        User currentUser = authService.getCurrentUser();
         if (currentUser == null) {
             return; // No user logged in
         }
 
-        // Convert deck slots to list of card names, preserving exact slot positions
-        // Empty slots are saved as empty strings to maintain position mapping
-        List<String> cardNames = new ArrayList<>();
-        for (DeckSlotView slot : deckSlots) {
+        // Build map of slot positions to cards (UI data)
+        Map<Integer, Card> slotCards = new HashMap<>();
+        for (int i = 0; i < deckSlots.size(); i++) {
+            DeckSlotView slot = deckSlots.get(i);
             if (!slot.isEmpty()) {
-                cardNames.add(slot.getCard().getName());
-            } else {
-                cardNames.add(""); // Empty string for empty slot to preserve position
+                slotCards.put(i, slot.getCard());
             }
         }
 
-        // Update user's deck
-        currentUser.setDeck(cardNames);
-
-        // Save user
+        // Delegate to service (Controller pattern)
         try {
-            UserService.saveUser(currentUser);
+            deckService.saveDeckWithPositions(currentUser, slotCards);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Failed to save deck: " + e.getMessage());

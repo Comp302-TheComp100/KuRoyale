@@ -2,6 +2,8 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
+import com.kuroyale.service.AuthenticationService;
+import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.StyleHelper;
 
 import javafx.fxml.FXML;
@@ -16,6 +18,8 @@ import javafx.stage.Stage;
 
 /**
  * Controller for the main menu screen
+ * Follows Controller GRASP pattern - thin controller focused on UI concerns
+ * Follows Low Coupling - uses services via dependency injection
  */
 public class MainMenuController {
 
@@ -30,10 +34,14 @@ public class MainMenuController {
 
     @FXML
     private Button startMatchButton;
+    
+    // Service dependencies (injected via ServiceFactory)
+    private AuthenticationService authService;
 
     @FXML
     private void initialize() {
-        // Initialization logic if needed
+        // Get service from factory (dependency injection)
+        this.authService = ServiceFactory.getInstance().getAuthenticationService();
     }
 
     /**
