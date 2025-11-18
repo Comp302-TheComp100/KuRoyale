@@ -53,20 +53,25 @@ public class DeckSlotView extends StackPane {
 
         getChildren().add(content);
 
-        // Hover effects are handled by CSS, but we need to manage highlight state
-        // CSS will handle normal hover, but highlight hover needs programmatic handling
+        // Hover effects for filled deck slots (cards in deck)
+        // Use same animation as CardView - simple scale transform
         setOnMouseEntered(e -> {
-            if (isHighlighted) {
-                // Add scale transform for highlighted hover
-                setScaleX(1.05);
-                setScaleY(1.05);
+            if (!isEmpty()) {
+                // Same scale as CardView (1.02)
+                setScaleX(1.02);
+                setScaleY(1.02);
+                // Add CSS class for hover effects (glow)
+                getStyleClass().add("deck-slot-hover");
             }
         });
 
         setOnMouseExited(e -> {
-            if (isHighlighted) {
+            if (!isEmpty()) {
+                // Reset scale to normal
                 setScaleX(1.0);
                 setScaleY(1.0);
+                // Remove hover CSS class
+                getStyleClass().remove("deck-slot-hover");
             }
         });
     }

@@ -24,8 +24,8 @@
         
         <!-- Deck Slots Background Area - shows empty rectangles -->
         <AnchorPane fx:id="deckSlotsBackground" 
-                    layoutX="310" layoutY="60"
-                    prefWidth="660" prefHeight="340">
+                    layoutX="330" layoutY="60"
+                    prefWidth="620" prefHeight="340">
             
             <!-- Average Elixir Cost Display - Centered inside brown area at bottom -->
             <HBox fx:id="averageElixirContainer" 
@@ -44,12 +44,18 @@
         
         <!-- Deck Slots Container - transparent, slots positioned individually, moved down -->
         <AnchorPane fx:id="deckSlotsContainer" 
-              layoutX="310" layoutY="80"
-              prefWidth="660" prefHeight="280"
+              layoutX="330" layoutY="80"
+              prefWidth="620" prefHeight="280"
               style="-fx-background-color: transparent;">
         </AnchorPane>
         
-        <!-- Cards Grid Area - main menu background with brown box for cards -->
+        <!-- Cards Grid Background - fixed brown background -->
+        <AnchorPane fx:id="cardsGridBackground" 
+                   layoutX="330" layoutY="420"
+                   prefWidth="620" prefHeight="300">
+        </AnchorPane>
+        
+        <!-- Cards Grid Area - transparent scroll pane, only cards scroll -->
         <ScrollPane fx:id="cardsScrollPane" 
                    layoutX="0" layoutY="420"
                    prefWidth="1280" prefHeight="300"

@@ -62,6 +62,9 @@ public class DeckBuilderController {
     private AnchorPane deckSlotsContainer;
 
     @FXML
+    private AnchorPane cardsGridBackground;
+
+    @FXML
     private GridPane cardsGrid;
 
     @FXML
@@ -150,6 +153,10 @@ public class DeckBuilderController {
 
         deckSlotsBackground.getStyleClass().add("deck-slots-background");
 
+        if (cardsGridBackground != null) {
+            cardsGridBackground.getStyleClass().add("cards-grid-background");
+        }
+
         if (battleDeckTitle != null) {
             battleDeckTitle.getStyleClass().add("battle-deck-title-label");
         }
@@ -196,7 +203,7 @@ public class DeckBuilderController {
         // Calculate center offset (must match createDeckSlots exactly)
         final int TOTAL_WIDTH = (DECK_SLOT_COLS * SLOT_WIDTH) + ((DECK_SLOT_COLS - 1) * SLOT_GAP_X);
         final int TOTAL_HEIGHT = (DECK_SLOT_ROWS * SLOT_HEIGHT) + ((DECK_SLOT_ROWS - 1) * SLOT_GAP_Y);
-        final int OFFSET_X = (660 - TOTAL_WIDTH) / 2;
+        final int OFFSET_X = (620 - TOTAL_WIDTH) / 2;
         final int OFFSET_Y = (280 - TOTAL_HEIGHT) / 2; // Use 280px to match deck slots container height
 
         for (int row = 0; row < DECK_SLOT_ROWS; row++) {
@@ -236,7 +243,7 @@ public class DeckBuilderController {
         // Note: Container height is 280px (adjusted for smaller cards)
         final int TOTAL_WIDTH = (DECK_SLOT_COLS * SLOT_WIDTH) + ((DECK_SLOT_COLS - 1) * SLOT_GAP_X);
         final int TOTAL_HEIGHT = (DECK_SLOT_ROWS * SLOT_HEIGHT) + ((DECK_SLOT_ROWS - 1) * SLOT_GAP_Y);
-        final int OFFSET_X = (660 - TOTAL_WIDTH) / 2; // Center horizontally in 660px container
+        final int OFFSET_X = (620 - TOTAL_WIDTH) / 2; // Center horizontally in 620px container
         final int OFFSET_Y = (280 - TOTAL_HEIGHT) / 2; // Center vertically in 280px container
 
         for (int row = 0; row < DECK_SLOT_ROWS; row++) {
@@ -712,8 +719,8 @@ public class DeckBuilderController {
                     // Fallback: calculate preferred width
                     containerWidth = averageElixirContainer.prefWidth(-1);
                 }
-                // Center horizontally within 800px brown area
-                double centerX = (800.0 - containerWidth) / 2;
+                // Center horizontally within 620px brown area
+                double centerX = (620.0 - containerWidth) / 2;
                 AnchorPane.setLeftAnchor(averageElixirContainer, centerX);
             });
         }
