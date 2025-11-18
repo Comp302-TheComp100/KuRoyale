@@ -51,8 +51,8 @@ public class DeckBuilderController {
     private static final int DECK_SLOT_ROWS = 2;
     private static final int DECK_SLOT_COLS = 4;
     private static final int BUTTON_GAP = 5;
-    private static final int BUTTONS_WIDTH = 121; // Two buttons + gap (58 + 5 + 58)
-    private static final int BUTTON_OFFSET_Y = 5; // Pixels below card
+    private static final int DECK_SLOT_BUTTON_OFFSET_Y = 5; // Vertical offset for deck slot buttons
+    private static final int CARD_BUTTON_OFFSET_Y = -13; // Vertical offset for bottom grid card buttons (negative = higher/closer)
     private static final int CARD_CONTAINER_SPACING = 5;
 
     @FXML
@@ -387,7 +387,7 @@ public class DeckBuilderController {
      */
     private void showDeckSlotButtons(DeckSlotView slot, Card card) {
         HBox buttonsBox = createDeckSlotButtons(card);
-        positionButtons(buttonsBox, slot, 0); // 0 offset for deck slots
+        positionButtons(buttonsBox, slot, 0, DECK_SLOT_BUTTON_OFFSET_Y);
         deckSlotButtonsBox = buttonsBox;
     }
 
@@ -430,10 +430,18 @@ public class DeckBuilderController {
      * Helper method to position buttons below a node (card or deck slot)
      * @param buttonsBox The HBox containing the buttons
      * @param node The node (CardView or DeckSlotView) to position buttons below
-     * @param xOffset Additional X offset to center buttons (0 for deck slots, 18 for cards)
+     * @param xOffset Additional X offset to center buttons (0 for deck slots, 0 for cards)
+     * @param yOffset Vertical offset from bottom of node
      */
-    private void positionButtons(HBox buttonsBox, javafx.scene.Node node, double xOffset) {
+    private void positionButtons(HBox buttonsBox, javafx.scene.Node node, double xOffset, double yOffset) {
         AnchorPane mainPane = getMainAnchorPane();
+        
+        // Add buttons to AnchorPane first so we can measure their actual width
+        mainPane.getChildren().add(buttonsBox);
+        
+        // Force layout to get actual button width
+        buttonsBox.applyCss();
+        buttonsBox.layout();
         
         // Calculate button position relative to node
         Bounds nodeBoundsInScene = node.localToScene(node.getBoundsInLocal());
@@ -443,11 +451,12 @@ public class DeckBuilderController {
 
         double nodeWidth = node.getBoundsInLocal().getWidth();
         double nodeHeight = node.getBoundsInLocal().getHeight();
-        double buttonX = nodePointInAnchorPane.getX() + (nodeWidth / 2) - (BUTTONS_WIDTH / 2) + xOffset;
-        double buttonY = nodePointInAnchorPane.getY() + nodeHeight + BUTTON_OFFSET_Y;
+        double buttonsWidth = buttonsBox.getBoundsInLocal().getWidth();
+        
+        // Center buttons horizontally below the node
+        double buttonX = nodePointInAnchorPane.getX() + (nodeWidth / 2) - (buttonsWidth / 2) + xOffset;
+        double buttonY = nodePointInAnchorPane.getY() + nodeHeight + yOffset;
 
-        // Add buttons to AnchorPane as overlay
-        mainPane.getChildren().add(buttonsBox);
         AnchorPane.setLeftAnchor(buttonsBox, buttonX);
         AnchorPane.setTopAnchor(buttonsBox, buttonY);
     }
@@ -491,8 +500,8 @@ public class DeckBuilderController {
         // Get the CardView from the container (first child)
         CardView cardView = (CardView) cardContainer.getChildren().get(0);
         
-        // Position buttons using helper method with 18px offset for cards
-        positionButtons(buttonsBox, cardView, 18);
+        // Position buttons using helper method - centered below card with custom Y offset
+        positionButtons(buttonsBox, cardView, 0, CARD_BUTTON_OFFSET_Y);
         
         cardButtonsBox = buttonsBox;
     }
