@@ -2,6 +2,8 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
+import com.kuroyale.util.SoundEffectUtil;
+
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -33,8 +35,8 @@ public class MainMenuController {
     @FXML
     private Button startMatchButton;
     
-    // MediaPlayer for main menu music
-    private MediaPlayer mainMenuMusicPlayer;
+    // Static MediaPlayer for main menu music to persist across scene changes
+    private static MediaPlayer mainMenuMusicPlayer;
     
     @FXML
     private void initialize() {
@@ -87,6 +89,7 @@ public class MainMenuController {
 
     @FXML
     private void handleDeckBuilder() {
+        SoundEffectUtil.playButtonClick();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/deck-builder.fxml"));
             Parent root = loader.load();
@@ -107,6 +110,7 @@ public class MainMenuController {
 
     @FXML
     private void handleStartMatch() {
+        SoundEffectUtil.playButtonClick();
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Coming Soon");
         alert.setHeaderText("Start Match");
@@ -124,14 +128,24 @@ public class MainMenuController {
     
     /**
      * Plays the main menu music in a loop
+     * Uses static player to persist across scene changes
      */
     private void playMainMenuMusic() {
         try {
-            String soundPath = getClass().getResource("/musics/main_menu.mp3").toExternalForm();
-            Media media = new Media(soundPath);
-            mainMenuMusicPlayer = new MediaPlayer(media);
-            mainMenuMusicPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-            mainMenuMusicPlayer.play();
+            // Only create and start music if it's not already playing
+            if (mainMenuMusicPlayer == null) {
+                String soundPath = getClass().getResource("/musics/main_menu.mp3").toExternalForm();
+                Media media = new Media(soundPath);
+                mainMenuMusicPlayer = new MediaPlayer(media);
+                mainMenuMusicPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                mainMenuMusicPlayer.play();
+            } else {
+                // If music player exists but is not playing, resume it
+                MediaPlayer.Status status = mainMenuMusicPlayer.getStatus();
+                if (status == MediaPlayer.Status.STOPPED || status == MediaPlayer.Status.PAUSED) {
+                    mainMenuMusicPlayer.play();
+                }
+            }
         } catch (Exception e) {
             // Silently fail if sound cannot be played
             e.printStackTrace();

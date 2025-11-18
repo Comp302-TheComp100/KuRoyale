@@ -15,6 +15,7 @@ import com.kuroyale.service.CardCatalog;
 import com.kuroyale.service.DeckManagementService;
 import com.kuroyale.util.ButtonFactory;
 import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.util.StyleHelper;
 import com.kuroyale.view.CardInfoDialog;
 import com.kuroyale.view.CardView;
@@ -51,7 +52,6 @@ public class DeckBuilderController {
     private static final int DECK_SLOT_ROWS = 2;
     private static final int DECK_SLOT_COLS = 4;
     private static final int BUTTON_GAP = 5;
-    private static final int DECK_SLOT_BUTTON_OFFSET_Y = 5; // Vertical offset for deck slot buttons
     private static final int CARD_BUTTON_OFFSET_Y = -13; // Vertical offset for bottom grid card buttons (negative = higher/closer)
     private static final int CARD_CONTAINER_SPACING = 5;
 
@@ -343,6 +343,7 @@ public class DeckBuilderController {
     }
 
     private void handleDeckSlotClick(DeckSlotView slot) {
+        SoundEffectUtil.playButtonClick();
         // If in replace mode, handle replacement or cancellation
         if (replaceMode) {
             handleReplaceModeClick(slot);
@@ -394,7 +395,7 @@ public class DeckBuilderController {
      */
     private void showDeckSlotButtons(DeckSlotView slot, Card card) {
         HBox buttonsBox = createDeckSlotButtons(card);
-        positionButtons(buttonsBox, slot, 0, DECK_SLOT_BUTTON_OFFSET_Y);
+        positionButtons(buttonsBox, slot, 0, -10); // 3 pixels below the card
         deckSlotButtonsBox = buttonsBox;
     }
 
@@ -407,10 +408,14 @@ public class DeckBuilderController {
         buttonsBox.setAlignment(Pos.CENTER);
 
         Button infoButton = ButtonFactory.createInfoButton();
-        infoButton.setOnAction(e -> showCardInfo(card));
+        infoButton.setOnAction(e -> {
+            SoundEffectUtil.playButtonClick();
+            showCardInfo(card);
+        });
 
         Button removeButton = ButtonFactory.createRemoveButton();
         removeButton.setOnAction(e -> {
+            SoundEffectUtil.playButtonClick();
             removeDeckSlotButtons();
             removeCardButtons();     // This stops the ghost buttons from the library
             removeCardFromDeck(card);
@@ -468,7 +473,9 @@ public class DeckBuilderController {
         AnchorPane.setTopAnchor(buttonsBox, buttonY);
     }
 
+
     private void handleCardClick(CardView cardView, VBox cardContainer) {
+        SoundEffectUtil.playButtonClick();
         Card card = cardView.getCard();
 
         // If in replace mode, exit it first
@@ -499,7 +506,10 @@ public class DeckBuilderController {
         buttonsBox.setAlignment(Pos.CENTER);
 
         Button infoButton = ButtonFactory.createInfoButton();
-        infoButton.setOnAction(e -> showCardInfo(card));
+        infoButton.setOnAction(e -> {
+            SoundEffectUtil.playButtonClick();
+            showCardInfo(card);
+        });
 
         Button actionButton = createCardActionButton(card);
         buttonsBox.getChildren().addAll(infoButton, actionButton);
@@ -523,6 +533,7 @@ public class DeckBuilderController {
             // Card is in deck - create REMOVE button
             actionButton = ButtonFactory.createRemoveButton();
             actionButton.setOnAction(e -> {
+                SoundEffectUtil.playButtonClick();
                 removeCardFromDeck(card);
                 removeCardButtons();
             });
@@ -530,6 +541,7 @@ public class DeckBuilderController {
             // Deck is full - create REPLACE button
             actionButton = ButtonFactory.createReplaceButton();
             actionButton.setOnAction(e -> {
+                SoundEffectUtil.playButtonClick();
                 enterReplaceMode(card);
                 removeCardButtons();
             });
@@ -537,6 +549,7 @@ public class DeckBuilderController {
             // Deck has space - create USE button
             actionButton = ButtonFactory.createUseButton();
             actionButton.setOnAction(e -> {
+                SoundEffectUtil.playButtonClick();
                 addCardToDeck(card);
                 removeCardButtons();
             });
@@ -799,6 +812,7 @@ public class DeckBuilderController {
 
     @FXML
     private void handleBack() {
+        SoundEffectUtil.playButtonClick();
         // Exit replace mode if active
         if (replaceMode) {
             exitReplaceMode();

@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.util.ValidationUtil;
 
 import javafx.fxml.FXML;
@@ -116,6 +117,7 @@ public class LoginController {
 
     @FXML
     private void handleCreateAccount() {
+        SoundEffectUtil.playButtonClick();
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
@@ -160,6 +162,7 @@ public class LoginController {
 
     @FXML
     private void handleLogin() {
+        SoundEffectUtil.playButtonClick();
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
