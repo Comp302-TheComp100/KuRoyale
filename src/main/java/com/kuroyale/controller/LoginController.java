@@ -15,6 +15,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 
 /**
@@ -48,6 +50,9 @@ public class LoginController {
     
     // Service dependencies (injected via ServiceFactory)
     private AuthenticationService authService;
+    
+    // MediaPlayer for start screen music
+    private MediaPlayer startMusicPlayer;
 
     @FXML
     private void initialize() {
@@ -81,6 +86,9 @@ public class LoginController {
         // Add programmatic hover effects for login buttons (scale transforms)
         addLoginButtonHoverEffects(createAccountButton);
         addLoginButtonHoverEffects(loginButton);
+        
+        // Play start screen music
+        playStartMusic();
     }
     
     /**
@@ -137,6 +145,8 @@ public class LoginController {
             if (user != null) {
                 // Set as current user
                 authService.setCurrentUser(user);
+                // Stop start screen music
+                stopStartMusic();
                 // Navigate to main menu (UI concern)
                 navigateToMainMenu();
             } else {
@@ -168,6 +178,8 @@ public class LoginController {
             if (user != null) {
                 // Set as current user
                 authService.setCurrentUser(user);
+                // Stop start screen music
+                stopStartMusic();
                 // Navigate to main menu (UI concern)
                 navigateToMainMenu();
             } else {
@@ -194,6 +206,31 @@ public class LoginController {
     private void showError(String message) {
         errorLabel.setText(message);
         errorLabel.setVisible(true);
+    }
+
+    /**
+     * Plays the start screen music
+     */
+    private void playStartMusic() {
+        try {
+            String soundPath = getClass().getResource("/musics/start.mp3").toExternalForm();
+            Media media = new Media(soundPath);
+            startMusicPlayer = new MediaPlayer(media);
+            startMusicPlayer.play();
+        } catch (Exception e) {
+            // Silently fail if sound cannot be played
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Stops the start screen music
+     */
+    private void stopStartMusic() {
+        if (startMusicPlayer != null) {
+            startMusicPlayer.stop();
+            startMusicPlayer = null;
+        }
     }
 
     /**

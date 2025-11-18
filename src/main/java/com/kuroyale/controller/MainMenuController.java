@@ -10,6 +10,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 
 /**
@@ -31,9 +33,13 @@ public class MainMenuController {
     @FXML
     private Button startMatchButton;
     
+    // MediaPlayer for main menu music
+    private MediaPlayer mainMenuMusicPlayer;
+    
     @FXML
     private void initialize() {
         initializeStyles();
+        playMainMenuMusic();
     }
 
     /**
@@ -114,5 +120,21 @@ public class MainMenuController {
         alert.setHeaderText("An error occurred");
         alert.setContentText(message);
         alert.showAndWait();
+    }
+    
+    /**
+     * Plays the main menu music in a loop
+     */
+    private void playMainMenuMusic() {
+        try {
+            String soundPath = getClass().getResource("/musics/main_menu.mp3").toExternalForm();
+            Media media = new Media(soundPath);
+            mainMenuMusicPlayer = new MediaPlayer(media);
+            mainMenuMusicPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+            mainMenuMusicPlayer.play();
+        } catch (Exception e) {
+            // Silently fail if sound cannot be played
+            e.printStackTrace();
+        }
     }
 }
