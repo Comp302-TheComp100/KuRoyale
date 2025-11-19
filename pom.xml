@@ -73,7 +73,7 @@
                     <options>
                         <option>--enable-native-access=javafx.graphics</option>
                     </options>
-                    <mainClass>com.kuroyale.Main</mainClass>
+                    <mainClass>com.kuroyale.Launcher</mainClass>
                 </configuration>
 
             </plugin>

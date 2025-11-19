@@ -2,6 +2,7 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
+import com.kuroyale.util.AudioManager;
 import com.kuroyale.util.SoundEffectUtil;
 
 import javafx.fxml.FXML;
@@ -11,7 +12,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.AnchorPane;
+
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
@@ -24,7 +26,7 @@ import javafx.stage.Stage;
 public class MainMenuController {
 
     @FXML
-    private VBox root;
+    private AnchorPane root;
 
     @FXML
     private Label titleLabel;
@@ -34,10 +36,16 @@ public class MainMenuController {
 
     @FXML
     private Button startMatchButton;
-    
+
+    @FXML
+    private Button arenaDesignButton;
+
+    @FXML
+    private Button settingsButton;
+
     // Static MediaPlayer for main menu music to persist across scene changes
     private static MediaPlayer mainMenuMusicPlayer;
-    
+
     @FXML
     private void initialize() {
         initializeStyles();
@@ -50,7 +58,7 @@ public class MainMenuController {
     private void initializeStyles() {
         // Apply CSS classes
         root.getStyleClass().add("main-menu-background");
-        
+
         if (titleLabel != null) {
             titleLabel.getStyleClass().add("title-label");
         }
@@ -58,12 +66,17 @@ public class MainMenuController {
         // Apply button CSS classes
         deckBuilderButton.getStyleClass().add("menu-button");
         startMatchButton.getStyleClass().add("menu-button");
-        
-        // Add programmatic hover effects for scale transforms (CSS can't handle this easily)
+        arenaDesignButton.getStyleClass().add("menu-button");
+        settingsButton.getStyleClass().add("menu-button");
+
+        // Add programmatic hover effects for scale transforms (CSS can't handle this
+        // easily)
         addMenuButtonHoverEffects(deckBuilderButton);
         addMenuButtonHoverEffects(startMatchButton);
+        addMenuButtonHoverEffects(arenaDesignButton);
+        addMenuButtonHoverEffects(settingsButton);
     }
-    
+
     /**
      * Add programmatic hover effects for menu buttons (scale transforms)
      */
@@ -72,16 +85,16 @@ public class MainMenuController {
             button.setScaleX(1.05);
             button.setScaleY(1.05);
         });
-        
+
         button.setOnMouseExited(e -> {
             button.setScaleX(1.0);
             button.setScaleY(1.0);
         });
-        
+
         button.setOnMousePressed(e -> {
             button.setTranslateY(2);
         });
-        
+
         button.setOnMouseReleased(e -> {
             button.setTranslateY(0);
         });
@@ -118,6 +131,33 @@ public class MainMenuController {
         alert.showAndWait();
     }
 
+    @FXML
+    private void handleArenaDesign() {
+        SoundEffectUtil.playButtonClick();
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Coming Soon");
+        alert.setHeaderText("Arena Design");
+        alert.setContentText("This feature will be available soon!");
+        alert.showAndWait();
+    }
+
+    @FXML
+    private void handleSettings() {
+        SoundEffectUtil.playButtonClick();
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/settings.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) settingsButton.getScene().getWindow();
+            Scene scene = new Scene(root, 1280, 720);
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
+            stage.setScene(scene);
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Settings: " + e.getMessage());
+        }
+    }
+
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
@@ -125,7 +165,7 @@ public class MainMenuController {
         alert.setContentText(message);
         alert.showAndWait();
     }
-    
+
     /**
      * Plays the main menu music in a loop
      * Uses static player to persist across scene changes
@@ -138,6 +178,7 @@ public class MainMenuController {
                 Media media = new Media(soundPath);
                 mainMenuMusicPlayer = new MediaPlayer(media);
                 mainMenuMusicPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                AudioManager.getInstance().registerMusicPlayer(mainMenuMusicPlayer);
                 mainMenuMusicPlayer.play();
             } else {
                 // If music player exists but is not playing, resume it

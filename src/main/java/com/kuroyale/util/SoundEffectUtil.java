@@ -14,10 +14,16 @@ public class SoundEffectUtil {
 
     /**
      * Plays the button click sound effect
-     * Stops any currently playing sound before starting a new one to prevent overlapping
+     * Stops any currently playing sound before starting a new one to prevent
+     * overlapping
      * Always stops and restarts immediately to fix delay issues
      */
     public static void playButtonClick() {
+        AudioManager audioManager = AudioManager.getInstance();
+        if (!audioManager.isButtonSoundsEnabled()) {
+            return;
+        }
+
         try {
             // Lazy initialization: create Media and MediaPlayer on first use
             if (buttonClickMedia == null) {
@@ -25,6 +31,9 @@ public class SoundEffectUtil {
                 buttonClickMedia = new Media(soundPath);
                 buttonClickPlayer = new MediaPlayer(buttonClickMedia);
             }
+
+            // Set volume from AudioManager
+            buttonClickPlayer.setVolume(audioManager.getSFXVolume());
 
             // Always stop the player regardless of status to fix delay issues
             // This ensures immediate restart when clicked again
@@ -39,4 +48,3 @@ public class SoundEffectUtil {
         }
     }
 }
-

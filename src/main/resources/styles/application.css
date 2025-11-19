@@ -126,7 +126,7 @@
 .menu-button {
     -fx-background-color: linear-gradient(to bottom, -fx-primary-color 0%, -fx-primary-pressed 100%);
     -fx-text-fill: white;
-    -fx-font-size: 24px;
+    -fx-font-size: 22px;
     -fx-font-weight: bold;
     -fx-font-family: 'Clash', Arial;
     -fx-background-radius: 10;
