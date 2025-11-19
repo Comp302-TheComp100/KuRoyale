@@ -23,12 +23,14 @@
         <VBox spacing="10" alignment="CENTER">
             <TextField fx:id="usernameField" 
                        promptText="Username"
-                       prefWidth="350"
+                       prefWidth="250"
+                       maxWidth="500"
                        prefHeight="45"/>
             
             <PasswordField fx:id="passwordField" 
                            promptText="Password"
-                           prefWidth="350"
+                           prefWidth="250"
+                           maxWidth="500"
                            prefHeight="45"/>
         </VBox>
         
@@ -36,19 +38,22 @@
                text=""
                visible="false"
                wrapText="true"
-               prefWidth="350"/>
+               prefWidth="250"
+               maxWidth="500"/>
         
         <VBox alignment="CENTER" spacing="15">
             <Button fx:id="createAccountButton" 
                     text="CREATE ACCOUNT" 
                     onAction="#handleCreateAccount"
-                    prefWidth="350"
+                    prefWidth="250"
+                    maxWidth="400"
                     prefHeight="60"/>
             
             <Button fx:id="loginButton" 
                     text="LOGIN" 
                     onAction="#handleLogin"
-                    prefWidth="350"
+                    prefWidth="250"
+                    maxWidth="400"
                     prefHeight="60"/>
         </VBox>
     </VBox>
