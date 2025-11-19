@@ -134,11 +134,19 @@ public class MainMenuController {
     @FXML
     private void handleArenaDesign() {
         SoundEffectUtil.playButtonClick();
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Coming Soon");
-        alert.setHeaderText("Arena Design");
-        alert.setContentText("This feature will be available soon!");
-        alert.showAndWait();
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/arena-design.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) arenaDesignButton.getScene().getWindow();
+            Scene scene = new Scene(root, 1280, 720);
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setTitle("KU Royale - Arena Design");
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Arena Design: " + e.getMessage());
+        }
     }
 
     @FXML
