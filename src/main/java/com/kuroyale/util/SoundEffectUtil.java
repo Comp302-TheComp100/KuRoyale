@@ -5,8 +5,7 @@ import javafx.scene.media.MediaPlayer;
 
 /**
  * Utility class for playing sound effects throughout the application
- * Maintains a single MediaPlayer instance to prevent overlapping sounds
- */
+ * Maintains a single MediaPlayer instance to prevent overlapping sounds */
 public class SoundEffectUtil {
 
     private static MediaPlayer buttonClickPlayer;
@@ -14,10 +13,7 @@ public class SoundEffectUtil {
 
     /**
      * Plays the button click sound effect
-     * Stops any currently playing sound before starting a new one to prevent
-     * overlapping
-     * Always stops and restarts immediately to fix delay issues
-     */
+     * Stops any currently playing sound before starting a new one to prevent overlapping */
     public static void playButtonClick() {
         AudioManager audioManager = AudioManager.getInstance();
         if (!audioManager.isButtonSoundsEnabled()) {
@@ -25,7 +21,7 @@ public class SoundEffectUtil {
         }
 
         try {
-            // Lazy initialization: create Media and MediaPlayer on first use
+            // create Media and MediaPlayer on first use
             if (buttonClickMedia == null) {
                 String soundPath = SoundEffectUtil.class.getResource("/sfx/button_click.mp3").toExternalForm();
                 buttonClickMedia = new Media(soundPath);
@@ -36,7 +32,6 @@ public class SoundEffectUtil {
             buttonClickPlayer.setVolume(audioManager.getSFXVolume());
 
             // Always stop the player regardless of status to fix delay issues
-            // This ensures immediate restart when clicked again
             buttonClickPlayer.stop();
 
             // Reset to beginning and play immediately

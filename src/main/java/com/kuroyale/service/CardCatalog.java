@@ -9,10 +9,8 @@ import com.kuroyale.model.CardFactory;
 
 /**
  * Service that manages the catalog of available cards in the game
- * Follows Information Expert GRASP pattern - CardCatalog knows about all
- * available cards
- * Follows Indirection GRASP pattern - Provides interface between controllers
- * and CardFactory
+ * Follows Information Expert GRASP pattern - CardCatalog knows about all available cards
+ * Follows Indirection GRASP pattern - Provides interface between controllers and CardFactory
  * Acts as a facade to card creation logic
  */
 public class CardCatalog {
@@ -36,11 +34,7 @@ public class CardCatalog {
         }
     }
 
-    /**
-     * Gets all available cards in the game
-     * 
-     * @return List of all 28 cards
-     */
+    //Gets all available cards in the game
     public List<Card> getAllCards() {
         return allCards;
     }
@@ -48,29 +42,17 @@ public class CardCatalog {
     /**
      * Finds a card by its name
      * Information Expert - CardCatalog knows all available cards
-     * 
-     * @param name The card name to search for
-     * @return The Card if found, null otherwise
      */
     public Card getCardByName(String name) {
         return cardsByName.get(name);
     }
 
-    /**
-     * Checks if a card with the given name exists
-     * 
-     * @param name The card name to check
-     * @return true if card exists, false otherwise
-     */
+    //Checks if a card with the given name exists
     public boolean cardExists(String name) {
         return cardsByName.containsKey(name);
     }
 
-    /**
-     * Gets the total number of available cards
-     * 
-     * @return Number of cards in catalog
-     */
+    //Gets the total number of available cards
     public int getCardCount() {
         return allCards.size();
     }

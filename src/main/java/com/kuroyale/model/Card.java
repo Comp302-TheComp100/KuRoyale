@@ -1,8 +1,6 @@
 package com.kuroyale.model;
 
-/**
- * Represents a card in the game with all its properties
- */
+//Represents a card in the game with all its properties
 public class Card {
     private final String name;
     private final int cost;
@@ -40,63 +38,47 @@ public class Card {
     public String getName() {
         return name;
     }
-
     public int getCost() {
         return cost;
     }
-
     public CardType getType() {
         return type;
     }
-
     public int getHp() {
         return hp;
     }
-
     public int getDamage() {
         return damage;
     }
-
     public double getHitSpeed() {
         return hitSpeed;
     }
-
     public double getRange() {
         return range;
     }
-
     public SpeedType getSpeed() {
         return speed;
     }
-
     public TargetType getTarget() {
         return target;
     }
-
     public boolean isAreaEffect() {
         return areaEffect;
     }
-
     public String getDescription() {
         return description;
     }
-
     public int getCount() {
         return count;
     }
-
     public int getLifetime() {
         return lifetime;
     }
 
     public String getImagePath() {
-        return "/images/cards/" + name.toLowerCase(java.util.Locale.ENGLISH).replace(" ", "_").replace(".", "")
-                + ".png";
-    }
+        return "/images/cards/" + name.toLowerCase(java.util.Locale.ENGLISH).replace(" ", "_").replace(".", "") + ".png";}
 
-    /**
-     * Calculates damage per second (DPS)
-     */
+    //Calculates damage per second (DPS)
     public double getDPS() {
         if (hitSpeed == 0)
             return 0;
@@ -104,9 +86,7 @@ public class Card {
     }
 
     @Override
-    public String toString() {
-        return name + " (Cost: " + cost + ")";
-    }
+    public String toString() {return name + " (Cost: " + cost + ")";}
 
     @Override
     public boolean equals(Object obj) {
@@ -119,7 +99,5 @@ public class Card {
     }
 
     @Override
-    public int hashCode() {
-        return name.hashCode();
-    }
+    public int hashCode() {return name.hashCode();}
 }

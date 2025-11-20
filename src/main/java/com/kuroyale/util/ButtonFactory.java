@@ -4,18 +4,12 @@ import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-/**
- * Factory class for creating styled buttons with images
- * Centralizes button creation logic to avoid code duplication
- */
+//Factory class for creating styled buttons with images & Centralizes button creation logic to avoid code duplication
 public class ButtonFactory {
 
     private static final int BUTTON_WIDTH = 58;
     private static final int BUTTON_HEIGHT = 27;
 
-    /**
-     * Button type enum for different button styles
-     */
     public enum ButtonType {
         INFO("/images/button_blue.png", "#3b82f6"),
         ACTION("/images/button_yellow.png", "#fbbf24"),
@@ -38,9 +32,6 @@ public class ButtonFactory {
         }
     }
 
-    /**
-     * Creates a button with an image background and text
-     */
     public static Button createButton(ButtonType type, String text) {
         Button button = new Button();
         button.setPrefSize(BUTTON_WIDTH, BUTTON_HEIGHT);
@@ -73,32 +64,16 @@ public class ButtonFactory {
         return button;
     }
 
-    /**
-     * Creates an INFO button (blue)
-     */
     public static Button createInfoButton() {
         return createButton(ButtonType.INFO, "INFO");
     }
 
-    /**
-     * Creates a USE button (yellow)
-     */
-    public static Button createUseButton() {
-        return createButton(ButtonType.ACTION, "USE");
-    }
+    //Creates a USE button (yellow)
+    public static Button createUseButton() {return createButton(ButtonType.ACTION, "USE");}
 
-    /**
-     * Creates a REPLACE button (yellow)
-     */
-    public static Button createReplaceButton() {
-        return createButton(ButtonType.ACTION, "REPLACE");
-    }
+    //Creates a REPLACE button (yellow)
+    public static Button createReplaceButton() {return createButton(ButtonType.ACTION, "REPLACE");}
 
-    /**
-     * Creates a REMOVE button (red)
-     */
-    public static Button createRemoveButton() {
-        return createButton(ButtonType.REMOVE, "REMOVE");
-    }
+    //Creates a REMOVE button (red)
+    public static Button createRemoveButton() {return createButton(ButtonType.REMOVE, "REMOVE");}
 }
-

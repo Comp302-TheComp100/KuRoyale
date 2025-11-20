@@ -7,19 +7,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.kuroyale.service.*;
+import com.kuroyale.view.*;
 import com.kuroyale.model.Card;
 import com.kuroyale.model.Deck;
 import com.kuroyale.model.User;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.CardCatalog;
-import com.kuroyale.service.DeckManagementService;
 import com.kuroyale.util.ButtonFactory;
 import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.util.StyleHelper;
-import com.kuroyale.view.CardInfoDialog;
-import com.kuroyale.view.CardView;
-import com.kuroyale.view.DeckSlotView;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -39,12 +35,10 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
-/**
- * Controller for the deck builder screen
- * Follows Controller GRASP pattern - thin controller that delegates to services
- * Follows Low Coupling - uses services via dependency injection
- * Follows High Cohesion - focused on UI presentation and user interactions
- */
+/* Controller for the deck builder screen
+ *  Controller GRASP pattern - thin controller that delegates to services
+ *  Low Coupling - uses services via dependency injection
+ *  High Cohesion - focused on UI presentation and user interactions*/
 public class DeckBuilderController {
 
     // Constants
@@ -67,31 +61,22 @@ public class DeckBuilderController {
 
     @FXML
     private AnchorPane deckSlotsBackground;
-
     @FXML
     private AnchorPane deckSlotsContainer;
-
     @FXML
     private AnchorPane cardsGridBackground;
-
     @FXML
     private GridPane cardsGrid;
-
     @FXML
     private ScrollPane cardsScrollPane;
-
     @FXML
     private StackPane rootPane;
-
     @FXML
     private Button backButton;
-
     @FXML
     private Label averageElixirValue;
-
     @FXML
     private Label battleDeckTitle;
-
     @FXML
     private HBox averageElixirContainer;
 
@@ -112,7 +97,7 @@ public class DeckBuilderController {
 
     @FXML
     private void initialize() {
-        // Get services from factory (dependency injection)
+        // Get services from factory
         ServiceFactory factory = ServiceFactory.getInstance();
         this.authService = factory.getAuthenticationService();
         this.deckService = factory.getDeckManagementService();
@@ -151,9 +136,7 @@ public class DeckBuilderController {
         });
     }
 
-    /**
-     * Apply styles to deck builder components
-     */
+    //Apply styles to deck builder components
     private void applyStyles() {
         // Apply CSS classes
         AnchorPane mainBackground = getMainAnchorPane();
@@ -198,9 +181,7 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Creates 8 recessed rectangles that serve as visual backgrounds for deck slots
-     */
+    //Creates 8 recessed rectangles that serve as visual backgrounds for deck slot
     private void createRecessedRectangles() {
         // Calculate center offset
         final int TOTAL_WIDTH = (DECK_SLOT_COLS * SLOT_WIDTH) + ((DECK_SLOT_COLS - 1) * SLOT_GAP_X);
@@ -258,12 +239,10 @@ public class DeckBuilderController {
     }
 
     private void loadAllCards() {
-        // Delegate to CardCatalog service (Indirection pattern)
         List<Card> allCards = cardCatalog.getAllCards();
 
         // Store all cards for later reorganization
         for (Card card : allCards) {
-            // Create container for card + buttons
             VBox cardContainer = new VBox(CARD_CONTAINER_SPACING);
             cardContainer.setAlignment(Pos.TOP_CENTER);
 
@@ -283,18 +262,14 @@ public class DeckBuilderController {
         reorganizeCardGrid();
     }
 
-    /**
-     * Reorganizes the bottom card grid so visible cards fill rows of 4
-     * Cards are always shown in the same consistent order (from CardCatalog)
-     * Only cards NOT in the deck are displayed
-     * UI concern - appropriate for controller
-     */
+    /*Reorganizes the bottom card grid so visible cards fill rows of 4
+     * Cards are always shown in the same consistent order
+     * Only cards NOT in the deck are displayed */
     private void reorganizeCardGrid() {
         // Clear the grid
         cardsGrid.getChildren().clear();
 
         // Get all cards in consistent order: Troops, Buildings, Spells
-        // Delegate to CardCatalog (Indirection pattern)
         List<Card> allCards = cardCatalog.getAllCards();
         int column = 0;
         int row = 0;
@@ -316,16 +291,10 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Gets the main AnchorPane from the root pane
-     */
-    private AnchorPane getMainAnchorPane() {
-        return (AnchorPane) rootPane.getChildren().get(0);
-    }
+    //Gets the main AnchorPane from the root pane
+    private AnchorPane getMainAnchorPane() {return (AnchorPane) rootPane.getChildren().get(0);}
 
-    /**
-     * Removes deck slot buttons and resets selection state
-     */
+    //Removes deck slot buttons and resets selection state
     private void removeDeckSlotButtons() {
         if (deckSlotButtonsBox != null) {
             AnchorPane mainPane = getMainAnchorPane();
@@ -346,56 +315,47 @@ public class DeckBuilderController {
         if (slot.isEmpty()) {
             removeDeckSlotButtons();
             removeCardButtons();
-            return; // Do nothing if slot is empty
+            return;
         }
 
         // If this slot is already selected, deselect it
         if (selectedDeckSlot == slot && deckSlotButtonsBox != null) {
             removeDeckSlotButtons();
-            removeCardButtons(); // Also remove card buttons
+            removeCardButtons();
             return;
         }
 
         // Remove buttons from previously selected slot AND card
         removeDeckSlotButtons();
-        removeCardButtons(); // Ensure card buttons are also removed
+        removeCardButtons();
 
         selectedDeckSlot = slot;
         Card card = slot.getCard();
         showDeckSlotButtons(slot, card);
     }
 
-    /**
-     * Handles deck slot click when in replace mode
-     * The clicked slot's card will be swapped with the card selected from bottom
-     * grid
-     * The new card takes the exact position of the old card
-     */
+    /*Handles deck slot click when in replace mode
+     * The clicked slot's card will be swapped with the card selected from bottom grid
+     * The new card takes the exact position of the old card*/
     private void handleReplaceModeClick(DeckSlotView slot) {
         if (!slot.isEmpty() && cardToReplace != null) {
-            Card oldCard = slot.getCard(); // Card currently in the clicked slot
-            Card newCard = cardToReplace; // Card selected from bottom to replace with
+            Card oldCard = slot.getCard();
+            Card newCard = cardToReplace;
             replaceCardInDeck(oldCard, newCard);
             exitReplaceMode();
         } else if (slot.isEmpty()) {
-            // Cancel replace mode if clicking empty slot
             exitReplaceMode();
         }
     }
 
-    /**
-     * Shows action buttons for a deck slot
-     */
+    //Shows action buttons for a deck slot
     private void showDeckSlotButtons(DeckSlotView slot, Card card) {
         HBox buttonsBox = createDeckSlotButtons(card);
         positionButtons(buttonsBox, slot, 0, -10); // 3 pixels below the card
         deckSlotButtonsBox = buttonsBox;
     }
 
-    /**
-     *
-     * Creates action buttons for a deck slot
-     */
+    //Creates action buttons for a deck slot
     private HBox createDeckSlotButtons(Card card) {
         HBox buttonsBox = new HBox(BUTTON_GAP);
         buttonsBox.setAlignment(Pos.CENTER);
@@ -410,7 +370,7 @@ public class DeckBuilderController {
         removeButton.setOnAction(e -> {
             SoundEffectUtil.playButtonClick();
             removeDeckSlotButtons();
-            removeCardButtons(); // This stops the ghost buttons from the library
+            removeCardButtons();
             removeCardFromDeck(card);
         });
 
@@ -418,9 +378,7 @@ public class DeckBuilderController {
         return buttonsBox;
     }
 
-    /**
-     * Removes card buttons from the overlay
-     */
+    //Removes card buttons from the overlay
     private void removeCardButtons() {
         if (cardButtonsBox != null) {
             // Remove from AnchorPane overlay
@@ -431,16 +389,7 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Helper method to position buttons below a node (card or deck slot)
-     * 
-     * @param buttonsBox The HBox containing the buttons
-     * @param node       The node (CardView or DeckSlotView) to position buttons
-     *                   below
-     * @param xOffset    Additional X offset to center buttons (0 for deck slots, 0
-     *                   for cards)
-     * @param yOffset    Vertical offset from bottom of node
-     */
+    //Helper method to position buttons below a node (card or deck slot)
     private void positionButtons(HBox buttonsBox, javafx.scene.Node node, double xOffset, double yOffset) {
         AnchorPane mainPane = getMainAnchorPane();
 
@@ -481,21 +430,19 @@ public class DeckBuilderController {
         // If this card is already selected, deselect it
         if (selectedCardView == cardView && cardButtonsBox != null) {
             removeCardButtons();
-            removeDeckSlotButtons(); // Also remove deck slot buttons
+            removeDeckSlotButtons();
             return;
         }
 
         // Remove buttons from previously selected card AND deck slot
         removeCardButtons();
-        removeDeckSlotButtons(); // Ensure deck slot buttons are also removed
+        removeDeckSlotButtons();
 
         selectedCardView = cardView;
         showCardButtons(card, cardContainer);
     }
 
-    /**
-     * Shows action buttons for a card (overlaid, not affecting layout)
-     */
+    //Shows action buttons for a card (overlaid, not affecting layout)
     private void showCardButtons(Card card, VBox cardContainer) {
         HBox buttonsBox = new HBox(BUTTON_GAP);
         buttonsBox.setAlignment(Pos.CENTER);
@@ -512,16 +459,13 @@ public class DeckBuilderController {
         // Get the CardView from the container (first child)
         CardView cardView = (CardView) cardContainer.getChildren().get(0);
 
-        // Position buttons using helper method - centered below card with custom Y
-        // offset
+        // Position buttons using helper method - centered below card with custom Y offset
         positionButtons(buttonsBox, cardView, 0, CARD_BUTTON_OFFSET_Y);
 
         cardButtonsBox = buttonsBox;
     }
 
-    /**
-     * Creates the appropriate action button (USE/REMOVE/REPLACE) for a card
-     */
+    //Creates the appropriate action button (USE/REMOVE/REPLACE) for a card
     private Button createCardActionButton(Card card) {
         Button actionButton;
 
@@ -615,10 +559,7 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Enters replace mode - highlights deck slots and waits for user to select a
-     * slot
-     */
+    //Enters replace mode - highlights deck slots and waits for user to select aslot
     private void enterReplaceMode(Card cardToReplace) {
         this.replaceMode = true;
         this.cardToReplace = cardToReplace;
@@ -631,9 +572,7 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Exits replace mode - removes highlights
-     */
+    //Exits replace mode
     private void exitReplaceMode() {
         this.replaceMode = false;
         this.cardToReplace = null;
@@ -644,10 +583,7 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Replaces a card in the deck with a new card
-     * The new card takes the exact position of the old card in the deck
-     */
+    //Replaces a card in the deck with a new card
     private void replaceCardInDeck(Card oldCard, Card newCard) {
         // Find the slot with the old card FIRST (before modifying deck)
         DeckSlotView targetSlot = null;
@@ -660,14 +596,12 @@ public class DeckBuilderController {
 
         // If we found the slot, perform the replacement
         if (targetSlot != null) {
-            // Delegate to service (Controller pattern)
             deckService.replaceCardInDeck(deck, oldCard, newCard);
 
             // Replace the card in the UI at the SAME position (UI concern)
             targetSlot.setCard(newCard);
 
             // Reorganize bottom grid to reflect changes
-            // (oldCard will now appear in bottom, newCard will be hidden)
             reorganizeCardGrid();
 
             // Update button states
@@ -681,19 +615,12 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Updates button states for cards (USE vs REPLACE)
-     * Removes current buttons to force refresh on next interaction
-     */
+    //Removes current buttons to force refresh on next interaction
     private void updateCardButtons() {
-        // Simply remove current buttons - they'll be recreated with correct state on
-        // next click
         removeCardButtons();
     }
 
-    /**
-     * Reorganizes deck slots so that all cards move up to fill empty slots
-     */
+    //Reorganizes deck slots so that all cards move up to fill empty slots
     private void reorganizeDeckSlots() {
         List<Card> currentCards = new ArrayList<>();
 
@@ -715,9 +642,7 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Centers the average elixir cost display within the brown background area
-     */
+    //Centers the average elixir cost display within the brown background area
     private void centerAverageElixirInBrownArea() {
         if (averageElixirContainer != null && deckSlotsBackground != null) {
             // Use Platform.runLater to ensure layout is complete
@@ -726,7 +651,6 @@ public class DeckBuilderController {
                 averageElixirContainer.layout();
                 double containerWidth = averageElixirContainer.getWidth();
                 if (containerWidth == 0) {
-                    // Fallback: calculate preferred width
                     containerWidth = averageElixirContainer.prefWidth(-1);
                 }
                 // Center horizontally within 620px brown area
@@ -736,10 +660,7 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Updates the average elixir cost display
-     * UI concern - appropriate for controller
-     */
+    //Updates the average elixir cost display
     private void updateAverageElixirCost() {
         if (averageElixirValue != null) {
             // Delegate calculation to service (Information Expert)
@@ -748,18 +669,13 @@ public class DeckBuilderController {
         }
     }
 
-    /**
-     * Loads the user's saved deck from their account
-     * Preserves the exact slot positions of cards
-     * Delegates to service (Controller pattern)
-     */
+    //Loads the user's saved deck from their account with exact slot positions of cards
     private void loadUserDeck() {
         User currentUser = authService.getCurrentUser();
         if (currentUser == null) {
             return; // No user logged in
         }
 
-        // Delegate to service (Controller pattern)
         Map<Integer, Card> deckMap = deckService.loadUserDeckWithPositions(currentUser);
 
         // Update UI with loaded cards
@@ -777,12 +693,7 @@ public class DeckBuilderController {
         reorganizeCardGrid();
     }
 
-    /**
-     * Saves the current deck to the user's account
-     * Saves cards in their exact slot positions (left to right, top to bottom)
-     * Empty slots are saved as empty strings to preserve positions
-     * Delegates to service (Controller pattern)
-     */
+    //Saves the current deck to the user's account in their exact slot positions
     private void saveDeck() {
         User currentUser = authService.getCurrentUser();
         if (currentUser == null) {

@@ -4,10 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.awt.Point; // Using Point for simple coordinates
 
-/**
- * Represents the persistent configuration of an arena.
- * Information Expert: Knows the layout configuration (bridges, towers, etc.).
- */
+/** Represents the persistent configuration of an arena.
+ * Information Expert: Knows the layout configuration (bridges, towers, etc.).*/
 public class ArenaLayout {
     private String name;
     private List<Point> bridgePositions;

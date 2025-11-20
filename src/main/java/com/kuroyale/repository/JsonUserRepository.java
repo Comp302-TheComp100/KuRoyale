@@ -18,21 +18,15 @@ import com.kuroyale.model.User;
 /**
  * JSON-based implementation of UserRepository
  * Handles persistence of User objects to JSON file
- * Follows Pure Fabrication GRASP pattern - created to handle persistence
- * concerns
- * Follows Low Coupling - separated from business logic
- */
+ * Follows Pure Fabrication - created to handle persistence concerns
+ * Follows Low Coupling - separated from business logic*/
 public class JsonUserRepository implements UserRepository {
 
     private static final String DATA_DIR = System.getProperty("user.home") + File.separator + ".kuroyale";
     private static final String USERS_FILE = DATA_DIR + File.separator + "users.json";
 
-    /**
-     * Constructor ensures data directory exists
-     */
-    public JsonUserRepository() {
-        ensureDataDirectoryExists();
-    }
+    //Constructor ensures data directory exists
+    public JsonUserRepository() {ensureDataDirectoryExists();}
 
     @Override
     public User findByUsername(String username) throws IOException {
@@ -131,12 +125,7 @@ public class JsonUserRepository implements UserRepository {
         return findByUsername(username) != null;
     }
 
-    /**
-     * Saves all users to the JSON file
-     * 
-     * @param users List of User objects to save
-     * @throws IOException If there's an error writing the file
-     */
+    //Saves all users to the JSON file
     private void saveAll(List<User> users) throws IOException {
         ensureDataDirectoryExists();
 
@@ -182,9 +171,7 @@ public class JsonUserRepository implements UserRepository {
         }
     }
 
-    /**
-     * Ensures the data directory exists
-     */
+    //Ensures the data directory exists
     private void ensureDataDirectoryExists() {
         File dataDir = new File(DATA_DIR);
         if (!dataDir.exists()) {

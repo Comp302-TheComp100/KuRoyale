@@ -20,32 +20,23 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 
-/**
- * Controller for the login/sign-in screen
- * Follows Controller GRASP pattern - thin controller that delegates to services
- * Follows Low Coupling - uses services via dependency injection
- * Follows High Cohesion - focused only on UI concerns
- */
+/*Controller for the login/sign-in screen
+ *  Controller GRASP pattern - thin controller that delegates to services
+ *  Low Coupling - uses services via dependency injection
+ *  High Cohesion - focused only on UI concerns*/
 public class LoginController {
-
     @FXML
     private VBox root;
-
     @FXML
     private TextField usernameField;
-
     @FXML
     private PasswordField passwordField;
-
     @FXML
     private Button createAccountButton;
-
     @FXML
     private Button loginButton;
-
     @FXML
     private Label errorLabel;
-
     @FXML
     private Label titleLabel;
     
@@ -61,10 +52,7 @@ public class LoginController {
         this.authService = ServiceFactory.getInstance().getAuthenticationService();
     }
 
-    /**
-     * Initialize styles after FXML is loaded
-     * UI concern - appropriate for controller
-     */
+    //Initialize styles after FXML is loaded
     public void initializeStyles() {
         // Apply CSS classes
         root.getStyleClass().add("main-menu-background");
@@ -73,18 +61,15 @@ public class LoginController {
             titleLabel.getStyleClass().add("login-title-label");
         }
 
-        // Apply form field CSS classes
+        // Apply CSS classes
         usernameField.getStyleClass().add("login-form-field");
         passwordField.getStyleClass().add("login-form-field");
-        
-        // Apply button CSS classes
         createAccountButton.getStyleClass().add("login-button");
         loginButton.getStyleClass().add("login-button");
         
         // Apply error label CSS class
         errorLabel.getStyleClass().add("error-label");
         
-        // Add programmatic hover effects for login buttons (scale transforms)
         addLoginButtonHoverEffects(createAccountButton);
         addLoginButtonHoverEffects(loginButton);
         
@@ -92,9 +77,7 @@ public class LoginController {
         playStartMusic();
     }
     
-    /**
-     * Add programmatic hover effects for login buttons (scale transforms)
-     */
+    //Add programmatic hover effects for login buttons (scale transforms)
     private void addLoginButtonHoverEffects(Button button) {
         button.setOnMouseEntered(e -> {
             button.setScaleX(1.05);
@@ -106,13 +89,8 @@ public class LoginController {
             button.setScaleY(1.0);
         });
         
-        button.setOnMousePressed(e -> {
-            button.setTranslateY(2);
-        });
-        
-        button.setOnMouseReleased(e -> {
-            button.setTranslateY(0);
-        });
+        button.setOnMousePressed(e -> {button.setTranslateY(2);});
+        button.setOnMouseReleased(e -> {button.setTranslateY(0);});
     }
 
     @FXML
@@ -121,10 +99,9 @@ public class LoginController {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
-        // Clear previous error (UI concern)
+        // Clear previous error
         clearError();
 
-        // Basic UI validation - fields not empty
         if (username.isEmpty() || password.isEmpty()) {
             showError("Please enter both username and password");
             return;
@@ -142,14 +119,10 @@ public class LoginController {
         }
 
         try {
-            // Delegate to service (Controller pattern)
             com.kuroyale.model.User user = authService.register(username, password);
             if (user != null) {
-                // Set as current user
                 authService.setCurrentUser(user);
-                // Stop start screen music
                 stopStartMusic();
-                // Navigate to main menu (UI concern)
                 navigateToMainMenu();
             } else {
                 showError("Username already exists. Please choose a different username.");
@@ -166,24 +139,19 @@ public class LoginController {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
-        // Clear previous error (UI concern)
+        // Clear previous error
         clearError();
 
-        // Basic UI validation - fields not empty
         if (username.isEmpty() || password.isEmpty()) {
             showError("Please enter both username and password");
             return;
         }
 
         try {
-            // Delegate to service (Controller pattern)
             com.kuroyale.model.User user = authService.authenticate(username, password);
             if (user != null) {
-                // Set as current user
                 authService.setCurrentUser(user);
-                // Stop start screen music
                 stopStartMusic();
-                // Navigate to main menu (UI concern)
                 navigateToMainMenu();
             } else {
                 showError("Invalid username or password");
@@ -194,26 +162,19 @@ public class LoginController {
         }
     }
 
-    /**
-     * Clears error message (UI concern)
-     */
+    //Clears error message
     private void clearError() {
         errorLabel.setText("");
         errorLabel.setVisible(false);
     }
 
-    /**
-     * Shows an error message (UI concern)
-     * @param message The error message to display
-     */
+    //Shows an error message (UI concern)
     private void showError(String message) {
         errorLabel.setText(message);
         errorLabel.setVisible(true);
     }
 
-    /**
-     * Plays the start screen music
-     */
+    //Plays the start screen music
     private void playStartMusic() {
         try {
             String soundPath = getClass().getResource("/musics/start.mp3").toExternalForm();
@@ -226,9 +187,7 @@ public class LoginController {
         }
     }
     
-    /**
-     * Stops the start screen music
-     */
+    //Stops the start screen music
     private void stopStartMusic() {
         if (startMusicPlayer != null) {
             startMusicPlayer.stop();
@@ -236,9 +195,7 @@ public class LoginController {
         }
     }
 
-    /**
-     * Navigates to the main menu (UI concern)
-     */
+    //Navigates to the main menu (UI concern)
     private void navigateToMainMenu() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));

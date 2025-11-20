@@ -1,9 +1,7 @@
 package com.kuroyale.model;
 
-/**
- * Represents a single cell on the arena grid.
- * Information Expert: Knows its own coordinates and type.
- */
+/*Represents a single cell on the arena grid.
+ * Information Expert: Knows its own coordinates and type.*/
 public class Tile {
     private final int x;
     private final int y;
@@ -18,15 +16,12 @@ public class Tile {
     public int getX() {
         return x;
     }
-
     public int getY() {
         return y;
     }
-
     public TileType getType() {
         return type;
     }
-
     public void setType(TileType type) {
         this.type = type;
     }

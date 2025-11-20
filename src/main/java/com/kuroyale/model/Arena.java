@@ -2,11 +2,9 @@ package com.kuroyale.model;
 
 import java.awt.Point;
 
-/**
- * Represents the active game board during a match.
+/*Represents the active game board during a match.
  * Information Expert: Knows the state of the board (tiles, valid positions).
- * High Cohesion: Focuses solely on map geometry and state.
- */
+ * High Cohesion: Focuses solely on map geometry and state.*/
 public class Arena {
     public static final int WIDTH = 18;
     public static final int HEIGHT = 32;
@@ -39,7 +37,6 @@ public class Arena {
                 if (isValidPosition(p.x, p.y)) {
                     grid[p.x][p.y].setType(TileType.BRIDGE);
                     // Bridges usually span the river, so we might need to set adjacent tiles too
-                    // For now, we assume the point represents the center or start of the bridge
                 }
             }
         }
@@ -55,7 +52,6 @@ public class Arena {
         }
         return null;
     }
-
     public ArenaLayout getLayout() {
         return layout;
     }

@@ -2,10 +2,7 @@ package com.kuroyale.util;
 
 import javafx.scene.media.MediaPlayer;
 
-/**
- * Singleton class to manage audio volumes across the application.
- * Follows Singleton pattern.
- */
+//Singleton class to manage audio volumes across the application.
 public class AudioManager {
     private static AudioManager instance;
 

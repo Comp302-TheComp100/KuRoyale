@@ -8,10 +8,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 
-/**
- * Controller for the Arena Design UI.
- * GRASP Pattern: Controller - Delegates business logic to ArenaService.
- */
+/* Controller for the Arena Design UI.
+ * GRASP Pattern: Controller - Delegates business logic to ArenaService.*/
 public class ArenaDesignController {
 
     @FXML
@@ -40,7 +38,6 @@ public class ArenaDesignController {
         if (authService.isLoggedIn()) {
             arenaService.setCurrentUser(authService.getCurrentUser());
         }
-
         // Load the saved layout
         currentLayout = arenaService.loadArenaLayout();
 
@@ -114,9 +111,7 @@ public class ArenaDesignController {
                 // Keep click for removing bridges
                 rect.setOnMouseClicked(e -> {
                     if (tile.getType() == com.kuroyale.model.TileType.BRIDGE) {
-                        // Remove the 2x2 bridge
-                        // To handle touching bridges (e.g. 3,4 and 5,6), we need to identify which pair
-                        // this tile belongs to.
+                        // Remove the 2x2 bridge.
                         // Algorithm: Find the start of the contiguous bridge block to the left.
                         // Then decompose into 2-wide segments.
 
@@ -186,8 +181,7 @@ public class ArenaDesignController {
             startX = com.kuroyale.model.Arena.WIDTH - 2;
         }
 
-        // Check if space is already occupied (Direct overlap only)
-        // We allow touching (e.g. 3,4 and 5,6) but not overlapping (e.g. 3,4 and 4,5)
+        // Check if space is already occupied
         boolean occupied = false;
         for (int dx = 0; dx < 2; dx++) {
             for (int dy = 0; dy < 2; dy++) {
@@ -201,7 +195,7 @@ public class ArenaDesignController {
         }
 
         if (occupied) {
-            // Cannot place here (overlap)
+            //overlap
             return;
         }
 

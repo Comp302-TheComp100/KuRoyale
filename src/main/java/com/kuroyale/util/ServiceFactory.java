@@ -9,10 +9,8 @@ import com.kuroyale.service.ArenaService;
 
 /**
  * Service Factory for managing service instances and dependencies
- * Follows Pure Fabrication GRASP pattern - created to manage object creation
- * and dependencies
+ * Follows Pure Fabrication GRASP pattern - created to manage object creation and dependencies
  * Follows Low Coupling - centralizes dependency management
- * Implements Service Locator pattern for simple dependency injection
  */
 public class ServiceFactory {
 
@@ -42,11 +40,7 @@ public class ServiceFactory {
         this.arenaService = new ArenaService(userRepository);
     }
 
-    /**
-     * Gets the singleton instance of ServiceFactory
-     * 
-     * @return The ServiceFactory instance
-     */
+    //Gets the singleton instance of ServiceFactory
     public static synchronized ServiceFactory getInstance() {
         if (instance == null) {
             instance = new ServiceFactory();
@@ -54,64 +48,26 @@ public class ServiceFactory {
         return instance;
     }
 
-    /**
-     * Initializes the ServiceFactory
-     * Should be called once at application startup
-     */
+    //Initializes the ServiceFactory
     public static void initialize() {
         getInstance();
     }
 
-    /**
-     * Gets the UserRepository instance
-     * 
-     * @return UserRepository
-     */
-    public UserRepository getUserRepository() {
-        return userRepository;
-    }
+    //Gets the UserRepository instance
+    public UserRepository getUserRepository() {return userRepository;}
 
-    /**
-     * Gets the CardCatalog instance
-     * 
-     * @return CardCatalog
-     */
-    public CardCatalog getCardCatalog() {
-        return cardCatalog;
-    }
+    //Gets the CardCatalog instance
+    public CardCatalog getCardCatalog() {return cardCatalog;}
 
-    /**
-     * Gets the AuthenticationService instance
-     * 
-     * @return AuthenticationService
-     */
-    public AuthenticationService getAuthenticationService() {
-        return authenticationService;
-    }
+    //Gets the AuthenticationService instance
+    public AuthenticationService getAuthenticationService() {return authenticationService;}
 
-    /**
-     * Gets the DeckManagementService instance
-     * 
-     * @return DeckManagementService
-     */
-    public DeckManagementService getDeckManagementService() {
-        return deckManagementService;
-    }
+    //Gets the DeckManagementService instance
+    public DeckManagementService getDeckManagementService() {return deckManagementService;}
 
-    /**
-     * Gets the ArenaService instance
-     * 
-     * @return ArenaService
-     */
-    public ArenaService getArenaService() {
-        return arenaService;
-    }
+    //Gets the ArenaService instance
+    public ArenaService getArenaService() {return arenaService;}
 
-    /**
-     * Resets the singleton instance (useful for testing)
-     * Package-private for testing purposes
-     */
-    static void reset() {
-        instance = null;
-    }
+    //Resets the singleton instance
+    static void reset() {instance = null;}
 }

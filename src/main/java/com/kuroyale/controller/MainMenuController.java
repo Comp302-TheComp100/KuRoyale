@@ -18,28 +18,21 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 
-/**
- * Controller for the main menu screen
- * Follows Controller GRASP pattern - thin controller focused on UI concerns
- * Follows Low Coupling - uses services via dependency injection
- */
+/* Controller for the main menu screen
+ *  Controller GRASP pattern - thin controller focused on UI concerns
+ *  Low Coupling - uses services via dependency injection*/
 public class MainMenuController {
 
     @FXML
     private AnchorPane root;
-
     @FXML
     private Label titleLabel;
-
     @FXML
     private Button deckBuilderButton;
-
     @FXML
     private Button startMatchButton;
-
     @FXML
     private Button arenaDesignButton;
-
     @FXML
     private Button settingsButton;
 
@@ -52,9 +45,7 @@ public class MainMenuController {
         playMainMenuMusic();
     }
 
-    /**
-     * Initialize styles after FXML is loaded
-     */
+    //Initialize styles after FXML is loaded
     private void initializeStyles() {
         // Apply CSS classes
         root.getStyleClass().add("main-menu-background");
@@ -62,42 +53,24 @@ public class MainMenuController {
         if (titleLabel != null) {
             titleLabel.getStyleClass().add("title-label");
         }
-
-        // Apply button CSS classes
         deckBuilderButton.getStyleClass().add("menu-button");
         startMatchButton.getStyleClass().add("menu-button");
         arenaDesignButton.getStyleClass().add("menu-button");
         settingsButton.getStyleClass().add("menu-button");
 
-        // Add programmatic hover effects for scale transforms (CSS can't handle this
-        // easily)
+        // Add programmatic hover effects for scale transforms
         addMenuButtonHoverEffects(deckBuilderButton);
         addMenuButtonHoverEffects(startMatchButton);
         addMenuButtonHoverEffects(arenaDesignButton);
         addMenuButtonHoverEffects(settingsButton);
     }
 
-    /**
-     * Add programmatic hover effects for menu buttons (scale transforms)
-     */
+    //Add programmatic hover effects for menu buttons (scale transforms)
     private void addMenuButtonHoverEffects(Button button) {
-        button.setOnMouseEntered(e -> {
-            button.setScaleX(1.05);
-            button.setScaleY(1.05);
-        });
-
-        button.setOnMouseExited(e -> {
-            button.setScaleX(1.0);
-            button.setScaleY(1.0);
-        });
-
-        button.setOnMousePressed(e -> {
-            button.setTranslateY(2);
-        });
-
-        button.setOnMouseReleased(e -> {
-            button.setTranslateY(0);
-        });
+        button.setOnMouseEntered(e -> {button.setScaleX(1.05);button.setScaleY(1.05);});
+        button.setOnMouseExited(e -> {button.setScaleX(1.0);button.setScaleY(1.0);});
+        button.setOnMousePressed(e -> {button.setTranslateY(2);});
+        button.setOnMouseReleased(e -> {button.setTranslateY(0);});
     }
 
     @FXML
@@ -108,7 +81,6 @@ public class MainMenuController {
             Parent root = loader.load();
 
             // Styles are initialized in DeckBuilderController's initialize() method
-
             Stage stage = (Stage) deckBuilderButton.getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);
             // Load stylesheet for new scene
@@ -174,10 +146,7 @@ public class MainMenuController {
         alert.showAndWait();
     }
 
-    /**
-     * Plays the main menu music in a loop
-     * Uses static player to persist across scene changes
-     */
+    //Plays the main menu music in a loop
     private void playMainMenuMusic() {
         try {
             // Only create and start music if it's not already playing

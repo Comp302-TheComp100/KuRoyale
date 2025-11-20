@@ -3,16 +3,10 @@ package com.kuroyale.util;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/**
- * Utility class for password hashing using SHA-256
- */
+//Utility class for password hashing using SHA-256
 public class PasswordUtil {
     
-    /**
-     * Hashes a password using SHA-256 algorithm
-     * @param password The plain text password
-     * @return The hexadecimal hash string
-     */
+    //Hashes a password using SHA-256 algorithm
     public static String hashPassword(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -33,15 +27,9 @@ public class PasswordUtil {
         }
     }
     
-    /**
-     * Verifies a password against a hash
-     * @param password The plain text password to verify
-     * @param hash The stored hash to compare against
-     * @return true if password matches hash, false otherwise
-     */
+    //Verifies a password against a hash
     public static boolean verifyPassword(String password, String hash) {
         String passwordHash = hashPassword(password);
         return passwordHash.equals(hash);
     }
 }
-

@@ -19,16 +19,12 @@ public class SettingsController {
 
     @FXML
     private StackPane root;
-
     @FXML
     private Slider musicSlider;
-
     @FXML
     private Slider sfxSlider;
-
     @FXML
     private CheckBox buttonSoundsCheckBox;
-
     @FXML
     private Button backButton;
 

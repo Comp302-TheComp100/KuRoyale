@@ -6,10 +6,7 @@ import javafx.scene.paint.Color;
 
 /**
  * Utility class for dynamic styling effects and constants
- * Most styling has been migrated to CSS - this class now only contains:
- * - Color and font constants (for inline styles)
- * - Complex programmatic effects that CSS cannot handle
- */
+ * Complex programmatic effects that CSS cannot handle*/
 public class StyleHelper {
 
     // PseudoClass definitions for state management
@@ -17,7 +14,7 @@ public class StyleHelper {
     public static final PseudoClass FILLED_PSEUDO_CLASS = PseudoClass.getPseudoClass("filled");
     public static final PseudoClass HIGHLIGHT_PSEUDO_CLASS = PseudoClass.getPseudoClass("highlight");
 
-    // Color constants (used in inline styles where CSS variables aren't accessible)
+    // Color constants
     public static final String COLOR_PRIMARY = "#f97316";
     public static final String COLOR_PRIMARY_HOVER = "#fb923c";
     public static final String COLOR_PRIMARY_PRESSED = "#ea580c";
@@ -44,11 +41,7 @@ public class StyleHelper {
     // Font family (used in inline styles)
     public static final String FONT_FAMILY = "Clash";
 
-    /**
-     * Get inner shadow effect for recessed elements
-     * This complex effect with specific parameters is kept programmatic
-     * as CSS cannot easily replicate the exact InnerShadow parameters
-     */
+    //Get inner shadow effect for recessed elements
     public static InnerShadow getInnerShadowEffect() {
         InnerShadow innerShadow = new InnerShadow();
         innerShadow.setColor(Color.rgb(0, 0, 0, 0.5));

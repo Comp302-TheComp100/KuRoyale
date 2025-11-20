@@ -3,15 +3,11 @@ package com.kuroyale.model;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Factory class for creating all card instances in the game
+/*Factory class for creating all card instances in the game
  * Separates card creation logic from the Card model
- * Follows Creator GRASP pattern - Factory has initialization data for cards
- * Made instance-based to support Low Coupling (no static dependencies)
- */
+ *  Creator  pattern - Factory has initialization data for cards
+ * Made instance-based to support Low Coupling*/
 public class CardFactory {
-
-    // TROOPS (15 cards)
 
     public Card createKnight() {
         return new Card("Knight", 3, CardType.TROOP, 600, 75, 1.1, 0,
@@ -185,9 +181,7 @@ public class CardFactory {
                 "Massive damage in a small area. Expensive but powerful. Radius: 2 tiles.", 1, 0);
     }
 
-    /**
-     * Returns a list of all 28 available cards
-     */
+    //Returns a list of all 28 available cards
     public List<Card> getAllCards() {
         List<Card> cards = new ArrayList<>();
 

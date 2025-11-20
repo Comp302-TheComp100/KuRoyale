@@ -10,16 +10,13 @@ import javafx.scene.Scene;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-/**
- * Main entry point for KU Royale application
- * Initializes the ServiceFactory for dependency injection
- */
+//Main entry point for KU Royale application - Initializes the ServiceFactory
 public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
         try {
-            // Initialize ServiceFactory (dependency injection container)
+            // Initialize ServiceFactory
             // Follows Low Coupling - centralized service management
             ServiceFactory.initialize();
             
