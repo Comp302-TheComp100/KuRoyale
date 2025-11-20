@@ -14,6 +14,7 @@ public class User {
     private String username;
     private String passwordHash;
     private List<String> deck; // List of card names
+    private ArenaLayout arenaLayout; // User's custom arena layout
 
     public User() {
         this.deck = new ArrayList<>();
@@ -48,44 +49,48 @@ public class User {
     public void setDeck(List<String> deck) {
         this.deck = deck != null ? deck : new ArrayList<>();
     }
-    
+
     // Information Expert: User knows its own password and can validate it
     /**
      * Validates a plain text password against this user's stored hash
+     * 
      * @param password The plain text password to validate
      * @return true if password matches, false otherwise
      */
     public boolean validatePassword(String password) {
         return PasswordUtil.verifyPassword(password, this.passwordHash);
     }
-    
+
     // Information Expert: User knows if it has a deck
     /**
      * Checks if the user has a deck configured
+     * 
      * @return true if user has at least one card in deck, false otherwise
      */
     public boolean hasDeck() {
         return deck != null && !deck.isEmpty() && deck.stream().anyMatch(card -> card != null && !card.isEmpty());
     }
-    
+
     // Information Expert: User manages its own deck
     /**
      * Updates the user's deck with new card names
+     * 
      * @param cardNames List of card names to set as deck
      */
     public void updateDeck(List<String> cardNames) {
         this.deck = cardNames != null ? new ArrayList<>(cardNames) : new ArrayList<>();
     }
-    
+
     /**
      * Clears all cards from the user's deck
      */
     public void clearDeck() {
         this.deck.clear();
     }
-    
+
     /**
      * Gets the number of cards in the user's deck
+     * 
      * @return Number of non-empty card slots
      */
     public int getDeckSize() {
@@ -94,5 +99,31 @@ public class User {
         }
         return (int) deck.stream().filter(card -> card != null && !card.isEmpty()).count();
     }
-}
 
+    /**
+     * Gets the user's custom arena layout
+     * 
+     * @return The user's ArenaLayout, or null if not set
+     */
+    public ArenaLayout getArenaLayout() {
+        return arenaLayout;
+    }
+
+    /**
+     * Sets the user's custom arena layout
+     * 
+     * @param arenaLayout The ArenaLayout to set
+     */
+    public void setArenaLayout(ArenaLayout arenaLayout) {
+        this.arenaLayout = arenaLayout;
+    }
+
+    /**
+     * Checks if the user has a custom arena layout
+     * 
+     * @return true if user has a custom arena layout, false otherwise
+     */
+    public boolean hasArenaLayout() {
+        return arenaLayout != null;
+    }
+}

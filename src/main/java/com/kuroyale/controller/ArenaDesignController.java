@@ -2,6 +2,7 @@ package com.kuroyale.controller;
 
 import com.kuroyale.model.ArenaLayout;
 import com.kuroyale.service.ArenaService;
+import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.util.ServiceFactory;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
@@ -20,11 +21,14 @@ public class ArenaDesignController {
     private TextField arenaNameField;
 
     private final ArenaService arenaService;
+    private final AuthenticationService authService;
     private ArenaLayout currentLayout;
 
     public ArenaDesignController() {
-        // Get service from factory (Dependency Injection / Service Locator)
-        this.arenaService = ServiceFactory.getInstance().getArenaService();
+        // Get services from factory (Dependency Injection / Service Locator)
+        ServiceFactory factory = ServiceFactory.getInstance();
+        this.arenaService = factory.getArenaService();
+        this.authService = factory.getAuthenticationService();
     }
 
     @FXML
@@ -32,6 +36,11 @@ public class ArenaDesignController {
 
     @FXML
     public void initialize() {
+        // Set current user in arena service so it can save to user's profile
+        if (authService.isLoggedIn()) {
+            arenaService.setCurrentUser(authService.getCurrentUser());
+        }
+
         // Load the saved layout
         currentLayout = arenaService.loadArenaLayout();
 
@@ -212,14 +221,24 @@ public class ArenaDesignController {
             if (name != null && !name.isEmpty()) {
                 currentLayout.setName(name);
             }
-            arenaService.saveArenaLayout(currentLayout);
+            try {
+                arenaService.saveArenaLayout(currentLayout);
 
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                    javafx.scene.control.Alert.AlertType.INFORMATION);
-            alert.setTitle("Success");
-            alert.setHeaderText(null);
-            alert.setContentText("Arena layout saved successfully!");
-            alert.showAndWait();
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                        javafx.scene.control.Alert.AlertType.INFORMATION);
+                alert.setTitle("Success");
+                alert.setHeaderText(null);
+                alert.setContentText("Arena layout saved successfully!");
+                alert.showAndWait();
+            } catch (java.io.IOException e) {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                        javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText(null);
+                alert.setContentText("Failed to save arena layout: " + e.getMessage());
+                alert.showAndWait();
+                e.printStackTrace();
+            }
         }
     }
 
