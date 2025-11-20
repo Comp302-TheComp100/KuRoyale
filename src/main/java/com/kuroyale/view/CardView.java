@@ -1,7 +1,6 @@
 package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -9,9 +8,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 
-/**
- * Simple card view component showing only image, name, and cost
- */
+//Simple card view component showing only image, name, and cost
 public class CardView extends StackPane {
     private final Card card;
 
@@ -22,8 +19,6 @@ public class CardView extends StackPane {
         setPrefSize(90, 120);
         setMinSize(90, 120);
         setMaxSize(90, 120);
-
-        // Apply CSS class
         getStyleClass().add("card-view");
         
         // Add programmatic hover effects for scale transforms
@@ -82,8 +77,8 @@ public class CardView extends StackPane {
         ImageView imageView = new ImageView();
         imageView.setFitWidth(90);
         imageView.setFitHeight(120);
-        imageView.setPreserveRatio(false); // Fill entire card space
-        imageView.setSmooth(true); // Better image quality
+        imageView.setPreserveRatio(false);
+        imageView.setSmooth(true);
 
         try {
             String imagePath = card.getImagePath();
@@ -91,12 +86,9 @@ public class CardView extends StackPane {
             imageView.setImage(image);
         } catch (Exception e) {
             // Image failed to load - return empty ImageView
-            // The card will still display with elixir cost overlay
         }
-
         return imageView;
     }
-
     public Card getCard() {
         return card;
     }

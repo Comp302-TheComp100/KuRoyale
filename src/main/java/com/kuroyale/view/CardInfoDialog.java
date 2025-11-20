@@ -18,9 +18,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 
-/**
- * Dialog showing detailed card information with swipeable pages
- */
+//Dialog showing detailed card information with swipeable pages
 public class CardInfoDialog extends StackPane {
     private final Card card;
     private int currentPage = 0; // 0 = basic info, 1 = detailed stats
@@ -33,7 +31,7 @@ public class CardInfoDialog extends StackPane {
     public CardInfoDialog(Card card, Runnable onClose) {
         this.card = card;
 
-        // Full screen overlay - apply CSS class
+        // Full screen overlay
         getStyleClass().add("overlay-background");
 
         // Main container - apply CSS class
@@ -65,7 +63,6 @@ public class CardInfoDialog extends StackPane {
         closeButton.setOnAction(e -> onClose.run());
 
         mainContainer.getChildren().addAll(contentPane, pageIndicator, closeButton);
-
         getChildren().add(mainContainer);
 
         // Setup swipe gesture
@@ -117,14 +114,11 @@ public class CardInfoDialog extends StackPane {
 
         // Type badge
         Label typeLabel = new Label(card.getType().toString());
-        typeLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; " +
-                "-fx-font-family: '" + StyleHelper.FONT_FAMILY + "', Arial; " +
-                "-fx-text-fill: " + StyleHelper.COLOR_WHITE + "; " +
-                "-fx-background-color: " + getTypeColor() + "; " +
-                "-fx-padding: 5 15 5 15; -fx-background-radius: 5;");
+        typeLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
+                "', Arial; " + "-fx-text-fill: " + StyleHelper.COLOR_WHITE + "; " + "-fx-background-color: " + getTypeColor() +
+                "; " + "-fx-padding: 5 15 5 15; -fx-background-radius: 5;");
 
         page.getChildren().addAll(imageView, nameLabel, costBox, typeLabel);
-
         return page;
     }
 
@@ -141,46 +135,19 @@ public class CardInfoDialog extends StackPane {
 
         // Stats
         VBox statsBox = new VBox(5);
-
         addStat(statsBox, "Cost", card.getCost() + " elixir");
         addStat(statsBox, "Type", card.getType().toString());
 
-        if (card.getHp() > 0) {
-            addStat(statsBox, "HP", String.valueOf(card.getHp()));
-        }
-
-        if (card.getDamage() > 0) {
-            addStat(statsBox, "DMG", String.valueOf(card.getDamage()));
-            if (card.getHitSpeed() > 0) {
-                addStat(statsBox, "DPS", String.format("%.1f", card.getDPS()));
-            }
-        }
-
-        if (card.getHitSpeed() > 0) {
-            addStat(statsBox, "Hit Speed", card.getHitSpeed() + "s");
-        }
-
-        if (card.getRange() > 0) {
-            addStat(statsBox, "Range", card.getRange() + " tiles");
-        }
-
-        if (card.getSpeed() != SpeedType.NONE) {
-            addStat(statsBox, "Speed", formatSpeed(card.getSpeed().toString()));
-        }
-
+        if (card.getHp() > 0) {addStat(statsBox, "HP", String.valueOf(card.getHp()));}
+        if (card.getDamage() > 0) {addStat(statsBox, "DMG", String.valueOf(card.getDamage()));
+            if (card.getHitSpeed() > 0) {addStat(statsBox, "DPS", String.format("%.1f", card.getDPS()));}}
+        if (card.getHitSpeed() > 0) {addStat(statsBox, "Hit Speed", card.getHitSpeed() + "s");}
+        if (card.getRange() > 0) {addStat(statsBox, "Range", card.getRange() + " tiles");}
+        if (card.getSpeed() != SpeedType.NONE) {addStat(statsBox, "Speed", formatSpeed(card.getSpeed().toString()));}
         addStat(statsBox, "Target", card.getTarget().toString());
-
-        if (card.isAreaEffect()) {
-            addStat(statsBox, "Area Effect", "Yes");
-        }
-
-        if (card.getCount() > 1) {
-            addStat(statsBox, "Count", card.getCount() + "x");
-        }
-
-        if (card.getLifetime() > 0) {
-            addStat(statsBox, "Lifetime", card.getLifetime() + "s");
-        }
+        if (card.isAreaEffect()) {addStat(statsBox, "Area Effect", "Yes");}
+        if (card.getCount() > 1) {addStat(statsBox, "Count", card.getCount() + "x");}
+        if (card.getLifetime() > 0) {addStat(statsBox, "Lifetime", card.getLifetime() + "s");}
 
         // Description
         Label descLabel = new Label(card.getDescription());
@@ -189,7 +156,6 @@ public class CardInfoDialog extends StackPane {
         descLabel.setMaxWidth(300);
 
         page.getChildren().addAll(nameLabel, statsBox, descLabel);
-
         return page;
     }
 
@@ -230,7 +196,7 @@ public class CardInfoDialog extends StackPane {
         imageView.setFitWidth(200);
         imageView.setFitHeight(200);
         imageView.setPreserveRatio(true);
-        imageView.setSmooth(true); // Better image quality
+        imageView.setSmooth(true);
 
         try {
             String imagePath = card.getImagePath();
@@ -266,7 +232,6 @@ public class CardInfoDialog extends StackPane {
         contentPane.setOnMousePressed(event -> {
             startX = event.getSceneX();
         });
-
         contentPane.setOnMouseDragged(event -> {
             double deltaX = event.getSceneX() - startX;
 
@@ -286,7 +251,6 @@ public class CardInfoDialog extends StackPane {
                     switchToPage(1);
                 }
             }
-
             // Reset position
             TranslateTransition transition = new TranslateTransition(Duration.millis(200), contentPane);
             transition.setToX(0);
@@ -296,7 +260,6 @@ public class CardInfoDialog extends StackPane {
 
     private void switchToPage(int pageIndex) {
         currentPage = pageIndex;
-
         page1.setVisible(pageIndex == 0);
         page2.setVisible(pageIndex == 1);
 

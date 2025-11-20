@@ -11,9 +11,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 
-/**
- * Custom JavaFX component for displaying a deck slot
- */
+//Custom JavaFX component for displaying a deck slot
 public class DeckSlotView extends StackPane {
     private static final PseudoClass FILLED_PSEUDO_CLASS = PseudoClass.getPseudoClass("filled");
     private static final PseudoClass HIGHLIGHT_PSEUDO_CLASS = PseudoClass.getPseudoClass("highlight");
@@ -22,7 +20,7 @@ public class DeckSlotView extends StackPane {
     private final VBox content;
     private final Label placeholderLabel;
     private final VBox cardContent;
-    private StackPane highlightOverlay; // Yellow border overlay for replace mode
+    private StackPane highlightOverlay;
     private boolean isHighlighted = false;
 
     public DeckSlotView() {
@@ -30,11 +28,9 @@ public class DeckSlotView extends StackPane {
         setPrefSize(90, 120);
         setMinSize(90, 120);
         setMaxSize(90, 120);
-
-        // Apply CSS class for deck slot
         getStyleClass().add("deck-slot");
 
-        // Create placeholder (+ icon) - transparent to blend with background
+        // Create placeholder (+ icon)
         placeholderLabel = new Label("+");
         placeholderLabel.setFont(new Font(48));
         placeholderLabel.setStyle("-fx-text-fill: rgba(148, 163, 184, 0.3);");
@@ -76,9 +72,7 @@ public class DeckSlotView extends StackPane {
         });
     }
 
-    /**
-     * Sets the card for this slot
-     */
+    //Sets the card for this slot
     public void setCard(Card newCard) {
         this.card = newCard;
 
@@ -97,8 +91,6 @@ public class DeckSlotView extends StackPane {
             }
             placeholderLabel.setVisible(false);
             cardContent.setVisible(true);
-
-            // Update card content
             updateCardDisplay();
         }
     }
@@ -110,8 +102,8 @@ public class DeckSlotView extends StackPane {
         javafx.scene.image.ImageView cardImage = new javafx.scene.image.ImageView();
         cardImage.setFitWidth(90);
         cardImage.setFitHeight(120);
-        cardImage.setPreserveRatio(false); // Fill entire slot
-        cardImage.setSmooth(true); // Better image quality
+        cardImage.setPreserveRatio(false);
+        cardImage.setSmooth(true);
         cardImage.setStyle("-fx-background-color: transparent;");
 
         try {
@@ -186,23 +178,13 @@ public class DeckSlotView extends StackPane {
         content.getChildren().add(imageContainer);
     }
 
-    /**
-     * Gets the current card in this slot
-     */
-    public Card getCard() {
-        return card;
-    }
+    //Gets the current card in this slot
+    public Card getCard() {return card;}
 
-    /**
-     * Checks if the slot is empty
-     */
-    public boolean isEmpty() {
-        return card == null;
-    }
+    //Checks if the slot is empty
+    public boolean isEmpty() {return card == null;}
 
-    /**
-     * Clears the slot
-     */
+    //Clears the slot
     public void clear() {
         card = null;
         pseudoClassStateChanged(FILLED_PSEUDO_CLASS, false);
@@ -213,9 +195,7 @@ public class DeckSlotView extends StackPane {
         content.getChildren().addAll(placeholderLabel, cardContent);
     }
 
-    /**
-     * Highlights the slot for replace mode
-     */
+    //Highlights the slot for replace mode
     public void highlightForReplace() {
         if (!isEmpty()) {
             isHighlighted = true;
@@ -230,9 +210,7 @@ public class DeckSlotView extends StackPane {
         }
     }
 
-    /**
-     * Removes highlight from the slot
-     */
+    //Removes highlight from the slot
     public void removeHighlight() {
         isHighlighted = false;
         pseudoClassStateChanged(HIGHLIGHT_PSEUDO_CLASS, false);
@@ -243,9 +221,7 @@ public class DeckSlotView extends StackPane {
         }
     }
 
-    /**
-     * Gets the placeholder color based on card type
-     */
+    //Gets the placeholder color based on card type
     private String getPlaceholderColor(CardType type) {
         switch (type) {
             case TROOP:
