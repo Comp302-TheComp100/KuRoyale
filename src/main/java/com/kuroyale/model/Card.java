@@ -13,7 +13,7 @@ public class Card {
     private final TargetType target;
     private final boolean areaEffect;
     private final String description;
-    private final int count; // For swarm troops (e.g., Skeletons spawn 4)
+    private final int count; // For swarm troops
     private final int lifetime; // For buildings
 
     public Card(String name, int cost, CardType type, int hp, int damage, double hitSpeed,
@@ -35,42 +35,18 @@ public class Card {
     }
 
     // Getters
-    public String getName() {
-        return name;
-    }
-    public int getCost() {
-        return cost;
-    }
-    public CardType getType() {
-        return type;
-    }
-    public int getHp() {
-        return hp;
-    }
-    public int getDamage() {
-        return damage;
-    }
-    public double getHitSpeed() {
-        return hitSpeed;
-    }
-    public double getRange() {
-        return range;
-    }
-    public SpeedType getSpeed() {
-        return speed;
-    }
-    public TargetType getTarget() {
-        return target;
-    }
-    public boolean isAreaEffect() {
-        return areaEffect;
-    }
-    public String getDescription() {
-        return description;
-    }
-    public int getCount() {
-        return count;
-    }
+    public String getName() {return name;}
+    public int getCost() {return cost;}
+    public CardType getType() {return type;}
+    public int getHp() {return hp;}
+    public int getDamage() {return damage;}
+    public double getHitSpeed() {return hitSpeed;}
+    public double getRange() {return range;}
+    public SpeedType getSpeed() {return speed;}
+    public TargetType getTarget() {return target;}
+    public boolean isAreaEffect() {return areaEffect;}
+    public String getDescription() {return description;}
+    public int getCount() {return count;}
     public int getLifetime() {
         return lifetime;
     }
@@ -97,7 +73,6 @@ public class Card {
         Card card = (Card) obj;
         return name.equals(card.name);
     }
-
     @Override
     public int hashCode() {return name.hashCode();}
 }
