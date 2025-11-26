@@ -27,7 +27,6 @@ public class ArenaDesignController {
     private javafx.scene.image.Image princessTowerComputerImg;
     private javafx.scene.image.Image kingTowerUserImg;
     private javafx.scene.image.Image kingTowerComputerImg;
-    // Bridge image removed as requested
 
     public ArenaDesignController() {
         // Get services from factory (Dependency Injection / Service Locator)
@@ -163,10 +162,14 @@ public class ArenaDesignController {
                             event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
                         }
                         // Towers: user's bottom half only (y > 16)
-                        // Also check bounds for 3x3 placement
-                        else if (("PRINCESS_TOWER".equals(dragType) || "KING_TOWER".equals(dragType))
-                                && finalY > 16 && finalX + 2 < com.kuroyale.model.Arena.WIDTH
+                        // Also check bounds for 3x3 (Princess) or 4x4 (King) placement
+                        else if ("PRINCESS_TOWER".equals(dragType) && finalY > 16
+                                && finalX + 2 < com.kuroyale.model.Arena.WIDTH
                                 && finalY + 2 < com.kuroyale.model.Arena.HEIGHT) {
+                            event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
+                        } else if ("KING_TOWER".equals(dragType) && finalY > 16
+                                && finalX + 3 < com.kuroyale.model.Arena.WIDTH
+                                && finalY + 3 < com.kuroyale.model.Arena.HEIGHT) {
                             event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
                         }
                     }
@@ -253,8 +256,8 @@ public class ArenaDesignController {
         if (currentLayout.getKingTowerPosition() != null) {
             GridPosition p = currentLayout.getKingTowerPosition();
             addTowerImage(p.getX(), p.getY(), kingTowerUserImg, true, true);
-            // Mirror Computer King
-            addTowerImage(p.getX(), com.kuroyale.model.Arena.HEIGHT - 3 - p.getY(), kingTowerComputerImg, false, true);
+            // Mirror Computer King (4x4)
+            addTowerImage(p.getX(), com.kuroyale.model.Arena.HEIGHT - 4 - p.getY(), kingTowerComputerImg, false, true);
         }
     }
 
@@ -262,9 +265,12 @@ public class ArenaDesignController {
         if (img == null)
             return;
 
+        int size = isKing ? 4 : 3;
+        int pixelSize = size * 18;
+
         javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView(img);
-        imageView.setFitWidth(54); // 3 * 18
-        imageView.setFitHeight(54); // 3 * 18
+        imageView.setFitWidth(pixelSize);
+        imageView.setFitHeight(pixelSize);
 
         // Add click to remove for user towers
         if (isUser) {
@@ -279,53 +285,54 @@ public class ArenaDesignController {
             });
         }
 
-        arenaGrid.add(imageView, x, y, 3, 3);
+        arenaGrid.add(imageView, x, y, size, size);
 
         // Add Health Bar
-        addHealthBar(x, y);
+        // Determine max health based on tower type
+        double maxHealth = 1400; // Default Princess
+        if (isKing) {
+            maxHealth = 2400;
+        }
+        // In design mode, current health is always max
+        addHealthBar(x, y, maxHealth, maxHealth, size);
     }
 
-    private void addHealthBar(int x, int y) {
+    private void addHealthBar(int x, int y, double currentHealth, double maxHealth, int colSpan) {
         // Health bar dimensions
         double width = 40;
-        double height = 5;
+        if (colSpan == 4)
+            width = 50; // Wider for King Tower
+        double height = 12; // Height for text visibility
 
-        // Background (Red)
+        // Background (Dark Blue)
         javafx.scene.shape.Rectangle bg = new javafx.scene.shape.Rectangle(width, height);
-        bg.setFill(javafx.scene.paint.Color.RED);
+        bg.setFill(javafx.scene.paint.Color.DARKBLUE);
         bg.setStroke(javafx.scene.paint.Color.BLACK);
         bg.setStrokeWidth(0.5);
 
-        // Foreground (Green) - Full health for design view
-        javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(width, height);
-        fg.setFill(javafx.scene.paint.Color.LIMEGREEN);
+        // Foreground (Royal Blue)
+        double healthPercentage = currentHealth / maxHealth;
+        javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(width * healthPercentage, height);
+        fg.setFill(javafx.scene.paint.Color.ROYALBLUE);
 
-        // Center the health bar above the tower (3x3 = 54px wide)
-        // We need to add it to the grid, but spanning columns?
-        // Grid pane cells are 18x18.
-        // We can add it to the top-left cell but translate it?
-        // Or add it to a StackPane if the cells were StackPanes.
-        // Since we are adding to GridPane directly, we can use translation.
-
-        // Better: Wrap the ImageView and HealthBar in a VBox or StackPane and add THAT
-        // to the grid.
-        // But the grid is 18x18 cells. The tower spans 3x3 cells.
-        // If we add a VBox to (x,y) spanning 3x3, it will fill the 54x54 area.
-        // We can put the health bar at the top of that VBox.
-
-        // Let's try adding the health bar as a separate node spanning 3 columns,
-        // but we need it to be *above* the image visually.
-        // The ImageView is already added.
-        // Let's add the health bar to the same (x,y) spanning 3 cols, but set
-        // alignment/margin.
+        // Health Text: "1400" (Remaining only)
+        javafx.scene.text.Text healthText = new javafx.scene.text.Text(String.format("%.0f", currentHealth));
+        // Font like Clash Royale: Bold, Impact-like
+        healthText.setFont(javafx.scene.text.Font.font("Arial Black", javafx.scene.text.FontWeight.BOLD, 10));
+        healthText.setFill(javafx.scene.paint.Color.WHITE);
+        healthText.setStroke(javafx.scene.paint.Color.BLACK);
+        healthText.setStrokeWidth(0.5); // Thicker stroke for CR look
 
         javafx.scene.layout.StackPane healthBarContainer = new javafx.scene.layout.StackPane();
-        healthBarContainer.getChildren().addAll(bg, fg);
-        healthBarContainer.setAlignment(javafx.geometry.Pos.TOP_CENTER);
-        healthBarContainer.setTranslateY(-5); // Move up slightly
+        // Align foreground to left
+        javafx.scene.layout.StackPane.setAlignment(fg, javafx.geometry.Pos.CENTER_LEFT);
 
-        // Add to grid, spanning 3 cols, 1 row (the top row of the tower)
-        arenaGrid.add(healthBarContainer, x, y, 3, 1);
+        healthBarContainer.getChildren().addAll(bg, fg, healthText);
+        healthBarContainer.setAlignment(javafx.geometry.Pos.CENTER);
+        healthBarContainer.setTranslateY(-10);
+
+        // Add to grid, spanning colSpan cols, 1 row
+        arenaGrid.add(healthBarContainer, x, y, colSpan, 1);
     }
 
     private void updateTileStyle(javafx.scene.shape.Rectangle rect, com.kuroyale.model.TileType type) {
@@ -360,12 +367,7 @@ public class ArenaDesignController {
     private void handleBridgeDrop(int x, int y) {
         // Check max bridges (3 bridges * 4 tiles = 12 tiles)
         if (currentLayout.getBridgePositions().size() >= 12) {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                    javafx.scene.control.Alert.AlertType.WARNING);
-            alert.setTitle("Limit Reached");
-            alert.setHeaderText(null);
-            alert.setContentText("You can only place a maximum of 3 bridges.");
-            alert.showAndWait();
+            showAlert("Limit Reached", "You can only place a maximum of 3 bridges.");
             return;
         }
 
@@ -409,12 +411,7 @@ public class ArenaDesignController {
     private void handlePrincessTowerDrop(int x, int y) {
         // Check max 2 Princess towers
         if (currentLayout.getPrincessTowerPositions().size() >= 2) {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                    javafx.scene.control.Alert.AlertType.WARNING);
-            alert.setTitle("Limit Reached");
-            alert.setHeaderText(null);
-            alert.setContentText("You can only place a maximum of 2 Princess towers.");
-            alert.showAndWait();
+            showAlert("Limit Reached", "You can only place a maximum of 2 Princess towers.");
             return;
         }
 
@@ -441,10 +438,10 @@ public class ArenaDesignController {
             }
         }
 
-        // Check against King tower
+        // Check against King tower (4x4)
         if (!occupied && currentLayout.getKingTowerPosition() != null) {
             GridPosition k = currentLayout.getKingTowerPosition();
-            if (isOverlap(x, y, 3, 3, k.getX(), k.getY(), 3, 3)) {
+            if (isOverlap(x, y, 3, 3, k.getX(), k.getY(), 4, 4)) {
                 occupied = true;
             }
         }
@@ -461,12 +458,7 @@ public class ArenaDesignController {
     private void handleKingTowerDrop(int x, int y) {
         // Check if King tower already placed
         if (currentLayout.getKingTowerPosition() != null) {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                    javafx.scene.control.Alert.AlertType.WARNING);
-            alert.setTitle("Limit Reached");
-            alert.setHeaderText(null);
-            alert.setContentText("You can only place 1 King tower.");
-            alert.showAndWait();
+            showAlert("Limit Reached", "You can only place 1 King tower.");
             return;
         }
 
@@ -475,15 +467,16 @@ public class ArenaDesignController {
             return;
         }
 
-        // Check bounds for 3x3 tower
-        if (x + 2 >= com.kuroyale.model.Arena.WIDTH || y + 2 >= com.kuroyale.model.Arena.HEIGHT) {
+        // Check bounds for 4x4 tower
+        if (x + 3 >= com.kuroyale.model.Arena.WIDTH || y + 3 >= com.kuroyale.model.Arena.HEIGHT) {
             return;
         }
 
-        // Check if position is already occupied by a Princess tower (3x3 overlap check)
+        // Check if position is already occupied by a Princess tower (overlap check)
+        // Princess is 3x3, King is 4x4
         boolean occupied = false;
         for (GridPosition p : currentLayout.getPrincessTowerPositions()) {
-            if (isOverlap(x, y, 3, 3, p.getX(), p.getY(), 3, 3)) {
+            if (isOverlap(x, y, 4, 4, p.getX(), p.getY(), 3, 3)) {
                 occupied = true;
                 break;
             }
@@ -506,6 +499,20 @@ public class ArenaDesignController {
     @FXML
     public void handleSave() {
         if (currentLayout != null) {
+            // Validation: Check for required elements
+            if (currentLayout.getBridgePositions().isEmpty()) {
+                showAlert("Invalid Layout", "You must place at least one bridge.");
+                return;
+            }
+            if (currentLayout.getPrincessTowerPositions().size() != 2) {
+                showAlert("Invalid Layout", "You must place exactly two Princess towers.");
+                return;
+            }
+            if (currentLayout.getKingTowerPosition() == null) {
+                showAlert("Invalid Layout", "You must place one King tower.");
+                return;
+            }
+
             String name = arenaNameField.getText();
             if (name != null && !name.isEmpty()) {
                 currentLayout.setName(name);
@@ -529,6 +536,15 @@ public class ArenaDesignController {
                 e.printStackTrace();
             }
         }
+    }
+
+    private void showAlert(String title, String content) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 
     @FXML

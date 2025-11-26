@@ -81,19 +81,19 @@ public class Arena {
         // Apply user's King tower
         if (layout != null && layout.getKingTowerPosition() != null) {
             GridPosition p = layout.getKingTowerPosition();
-            // Place 3x3 tower for user
-            for (int dx = 0; dx < 3; dx++) {
-                for (int dy = 0; dy < 3; dy++) {
+            // Place 4x4 tower for user
+            for (int dx = 0; dx < 4; dx++) {
+                for (int dy = 0; dy < 4; dy++) {
                     if (isValidPosition(p.getX() + dx, p.getY() + dy)) {
                         grid[p.getX() + dx][p.getY() + dy].setTileType(TileType.KING_TOWER_USER);
                     }
                 }
             }
 
-            // Mirror for computer side (3x3)
-            int mirroredY = HEIGHT - 3 - p.getY();
-            for (int dx = 0; dx < 3; dx++) {
-                for (int dy = 0; dy < 3; dy++) {
+            // Mirror for computer side (4x4)
+            int mirroredY = HEIGHT - 4 - p.getY();
+            for (int dx = 0; dx < 4; dx++) {
+                for (int dy = 0; dy < 4; dy++) {
                     if (isValidPosition(p.getX() + dx, mirroredY + dy)) {
                         grid[p.getX() + dx][mirroredY + dy].setTileType(TileType.KING_TOWER_COMPUTER);
                     }

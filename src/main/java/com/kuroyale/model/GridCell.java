@@ -13,6 +13,7 @@ public class GridCell {
 
     /**
      * Creates a new grid cell.
+     * 
      * @param position The position of this cell
      * @param tileType The terrain type
      */
@@ -55,15 +56,16 @@ public class GridCell {
 
     /**
      * Places a unit on this cell.
+     * 
      * @param unit The unit to place (can be any object representing a unit)
-     * @throws IllegalStateException if cell is already occupied or placement not allowed
+     * @throws IllegalStateException if cell is already occupied or placement not
+     *                               allowed
      */
     public void setOccupant(Object unit) {
         if (!canPlaceUnit()) {
             throw new IllegalStateException(
-                String.format("Cannot place unit at %s: occupied=%b, tileType=%s", 
-                    position, occupied, tileType)
-            );
+                    String.format("Cannot place unit at %s: occupied=%b, tileType=%s",
+                            position, occupied, tileType));
         }
         this.occupant = unit;
         this.occupied = true;
@@ -86,6 +88,7 @@ public class GridCell {
 
     /**
      * Gets the unit occupying this cell.
+     * 
      * @return The occupant, or null if not occupied
      */
     public Object getOccupant() {
@@ -133,15 +136,18 @@ public class GridCell {
 
     /**
      * Checks if this cell is walkable (for pathfinding).
-     * A cell is walkable if it's grass or bridge.
+     * A cell is walkable if it's grass, bridge, or road.
+     * Water and Towers are not walkable.
      */
     public boolean isWalkable() {
-        return tileType == TileType.GRASS || tileType == TileType.BRIDGE;
+        return tileType == TileType.GRASS ||
+                tileType == TileType.BRIDGE ||
+                tileType == TileType.ROAD;
     }
 
     @Override
     public String toString() {
-        return String.format("GridCell[pos=%s, type=%s, occupied=%b]", 
-            position, tileType, occupied);
+        return String.format("GridCell[pos=%s, type=%s, occupied=%b]",
+                position, tileType, occupied);
     }
 }
