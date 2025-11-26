@@ -40,6 +40,22 @@
                     </children>
                 </VBox>
 
+                <VBox alignment="CENTER" spacing="10.0" style="-fx-border-color: pink; -fx-border-width: 1; -fx-padding: 10;">
+                    <children>
+                        <Label styleClass="text-label" text="Princess Tower" textFill="PINK" />
+                        <Label text="Max 2 Towers" textFill="#cccccc" />
+                        <Rectangle fx:id="draggablePrincessTower" arcHeight="5.0" arcWidth="5.0" fill="HOTPINK" height="35.0" stroke="BLACK" strokeType="INSIDE" width="35.0" />
+                    </children>
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" style="-fx-border-color: gold; -fx-border-width: 1; -fx-padding: 10;">
+                    <children>
+                        <Label styleClass="text-label" text="King Tower" textFill="GOLD" />
+                        <Label text="Max 1 Tower" textFill="#cccccc" />
+                        <Rectangle fx:id="draggableKingTower" arcHeight="5.0" arcWidth="5.0" fill="GOLD" height="45.0" stroke="BLACK" strokeType="INSIDE" width="45.0" />
+                    </children>
+                </VBox>
+
                 <VBox spacing="10.0">
                     <children>
                         <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleSave" styleClass="menu-button" text="Save Layout" />

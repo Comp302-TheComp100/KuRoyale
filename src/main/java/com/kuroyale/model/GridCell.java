@@ -1,0 +1,147 @@
+package com.kuroyale.model;
+
+/**
+ * Represents a single cell in the arena grid with full state information.
+ * Information Expert: Knows its own state (position, tile type, occupancy).
+ * High Cohesion: Focused on managing cell-level state.
+ */
+public class GridCell {
+    private final GridPosition position;
+    private TileType tileType;
+    private boolean occupied;
+    private Object occupant; // Reference to the occupying unit (for future game implementation)
+
+    /**
+     * Creates a new grid cell.
+     * @param position The position of this cell
+     * @param tileType The terrain type
+     */
+    public GridCell(GridPosition position, TileType tileType) {
+        if (position == null) {
+            throw new IllegalArgumentException("Position cannot be null");
+        }
+        if (tileType == null) {
+            throw new IllegalArgumentException("TileType cannot be null");
+        }
+        this.position = position;
+        this.tileType = tileType;
+        this.occupied = false;
+        this.occupant = null;
+    }
+
+    /**
+     * Convenience constructor using x, y coordinates.
+     */
+    public GridCell(int x, int y, TileType tileType) {
+        this(new GridPosition(x, y), tileType);
+    }
+
+    /**
+     * Checks if a unit can be placed on this cell.
+     * A cell is valid for placement if:
+     * - It's not currently occupied
+     * - It's not water (unless it's a bridge)
+     * - It's grass or bridge terrain
+     * 
+     * @return true if unit placement is allowed
+     */
+    public boolean canPlaceUnit() {
+        if (occupied) {
+            return false;
+        }
+        // Can place on grass and bridge, but not on plain water
+        return tileType == TileType.GRASS || tileType == TileType.BRIDGE;
+    }
+
+    /**
+     * Places a unit on this cell.
+     * @param unit The unit to place (can be any object representing a unit)
+     * @throws IllegalStateException if cell is already occupied or placement not allowed
+     */
+    public void setOccupant(Object unit) {
+        if (!canPlaceUnit()) {
+            throw new IllegalStateException(
+                String.format("Cannot place unit at %s: occupied=%b, tileType=%s", 
+                    position, occupied, tileType)
+            );
+        }
+        this.occupant = unit;
+        this.occupied = true;
+    }
+
+    /**
+     * Removes the unit from this cell.
+     */
+    public void clearOccupant() {
+        this.occupant = null;
+        this.occupied = false;
+    }
+
+    /**
+     * Checks if this cell is currently occupied by a unit.
+     */
+    public boolean isOccupied() {
+        return occupied;
+    }
+
+    /**
+     * Gets the unit occupying this cell.
+     * @return The occupant, or null if not occupied
+     */
+    public Object getOccupant() {
+        return occupant;
+    }
+
+    /**
+     * Gets the position of this cell.
+     */
+    public GridPosition getPosition() {
+        return position;
+    }
+
+    /**
+     * Gets the x-coordinate (convenience method).
+     */
+    public int getX() {
+        return position.getX();
+    }
+
+    /**
+     * Gets the y-coordinate (convenience method).
+     */
+    public int getY() {
+        return position.getY();
+    }
+
+    /**
+     * Gets the terrain type of this cell.
+     */
+    public TileType getTileType() {
+        return tileType;
+    }
+
+    /**
+     * Sets the terrain type of this cell.
+     * Note: This will not affect occupancy (occupied cells remain occupied).
+     */
+    public void setTileType(TileType tileType) {
+        if (tileType == null) {
+            throw new IllegalArgumentException("TileType cannot be null");
+        }
+        this.tileType = tileType;
+    }
+
+    /**
+     * Checks if this cell is walkable (for pathfinding).
+     * A cell is walkable if it's grass or bridge.
+     */
+    public boolean isWalkable() {
+        return tileType == TileType.GRASS || tileType == TileType.BRIDGE;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("GridCell[pos=%s, type=%s, occupied=%b]", 
+            position, tileType, occupied);
+    }
+}
