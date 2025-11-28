@@ -83,6 +83,10 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         // Set preferred size to match grid size
         arenaPane.setMaxSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
 
+        // Bind unitLayer position to grid position to ensure perfect alignment
+        unitLayer.layoutXProperty().bind(grid.layoutXProperty());
+        unitLayer.layoutYProperty().bind(grid.layoutYProperty());
+
         // Handle clicks directly on the arena pane to get correct local coordinates
         arenaPane.setOnMouseClicked(e -> {
             if (onGridClick != null) {
@@ -259,18 +263,45 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
         // Render placed cards
         for (GameState.PlacedCard pc : gameState.getPlacedCards()) {
-            Circle unit = new Circle(TILE_SIZE / 2.0);
-            unit.setCenterX(pc.x * TILE_SIZE + TILE_SIZE / 2.0);
-            unit.setCenterY(pc.y * TILE_SIZE + TILE_SIZE / 2.0);
+            // Get the actual position of the grid cell from the GridPane
+            javafx.scene.Node cellNode = getGridCell(pc.x, pc.y);
+            if (cellNode != null) {
+                // Get the bounds of the cell in the grid's coordinate system
+                javafx.geometry.Bounds cellBounds = cellNode.getBoundsInParent();
 
-            if (pc.isPlayer) {
-                unit.setFill(Color.BLUE);
-            } else {
-                unit.setFill(Color.RED);
+                Circle unit = new Circle(TILE_SIZE / 2.0);
+                // Position at the center of the actual cell
+                unit.setCenterX(cellBounds.getMinX() + cellBounds.getWidth() / 2.0);
+                unit.setCenterY(cellBounds.getMinY() + cellBounds.getHeight() / 2.0);
+
+                if (pc.isPlayer) {
+                    unit.setFill(Color.BLUE);
+                } else {
+                    unit.setFill(Color.RED);
+                }
+
+                unitLayer.getChildren().add(unit);
             }
-
-            unitLayer.getChildren().add(unit);
         }
+    }
+
+    /**
+     * Helper method to get the grid cell node at the specified grid coordinates.
+     */
+    private javafx.scene.Node getGridCell(int x, int y) {
+        for (javafx.scene.Node node : grid.getChildren()) {
+            Integer colIndex = GridPane.getColumnIndex(node);
+            Integer rowIndex = GridPane.getRowIndex(node);
+
+            // Handle null indices (default to 0)
+            int col = (colIndex == null) ? 0 : colIndex;
+            int row = (rowIndex == null) ? 0 : rowIndex;
+
+            if (col == x && row == y) {
+                return node;
+            }
+        }
+        return null;
     }
 
     public void highlightValidCells(boolean show) {

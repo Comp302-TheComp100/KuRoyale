@@ -1,8 +1,13 @@
 package com.kuroyale.controller;
 
 import java.io.IOException;
+import java.util.List;
 
+import com.kuroyale.model.User;
+import com.kuroyale.service.AuthenticationService;
+import com.kuroyale.service.GameStartValidator;
 import com.kuroyale.util.AudioManager;
+import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.SoundEffectUtil;
 
 import javafx.fxml.FXML;
@@ -106,6 +111,31 @@ public class MainMenuController {
     @FXML
     private void handleStartMatch() {
         SoundEffectUtil.playButtonClick();
+
+        // Get current user and validate game start conditions
+        AuthenticationService authService = ServiceFactory.getInstance().getAuthenticationService();
+        User currentUser = authService.getCurrentUser();
+
+        if (currentUser == null) {
+            showError("You must be logged in to start a match.");
+            return;
+        }
+
+        // Validate game start conditions
+        GameStartValidator validator = new GameStartValidator();
+        List<String> validationErrors = validator.validateGameStart(currentUser);
+
+        if (!validationErrors.isEmpty()) {
+            // Build error message from all validation errors
+            StringBuilder errorMessage = new StringBuilder("Cannot start match. Please fix the following issues:\n\n");
+            for (String error : validationErrors) {
+                errorMessage.append("• ").append(error).append("\n");
+            }
+            showError(errorMessage.toString());
+            return;
+        }
+
+        // All validations passed, proceed to battle
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/battle.fxml"));
             Parent root = loader.load();
