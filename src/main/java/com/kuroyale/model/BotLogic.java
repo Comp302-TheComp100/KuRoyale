@@ -39,12 +39,12 @@ public class BotLogic {
         // 4. If affordable, place it at a random valid position (top half of arena)
 
         if (timeSinceLastMove >= MOVE_DELAY && elixirManager.getCurrentElixir() >= 7.0) {
-            return attemptMove();
+            return attemptMove(gameState);
         }
         return null;
     }
 
-    private Move attemptMove() {
+    private Move attemptMove(GameState gameState) {
         // Try to find an affordable card
         for (int i = 0; i < Hand.HAND_SIZE; i++) {
             Card card = hand.getCard(i);
@@ -57,12 +57,18 @@ public class BotLogic {
                 int x = random.nextInt(Arena.WIDTH);
                 int y = random.nextInt(14);
 
-                // Execute move
-                elixirManager.spend(card.getCost());
-                hand.playCard(i);
-                timeSinceLastMove = 0;
+                // Validate position using GameState's arena
+                // Check if the cell allows unit placement (not a tower, not water, etc.)
+                if (gameState.getArena().isValidPosition(x, y) &&
+                        gameState.getArena().getCell(x, y).canPlaceUnit()) {
 
-                return new Move(card, x, y);
+                    // Execute move
+                    elixirManager.spend(card.getCost());
+                    hand.playCard(i);
+                    timeSinceLastMove = 0;
+
+                    return new Move(card, x, y);
+                }
             }
         }
         return null;

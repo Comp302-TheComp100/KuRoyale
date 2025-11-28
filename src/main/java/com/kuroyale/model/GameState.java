@@ -85,13 +85,22 @@ public class GameState {
             return false;
         }
 
-        // Validate terrain (Grass or Bridge only)
-        if (!arena.getCell(x, y).canPlaceUnit()) {
+        // Check if card is a spell (can be placed anywhere)
+        boolean isSpell = false;
+        if (isPlayer) {
+            Card card = playerHand.getCard(handIndex);
+            if (card != null && card.getType() == CardType.SPELL) {
+                isSpell = true;
+            }
+        }
+
+        // Validate terrain (Grass or Bridge only) - UNLESS it's a spell
+        if (!isSpell && !arena.getCell(x, y).canPlaceUnit()) {
             return false;
         }
 
-        // Validate side (Player can only deploy on bottom half)
-        if (isPlayer && y < Arena.HEIGHT / 2) {
+        // Validate side (Player can only deploy on bottom half) - UNLESS it's a spell
+        if (!isSpell && isPlayer && y < Arena.HEIGHT / 2) {
             return false;
         }
 

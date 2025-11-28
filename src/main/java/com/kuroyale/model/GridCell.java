@@ -50,8 +50,8 @@ public class GridCell {
         if (occupied) {
             return false;
         }
-        // Can place on grass and bridge, but not on plain water
-        return tileType == TileType.GRASS || tileType == TileType.BRIDGE;
+        // Can place on grass, but not on bridges or water
+        return tileType == TileType.GRASS;
     }
 
     /**

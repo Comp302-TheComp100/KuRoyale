@@ -90,9 +90,11 @@ public class BattleController {
         handView = new HandView(gameState.getPlayerHand(), gameState.getPlayerElixir());
         handView.setOnCardSelected(index -> {
             if (index != -1) {
-                arenaView.highlightValidCells(true);
+                Card card = gameState.getPlayerHand().getCard(index);
+                boolean isSpell = (card != null && card.getType() == CardType.SPELL);
+                arenaView.highlightValidCells(true, isSpell);
             } else {
-                arenaView.highlightValidCells(false);
+                arenaView.highlightValidCells(false, false);
             }
         });
         handContainer.getChildren().add(handView);
@@ -204,7 +206,7 @@ public class BattleController {
                 if (gameState.placeCard(true, selectedIndex, tileX, tileY)) {
                     // Success
                     handView.clearSelection();
-                    arenaView.highlightValidCells(false);
+                    arenaView.highlightValidCells(false, false);
                 } else {
                     // Failed (not enough elixir, invalid position, etc.)
                     // Feedback?

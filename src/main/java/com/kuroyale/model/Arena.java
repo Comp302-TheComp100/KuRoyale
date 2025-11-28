@@ -17,10 +17,12 @@ public class Arena {
 
     private final GridCell[][] grid;
     private final ArenaLayout layout;
+    private final java.util.Map<GridPosition, Tower> towerMap;
 
     public Arena(ArenaLayout layout) {
         this.layout = layout;
         this.grid = new GridCell[WIDTH][HEIGHT];
+        this.towerMap = new java.util.HashMap<>();
         initializeGrid();
     }
 
@@ -55,10 +57,13 @@ public class Arena {
         if (layout != null && layout.getPrincessTowerPositions() != null) {
             for (GridPosition p : layout.getPrincessTowerPositions()) {
                 // Place 3x3 tower for user
+                Tower tower = new Tower(Tower.TowerType.PRINCESS);
                 for (int dx = 0; dx < 3; dx++) {
                     for (int dy = 0; dy < 3; dy++) {
                         if (isValidPosition(p.getX() + dx, p.getY() + dy)) {
-                            grid[p.getX() + dx][p.getY() + dy].setTileType(TileType.PRINCESS_TOWER_USER);
+                            GridPosition pos = new GridPosition(p.getX() + dx, p.getY() + dy);
+                            grid[pos.getX()][pos.getY()].setTileType(TileType.PRINCESS_TOWER_USER);
+                            towerMap.put(pos, tower);
                         }
                     }
                 }
@@ -68,10 +73,13 @@ public class Arena {
                 // x' = x
                 // y' = HEIGHT - 3 - y
                 int mirroredY = HEIGHT - 3 - p.getY();
+                Tower computerTower = new Tower(Tower.TowerType.PRINCESS);
                 for (int dx = 0; dx < 3; dx++) {
                     for (int dy = 0; dy < 3; dy++) {
                         if (isValidPosition(p.getX() + dx, mirroredY + dy)) {
-                            grid[p.getX() + dx][mirroredY + dy].setTileType(TileType.PRINCESS_TOWER_COMPUTER);
+                            GridPosition pos = new GridPosition(p.getX() + dx, mirroredY + dy);
+                            grid[pos.getX()][pos.getY()].setTileType(TileType.PRINCESS_TOWER_COMPUTER);
+                            towerMap.put(pos, computerTower);
                         }
                     }
                 }
@@ -82,20 +90,26 @@ public class Arena {
         if (layout != null && layout.getKingTowerPosition() != null) {
             GridPosition p = layout.getKingTowerPosition();
             // Place 4x4 tower for user
+            Tower tower = new Tower(Tower.TowerType.KING);
             for (int dx = 0; dx < 4; dx++) {
                 for (int dy = 0; dy < 4; dy++) {
                     if (isValidPosition(p.getX() + dx, p.getY() + dy)) {
-                        grid[p.getX() + dx][p.getY() + dy].setTileType(TileType.KING_TOWER_USER);
+                        GridPosition pos = new GridPosition(p.getX() + dx, p.getY() + dy);
+                        grid[pos.getX()][pos.getY()].setTileType(TileType.KING_TOWER_USER);
+                        towerMap.put(pos, tower);
                     }
                 }
             }
 
             // Mirror for computer side (4x4)
             int mirroredY = HEIGHT - 4 - p.getY();
+            Tower computerTower = new Tower(Tower.TowerType.KING);
             for (int dx = 0; dx < 4; dx++) {
                 for (int dy = 0; dy < 4; dy++) {
                     if (isValidPosition(p.getX() + dx, mirroredY + dy)) {
-                        grid[p.getX() + dx][mirroredY + dy].setTileType(TileType.KING_TOWER_COMPUTER);
+                        GridPosition pos = new GridPosition(p.getX() + dx, mirroredY + dy);
+                        grid[pos.getX()][pos.getY()].setTileType(TileType.KING_TOWER_COMPUTER);
+                        towerMap.put(pos, computerTower);
                     }
                 }
             }
@@ -327,6 +341,31 @@ public class Arena {
      */
     public ArenaLayout getLayout() {
         return layout;
+    }
+
+    /**
+     * Gets the tower at the specified position.
+     * 
+     * @param x The x-coordinate
+     * @param y The y-coordinate
+     * @return The Tower object, or null if no tower exists at this position
+     */
+    public Tower getTowerAt(int x, int y) {
+        // We need to construct a temporary GridPosition to look up in the map
+        // Since GridPosition implements equals/hashCode based on x,y, this works
+        // But wait, GridPosition constructor is not visible? It is package-private or
+        // public?
+        // Checking GridPosition.java... it has public constructor?
+        // Assuming it has suitable lookup capability.
+        // If not, we can iterate or use a custom key.
+        // Let's assume we can create a key.
+        // Actually, let's just iterate for now if we can't create one easily, but map
+        // is better.
+        // Let's try to find if there is an existing position object in the grid?
+        // No, grid is array of GridCell. GridCell has position.
+        if (!isValidPosition(x, y))
+            return null;
+        return towerMap.get(grid[x][y].getPosition());
     }
 
     // ========== Backward Compatibility Methods ==========

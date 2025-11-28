@@ -201,38 +201,50 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         }
 
         // Health Bar with actual health from tower
-        double healthPercentage = getTowerHealthAt(x, y);
-        javafx.scene.control.ProgressBar healthBar = new javafx.scene.control.ProgressBar(healthPercentage);
-        healthBar.setPrefWidth(TILE_SIZE * size * 0.8);
-        healthBar.setPrefHeight(8);
+        com.kuroyale.model.Tower tower = gameState.getArena().getTowerAt(x, y);
+        double currentHealth = (tower != null) ? tower.getCurrentHealth() : 1.0;
+        double maxHealth = (tower != null) ? tower.getMaxHealth() : 1.0;
 
-        // Dynamic color based on health percentage
-        String barColor;
-        if (healthPercentage > 0.6) {
-            barColor = "limegreen";
-        } else if (healthPercentage > 0.3) {
-            barColor = "orange";
-        } else {
-            barColor = "red";
-        }
+        // Health bar dimensions
+        double width = 40;
+        if (size == 4)
+            width = 50; // Wider for King Tower
+        double height = 12; // Height for text visibility
 
-        healthBar.setStyle(String.format(
-                "-fx-accent: %s; -fx-control-inner-background: rgba(0,0,0,0.5); -fx-background-radius: 3;",
-                barColor));
+        // Background (Dark Blue)
+        javafx.scene.shape.Rectangle bg = new javafx.scene.shape.Rectangle(width, height);
+        bg.setFill(Color.DARKBLUE);
+        bg.setStroke(Color.BLACK);
+        bg.setStrokeWidth(0.5);
 
-        StackPane.setAlignment(healthBar, javafx.geometry.Pos.TOP_CENTER);
-        StackPane.setMargin(healthBar, new javafx.geometry.Insets(2, 0, 0, 0));
+        // Foreground (Royal Blue)
+        double healthPercentage = currentHealth / maxHealth;
+        javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(width * healthPercentage, height);
+        fg.setFill(Color.ROYALBLUE);
 
-        towerStack.getChildren().add(healthBar);
+        // Health Text: "1400" (Remaining only)
+        javafx.scene.text.Text healthText = new javafx.scene.text.Text(String.format("%.0f", currentHealth));
+        // Font like Clash Royale: Bold, Impact-like
+        healthText.setFont(javafx.scene.text.Font.font("Arial Black", javafx.scene.text.FontWeight.BOLD, 10));
+        healthText.setFill(Color.WHITE);
+        healthText.setStroke(Color.BLACK);
+        healthText.setStrokeWidth(0.5); // Thicker stroke for CR look
+
+        StackPane healthBarContainer = new StackPane();
+        // Align foreground to left
+        StackPane.setAlignment(fg, javafx.geometry.Pos.CENTER_LEFT);
+
+        healthBarContainer.getChildren().addAll(bg, fg, healthText);
+        healthBarContainer.setAlignment(javafx.geometry.Pos.CENTER);
+
+        // Position above the tower
+        StackPane.setAlignment(healthBarContainer, javafx.geometry.Pos.TOP_CENTER);
+        StackPane.setMargin(healthBarContainer, new javafx.geometry.Insets(2, 0, 0, 0));
+
+        towerStack.getChildren().add(healthBarContainer);
 
         // Add to grid, spanning 'size' columns and rows
         grid.add(towerStack, x, y, size, size);
-    }
-
-    private double getTowerHealthAt(int x, int y) {
-        // TODO: Implement tower health tracking in Arena
-        // For now, return full health for all towers
-        return 1.0;
     }
 
     private boolean isTowerTile(TileType type) {
@@ -304,7 +316,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         return null;
     }
 
-    public void highlightValidCells(boolean show) {
+    public void highlightValidCells(boolean show, boolean isSpell) {
         Arena arena = gameState.getArena();
         for (javafx.scene.Node node : grid.getChildren()) {
             Rectangle rect = null;
@@ -325,12 +337,23 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     continue;
 
                 if (show) {
-                    // Check if valid: Player side (bottom half) AND walkable (Grass/Bridge)
-                    boolean isPlayerSide = y >= Arena.HEIGHT / 2;
-                    GridCell cell = arena.getCell(x, y);
-                    boolean isWalkable = cell.getTileType() == TileType.GRASS || cell.getTileType() == TileType.BRIDGE;
+                    boolean shouldHighlight = false;
 
-                    if (isPlayerSide && isWalkable) {
+                    if (isSpell) {
+                        // Spells can be placed anywhere
+                        shouldHighlight = true;
+                    } else {
+                        // Standard units: Player side (bottom half) AND walkable (Grass)
+                        boolean isPlayerSide = y >= Arena.HEIGHT / 2;
+                        GridCell cell = arena.getCell(x, y);
+                        boolean isWalkable = cell.getTileType() == TileType.GRASS;
+
+                        if (isPlayerSide && isWalkable) {
+                            shouldHighlight = true;
+                        }
+                    }
+
+                    if (shouldHighlight) {
                         // Use glow effect instead of changing stroke width to prevent layout shift
                         javafx.scene.effect.DropShadow glow = new javafx.scene.effect.DropShadow();
                         glow.setColor(Color.YELLOW);
