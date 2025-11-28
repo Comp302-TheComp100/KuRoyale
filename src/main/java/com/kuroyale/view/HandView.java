@@ -5,7 +5,7 @@ import com.kuroyale.model.ElixirManager;
 import com.kuroyale.model.Hand;
 import javafx.geometry.Pos;
 import javafx.scene.effect.ColorAdjust;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +14,9 @@ import java.util.function.Consumer;
 /**
  * Visual representation of the player's 4-card hand.
  * Highlights affordable cards and handles selection.
+ * Now displays vertically for left sidebar.
  */
-public class HandView extends HBox {
+public class HandView extends VBox {
     private final Hand hand;
     private final ElixirManager elixirManager;
     private final List<CardView> cardViews;
@@ -30,6 +31,8 @@ public class HandView extends HBox {
         this.setAlignment(Pos.CENTER);
         this.setSpacing(10);
         this.getStyleClass().add("hand-container");
+        // Make background semi-transparent and compact
+        this.setStyle("-fx-background-color: rgba(79, 35, 24, 0.68); -fx-background-radius: 15; -fx-padding: 5;");
 
         initializeCards();
     }
@@ -46,8 +49,8 @@ public class HandView extends HBox {
             // For now, assuming CardView is usable. If not, we'll fix it.
 
             // Make it smaller for hand view
-            view.setPrefWidth(80);
-            view.setPrefHeight(100);
+            view.setPrefWidth(60);
+            view.setPrefHeight(80);
 
             final int index = i;
             view.setOnMouseClicked(e -> handleCardClick(index));
@@ -95,8 +98,8 @@ public class HandView extends HBox {
                 // content
                 // Since CardView might be complex, let's just replace the view in children
                 CardView newView = new CardView(card);
-                newView.setPrefWidth(80);
-                newView.setPrefHeight(100);
+                newView.setPrefWidth(60);
+                newView.setPrefHeight(80);
                 final int index = i;
                 newView.setOnMouseClicked(e -> handleCardClick(index));
 

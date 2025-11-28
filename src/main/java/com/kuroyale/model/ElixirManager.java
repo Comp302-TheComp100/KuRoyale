@@ -10,12 +10,18 @@ public class ElixirManager {
 
     // Standard is 2.8s per elixir. 2x mode is 1.4s per elixir.
     // Rate = 1 elixir / 1.4 seconds = ~0.714 elixir per second
-    private static final double REGENERATION_RATE = 1.0 / 1.4;
+    private static final double REGENERATION_RATE_NORMAL = 1.0 / 2.8;
+    private static final double REGENERATION_RATE_DOUBLE = 1.0 / 1.4;
 
     private double currentElixir;
+    private boolean doubleElixirActive = false;
 
     public ElixirManager() {
         this.currentElixir = STARTING_ELIXIR;
+    }
+
+    public void setDoubleElixir(boolean active) {
+        this.doubleElixirActive = active;
     }
 
     /**
@@ -25,7 +31,8 @@ public class ElixirManager {
      */
     public void update(double deltaTime) {
         if (currentElixir < MAX_ELIXIR) {
-            currentElixir += REGENERATION_RATE * deltaTime;
+            double rate = doubleElixirActive ? REGENERATION_RATE_DOUBLE : REGENERATION_RATE_NORMAL;
+            currentElixir += rate * deltaTime;
             if (currentElixir > MAX_ELIXIR) {
                 currentElixir = MAX_ELIXIR;
             }

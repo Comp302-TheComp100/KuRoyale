@@ -25,7 +25,7 @@ public class BattleController {
     @FXML
     private HBox elixirContainer;
     @FXML
-    private HBox handContainer;
+    private VBox handContainer;
     @FXML
     private VBox overlayContainer;
 
@@ -58,6 +58,9 @@ public class BattleController {
             return;
         }
 
+        // Set current user in arena service to load their saved layout
+        arenaService.setCurrentUser(currentUser);
+
         // Load user data
         // Convert List<String> to Deck object
         Deck playerDeck = createDeckFromNames(currentUser.getDeck());
@@ -77,8 +80,8 @@ public class BattleController {
         arenaContainer.getChildren().add(arenaView);
 
         // Handle clicks on arena for card placement
-        arenaView.setOnMouseClicked(e -> {
-            handleArenaClick(e.getX(), e.getY());
+        arenaView.setOnGridClicked((tileX, tileY) -> {
+            handleArenaClick(tileX, tileY);
         });
 
         elixirBar = new ElixirBar(gameState.getPlayerElixir());
@@ -86,7 +89,11 @@ public class BattleController {
 
         handView = new HandView(gameState.getPlayerHand(), gameState.getPlayerElixir());
         handView.setOnCardSelected(index -> {
-            // Optional: highlight valid placement areas
+            if (index != -1) {
+                arenaView.highlightValidCells(true);
+            } else {
+                arenaView.highlightValidCells(false);
+            }
         });
         handContainer.getChildren().add(handView);
 
@@ -133,6 +140,9 @@ public class BattleController {
         gameLoop.start();
     }
 
+    private boolean doubleElixirShown = false;
+    private boolean gameOverShown = false;
+
     private void update(double deltaTime) {
         // Update Game Logic
         gameState.update(deltaTime);
@@ -141,21 +151,60 @@ public class BattleController {
         elixirBar.update();
         handView.update();
         arenaView.update();
+
+        // Check for Double Elixir (track state but don't show popup)
+        if (gameState.isDoubleElixir() && !doubleElixirShown) {
+            doubleElixirShown = true;
+            // Visual indicators are handled by ElixirBar and BattleArenaView
+            elixirBar.setDoubleElixirActive(true);
+        }
+
+        // Check for Game Over
+        if (gameState.isGameOver() && !gameOverShown) {
+            gameOverShown = true;
+            gameLoop.stop();
+            System.out.println("Game Over! Showing popup...");
+            showGameOverPopup();
+        }
     }
 
-    private void handleArenaClick(double x, double y) {
+    private void showGameOverPopup() {
+        // Clear overlay and make it visible
+        overlayContainer.getChildren().clear();
+        overlayContainer.setVisible(true);
+
+        VBox content = new VBox(20);
+        content.setAlignment(javafx.geometry.Pos.CENTER);
+        content.setStyle(
+                "-fx-background-color: #333; -fx-padding: 40; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 2;");
+        content.setMaxSize(400, 300);
+
+        javafx.scene.control.Label title = new javafx.scene.control.Label("MATCH ENDED");
+        title.setStyle("-fx-font-size: 36px; -fx-text-fill: white; -fx-font-weight: bold;");
+
+        javafx.scene.control.Label score = new javafx.scene.control.Label(
+                String.format("Player: %d  -  Bot: %d", gameState.getPlayerScore(), gameState.getBotScore()));
+        score.setStyle("-fx-font-size: 24px; -fx-text-fill: white;");
+
+        javafx.scene.control.Button exitBtn = new javafx.scene.control.Button("EXIT");
+        exitBtn.setStyle("-fx-font-size: 18px; -fx-padding: 10 30;");
+        exitBtn.setOnAction(e -> handleExit());
+
+        content.getChildren().addAll(title, score, exitBtn);
+
+        overlayContainer.getChildren().add(content);
+    }
+
+    private void handleArenaClick(int tileX, int tileY) {
         int selectedIndex = handView.getSelectedIndex();
         if (selectedIndex != -1) {
-            // Convert pixel coordinates to tile coordinates
-            int tileX = (int) (x / arenaView.getTileSize());
-            int tileY = (int) (y / arenaView.getTileSize());
-
             // Validate bounds
             if (tileX >= 0 && tileX < Arena.WIDTH && tileY >= 0 && tileY < Arena.HEIGHT) {
                 // Try to place card
                 if (gameState.placeCard(true, selectedIndex, tileX, tileY)) {
                     // Success
                     handView.clearSelection();
+                    arenaView.highlightValidCells(false);
                 } else {
                     // Failed (not enough elixir, invalid position, etc.)
                     // Feedback?

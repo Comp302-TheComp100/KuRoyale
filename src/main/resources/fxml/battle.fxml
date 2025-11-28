@@ -17,36 +17,31 @@
         <BorderPane AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" 
                     AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             
-            <!-- Top: Opponent Info -->
-            <top>
-                <HBox alignment="CENTER" spacing="20" style="-fx-padding: 10;">
-                    <Label text="Opponent (Bot)" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;"/>
-                </HBox>
-            </top>
-            
-            <!-- Center: Arena -->
-            <center>
-                <StackPane fx:id="arenaContainer" style="-fx-padding: 10;">
-                    <!-- Arena View will be added here dynamically -->
-                </StackPane>
-            </center>
-            
-            <!-- Bottom: Player Controls -->
-            <bottom>
-                <VBox spacing="10" style="-fx-padding: 10; -fx-background-color: rgba(0,0,0,0.5);">
+            <!-- Left: Elixir and Hand -->
+            <left>
+                <VBox spacing="20" alignment="CENTER" style="-fx-padding: 20; -fx-background-color: rgba(0,0,0,0.3);">
                     <!-- Elixir Bar -->
                     <HBox fx:id="elixirContainer" alignment="CENTER">
                         <!-- ElixirBar added dynamically -->
                     </HBox>
                     
-                    <!-- Hand -->
-                    <HBox fx:id="handContainer" alignment="CENTER" prefHeight="120">
+                    <!-- Hand (Vertical for left side) -->
+                    <VBox fx:id="handContainer" alignment="CENTER" spacing="10">
                         <!-- HandView added dynamically -->
-                    </HBox>
+                    </VBox>
                     
                     <Button text="Exit Battle" onAction="#handleExit" styleClass="menu-button-small"/>
                 </VBox>
-            </bottom>
+            </left>
+            
+            <!-- Center: Arena -->
+            <center>
+                <StackPane fx:id="arenaContainer" style="-fx-padding: 20;">
+                    <!-- Arena View will be added here dynamically -->
+                </StackPane>
+            </center>
+            
+            <!-- Right: Timer and Score (already implemented in BattleArenaView) -->
             
         </BorderPane>
     </AnchorPane>

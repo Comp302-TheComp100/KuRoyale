@@ -4,6 +4,7 @@ import com.kuroyale.model.ElixirManager;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 /**
@@ -13,6 +14,7 @@ import javafx.scene.layout.VBox;
 public class ElixirBar extends VBox {
     private final ProgressBar progressBar;
     private final Label elixirLabel;
+    private final Label doubleElixirLabel;
     private final ElixirManager elixirManager;
 
     public ElixirBar(ElixirManager elixirManager) {
@@ -22,11 +24,23 @@ public class ElixirBar extends VBox {
         this.setSpacing(5);
         this.getStyleClass().add("elixir-bar-container");
 
+        // HBox to contain label and x2 indicator
+        HBox labelContainer = new HBox(10);
+        labelContainer.setAlignment(Pos.CENTER);
+
         // Label: "7 / 10"
         this.elixirLabel = new Label();
         this.elixirLabel.getStyleClass().add("elixir-label");
         this.elixirLabel.setStyle(
                 "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 16px; -fx-effect: dropshadow(one-pass-box, black, 2, 0.5, 0, 0);");
+
+        // x2 indicator (hidden by default)
+        this.doubleElixirLabel = new Label("x2");
+        this.doubleElixirLabel.setStyle(
+                "-fx-font-weight: bold; -fx-text-fill: #D000D0; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+        this.doubleElixirLabel.setVisible(false);
+
+        labelContainer.getChildren().addAll(elixirLabel, doubleElixirLabel);
 
         // Progress Bar
         this.progressBar = new ProgressBar(0);
@@ -36,7 +50,7 @@ public class ElixirBar extends VBox {
         // Style the bar color to purple/magenta like Clash Royale
         this.progressBar.setStyle("-fx-accent: #D000D0;");
 
-        this.getChildren().addAll(elixirLabel, progressBar);
+        this.getChildren().addAll(labelContainer, progressBar);
 
         update();
     }
@@ -50,5 +64,9 @@ public class ElixirBar extends VBox {
 
         // Update bar
         progressBar.setProgress(current / max);
+    }
+
+    public void setDoubleElixirActive(boolean active) {
+        doubleElixirLabel.setVisible(active);
     }
 }

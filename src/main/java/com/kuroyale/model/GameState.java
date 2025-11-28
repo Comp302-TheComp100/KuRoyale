@@ -19,6 +19,13 @@ public class GameState {
     private final Arena arena;
     private final List<PlacedCard> placedCards;
 
+    private double gameTime = 180.0; // 3 minutes
+    private int playerScore = 0;
+    private int botScore = 0;
+
+    private boolean isDoubleElixir = false;
+    private boolean isGameOver = false;
+
     public GameState(Deck playerDeck, Deck botDeck, Arena arena) {
         this.playerHand = new Hand(playerDeck);
         this.playerElixir = new ElixirManager();
@@ -32,18 +39,62 @@ public class GameState {
     }
 
     public void update(double deltaTime) {
+        if (gameTime > 0) {
+            gameTime -= deltaTime;
+
+            // Check for Double Elixir (Last 60 seconds)
+            if (gameTime <= 60.0 && !isDoubleElixir) {
+                isDoubleElixir = true;
+                playerElixir.setDoubleElixir(true);
+                botElixir.setDoubleElixir(true);
+            }
+
+            if (gameTime <= 0) {
+                gameTime = 0;
+                if (!isGameOver) {
+                    isGameOver = true;
+                }
+            }
+        }
+
         playerElixir.update(deltaTime);
+        botElixir.update(deltaTime); // Ensure bot elixir is also updated
 
         // Update Bot
-        BotLogic.Move botMove = bot.update(deltaTime, this);
-        if (botMove != null) {
-            placeCard(false, botMove.card, botMove.x, botMove.y);
+        if (!isGameOver) {
+            BotLogic.Move botMove = bot.update(deltaTime, this);
+            if (botMove != null) {
+                placeCard(false, botMove.card, botMove.x, botMove.y);
+            }
         }
 
         // Update placed cards (lifetimes, movement, etc. - future work)
     }
 
+    public boolean isDoubleElixir() {
+        return isDoubleElixir;
+    }
+
+    public boolean isGameOver() {
+        return isGameOver;
+    }
+
     public boolean placeCard(boolean isPlayer, int handIndex, int x, int y) {
+        // Validate position
+        if (x < 0 || x >= Arena.WIDTH || y < 0 || y >= Arena.HEIGHT) {
+            return false;
+        }
+
+        // Validate terrain (Grass or Bridge only)
+        if (!arena.getCell(x, y).canPlaceUnit()) {
+            return false;
+        }
+
+        // Validate side (Player can only deploy on bottom half)
+        if (isPlayer && y < Arena.HEIGHT / 2) {
+            return false;
+        }
+
         if (isPlayer) {
             Card card = playerHand.getCard(handIndex);
             if (card != null && playerElixir.spend(card.getCost())) {
@@ -59,6 +110,18 @@ public class GameState {
             // Let's overload or adjust
         }
         return false;
+    }
+
+    public double getGameTime() {
+        return gameTime;
+    }
+
+    public int getPlayerScore() {
+        return playerScore;
+    }
+
+    public int getBotScore() {
+        return botScore;
     }
 
     // Overload for direct card placement (used by Bot)
