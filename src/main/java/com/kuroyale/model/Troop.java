@@ -14,6 +14,7 @@ public class Troop {
     private final double moveSpeed; // cells per second
     private final double attackRange; // in cells approximate
     private final Deque<GridPosition> path;
+    private double moveProgress; // accumulated fractional progress in cells
 
     public Troop(Card card, GridPosition spawn, boolean isPlayer) {
         this.baseCard = card;
@@ -26,6 +27,7 @@ public class Troop {
         this.moveSpeed = mapSpeed(card.getSpeed());
         this.attackRange = card.getRange();
         this.path = new ArrayDeque<>();
+        this.moveProgress = 0.0;
     }
 
     private double mapSpeed(SpeedType speedType) {
@@ -59,4 +61,8 @@ public class Troop {
 
     public double getMoveSpeed() { return moveSpeed; }
     public double getAttackRange() { return attackRange; }
+
+    public void addMoveProgress(double delta) { this.moveProgress += delta; }
+    public double getMoveProgress() { return this.moveProgress; }
+    public void consumeMoveProgress(double amount) { this.moveProgress = Math.max(0.0, this.moveProgress - amount); }
 }

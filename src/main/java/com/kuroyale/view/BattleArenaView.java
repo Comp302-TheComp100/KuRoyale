@@ -273,26 +273,35 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
         unitLayer.getChildren().clear();
 
-        // Render placed cards
-        for (GameState.PlacedCard pc : gameState.getPlacedCards()) {
-            // Get the actual position of the grid cell from the GridPane
-            javafx.scene.Node cellNode = getGridCell(pc.x, pc.y);
+        // Render active moving troops
+        java.util.List<com.kuroyale.model.Troop> troops = gameState.getActiveTroops();
+        for (com.kuroyale.model.Troop troop : troops) {
+            com.kuroyale.model.GridPosition pos = troop.getPosition();
+            javafx.scene.Node cellNode = getGridCell(pos.getX(), pos.getY());
             if (cellNode != null) {
-                // Get the bounds of the cell in the grid's coordinate system
                 javafx.geometry.Bounds cellBounds = cellNode.getBoundsInParent();
-
-                Circle unit = new Circle(TILE_SIZE / 2.0);
-                // Position at the center of the actual cell
+                Circle unit = new Circle(TILE_SIZE / 2.5);
                 unit.setCenterX(cellBounds.getMinX() + cellBounds.getWidth() / 2.0);
                 unit.setCenterY(cellBounds.getMinY() + cellBounds.getHeight() / 2.0);
-
-                if (pc.isPlayer) {
-                    unit.setFill(Color.BLUE);
-                } else {
-                    unit.setFill(Color.RED);
-                }
-
+                unit.setFill(troop.isPlayerSide() ? (troop.isAirUnit() ? Color.DODGERBLUE : Color.BLUE)
+                        : (troop.isAirUnit() ? Color.ORANGERED : Color.RED));
                 unitLayer.getChildren().add(unit);
+            }
+        }
+
+        // Render static placed cards (e.g., buildings, spells markers). Skip troop cards to avoid stale spawn markers.
+        for (GameState.PlacedCard pc : gameState.getPlacedCards()) {
+            if (pc.card.getType() == com.kuroyale.model.CardType.TROOP) {
+                continue; // troops are rendered from activeTroops instead
+            }
+            javafx.scene.Node cellNode = getGridCell(pc.x, pc.y);
+            if (cellNode != null) {
+                javafx.geometry.Bounds cellBounds = cellNode.getBoundsInParent();
+                Circle marker = new Circle(TILE_SIZE / 3.0);
+                marker.setCenterX(cellBounds.getMinX() + cellBounds.getWidth() / 2.0);
+                marker.setCenterY(cellBounds.getMinY() + cellBounds.getHeight() / 2.0);
+                marker.setFill(pc.isPlayer ? Color.LIGHTBLUE : Color.PINK);
+                unitLayer.getChildren().add(marker);
             }
         }
     }

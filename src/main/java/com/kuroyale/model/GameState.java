@@ -113,6 +113,16 @@ public class GameState {
             if (card != null && playerElixir.spend(card.getCost())) {
                 playerHand.playCard(handIndex);
                 placedCards.add(new PlacedCard(card, x, y, isPlayer));
+                if (card.getType() == CardType.TROOP) {
+                    int count = Math.max(1, card.getCount());
+                    for (int i = 0; i < count; i++) {
+                        GridPosition spawn = GridPosition.tryCreate(x, y);
+                        if (spawn != null) {
+                            Troop troop = new Troop(card, spawn, isPlayer);
+                            activeTroops.add(troop);
+                        }
+                    }
+                }
                 return true;
             }
         } else {
@@ -168,7 +178,9 @@ public class GameState {
         return placedCards;
     }
 
-    public List<Troop> getActiveTroops() { return activeTroops; }
+    public List<Troop> getActiveTroops() {
+         return activeTroops; 
+    }
 
     // Inner class to track placed units
     public static class PlacedCard {

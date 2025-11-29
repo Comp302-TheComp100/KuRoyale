@@ -37,17 +37,17 @@ public class TroopMovementService {
 
     private void advanceAlongPath(double deltaTime, Troop troop) {
         if (troop.getPath().isEmpty()) return;
-        double cellsToAdvance = troop.getMoveSpeed() * deltaTime;
-        while (cellsToAdvance > 0 && !troop.getPath().isEmpty()) {
+        double deltaCells = troop.getMoveSpeed() * deltaTime;
+        troop.addMoveProgress(deltaCells);
+        while (troop.getMoveProgress() >= 1.0 && !troop.getPath().isEmpty()) {
             GridPosition next = troop.getPath().peekFirst();
             if (next.equals(troop.getPosition())) {
                 troop.getPath().pollFirst();
                 continue;
             }
-            // Move one cell per iteration (discrete). Later smooth interpolation can be added.
             troop.setPosition(next);
             troop.getPath().pollFirst();
-            cellsToAdvance -= 1.0;
+            troop.consumeMoveProgress(1.0);
         }
     }
 }
