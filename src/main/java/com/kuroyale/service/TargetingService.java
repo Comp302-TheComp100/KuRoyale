@@ -4,11 +4,18 @@ import com.kuroyale.model.*;
 import java.util.*;
 
 public class TargetingService {
-    private static final int DETECTION_RADIUS = 5; // tiles
+    private static final int BASE_DETECTION_RADIUS = 5; // tiles
     public GridPosition findNearestEnemyOrObjective(GameState state, Troop troop) {
         GridPosition troopPos = troop.getPosition();
         double bestDist = Double.MAX_VALUE;
         GridPosition bestPos = null;
+
+        // Compute detection radius: ranged cards use range+2, melee use base radius
+        int detectionRadius = BASE_DETECTION_RADIUS;
+        double cardRange = troop.getBaseCard().getRange();
+        if (cardRange > 0) {
+            detectionRadius = (int) Math.floor(cardRange + 2);
+        }
 
         // 1) Consider active enemy troops within detection radius
         for (Troop other : state.getActiveTroops()) {
@@ -20,7 +27,7 @@ public class TargetingService {
             // Air-only attackers cannot hit ground-only if target type is AIR (edge-case); handled by BOTH
             GridPosition pos = other.getPosition();
             double dist = troopPos.getEuclideanDistanceTo(pos);
-            if (dist <= DETECTION_RADIUS && dist < bestDist) { bestDist = dist; bestPos = pos; }
+            if (dist <= detectionRadius && dist < bestDist) { bestDist = dist; bestPos = pos; }
         }
 
         // 2) Consider placed enemy buildings (and spells ignored)

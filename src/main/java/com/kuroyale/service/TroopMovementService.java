@@ -22,7 +22,7 @@ public class TroopMovementService {
                     troop.setPath(path);
                 }
             }
-            advanceAlongPath(deltaTime, troop);
+            advanceAlongPath(deltaTime, troop, state);
         }
     }
 
@@ -35,7 +35,7 @@ public class TroopMovementService {
         return dist < troop.getPosition().getEuclideanDistanceTo(troop.getTargetPosition());
     }
 
-    private void advanceAlongPath(double deltaTime, Troop troop) {
+    private void advanceAlongPath(double deltaTime, Troop troop, GameState state) {
         if (troop.getPath().isEmpty()) return;
         double deltaCells = troop.getMoveSpeed() * deltaTime;
         troop.addMoveProgress(deltaCells);
@@ -45,9 +45,26 @@ public class TroopMovementService {
                 troop.getPath().pollFirst();
                 continue;
             }
-            troop.setPosition(next);
-            troop.getPath().pollFirst();
-            troop.consumeMoveProgress(1.0);
+            // Collision avoidance: do not move into a tile occupied by another troop
+            if (isTileFree(next, troop, state.getActiveTroops())) {
+                troop.setPosition(next);
+                troop.getPath().pollFirst();
+                troop.consumeMoveProgress(1.0);
+            } else {
+                // Stop advancing this tick; optionally could try alternative paths
+                break;
+            }
         }
+    }
+
+    private boolean isTileFree(GridPosition position, Troop self, java.util.List<Troop> troops) {
+        for (Troop t : troops) {
+            if (t == self) continue;
+            if (!t.isAlive()) continue;
+            if (t.getPosition().equals(position)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
