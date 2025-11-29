@@ -280,12 +280,29 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             javafx.scene.Node cellNode = getGridCell(pos.getX(), pos.getY());
             if (cellNode != null) {
                 javafx.geometry.Bounds cellBounds = cellNode.getBoundsInParent();
-            Circle unit = new Circle(TILE_SIZE / 2.5);
-                unit.setCenterX(cellBounds.getMinX() + cellBounds.getWidth() / 2.0);
-                unit.setCenterY(cellBounds.getMinY() + cellBounds.getHeight() / 2.0);
-                unit.setFill(troop.isPlayerSide() ? (troop.isAirUnit() ? Color.DODGERBLUE : Color.BLUE)
-                        : (troop.isAirUnit() ? Color.ORANGERED : Color.RED));
-                unitLayer.getChildren().add(unit);
+            // Try to render troop as image; fall back to circle if image missing
+            javafx.scene.Node unitNode;
+            try {
+                String imgPath = troop.getBaseCard().getImagePath();
+                javafx.scene.image.Image img = new javafx.scene.image.Image(getClass().getResourceAsStream(imgPath));
+                javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(img);
+                iv.setFitWidth(TILE_SIZE);
+                iv.setFitHeight(TILE_SIZE);
+                iv.setPreserveRatio(true);
+                iv.setSmooth(true);
+                iv.setLayoutX(cellBounds.getMinX());
+                iv.setLayoutY(cellBounds.getMinY());
+                unitNode = iv;
+            } catch (Exception e) {
+                Circle fallback = new Circle(TILE_SIZE / 2.5);
+                fallback.setCenterX(cellBounds.getMinX() + cellBounds.getWidth() / 2.0);
+                fallback.setCenterY(cellBounds.getMinY() + cellBounds.getHeight() / 2.0);
+                fallback.setFill(troop.isPlayerSide() ? (troop.isAirUnit() ? Color.DODGERBLUE : Color.BLUE)
+                    : (troop.isAirUnit() ? Color.ORANGERED : Color.RED));
+                unitNode = fallback;
+            }
+
+            unitLayer.getChildren().add(unitNode);
 
             // Troop health bar above the unit
             double maxHp = troop.getBaseCard().getHp();
@@ -298,11 +315,17 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             hpBg.setFill(Color.color(0.2, 0.2, 0.2, 0.8));
             hpBg.setStroke(Color.BLACK);
             hpBg.setStrokeWidth(0.3);
-            hpBg.setX(unit.getCenterX() - barWidth / 2.0);
-            hpBg.setY(unit.getCenterY() - (TILE_SIZE / 2.5) - 6);
+                double centerX = cellBounds.getMinX() + cellBounds.getWidth() / 2.0;
+                double centerY = cellBounds.getMinY() + cellBounds.getHeight() / 2.0;
+                hpBg.setX(centerX - barWidth / 2.0);
+                hpBg.setY(centerY - (TILE_SIZE / 2.5) - 6);
 
-            javafx.scene.shape.Rectangle hpFg = new javafx.scene.shape.Rectangle(barWidth * pct, barHeight);
-            hpFg.setFill(pct > 0.5 ? Color.LIMEGREEN : (pct > 0.2 ? Color.GOLD : Color.CRIMSON));
+                javafx.scene.shape.Rectangle hpFg = new javafx.scene.shape.Rectangle(barWidth * pct, barHeight);
+                if (troop.isPlayerSide()) {
+                    hpFg.setFill(pct > 0.5 ? Color.LIMEGREEN : (pct > 0.2 ? Color.GOLD : Color.CRIMSON));
+                } else {
+                    hpFg.setFill(Color.CRIMSON);
+                }
             hpFg.setX(hpBg.getX());
             hpFg.setY(hpBg.getY());
 
