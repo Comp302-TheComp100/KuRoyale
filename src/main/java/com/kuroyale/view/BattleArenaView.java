@@ -333,21 +333,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             }
         }
 
-        // Render static placed cards (e.g., buildings, spells markers). Skip troop cards to avoid stale spawn markers.
-        for (GameState.PlacedCard pc : gameState.getPlacedCards()) {
-            if (pc.card.getType() == com.kuroyale.model.CardType.TROOP) {
-                continue; // troops are rendered from activeTroops instead
-            }
-            javafx.scene.Node cellNode = getGridCell(pc.x, pc.y);
-            if (cellNode != null) {
-                javafx.geometry.Bounds cellBounds = cellNode.getBoundsInParent();
-                Circle marker = new Circle(TILE_SIZE / 3.0);
-                marker.setCenterX(cellBounds.getMinX() + cellBounds.getWidth() / 2.0);
-                marker.setCenterY(cellBounds.getMinY() + cellBounds.getHeight() / 2.0);
-                marker.setFill(pc.isPlayer ? Color.LIGHTBLUE : Color.PINK);
-                unitLayer.getChildren().add(marker);
-            }
-        }
+        // Remove all placed card markers; units/towers/spells are visualized elsewhere.
     }
 
     /**
