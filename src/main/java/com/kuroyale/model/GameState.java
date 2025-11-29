@@ -18,6 +18,8 @@ public class GameState {
 
     private final Arena arena;
     private final List<PlacedCard> placedCards;
+    private final List<Troop> activeTroops;
+    private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
 
     private double gameTime = 180.0; // 3 minutes
     private int playerScore = 0;
@@ -36,6 +38,7 @@ public class GameState {
 
         this.arena = arena;
         this.placedCards = new ArrayList<>();
+        this.activeTroops = new ArrayList<>();
     }
 
     public void update(double deltaTime) {
@@ -69,6 +72,7 @@ public class GameState {
         }
 
         // Update placed cards (lifetimes, movement, etc. - future work)
+        troopMovementService.updateTroops(deltaTime, this, activeTroops);
     }
 
     public boolean isDoubleElixir() {
@@ -136,6 +140,16 @@ public class GameState {
     // Overload for direct card placement (used by Bot)
     public void placeCard(boolean isPlayer, Card card, int x, int y) {
         placedCards.add(new PlacedCard(card, x, y, isPlayer));
+        if (card.getType() == CardType.TROOP) {
+            int count = Math.max(1, card.getCount());
+            for (int i = 0; i < count; i++) {
+                GridPosition spawn = GridPosition.tryCreate(x, y);
+                if (spawn != null) {
+                    Troop troop = new Troop(card, spawn, isPlayer);
+                    activeTroops.add(troop);
+                }
+            }
+        }
     }
 
     public Hand getPlayerHand() {
@@ -153,6 +167,8 @@ public class GameState {
     public List<PlacedCard> getPlacedCards() {
         return placedCards;
     }
+
+    public List<Troop> getActiveTroops() { return activeTroops; }
 
     // Inner class to track placed units
     public static class PlacedCard {

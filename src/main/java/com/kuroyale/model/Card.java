@@ -11,13 +11,15 @@ public class Card {
     private final double range;
     private final SpeedType speed;
     private final TargetType target;
+    // Indicates whether the unit itself is airborne (flies over terrain)
+    private final boolean airUnit;
     private final boolean areaEffect;
     private final String description;
     private final int count; // For swarm troops
     private final int lifetime; // For buildings
 
     public Card(String name, int cost, CardType type, int hp, int damage, double hitSpeed,
-            double range, SpeedType speed, TargetType target, boolean areaEffect,
+            double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
             String description, int count, int lifetime) {
         this.name = name;
         this.cost = cost;
@@ -28,6 +30,7 @@ public class Card {
         this.range = range;
         this.speed = speed;
         this.target = target;
+        this.airUnit = airUnit;
         this.areaEffect = areaEffect;
         this.description = description;
         this.count = count;
@@ -44,6 +47,7 @@ public class Card {
     public double getRange() {return range;}
     public SpeedType getSpeed() {return speed;}
     public TargetType getTarget() {return target;}
+    public boolean isAirUnit() {return airUnit;}
     public boolean isAreaEffect() {return areaEffect;}
     public String getDescription() {return description;}
     public int getCount() {return count;}
