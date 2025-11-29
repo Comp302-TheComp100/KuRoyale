@@ -162,15 +162,23 @@ public class ArenaDesignController {
                             event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
                         }
                         // Towers: user's bottom half only (y > 16)
-                        // Also check bounds for 3x3 (Princess) or 4x4 (King) placement
-                        else if ("PRINCESS_TOWER".equals(dragType) && finalY > 16
-                                && finalX + 2 < com.kuroyale.model.Arena.WIDTH
-                                && finalY + 2 < com.kuroyale.model.Arena.HEIGHT) {
-                            event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
-                        } else if ("KING_TOWER".equals(dragType) && finalY > 16
-                                && finalX + 3 < com.kuroyale.model.Arena.WIDTH
-                                && finalY + 3 < com.kuroyale.model.Arena.HEIGHT) {
-                            event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
+                        // Use drop cell as center of image (Princess 3x3, King 4x4)
+                        else if ("PRINCESS_TOWER".equals(dragType) && finalY > 16) {
+                            int startX = finalX - 1;
+                            int startY = finalY - 1;
+                            if (startX >= 0 && startY >= 0
+                                    && startX + 2 < com.kuroyale.model.Arena.WIDTH
+                                    && startY + 2 < com.kuroyale.model.Arena.HEIGHT) {
+                                event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
+                            }
+                        } else if ("KING_TOWER".equals(dragType) && finalY > 16) {
+                            int startX = finalX - 2;
+                            int startY = finalY - 2;
+                            if (startX >= 0 && startY >= 0
+                                    && startX + 3 < com.kuroyale.model.Arena.WIDTH
+                                    && startY + 3 < com.kuroyale.model.Arena.HEIGHT) {
+                                event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
+                            }
                         }
                     }
                     event.consume();
@@ -420,8 +428,11 @@ public class ArenaDesignController {
             return;
         }
 
-        // Check bounds for 3x3 tower
-        if (x + 2 >= com.kuroyale.model.Arena.WIDTH || y + 2 >= com.kuroyale.model.Arena.HEIGHT) {
+        // Treat drop cell as center -> top-left start for 3x3
+        int startX = x - 1;
+        int startY = y - 1;
+        // Check bounds for 3x3 tower using startX/startY
+        if (startX < 0 || startY < 0 || startX + 2 >= com.kuroyale.model.Arena.WIDTH || startY + 2 >= com.kuroyale.model.Arena.HEIGHT) {
             return;
         }
 
@@ -432,7 +443,7 @@ public class ArenaDesignController {
 
         // Check against existing Princess towers
         for (GridPosition p : currentLayout.getPrincessTowerPositions()) {
-            if (isOverlap(x, y, 3, 3, p.getX(), p.getY(), 3, 3)) {
+            if (isOverlap(startX, startY, 3, 3, p.getX(), p.getY(), 3, 3)) {
                 occupied = true;
                 break;
             }
@@ -441,7 +452,7 @@ public class ArenaDesignController {
         // Check against King tower (4x4)
         if (!occupied && currentLayout.getKingTowerPosition() != null) {
             GridPosition k = currentLayout.getKingTowerPosition();
-            if (isOverlap(x, y, 3, 3, k.getX(), k.getY(), 4, 4)) {
+            if (isOverlap(startX, startY, 3, 3, k.getX(), k.getY(), 4, 4)) {
                 occupied = true;
             }
         }
@@ -450,8 +461,8 @@ public class ArenaDesignController {
             return;
         }
 
-        // Place Princess tower
-        currentLayout.addPrincessTowerPosition(x, y);
+        // Place Princess tower using computed top-left
+        currentLayout.addPrincessTowerPosition(startX, startY);
         renderArena();
     }
 
@@ -467,8 +478,11 @@ public class ArenaDesignController {
             return;
         }
 
-        // Check bounds for 4x4 tower
-        if (x + 3 >= com.kuroyale.model.Arena.WIDTH || y + 3 >= com.kuroyale.model.Arena.HEIGHT) {
+        // Treat drop cell as center -> top-left start for 4x4
+        int startX = x - 2;
+        int startY = y - 2;
+        // Check bounds for 4x4 tower using startX/startY
+        if (startX < 0 || startY < 0 || startX + 3 >= com.kuroyale.model.Arena.WIDTH || startY + 3 >= com.kuroyale.model.Arena.HEIGHT) {
             return;
         }
 
@@ -476,7 +490,7 @@ public class ArenaDesignController {
         // Princess is 3x3, King is 4x4
         boolean occupied = false;
         for (GridPosition p : currentLayout.getPrincessTowerPositions()) {
-            if (isOverlap(x, y, 4, 4, p.getX(), p.getY(), 3, 3)) {
+            if (isOverlap(startX, startY, 4, 4, p.getX(), p.getY(), 3, 3)) {
                 occupied = true;
                 break;
             }
@@ -486,8 +500,8 @@ public class ArenaDesignController {
             return;
         }
 
-        // Place King tower
-        currentLayout.setKingTowerPosition(x, y);
+        // Place King tower using computed top-left
+        currentLayout.setKingTowerPosition(startX, startY);
         renderArena();
     }
 

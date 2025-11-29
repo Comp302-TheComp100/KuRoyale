@@ -245,6 +245,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
         // Add to grid, spanning 'size' columns and rows
         grid.add(towerStack, x, y, size, size);
+        GridPane.setHalignment(towerStack, javafx.geometry.HPos.CENTER);
+        GridPane.setValignment(towerStack, javafx.geometry.VPos.CENTER);
     }
 
     private boolean isTowerTile(TileType type) {

@@ -73,6 +73,12 @@ public class TargetingService {
         GridPosition b = target.getPosition();
         double dist = a.getEuclideanDistanceTo(b);
         double rangeTiles = attacker.getCombatStats() != null ? attacker.getCombatStats().getRangeTiles() : attacker.getAttackRange();
+        if (attacker.getCombatStats() != null && attacker.getCombatStats().getAttackType() == CombatStats.AttackType.MELEE) {
+            // Allow melee to hit adjacent including diagonals; be generous for contact
+            rangeTiles = Math.max(rangeTiles, 1);
+            double threshold = Math.max(1.5, rangeTiles);
+            return dist <= threshold;
+        }
         return dist <= rangeTiles;
     }
 }
