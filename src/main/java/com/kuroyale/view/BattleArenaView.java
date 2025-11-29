@@ -330,6 +330,35 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             hpFg.setY(hpBg.getY());
 
             unitLayer.getChildren().addAll(hpBg, hpFg);
+
+            // Attack feedback: projectile for ranged units (glow removed)
+            if (troop.getUnitState() == com.kuroyale.model.UnitState.ATTACKING) {
+                // Projectile for ranged attackers (moving dot)
+                if (troop.getCombatStats() != null &&
+                        troop.getCombatStats().getAttackType() == com.kuroyale.model.CombatStats.AttackType.RANGED) {
+                    com.kuroyale.model.Troop target = findNearestEnemyTroopInRange(troop);
+                    if (target != null) {
+                        javafx.scene.Node targetNode = getGridCell(target.getPosition().getX(), target.getPosition().getY());
+                        if (targetNode != null) {
+                            javafx.geometry.Bounds tb = targetNode.getBoundsInParent();
+                            double tx = tb.getMinX() + tb.getWidth() / 2.0;
+                            double ty = tb.getMinY() + tb.getHeight() / 2.0;
+                            // Animate dot using attack cooldown progress to ensure forward motion
+                            double duration = Math.max(0.15, troop.getCombatStats().getHitSpeedSeconds());
+                            double cooldown = troop.getAttackCooldown();
+                            double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration)); // 0..1 from attacker to target
+                            double px = centerX + (tx - centerX) * phase;
+                            double py = centerY + (ty - centerY) * phase;
+                            Circle dot = new Circle(px, py, 2.5);
+                            dot.setFill(troop.isPlayerSide() ? Color.YELLOW : Color.ORANGE);
+                            dot.setStroke(Color.color(0,0,0,0.35));
+                            dot.setStrokeWidth(0.8);
+                            unitLayer.getChildren().add(dot);
+                        }
+                    }
+                }
+            }
+
             }
         }
 
@@ -416,5 +445,21 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
     public int getTileSize() {
         return TILE_SIZE;
+    }
+
+    // Helper: find nearest enemy troop within range (view-side approximation)
+    private com.kuroyale.model.Troop findNearestEnemyTroopInRange(com.kuroyale.model.Troop self) {
+        com.kuroyale.model.Troop best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (com.kuroyale.model.Troop t : gameState.getActiveTroops()) {
+            if (!t.isAlive()) continue;
+            if (t.isPlayerSide() == self.isPlayerSide()) continue;
+            double dx = self.getPosition().getX() - t.getPosition().getX();
+            double dy = self.getPosition().getY() - t.getPosition().getY();
+            double dist = Math.sqrt(dx*dx + dy*dy);
+            double range = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles() : (int)Math.round(self.getAttackRange());
+            if (dist <= range && dist < bestDist) { bestDist = dist; best = t; }
+        }
+        return best;
     }
 }

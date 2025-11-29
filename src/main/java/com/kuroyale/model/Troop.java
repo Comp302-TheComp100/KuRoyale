@@ -15,6 +15,10 @@ public class Troop {
     private final double attackRange; // in cells approximate
     private final Deque<GridPosition> path;
     private double moveProgress; // accumulated fractional progress in cells
+    // Combat
+    private CombatStats combatStats;
+    private double attackCooldown;
+    private UnitState unitState = UnitState.IDLE;
 
     public Troop(Card card, GridPosition spawn, boolean isPlayer) {
         this.baseCard = card;
@@ -28,6 +32,9 @@ public class Troop {
         this.attackRange = card.getRange();
         this.path = new ArrayDeque<>();
         this.moveProgress = 0.0;
+        CombatStats.AttackType at = card.getRange() > 1.5 ? CombatStats.AttackType.RANGED : CombatStats.AttackType.MELEE;
+        this.combatStats = new CombatStats(card.getDamage(), card.getHitSpeed(), (int)Math.round(card.getRange()), at);
+        this.attackCooldown = 0.0;
     }
 
     private double mapSpeed(SpeedType speedType) {
@@ -65,4 +72,12 @@ public class Troop {
     public void addMoveProgress(double delta) { this.moveProgress += delta; }
     public double getMoveProgress() { return this.moveProgress; }
     public void consumeMoveProgress(double amount) { this.moveProgress = Math.max(0.0, this.moveProgress - amount); }
+
+    // Combat getters/setters
+    public CombatStats getCombatStats() { return combatStats; }
+    public double getAttackCooldown() { return attackCooldown; }
+    public void setAttackCooldown(double attackCooldown) { this.attackCooldown = attackCooldown; }
+    public UnitState getUnitState() { return unitState; }
+    public void setUnitState(UnitState unitState) { this.unitState = unitState; }
 }
+

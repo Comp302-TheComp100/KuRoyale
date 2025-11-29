@@ -60,4 +60,19 @@ public class TargetingService {
         }
         return bestPos;
     }
+
+    public boolean isValidTarget(Troop attacker, Troop candidate) {
+        if (!candidate.isAlive()) return false;
+        if (attacker.isBuildingOnly()) return false; // building-only troops ignore enemy troops
+        if (attacker.getBaseCard().getTarget() == TargetType.GROUND && candidate.isAirUnit()) return false;
+        return true;
+    }
+
+    public boolean isInRange(Troop attacker, Troop target) {
+        GridPosition a = attacker.getPosition();
+        GridPosition b = target.getPosition();
+        double dist = a.getEuclideanDistanceTo(b);
+        double rangeTiles = attacker.getCombatStats() != null ? attacker.getCombatStats().getRangeTiles() : attacker.getAttackRange();
+        return dist <= rangeTiles;
+    }
 }
