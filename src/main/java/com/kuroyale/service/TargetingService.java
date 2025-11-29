@@ -4,21 +4,37 @@ import com.kuroyale.model.*;
 import java.util.*;
 
 public class TargetingService {
+    private static final int DETECTION_RADIUS = 5; // tiles
     public GridPosition findNearestEnemyOrObjective(GameState state, Troop troop) {
-        List<GameState.PlacedCard> placed = state.getPlacedCards();
         GridPosition troopPos = troop.getPosition();
-        GameState.PlacedCard best = null;
         double bestDist = Double.MAX_VALUE;
-        for (GameState.PlacedCard pc : placed) {
+        GridPosition bestPos = null;
+
+        // 1) Consider active enemy troops within detection radius
+        for (Troop other : state.getActiveTroops()) {
+            if (other.isPlayerSide() == troop.isPlayerSide()) continue;
+            // Building-only troops ignore enemy troops
+            if (troop.isBuildingOnly()) continue;
+            // Ground troops cannot target air-only enemies if target type is GROUND
+            if (troop.getBaseCard().getTarget() == TargetType.GROUND && other.isAirUnit()) continue;
+            // Air-only attackers cannot hit ground-only if target type is AIR (edge-case); handled by BOTH
+            GridPosition pos = other.getPosition();
+            double dist = troopPos.getEuclideanDistanceTo(pos);
+            if (dist <= DETECTION_RADIUS && dist < bestDist) { bestDist = dist; bestPos = pos; }
+        }
+
+        // 2) Consider placed enemy buildings (and spells ignored)
+        for (GameState.PlacedCard pc : state.getPlacedCards()) {
             if (pc.isPlayer == troop.isPlayerSide()) continue;
+            if (pc.card.getType() == CardType.SPELL) continue; // ignore spells as targets
             if (troop.isBuildingOnly() && pc.card.getType() != CardType.BUILDING) continue;
-            if (!troop.isBuildingOnly() && pc.card.getType() == CardType.SPELL) continue;
             GridPosition pos = GridPosition.tryCreate(pc.x, pc.y);
             if (pos == null) continue;
             double dist = troopPos.getEuclideanDistanceTo(pos);
-            if (dist < bestDist) { bestDist = dist; best = pc; }
+            if (dist < bestDist) { bestDist = dist; bestPos = pos; }
         }
-        if (best != null) return GridPosition.tryCreate(best.x, best.y);
+
+        if (bestPos != null) return bestPos;
         // fallback to nearest enemy tower cell
         return findNearestEnemyTower(state.getArena(), troop);
     }
