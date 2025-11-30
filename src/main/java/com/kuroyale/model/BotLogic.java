@@ -20,7 +20,6 @@ public class BotLogic {
 
     //Updates bot state and decides on moves
     public Move update(double deltaTime, GameState gameState) {
-        elixirManager.update(deltaTime);
         timeSinceLastMove += deltaTime;
 
         // 1. Wait until elixir is high (>= 7) or full
