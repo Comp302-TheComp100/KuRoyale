@@ -29,7 +29,6 @@ public class BotLogic {
      * @return A Move object if the bot makes a move, null otherwise
      */
     public Move update(double deltaTime, GameState gameState) {
-        elixirManager.update(deltaTime);
         timeSinceLastMove += deltaTime;
 
         // Simple Logic:
