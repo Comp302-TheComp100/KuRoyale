@@ -181,8 +181,10 @@ public class BattleController {
                 "-fx-background-color: #333; -fx-padding: 40; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 2;");
         content.setMaxSize(400, 300);
 
-        javafx.scene.control.Label title = new javafx.scene.control.Label("MATCH ENDED");
-        title.setStyle("-fx-font-size: 36px; -fx-text-fill: white; -fx-font-weight: bold;");
+        boolean playerWon = gameState.isPlayerWinner();
+        javafx.scene.control.Label title = new javafx.scene.control.Label(playerWon ? "VICTORY" : "DEFEAT");
+        String titleColor = playerWon ? "#00ff00" : "#ff0000";
+        title.setStyle("-fx-font-size: 36px; -fx-text-fill: " + titleColor + "; -fx-font-weight: bold;");
 
         javafx.scene.control.Label score = new javafx.scene.control.Label(
                 String.format("Player: %d  -  Bot: %d", gameState.getPlayerScore(), gameState.getBotScore()));

@@ -2,15 +2,12 @@ package com.kuroyale.model;
 
 import java.util.Objects;
 
-/**
- * Immutable value object representing a grid coordinate (x, y) in the arena.
+/*Immutable value object representing a grid coordinate (x, y) in the arena.
  * Information Expert: Knows how to validate and compare positions.
- * 
  * Coordinate System:
  * - x ranges from 0 to 17 (18 columns)
  * - y ranges from 0 to 31 (32 rows)
- * - Origin (0, 0) is at the top-left corner
- */
+ * - Origin (0, 0) is at the top-left corner*/
 public class GridPosition {
     public static final int MIN_X = 0;
     public static final int MAX_X = Arena.WIDTH - 1;
@@ -20,12 +17,7 @@ public class GridPosition {
     private final int x;
     private final int y;
 
-    /**
-     * Creates a new grid position with validation.
-     * @param x The x-coordinate (0-17)
-     * @param y The y-coordinate (0-31)
-     * @throws IllegalArgumentException if coordinates are out of bounds
-     */
+    //Creates a new grid position with validation.
     public GridPosition(int x, int y) {
         if (!isValidCoordinate(x, y)) {
             throw new IllegalArgumentException(
@@ -37,10 +29,7 @@ public class GridPosition {
         this.y = y;
     }
 
-    /**
-     * Static factory method to create a position without throwing exceptions.
-     * @return GridPosition if valid, null otherwise
-     */
+    //Static factory method to create a position without throwing exceptions.
     public static GridPosition tryCreate(int x, int y) {
         if (isValidCoordinate(x, y)) {
             return new GridPosition(x, y);
@@ -48,25 +37,13 @@ public class GridPosition {
         return null;
     }
 
-    /**
-     * Checks if the given coordinates are within valid arena bounds.
-     */
-    private static boolean isValidCoordinate(int x, int y) {
-        return x >= MIN_X && x <= MAX_X && y >= MIN_Y && y <= MAX_Y;
-    }
+    // Checks if the given coordinates are within valid arena bounds.
+    private static boolean isValidCoordinate(int x, int y) {return x >= MIN_X && x <= MAX_X && y >= MIN_Y && y <= MAX_Y;}
 
-    /**
-     * Checks if this position is within valid arena bounds.
-     */
-    public boolean isValid() {
-        return isValidCoordinate(x, y);
-    }
+    // Checks if this position is within valid arena bounds.
+    public boolean isValid() {return isValidCoordinate(x, y);}
 
-    /**
-     * Calculates Manhattan distance to another position.
-     * @param other The other position
-     * @return The Manhattan distance (|x1-x2| + |y1-y2|)
-     */
+    //Calculates Manhattan distance to another position.
     public int getDistanceTo(GridPosition other) {
         if (other == null) {
             throw new IllegalArgumentException("Cannot calculate distance to null position");
@@ -74,11 +51,7 @@ public class GridPosition {
         return Math.abs(this.x - other.x) + Math.abs(this.y - other.y);
     }
 
-    /**
-     * Calculates Euclidean distance to another position.
-     * @param other The other position
-     * @return The Euclidean distance
-     */
+    // Calculates Euclidean distance to another position.
     public double getEuclideanDistanceTo(GridPosition other) {
         if (other == null) {
             throw new IllegalArgumentException("Cannot calculate distance to null position");
@@ -88,11 +61,7 @@ public class GridPosition {
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    /**
-     * Checks if this position is adjacent to another (including diagonals).
-     * @param other The other position
-     * @return true if adjacent (distance <= 1 in both x and y)
-     */
+    //Checks if this position is adjacent to another (including diagonals).
     public boolean isAdjacentTo(GridPosition other) {
         if (other == null) {
             return false;
@@ -100,13 +69,9 @@ public class GridPosition {
         return Math.abs(this.x - other.x) <= 1 && Math.abs(this.y - other.y) <= 1 && !this.equals(other);
     }
 
-    public int getX() {
-        return x;
-    }
+    public int getX() {return x;}
 
-    public int getY() {
-        return y;
-    }
+    public int getY() {return y;}
 
     @Override
     public boolean equals(Object obj) {
@@ -117,12 +82,8 @@ public class GridPosition {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(x, y);
-    }
+    public int hashCode() {return Objects.hash(x, y);}
 
     @Override
-    public String toString() {
-        return String.format("(%d, %d)", x, y);
-    }
+    public String toString() {return String.format("(%d, %d)", x, y);}
 }

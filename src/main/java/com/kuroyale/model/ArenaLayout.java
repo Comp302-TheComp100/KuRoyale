@@ -3,8 +3,7 @@ package com.kuroyale.model;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Represents the persistent configuration of an arena.
+/*Represents the persistent configuration of an arena.
  * Information Expert: Knows the layout configuration (bridges, towers, etc.).
  */
 public class ArenaLayout {
@@ -32,9 +31,7 @@ public class ArenaLayout {
         return bridgePositions;
     }
 
-    public void setBridgePositions(List<GridPosition> bridgePositions) {
-        this.bridgePositions = bridgePositions;
-    }
+    public void setBridgePositions(List<GridPosition> bridgePositions) {this.bridgePositions = bridgePositions;}
 
     public void addBridgePosition(int x, int y) {
         this.bridgePositions.add(new GridPosition(x, y));
@@ -44,9 +41,7 @@ public class ArenaLayout {
         return princessTowerPositions;
     }
 
-    public void setPrincessTowerPositions(List<GridPosition> princessTowerPositions) {
-        this.princessTowerPositions = princessTowerPositions;
-    }
+    public void setPrincessTowerPositions(List<GridPosition> princessTowerPositions) {this.princessTowerPositions = princessTowerPositions;}
 
     public void addPrincessTowerPosition(int x, int y) {
         this.princessTowerPositions.add(new GridPosition(x, y));

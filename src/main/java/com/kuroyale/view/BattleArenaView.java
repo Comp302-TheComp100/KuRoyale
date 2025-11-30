@@ -10,6 +10,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.geometry.Point2D;
 
 /**
  * Renders the battle arena and placed units.
@@ -74,6 +75,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
         // Center Arena
         this.grid = new GridPane();
+        this.grid.setHgap(0);
+        this.grid.setVgap(0);
         this.unitLayer = new Pane();
 
         // Make unit layer transparent to mouse events so clicks go to grid for
@@ -106,7 +109,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         renderArena();
     }
 
-
     private java.util.function.BiConsumer<Integer, Integer> onGridClick;
 
     public void setOnGridClicked(java.util.function.BiConsumer<Integer, Integer> handler) {
@@ -116,54 +118,70 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     private void renderArena() {
         grid.getChildren().clear();
         cellIndex.clear();
-        Arena arena = gameState.getArena();
 
         for (int x = 0; x < Arena.WIDTH; x++) {
             for (int y = 0; y < Arena.HEIGHT; y++) {
-                GridCell cell = arena.getCell(x, y);
+                GridCell cell = gameState.getArena().getCell(x, y);
+                Rectangle rect = new Rectangle(TILE_SIZE, TILE_SIZE);
+                // Style based on type
+                TileType type = cell.getTileType();
 
-                // Check if this is a tower tile
-                boolean isTower = isTowerTile(cell.getTileType());
-
-                if (isTower) {
-                    // Render underlying tile (Grass usually)
-                    Rectangle rect = new Rectangle(TILE_SIZE, TILE_SIZE);
-                    rect.setFill(Color.LIGHTGREEN);
-                    rect.setStroke(Color.BLACK);
-                    rect.setStrokeWidth(0.2);
-                    grid.add(rect, x, y);
-                    indexCellNode(x, y, rect);
-                } else {
-                    Rectangle rect = new Rectangle(TILE_SIZE, TILE_SIZE);
-                    // Style based on type
-                    switch (cell.getTileType()) {
-                        case GRASS:
-                            rect.setFill(Color.LIGHTGREEN);
-                            break;
-                        case WATER:
-                            rect.setFill(Color.LIGHTBLUE);
-                            break;
-                        case BRIDGE:
-                            rect.setFill(Color.SADDLEBROWN);
-                            break;
-                        case ROAD:
-                            rect.setFill(Color.SANDYBROWN);
-                            break;
-                        default:
-                            rect.setFill(Color.GRAY);
-                            break;
-                    }
-                    rect.setStroke(Color.BLACK);
-                    rect.setStrokeWidth(0.2);
-                    grid.add(rect, x, y);
-                    indexCellNode(x, y, rect);
+                // Treat towers as grass for the base tile so they look right when destroyed
+                if (type == TileType.PRINCESS_TOWER_USER ||
+                        type == TileType.PRINCESS_TOWER_COMPUTER ||
+                        type == TileType.KING_TOWER_USER ||
+                        type == TileType.KING_TOWER_COMPUTER) {
+                    type = TileType.GRASS;
                 }
+
+                switch (type) {
+                    case GRASS:
+                        // Checkered pattern
+                        if ((x + y) % 2 == 0) {
+                            rect.setFill(Color.rgb(124, 252, 0)); // LawnGreen
+                        } else {
+                            rect.setFill(Color.rgb(50, 205, 50)); // LimeGreen
+                        }
+                        break;
+                    case WATER:
+                        rect.setFill(Color.LIGHTBLUE);
+                        break;
+                    case BRIDGE:
+                        rect.setFill(Color.SADDLEBROWN);
+                        break;
+                    case ROAD:
+                        rect.setFill(Color.SANDYBROWN);
+                        break;
+                    default:
+                        rect.setFill(Color.GRAY);
+                        break;
+                }
+                // Remove stroke for seamless look
+                rect.setStroke(Color.TRANSPARENT);
+                rect.setStrokeWidth(0.0);
+
+                grid.add(rect, x, y);
+                indexCellNode(x, y, rect);
             }
         }
 
         // Render Towers on top
         renderTowerImages();
     }
+
+    private final java.util.Map<com.kuroyale.model.GridPosition, javafx.scene.Node> activeTowerVisuals = new java.util.HashMap<>();
+    // Track last visual positions for interpolation (Pixel coordinates now)
+    private final java.util.Map<com.kuroyale.model.Troop, javafx.geometry.Point2D> lastTroopPositions = new java.util.HashMap<>();
+    // Track active troop visuals to prevent recreation (fixes animation loop)
+    private final java.util.Map<com.kuroyale.model.Troop, javafx.scene.Node> activeTroopVisuals = new java.util.HashMap<>();
+    // Track active projectiles to prevent trails
+    private final java.util.Map<com.kuroyale.model.Troop, javafx.scene.Node> activeProjectiles = new java.util.HashMap<>();
+    private final java.util.Map<com.kuroyale.model.Tower, javafx.scene.Node> activeTowerProjectiles = new java.util.HashMap<>();
+    private final java.util.Map<com.kuroyale.model.Building, javafx.scene.Node> activeBuildingProjectiles = new java.util.HashMap<>();
+    // Track last troop state to detect animation changes
+    private final java.util.Map<com.kuroyale.model.Troop, String> lastTroopState = new java.util.HashMap<>();
+
+    private static final double LERP_FACTOR = 0.3; // Interpolation smoothness (0-1, higher = smoother but more lag)
 
     private void renderTowerImages() {
         if (gameState.getArena().getLayout() != null) {
@@ -254,19 +272,16 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         grid.add(towerStack, x, y, size, size);
         GridPane.setHalignment(towerStack, javafx.geometry.HPos.CENTER);
         GridPane.setValignment(towerStack, javafx.geometry.VPos.CENTER);
-        // Index each covered coordinate to the stack (center tile will resolve via bounds)
+        // Index each covered coordinate to the stack (center tile will resolve via
+        // bounds)
         for (int dx = 0; dx < size; dx++) {
             for (int dy = 0; dy < size; dy++) {
                 indexCellNode(x + dx, y + dy, towerStack);
             }
         }
-    }
 
-    private boolean isTowerTile(TileType type) {
-        return type == TileType.PRINCESS_TOWER_USER ||
-                type == TileType.PRINCESS_TOWER_COMPUTER ||
-                type == TileType.KING_TOWER_USER ||
-                type == TileType.KING_TOWER_COMPUTER;
+        // Track visual
+        activeTowerVisuals.put(new com.kuroyale.model.GridPosition(x, y), towerStack);
     }
 
     public void update() {
@@ -286,97 +301,310 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         // Update Score
         scoreLabel.setText(String.format("%d - %d", gameState.getPlayerScore(), gameState.getBotScore()));
 
-        unitLayer.getChildren().clear();
+        // DO NOT clear unitLayer here, as we are caching visuals now.
+        // unitLayer.getChildren().clear();
+
+        // Remove destroyed towers
+        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.GridPosition, javafx.scene.Node>> it = activeTowerVisuals
+                .entrySet().iterator();
+        while (it.hasNext()) {
+            java.util.Map.Entry<com.kuroyale.model.GridPosition, javafx.scene.Node> entry = it.next();
+            com.kuroyale.model.GridPosition pos = entry.getKey();
+            if (gameState.getArena().getTowerAt(pos.getX(), pos.getY()) == null) {
+                // Tower is gone, remove visual
+                grid.getChildren().remove(entry.getValue());
+                it.remove();
+            }
+        }
 
         // Update existing tower health bars (inside grid stack panes)
         updateExistingTowerHealthBars();
 
         // Render active moving troops
         java.util.List<com.kuroyale.model.Troop> troops = gameState.getActiveTroops();
+        java.util.Set<com.kuroyale.model.Troop> currentTroops = new java.util.HashSet<>(troops);
+
+        // Cleanup visuals for dead troops
+        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.Troop, javafx.scene.Node>> troopIt = activeTroopVisuals
+                .entrySet().iterator();
+        while (troopIt.hasNext()) {
+            java.util.Map.Entry<com.kuroyale.model.Troop, javafx.scene.Node> entry = troopIt.next();
+            com.kuroyale.model.Troop t = entry.getKey();
+            if (!currentTroops.contains(t)) {
+                // Troop is dead or gone
+                javafx.scene.Node node = entry.getValue();
+                if (node instanceof AnimatedSprite) {
+                    ((AnimatedSprite) node).stop();
+                }
+                unitLayer.getChildren().remove(node);
+                // Also remove health bar parts if they were added separately (currently they
+                // are added to unitLayer)
+                // Note: The current implementation adds health bars to unitLayer every frame,
+                // which is inefficient.
+                // For now, we just remove the main unit node. The health bars are cleared by
+                // unitLayer.getChildren().clear()
+                // but wait, we removed that clear() call? No, we need to remove the clear()
+                // call to support caching!
+
+                // Remove associated health bars
+                String hpBarId = "hp_" + t.hashCode();
+                unitLayer.getChildren().removeIf(n -> hpBarId.equals(n.getId()));
+
+                // Remove associated projectile
+                if (activeProjectiles.containsKey(t)) {
+                    unitLayer.getChildren().remove(activeProjectiles.get(t));
+                    activeProjectiles.remove(t);
+                }
+
+                troopIt.remove();
+                lastTroopPositions.remove(t);
+                lastTroopState.remove(t);
+            }
+        }
+
+        // Cleanup projectiles for troops that are no longer attacking
+        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.Troop, javafx.scene.Node>> projIt = activeProjectiles
+                .entrySet().iterator();
+        while (projIt.hasNext()) {
+            java.util.Map.Entry<com.kuroyale.model.Troop, javafx.scene.Node> entry = projIt.next();
+            com.kuroyale.model.Troop t = entry.getKey();
+            if (!currentTroops.contains(t) || t.getUnitState() != com.kuroyale.model.UnitState.ATTACKING) {
+                unitLayer.getChildren().remove(entry.getValue());
+                projIt.remove();
+            }
+        }
+
+        // We must NOT clear unitLayer if we want to cache visuals.
+        // However, the original code cleared unitLayer every frame.
+        // We need to change how we manage children.
+        // Let's remove the clear() call at the top of update() and manage children
+        // manually.
+
         for (com.kuroyale.model.Troop troop : troops) {
             com.kuroyale.model.GridPosition pos = troop.getPosition();
             javafx.scene.Node cellNode = getGridCell(pos.getX(), pos.getY());
             if (cellNode != null) {
+                // Get cell bounds for positioning
                 javafx.geometry.Bounds cellBounds = cellNode.getBoundsInParent();
-            // Try to render troop as image; fall back to circle if image missing
-            javafx.scene.Node unitNode;
-            try {
-                String imgPath = troop.getBaseCard().getImagePath();
-                javafx.scene.image.Image img = new javafx.scene.image.Image(getClass().getResourceAsStream(imgPath));
-                javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(img);
-                iv.setFitWidth(TILE_SIZE);
-                iv.setFitHeight(TILE_SIZE);
-                iv.setPreserveRatio(true);
-                iv.setSmooth(true);
-                iv.setLayoutX(cellBounds.getMinX());
-                iv.setLayoutY(cellBounds.getMinY());
-                unitNode = iv;
-            } catch (Exception e) {
-                Circle fallback = new Circle(TILE_SIZE / 2.5);
-                fallback.setCenterX(cellBounds.getMinX() + cellBounds.getWidth() / 2.0);
-                fallback.setCenterY(cellBounds.getMinY() + cellBounds.getHeight() / 2.0);
-                fallback.setFill(troop.isPlayerSide() ? (troop.isAirUnit() ? Color.DODGERBLUE : Color.BLUE)
-                    : (troop.isAirUnit() ? Color.ORANGERED : Color.RED));
-                unitNode = fallback;
-            }
 
-            unitLayer.getChildren().add(unitNode);
+                // Visual interpolation for smooth movement
+                // Calculate visual position using linear interpolation based on moveProgress
+                double visualX, visualY;
 
+                if (troop.getPath() != null && !troop.getPath().isEmpty()
+                        && troop.getUnitState() == com.kuroyale.model.UnitState.MOVING) {
+                    com.kuroyale.model.GridPosition current = troop.getPosition();
+                    com.kuroyale.model.GridPosition next = troop.getPath().peekFirst();
 
-            // Troop health bar above the unit
-            double maxHp = troop.getBaseCard().getHp();
-            double curHp = Math.max(0, troop.getCurrentHealth());
-            double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
-            double barWidth = TILE_SIZE * 0.9;
-            double barHeight = 4;
+                    // Linear interpolation: start + (end - start) * progress
+                    double progress = troop.getMoveProgress();
+                    // Clamp progress to [0, 1] just in case
+                    progress = Math.max(0.0, Math.min(1.0, progress));
 
-            javafx.scene.shape.Rectangle hpBg = new javafx.scene.shape.Rectangle(barWidth, barHeight);
-            hpBg.setFill(Color.color(0.2, 0.2, 0.2, 0.8));
-            hpBg.setStroke(Color.BLACK);
-            hpBg.setStrokeWidth(0.3);
-                double centerX = cellBounds.getMinX() + cellBounds.getWidth() / 2.0;
-                double centerY = cellBounds.getMinY() + cellBounds.getHeight() / 2.0;
+                    double startX = current.getX() * TILE_SIZE;
+                    double startY = current.getY() * TILE_SIZE;
+                    double endX = next.getX() * TILE_SIZE;
+                    double endY = next.getY() * TILE_SIZE;
+
+                    visualX = startX + (endX - startX) * progress;
+                    visualY = startY + (endY - startY) * progress;
+                } else {
+                    // Not moving or no path, snap to grid
+                    visualX = troop.getPosition().getX() * TILE_SIZE;
+                    visualY = troop.getPosition().getY() * TILE_SIZE;
+                }
+
+                // Update last known position for reference (optional now, but good for debug)
+                lastTroopPositions.put(troop, new javafx.geometry.Point2D(visualX, visualY));
+
+                // Check if we already have a visual for this troop
+                javafx.scene.Node unitNode = activeTroopVisuals.get(troop);
+                String cardName = troop.getBaseCard().getName();
+                boolean needsCreation = (unitNode == null);
+
+                // Check state changes for animated units
+                if (AnimatedSprite.isAnimated(cardName) && !needsCreation) {
+                    String currentState = troop.getUnitState() == com.kuroyale.model.UnitState.ATTACKING ? "fight"
+                            : "walk";
+                    boolean isRage = gameState.isDoubleElixir();
+                    String stateKey = currentState + (isRage ? "-rage" : "");
+
+                    String lastState = lastTroopState.get(troop);
+                    if (!stateKey.equals(lastState)) {
+                        // State changed, try to update existing sprite
+                        if (unitNode instanceof AnimatedSprite) {
+                            try {
+                                String gifPath = AnimatedSprite.buildGifPath(cardName, currentState,
+                                        troop.isPlayerSide(), isRage);
+
+                                double speedMult = troop.getMoveSpeed();
+                                if ("fight".equals(currentState)) {
+                                    double hitSpeed = troop.getCombatStats().getHitSpeedSeconds();
+                                    speedMult = 1.0 / Math.max(0.1, hitSpeed);
+                                }
+
+                                ((AnimatedSprite) unitNode).updateAnimation(gifPath, speedMult);
+                                lastTroopState.put(troop, stateKey);
+                                // System.out.println("Updated sprite for " + cardName + " to " + currentState);
+                            } catch (Exception e) {
+                                // Fallback to recreation if update fails
+                                unitLayer.getChildren().remove(unitNode);
+                                needsCreation = true;
+                            }
+                        } else {
+                            // Was not a sprite (maybe fallback circle), recreate
+                            unitLayer.getChildren().remove(unitNode);
+                            needsCreation = true;
+                        }
+                    }
+                }
+
+                if (needsCreation) {
+                    // Create new visual
+                    if (AnimatedSprite.isAnimated(cardName)) {
+                        try {
+                            String state = troop.getUnitState() == com.kuroyale.model.UnitState.ATTACKING ? "fight"
+                                    : "walk";
+                            boolean isRage = gameState.isDoubleElixir();
+                            String stateKey = state + (isRage ? "-rage" : "");
+
+                            String gifPath = AnimatedSprite.buildGifPath(cardName, state, troop.isPlayerSide(), isRage);
+
+                            // Adjust animation speed based on movement speed
+                            // Base speed is ~1.0 (Slow). Fast troops (1.6) should animate faster.
+                            double speedMult = troop.getMoveSpeed();
+                            if ("fight".equals(state)) {
+                                // Fight animation speed based on hit speed
+                                double hitSpeed = troop.getCombatStats().getHitSpeedSeconds();
+                                speedMult = 1.0 / Math.max(0.1, hitSpeed);
+                            }
+
+                            AnimatedSprite sprite = new AnimatedSprite(gifPath, TILE_SIZE, speedMult);
+                            System.out.println("Created new sprite for " + cardName + " state=" + state);
+                            unitNode = sprite;
+                            lastTroopState.put(troop, stateKey);
+                        } catch (Exception e) {
+                            Circle fallback = new Circle(TILE_SIZE / 2.5);
+                            fallback.setFill(troop.isPlayerSide() ? Color.BLUE : Color.RED);
+                            unitNode = fallback;
+                        }
+                    } else {
+                        // Static image for others
+                        try {
+                            String imgPath = troop.getBaseCard().getImagePath();
+                            javafx.scene.image.Image img = new javafx.scene.image.Image(
+                                    getClass().getResourceAsStream(imgPath));
+                            javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(img);
+                            iv.setFitWidth(TILE_SIZE);
+                            iv.setFitHeight(TILE_SIZE);
+                            iv.setPreserveRatio(true);
+                            iv.setSmooth(true);
+                            unitNode = iv;
+                        } catch (Exception e) {
+                            Circle fallback = new Circle(TILE_SIZE / 2.5);
+                            fallback.setFill(troop.isPlayerSide() ? (troop.isAirUnit() ? Color.DODGERBLUE : Color.BLUE)
+                                    : (troop.isAirUnit() ? Color.ORANGERED : Color.RED));
+                            unitNode = fallback;
+                        }
+                    }
+
+                    // Add to scene and cache
+                    unitLayer.getChildren().add(unitNode);
+                    activeTroopVisuals.put(troop, unitNode);
+                }
+
+                // Update position
+                unitNode.setLayoutX(visualX);
+                unitNode.setLayoutY(visualY);
+
+                // Handle Health Bar (recreate every frame for now as it's simple shapes)
+                // Remove old health bars for this troop if any (tricky without ID)
+                // Alternative: Add health bar to a Group with the unitNode?
+                // For now, let's just clear and redraw health bars, but NOT the unit nodes.
+                // But wait, we removed unitLayer.clear().
+                // We need to manage health bars better.
+                // Let's attach health bar ID to look it up.
+
+                String hpBarId = "hp_" + troop.hashCode();
+                unitLayer.getChildren().removeIf(n -> hpBarId.equals(n.getId())); // Troop health bar above the unit
+                double maxHp = troop.getBaseCard().getHp();
+                double curHp = Math.max(0, troop.getCurrentHealth());
+                double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
+                double barWidth = TILE_SIZE * 0.9;
+                double barHeight = 4;
+
+                javafx.scene.shape.Rectangle hpBg = new javafx.scene.shape.Rectangle(barWidth, barHeight);
+                hpBg.setId(hpBarId); // Tag for removal
+                hpBg.setFill(Color.color(0.2, 0.2, 0.2, 0.8));
+                hpBg.setStroke(Color.BLACK);
+                hpBg.setStrokeWidth(0.3);
+
+                // Calculate center based on visual position
+                double centerX = visualX + cellBounds.getWidth() / 2.0;
+                double centerY = visualY + cellBounds.getHeight() / 2.0;
+
                 hpBg.setX(centerX - barWidth / 2.0);
                 hpBg.setY(centerY - (TILE_SIZE / 2.5) - 6);
 
                 javafx.scene.shape.Rectangle hpFg = new javafx.scene.shape.Rectangle(barWidth * pct, barHeight);
+                hpFg.setId(hpBarId); // Tag for removal
                 if (troop.isPlayerSide()) {
                     hpFg.setFill(pct > 0.5 ? Color.LIMEGREEN : (pct > 0.2 ? Color.GOLD : Color.CRIMSON));
                 } else {
                     hpFg.setFill(Color.CRIMSON);
                 }
-            hpFg.setX(hpBg.getX());
-            hpFg.setY(hpBg.getY());
+                hpFg.setX(hpBg.getX());
+                hpFg.setY(hpBg.getY());
 
-            unitLayer.getChildren().addAll(hpBg, hpFg);
+                unitLayer.getChildren().addAll(hpBg, hpFg);
 
-            // Attack feedback: projectile for ranged units (glow removed)
-            if (troop.getUnitState() == com.kuroyale.model.UnitState.ATTACKING) {
-                // Projectile for ranged attackers (moving dot)
-                if (troop.getCombatStats() != null &&
-                        troop.getCombatStats().getAttackType() == com.kuroyale.model.CombatStats.AttackType.RANGED) {
-                    com.kuroyale.model.Troop target = findNearestEnemyTroopInRange(troop);
-                    if (target != null) {
-                        javafx.scene.Node targetNode = getGridCell(target.getPosition().getX(), target.getPosition().getY());
-                        if (targetNode != null) {
-                            javafx.geometry.Bounds tb = targetNode.getBoundsInParent();
-                            double tx = tb.getMinX() + tb.getWidth() / 2.0;
-                            double ty = tb.getMinY() + tb.getHeight() / 2.0;
-                            // Animate dot using attack cooldown progress to ensure forward motion
-                            double duration = Math.max(0.15, troop.getCombatStats().getHitSpeedSeconds());
-                            double cooldown = troop.getAttackCooldown();
-                            double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration)); // 0..1 from attacker to target
-                            double px = centerX + (tx - centerX) * phase;
-                            double py = centerY + (ty - centerY) * phase;
-                            Circle dot = new Circle(px, py, 2.5);
-                            dot.setFill(troop.isPlayerSide() ? Color.YELLOW : Color.ORANGE);
-                            dot.setStroke(Color.color(0,0,0,0.35));
-                            dot.setStrokeWidth(0.8);
-                            unitLayer.getChildren().add(dot);
+                // Attack feedback: projectile for ranged units (glow removed)
+                if (troop.getUnitState() == com.kuroyale.model.UnitState.ATTACKING) {
+                    // Projectile for ranged attackers (moving dot)
+                    if (troop.getCombatStats() != null &&
+                            troop.getCombatStats()
+                                    .getAttackType() == com.kuroyale.model.CombatStats.AttackType.RANGED) {
+
+                        com.kuroyale.model.Troop target = findNearestEnemyTroopInRange(troop);
+                        if (target != null) {
+                            javafx.scene.Node targetNode = getGridCell(target.getPosition().getX(),
+                                    target.getPosition().getY());
+                            if (targetNode != null) {
+                                javafx.geometry.Bounds tb = targetNode.getBoundsInParent();
+                                double tx = tb.getMinX() + tb.getWidth() / 2.0;
+                                double ty = tb.getMinY() + tb.getHeight() / 2.0;
+                                // Animate dot using attack cooldown progress to ensure forward motion
+                                double duration = Math.max(0.15, troop.getCombatStats().getHitSpeedSeconds());
+                                double cooldown = troop.getAttackCooldown();
+                                double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration)); // 0..1 from
+                                                                                                        // attacker to
+                                                                                                        // target
+                                double px = centerX + (tx - centerX) * phase;
+                                double py = centerY + (ty - centerY) * phase;
+
+                                // Get or create projectile
+                                javafx.scene.Node projNode = activeProjectiles.get(troop);
+                                if (projNode == null) {
+                                    Circle dot = new Circle(2.5);
+                                    dot.setFill(troop.isPlayerSide() ? Color.YELLOW : Color.ORANGE);
+                                    dot.setStroke(Color.color(0, 0, 0, 0.35));
+                                    dot.setStrokeWidth(0.8);
+                                    projNode = dot;
+                                    unitLayer.getChildren().add(projNode);
+                                    activeProjectiles.put(troop, projNode);
+                                }
+
+                                // Update position
+                                projNode.setLayoutX(px);
+                                projNode.setLayoutY(py);
+                                // Ensure it's visible (might have been removed if state flickered)
+                                if (!unitLayer.getChildren().contains(projNode)) {
+                                    unitLayer.getChildren().add(projNode);
+                                }
+                            }
                         }
                     }
                 }
-            }
 
             }
         }
@@ -403,15 +631,18 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     imageView.setSmooth(true);
                     buildingStack.getChildren().add(imageView);
                 } else {
-                    javafx.scene.shape.Rectangle fallback = new javafx.scene.shape.Rectangle(TILE_SIZE * w, TILE_SIZE * h);
-                    fallback.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.DARKBLUE : javafx.scene.paint.Color.DARKRED);
+                    javafx.scene.shape.Rectangle fallback = new javafx.scene.shape.Rectangle(TILE_SIZE * w,
+                            TILE_SIZE * h);
+                    fallback.setFill(
+                            b.isPlayerSide() ? javafx.scene.paint.Color.DARKBLUE : javafx.scene.paint.Color.DARKRED);
                     fallback.setStroke(javafx.scene.paint.Color.BLACK);
                     fallback.setStrokeWidth(0.5);
                     buildingStack.getChildren().add(fallback);
                 }
             } catch (Exception e) {
                 javafx.scene.shape.Rectangle fallback = new javafx.scene.shape.Rectangle(TILE_SIZE * w, TILE_SIZE * h);
-                fallback.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.DARKBLUE : javafx.scene.paint.Color.DARKRED);
+                fallback.setFill(
+                        b.isPlayerSide() ? javafx.scene.paint.Color.DARKBLUE : javafx.scene.paint.Color.DARKRED);
                 fallback.setStroke(javafx.scene.paint.Color.BLACK);
                 fallback.setStrokeWidth(0.5);
                 buildingStack.getChildren().add(fallback);
@@ -508,7 +739,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     }
 
                     if (shouldHighlight) {
-                        // Use glow effect instead of changing stroke width to prevent layout shift
+                        // Use glow effect for visibility on colored tiles
                         javafx.scene.effect.DropShadow glow = new javafx.scene.effect.DropShadow();
                         glow.setColor(Color.YELLOW);
                         glow.setRadius(8);
@@ -538,13 +769,19 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         com.kuroyale.model.Troop best = null;
         double bestDist = Double.MAX_VALUE;
         for (com.kuroyale.model.Troop t : gameState.getActiveTroops()) {
-            if (!t.isAlive()) continue;
-            if (t.isPlayerSide() == self.isPlayerSide()) continue;
+            if (!t.isAlive())
+                continue;
+            if (t.isPlayerSide() == self.isPlayerSide())
+                continue;
             double dx = self.getPosition().getX() - t.getPosition().getX();
             double dy = self.getPosition().getY() - t.getPosition().getY();
-            double dist = Math.sqrt(dx*dx + dy*dy);
-            double range = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles() : (int)Math.round(self.getAttackRange());
-            if (dist <= range && dist < bestDist) { bestDist = dist; best = t; }
+            double dist = Math.sqrt(dx * dx + dy * dy);
+            double range = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles()
+                    : (int) Math.round(self.getAttackRange());
+            if (dist <= range && dist < bestDist) {
+                bestDist = dist;
+                best = t;
+            }
         }
         return best;
     }
@@ -552,24 +789,34 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     // Visualize tower shots as moving dots towards target troops
     private void renderTowerProjectiles() {
         com.kuroyale.model.Arena arena = gameState.getArena();
+        java.util.Set<com.kuroyale.model.Tower> currentAttackingTowers = new java.util.HashSet<>();
+
         java.util.Map<com.kuroyale.model.Tower, java.util.List<com.kuroyale.model.GridCell>> groups = new java.util.HashMap<>();
         for (com.kuroyale.model.GridCell cell : arena.getAllCells()) {
             com.kuroyale.model.TileType tt = cell.getTileType();
-            boolean isTowerTile = tt == com.kuroyale.model.TileType.PRINCESS_TOWER_USER || tt == com.kuroyale.model.TileType.PRINCESS_TOWER_COMPUTER
-                    || tt == com.kuroyale.model.TileType.KING_TOWER_USER || tt == com.kuroyale.model.TileType.KING_TOWER_COMPUTER;
-            if (!isTowerTile) continue;
+            boolean isTowerTile = tt == com.kuroyale.model.TileType.PRINCESS_TOWER_USER
+                    || tt == com.kuroyale.model.TileType.PRINCESS_TOWER_COMPUTER
+                    || tt == com.kuroyale.model.TileType.KING_TOWER_USER
+                    || tt == com.kuroyale.model.TileType.KING_TOWER_COMPUTER;
+            if (!isTowerTile)
+                continue;
             com.kuroyale.model.Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
-            if (tower == null || tower.getCurrentHealth() <= 0) continue;
+            if (tower == null || tower.getCurrentHealth() <= 0)
+                continue;
             groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
         }
-        for (java.util.Map.Entry<com.kuroyale.model.Tower, java.util.List<com.kuroyale.model.GridCell>> e : groups.entrySet()) {
+
+        for (java.util.Map.Entry<com.kuroyale.model.Tower, java.util.List<com.kuroyale.model.GridCell>> e : groups
+                .entrySet()) {
             com.kuroyale.model.Tower tower = e.getKey();
             java.util.List<com.kuroyale.model.GridCell> cells = e.getValue();
             boolean isPlayerTower = false;
             int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
             for (com.kuroyale.model.GridCell c : cells) {
                 com.kuroyale.model.TileType tt = c.getTileType();
-                if (tt == com.kuroyale.model.TileType.PRINCESS_TOWER_USER || tt == com.kuroyale.model.TileType.KING_TOWER_USER) isPlayerTower = true;
+                if (tt == com.kuroyale.model.TileType.PRINCESS_TOWER_USER
+                        || tt == com.kuroyale.model.TileType.KING_TOWER_USER)
+                    isPlayerTower = true;
                 int x = c.getPosition().getX();
                 int y = c.getPosition().getY();
                 minX = Math.min(minX, x);
@@ -580,7 +827,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             int cx = (minX + maxX) / 2;
             int cy = (minY + maxY) / 2;
             javafx.scene.Node centerCell = getGridCell(cx, cy);
-            if (centerCell == null) continue;
+            if (centerCell == null)
+                continue;
             javafx.geometry.Bounds cb = centerCell.getBoundsInParent();
             double sx = cb.getMinX() + cb.getWidth() / 2.0;
             double sy = cb.getMinY() + cb.getHeight() / 2.0;
@@ -589,18 +837,28 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             com.kuroyale.model.Troop target = null;
             double bestDist = Double.MAX_VALUE;
             for (com.kuroyale.model.Troop t : gameState.getActiveTroops()) {
-                if (!t.isAlive()) continue;
-                if (t.isPlayerSide() == isPlayerTower) continue;
-                if (tower.getTargetType() == com.kuroyale.model.TargetType.GROUND && t.isAirUnit()) continue;
+                if (!t.isAlive())
+                    continue;
+                if (t.isPlayerSide() == isPlayerTower)
+                    continue;
+                if (tower.getTargetType() == com.kuroyale.model.TargetType.GROUND && t.isAirUnit())
+                    continue;
                 javafx.scene.Node tn = getGridCell(t.getPosition().getX(), t.getPosition().getY());
-                if (tn == null) continue;
+                if (tn == null)
+                    continue;
                 javafx.geometry.Bounds tb = tn.getBoundsInParent();
                 double tx = tb.getMinX() + tb.getWidth() / 2.0;
                 double ty = tb.getMinY() + tb.getHeight() / 2.0;
                 double dist = Math.hypot(tx - sx, ty - sy) / TILE_SIZE; // in tiles approx
-                if (dist <= Math.round(tower.getRange()) && dist < bestDist) { bestDist = dist; target = t; }
+                if (dist <= Math.round(tower.getRange()) && dist < bestDist) {
+                    bestDist = dist;
+                    target = t;
+                }
             }
+
             if (target != null) {
+                currentAttackingTowers.add(tower);
+
                 double duration = Math.max(0.15, tower.getHitSpeed());
                 double cooldown = tower.getAttackCooldown();
                 double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration));
@@ -609,24 +867,58 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     javafx.geometry.Bounds tb = tn.getBoundsInParent();
                     double tx = tb.getMinX() + tb.getWidth() / 2.0;
                     double ty = tb.getMinY() + tb.getHeight() / 2.0;
-                    javafx.scene.shape.Circle dot = new javafx.scene.shape.Circle(sx + (tx - sx) * phase, sy + (ty - sy) * phase, 2.5);
-                    dot.setFill(isPlayerTower ? javafx.scene.paint.Color.LIGHTSKYBLUE : javafx.scene.paint.Color.ORANGERED);
-                    dot.setStroke(javafx.scene.paint.Color.color(0,0,0,0.35));
-                    dot.setStrokeWidth(0.8);
-                    unitLayer.getChildren().add(dot);
+
+                    double px = sx + (tx - sx) * phase;
+                    double py = sy + (ty - sy) * phase;
+
+                    // Get or create projectile
+                    javafx.scene.Node projNode = activeTowerProjectiles.get(tower);
+                    if (projNode == null) {
+                        javafx.scene.shape.Circle dot = new javafx.scene.shape.Circle(2.5);
+                        dot.setFill(isPlayerTower ? javafx.scene.paint.Color.LIGHTSKYBLUE
+                                : javafx.scene.paint.Color.ORANGERED);
+                        dot.setStroke(javafx.scene.paint.Color.color(0, 0, 0, 0.35));
+                        dot.setStrokeWidth(0.8);
+                        projNode = dot;
+                        unitLayer.getChildren().add(projNode);
+                        activeTowerProjectiles.put(tower, projNode);
+                    }
+
+                    // Update position
+                    projNode.setLayoutX(px);
+                    projNode.setLayoutY(py);
+                    // Ensure visible
+                    if (!unitLayer.getChildren().contains(projNode)) {
+                        unitLayer.getChildren().add(projNode);
+                    }
                 }
+            }
+        }
+
+        // Cleanup inactive tower projectiles
+        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.Tower, javafx.scene.Node>> it = activeTowerProjectiles
+                .entrySet().iterator();
+        while (it.hasNext()) {
+            java.util.Map.Entry<com.kuroyale.model.Tower, javafx.scene.Node> entry = it.next();
+            if (!currentAttackingTowers.contains(entry.getKey())) {
+                unitLayer.getChildren().remove(entry.getValue());
+                it.remove();
             }
         }
     }
 
     // Visualize building shots as moving dots towards target troops
     private void renderBuildingProjectiles() {
+        java.util.Set<com.kuroyale.model.Building> currentAttackingBuildings = new java.util.HashSet<>();
+
         for (com.kuroyale.model.Building b : gameState.getActiveBuildings()) {
-            if (!b.isAlive()) continue;
+            if (!b.isAlive())
+                continue;
             int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
             int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
             javafx.scene.Node centerCell = getGridCell(cx, cy);
-            if (centerCell == null) continue;
+            if (centerCell == null)
+                continue;
             javafx.geometry.Bounds cb = centerCell.getBoundsInParent();
             double sx = cb.getMinX() + cb.getWidth() / 2.0;
             double sy = cb.getMinY() + cb.getHeight() / 2.0;
@@ -635,18 +927,28 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             com.kuroyale.model.Troop target = null;
             double bestDist = Double.MAX_VALUE;
             for (com.kuroyale.model.Troop t : gameState.getActiveTroops()) {
-                if (!t.isAlive()) continue;
-                if (t.isPlayerSide() == b.isPlayerSide()) continue;
-                if (!b.canTargetTroop(t)) continue;
+                if (!t.isAlive())
+                    continue;
+                if (t.isPlayerSide() == b.isPlayerSide())
+                    continue;
+                if (!b.canTargetTroop(t))
+                    continue;
                 javafx.scene.Node tn = getGridCell(t.getPosition().getX(), t.getPosition().getY());
-                if (tn == null) continue;
+                if (tn == null)
+                    continue;
                 javafx.geometry.Bounds tb = tn.getBoundsInParent();
                 double tx = tb.getMinX() + tb.getWidth() / 2.0;
                 double ty = tb.getMinY() + tb.getHeight() / 2.0;
                 double dist = Math.hypot(tx - sx, ty - sy) / TILE_SIZE; // tiles approx
-                if (dist <= b.getRangeTiles() && dist < bestDist) { bestDist = dist; target = t; }
+                if (dist <= b.getRangeTiles() && dist < bestDist) {
+                    bestDist = dist;
+                    target = t;
+                }
             }
+
             if (target != null) {
+                currentAttackingBuildings.add(b);
+
                 double duration = Math.max(0.15, b.getHitSpeedSeconds());
                 double cooldown = b.getAttackCooldown();
                 double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration));
@@ -655,31 +957,65 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     javafx.geometry.Bounds tb = tn.getBoundsInParent();
                     double tx = tb.getMinX() + tb.getWidth() / 2.0;
                     double ty = tb.getMinY() + tb.getHeight() / 2.0;
-                    javafx.scene.shape.Circle dot = new javafx.scene.shape.Circle(sx + (tx - sx) * phase, sy + (ty - sy) * phase, 2.5);
-                    dot.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.LIGHTSKYBLUE : javafx.scene.paint.Color.ORANGERED);
-                    dot.setStroke(javafx.scene.paint.Color.color(0,0,0,0.35));
-                    dot.setStrokeWidth(0.8);
-                    unitLayer.getChildren().add(dot);
+
+                    double px = sx + (tx - sx) * phase;
+                    double py = sy + (ty - sy) * phase;
+
+                    // Get or create projectile
+                    javafx.scene.Node projNode = activeBuildingProjectiles.get(b);
+                    if (projNode == null) {
+                        javafx.scene.shape.Circle dot = new javafx.scene.shape.Circle(2.5);
+                        dot.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.LIGHTSKYBLUE
+                                : javafx.scene.paint.Color.ORANGERED);
+                        dot.setStroke(javafx.scene.paint.Color.color(0, 0, 0, 0.35));
+                        dot.setStrokeWidth(0.8);
+                        projNode = dot;
+                        unitLayer.getChildren().add(projNode);
+                        activeBuildingProjectiles.put(b, projNode);
+                    }
+
+                    // Update position
+                    projNode.setLayoutX(px);
+                    projNode.setLayoutY(py);
+                    // Ensure visible
+                    if (!unitLayer.getChildren().contains(projNode)) {
+                        unitLayer.getChildren().add(projNode);
+                    }
                 }
+            }
+        }
+
+        // Cleanup inactive building projectiles
+        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.Building, javafx.scene.Node>> it = activeBuildingProjectiles
+                .entrySet().iterator();
+        while (it.hasNext()) {
+            java.util.Map.Entry<com.kuroyale.model.Building, javafx.scene.Node> entry = it.next();
+            if (!currentAttackingBuildings.contains(entry.getKey())) {
+                unitLayer.getChildren().remove(entry.getValue());
+                it.remove();
             }
         }
     }
 
     private void renderSpellEffects() {
         java.util.List<com.kuroyale.model.GameState.SpellEffect> effects = gameState.getActiveSpellEffects();
-        if (effects == null || effects.isEmpty()) return;
+        if (effects == null || effects.isEmpty())
+            return;
         for (com.kuroyale.model.GameState.SpellEffect se : effects) {
             com.kuroyale.model.GridPosition c = se.center;
-            if (c == null) continue;
+            if (c == null)
+                continue;
             javafx.scene.Node centerCell = getGridCell(c.getX(), c.getY());
-            if (centerCell == null) continue;
+            if (centerCell == null)
+                continue;
             javafx.geometry.Bounds cb = centerCell.getBoundsInParent();
             double cx = cb.getMinX() + cb.getWidth() / 2.0;
             double cy = cb.getMinY() + cb.getHeight() / 2.0;
             double rPixels = se.radiusTiles * TILE_SIZE;
             javafx.scene.shape.Circle aoe = new javafx.scene.shape.Circle(cx, cy, rPixels);
-            aoe.setFill(se.isPlayerSide ? javafx.scene.paint.Color.color(0.2,0.6,1.0,0.18) : javafx.scene.paint.Color.color(1.0,0.3,0.2,0.18));
-            aoe.setStroke(javafx.scene.paint.Color.color(1,1,1,0.6));
+            aoe.setFill(se.isPlayerSide ? javafx.scene.paint.Color.color(0.2, 0.6, 1.0, 0.18)
+                    : javafx.scene.paint.Color.color(1.0, 0.3, 0.2, 0.18));
+            aoe.setStroke(javafx.scene.paint.Color.color(1, 1, 1, 0.6));
             aoe.setStrokeWidth(1.2);
             unitLayer.getChildren().add(aoe);
         }
@@ -688,7 +1024,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     // Update the health bar rectangles/text created in renderTowerAt
     private void updateExistingTowerHealthBars() {
         com.kuroyale.model.Arena arena = gameState.getArena();
-        if (arena.getLayout() == null) return;
+        if (arena.getLayout() == null)
+            return;
         com.kuroyale.model.ArenaLayout layout = arena.getLayout();
         // Princess towers
         if (layout.getPrincessTowerPositions() != null) {
@@ -707,7 +1044,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
     private void updateSingleTowerBar(int x, int y, int size) {
         com.kuroyale.model.Tower tower = gameState.getArena().getTowerAt(x, y);
-        if (tower == null) return;
+        if (tower == null)
+            return;
         double currentHealth = tower.getCurrentHealth();
         double maxHealth = tower.getMaxHealth();
         double width = size == 4 ? 50 : 40;

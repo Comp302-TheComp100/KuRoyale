@@ -4,10 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Represents the active game board during a match.
- * Information Expert: Knows the state of the board (cells, valid positions,
- * occupancy).
+/*Represents the active game board during a match.
+ * Information Expert: Knows the state of the board (cells, valid positions, occupancy).
  * Creator: Creates and manages GridCell instances.
  * High Cohesion: Focuses solely on map geometry and state.
  */
@@ -116,16 +114,10 @@ public class Arena {
         }
     }
 
-    /**
-     * Checks if the given coordinates are within valid arena bounds.
-     */
-    public boolean isValidPosition(int x, int y) {
-        return x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT;
-    }
+    //Checks if the given coordinates are within valid arena bounds.
+    public boolean isValidPosition(int x, int y) {return x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT;}
 
-    /**
-     * Checks if the given position is within valid arena bounds.
-     */
+    //Checks if the given position is within valid arena bounds.
     public boolean isValidPosition(GridPosition position) {
         if (position == null) {
             return false;
@@ -133,12 +125,7 @@ public class Arena {
         return isValidPosition(position.getX(), position.getY());
     }
 
-    /**
-     * Gets the GridCell at the specified position.
-     * 
-     * @param position The grid position
-     * @return The GridCell, or null if position is invalid
-     */
+    //Gets the GridCell at the specified position.
     public GridCell getCell(GridPosition position) {
         if (!isValidPosition(position)) {
             return null;
@@ -146,13 +133,7 @@ public class Arena {
         return grid[position.getX()][position.getY()];
     }
 
-    /**
-     * Gets the GridCell at the specified coordinates (convenience method).
-     * 
-     * @param x The x-coordinate
-     * @param y The y-coordinate
-     * @return The GridCell, or null if coordinates are invalid
-     */
+    //Gets the GridCell at the specified coordinates (convenience method).
     public GridCell getCell(int x, int y) {
         if (!isValidPosition(x, y)) {
             return null;
@@ -160,25 +141,13 @@ public class Arena {
         return grid[x][y];
     }
 
-    /**
-     * Checks if a unit can be placed at the specified position.
-     * 
-     * @param position The position to check
-     * @return true if placement is valid
-     */
+    //Checks if a unit can be placed at the specified position.
     public boolean canPlaceUnit(GridPosition position) {
         GridCell cell = getCell(position);
         return cell != null && cell.canPlaceUnit();
     }
 
-    /**
-     * Places a unit at the specified position.
-     * 
-     * @param position The position to place the unit
-     * @param unit     The unit to place
-     * @throws IllegalArgumentException if position is invalid
-     * @throws IllegalStateException    if placement is not allowed
-     */
+    //Places a unit at the specified position.
     public void placeUnit(GridPosition position, Object unit) {
         GridCell cell = getCell(position);
         if (cell == null) {
@@ -187,11 +156,7 @@ public class Arena {
         cell.setOccupant(unit);
     }
 
-    /**
-     * Removes the unit at the specified position.
-     * 
-     * @param position The position to clear
-     */
+    //Removes the unit at the specified position.
     public void removeUnit(GridPosition position) {
         GridCell cell = getCell(position);
         if (cell != null) {
@@ -199,13 +164,7 @@ public class Arena {
         }
     }
 
-    /**
-     * Gets all adjacent positions to the specified position (4-directional: up,
-     * down, left, right).
-     * 
-     * @param position The center position
-     * @return List of valid adjacent positions
-     */
+    //Gets all adjacent positions to the specified position (4-directional: up,down, left, right).
     public List<GridPosition> getAdjacentPositions(GridPosition position) {
         List<GridPosition> adjacent = new ArrayList<>();
         if (position == null) {
@@ -228,12 +187,7 @@ public class Arena {
         return adjacent;
     }
 
-    /**
-     * Gets all adjacent positions including diagonals (8-directional).
-     * 
-     * @param position The center position
-     * @return List of valid adjacent positions (including diagonals)
-     */
+    //Gets all adjacent positions including diagonals (8-directional)
     public List<GridPosition> getAdjacentPositionsWithDiagonals(GridPosition position) {
         List<GridPosition> adjacent = new ArrayList<>();
         if (position == null) {
@@ -258,11 +212,7 @@ public class Arena {
         return adjacent;
     }
 
-    /**
-     * Gets all cells in the grid as a flat list.
-     * 
-     * @return List of all GridCells
-     */
+    //Gets all cells in the grid as a flat list.
     public List<GridCell> getAllCells() {
         List<GridCell> cells = new ArrayList<>();
         for (int x = 0; x < WIDTH; x++) {
@@ -273,24 +223,14 @@ public class Arena {
         return cells;
     }
 
-    /**
-     * Gets all cells that are currently occupied by units.
-     * 
-     * @return List of occupied GridCells
-     */
+    //Gets all cells that are currently occupied by units.
     public List<GridCell> getOccupiedCells() {
         return getAllCells().stream()
                 .filter(GridCell::isOccupied)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Gets all cells within a rectangular region.
-     * 
-     * @param topLeft     Top-left corner of the region
-     * @param bottomRight Bottom-right corner of the region
-     * @return List of GridCells in the region
-     */
+    //Gets all cells within a rectangular region.
     public List<GridCell> getCellsInRegion(GridPosition topLeft, GridPosition bottomRight) {
         List<GridCell> cells = new ArrayList<>();
         if (topLeft == null || bottomRight == null) {
@@ -311,13 +251,7 @@ public class Arena {
         return cells;
     }
 
-    /**
-     * Gets all cells within a certain distance from a center position.
-     * 
-     * @param center The center position
-     * @param radius The maximum distance (Manhattan distance)
-     * @return List of GridCells within the radius
-     */
+    //Gets all cells within a certain distance from a center position.
     public List<GridCell> getCellsInRadius(GridPosition center, int radius) {
         List<GridCell> cells = new ArrayList<>();
         if (center == null || radius < 0) {
@@ -336,43 +270,90 @@ public class Arena {
         return cells;
     }
 
-    /**
-     * Gets the arena layout.
-     */
-    public ArenaLayout getLayout() {
-        return layout;
-    }
+    //Gets the arena layout.
+    public ArenaLayout getLayout() {return layout;}
 
-    /**
-     * Gets the tower at the specified position.
-     * 
-     * @param x The x-coordinate
-     * @param y The y-coordinate
-     * @return The Tower object, or null if no tower exists at this position
-     */
+    //Gets the tower at the specified position.
     public Tower getTowerAt(int x, int y) {
-        // We need to construct a temporary GridPosition to look up in the map
-        // Since GridPosition implements equals/hashCode based on x,y, this works
-        // But wait, GridPosition constructor is not visible? It is package-private or
-        // public?
-        // Checking GridPosition.java... it has public constructor?
-        // Assuming it has suitable lookup capability.
-        // If not, we can iterate or use a custom key.
-        // Let's assume we can create a key.
-        // Actually, let's just iterate for now if we can't create one easily, but map
-        // is better.
-        // Let's try to find if there is an existing position object in the grid?
-        // No, grid is array of GridCell. GridCell has position.
         if (!isValidPosition(x, y))
             return null;
         return towerMap.get(grid[x][y].getPosition());
     }
 
-    // ========== Backward Compatibility Methods ==========
-
     /**
+     * Removes a tower from the arena.
+     * Clears the tower from the map and resets the tiles to GRASS.
+     */
+    public void removeTower(Tower tower) {
+        if (tower == null)
+            return;
+
+        // Find all positions associated with this tower
+        List<GridPosition> positionsToRemove = new ArrayList<>();
+        for (java.util.Map.Entry<GridPosition, Tower> entry : towerMap.entrySet()) {
+            if (entry.getValue() == tower) {
+                positionsToRemove.add(entry.getKey());
+            }
+        }
+
+        // Remove from map and reset grid cells
+        for (GridPosition pos : positionsToRemove) {
+            towerMap.remove(pos);
+            GridCell cell = getCell(pos);
+            if (cell != null) {
+                cell.setTileType(TileType.GRASS);
+                // Also ensure no occupant is left if it was the tower itself (though tower is
+                // not an occupant in the GridCell sense usually, it's a TileType)
+            }
+        }
+    }
+
+    //Removes all towers that have 0 or less health
+    public void removeDeadTowers() {
+        // Collect dead towers first to avoid concurrent modification
+        java.util.Set<Tower> deadTowers = new java.util.HashSet<>();
+        for (Tower t : towerMap.values()) {
+            if (t.getCurrentHealth() <= 0) {
+                deadTowers.add(t);
+            }
+        }
+
+        for (Tower t : deadTowers) {
+            removeTower(t);
+        }
+    }
+
+    //Checks if the player's King Tower is alive.
+    public boolean isPlayerKingAlive() {
+        for (java.util.Map.Entry<GridPosition, Tower> entry : towerMap.entrySet()) {
+            if (entry.getValue().getType() == Tower.TowerType.KING) {
+                // Check if this tower is on a user tile
+                GridCell cell = getCell(entry.getKey());
+                if (cell != null && cell.getTileType() == TileType.KING_TOWER_USER) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    //Checks if the bot's King Tower is alive.
+    public boolean isBotKingAlive() {
+        for (java.util.Map.Entry<GridPosition, Tower> entry : towerMap.entrySet()) {
+            if (entry.getValue().getType() == Tower.TowerType.KING) {
+                // Check if this tower is on a computer tile
+                GridCell cell = getCell(entry.getKey());
+                if (cell != null && cell.getTileType() == TileType.KING_TOWER_COMPUTER) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Backward Compatibility Methods
      * Gets the tile at the specified position (backward compatibility).
-     * 
+     *
      * @deprecated Use getCell() instead. This method is kept for backward
      *             compatibility.
      */

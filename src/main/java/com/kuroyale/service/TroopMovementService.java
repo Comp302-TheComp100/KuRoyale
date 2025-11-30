@@ -13,9 +13,20 @@ public class TroopMovementService {
         Arena arena = state.getArena();
         java.util.List<Troop> toRemove = new java.util.ArrayList<>();
         for (Troop troop : troops) {
-            if (!troop.isAlive()) continue;
-            if (troop.getTargetPosition() == null || shouldRetarget(state, troop)) {
+            if (!troop.isAlive())
+                continue;
+
+            // Update pathfinding cooldown
+            troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
+
+            // Only check for retargeting if cooldown is ready or we have no target
+            if (troop.getTargetPosition() == null
+                    || (troop.getPathfindingCooldown() <= 0 && shouldRetarget(state, troop))) {
                 GridPosition newTarget = targetingService.findNearestEnemyOrObjective(state, troop);
+
+                // Optimization: If target hasn't changed significantly, don't recompute path
+                // (For now, just recompute but less frequently thanks to cooldown)
+
                 troop.setTargetPosition(newTarget);
                 troop.clearPath();
                 if (newTarget != null) {
@@ -23,6 +34,9 @@ public class TroopMovementService {
                     Deque<GridPosition> path = strategy.computePath(arena, troop, newTarget);
                     troop.setPath(path);
                 }
+
+                // Reset cooldown (randomize slightly to distribute load)
+                troop.setPathfindingCooldown(0.25 + Math.random() * 0.1);
             }
             // If in attack range, handle combat; else move
             Troop targetTroop = findNearestEnemyTroopInRange(state, troop);
@@ -59,7 +73,8 @@ public class TroopMovementService {
         if (!toRemove.isEmpty()) {
             troops.removeAll(toRemove);
             for (Troop t : troops) {
-                if (!t.isAlive()) continue;
+                if (!t.isAlive())
+                    continue;
                 // If their target was removed, clear and allow retarget
                 for (Troop dead : toRemove) {
                     if (t.getTargetPosition() != null && t.getTargetPosition().equals(dead.getPosition())) {
@@ -73,16 +88,20 @@ public class TroopMovementService {
     }
 
     private boolean shouldRetarget(GameState state, Troop troop) {
-        // Instant retarget if new closer enemy appears inside attack range or path empty
-        if (troop.getPath().isEmpty()) return true;
+        // Instant retarget if new closer enemy appears inside attack range or path
+        // empty
+        if (troop.getPath().isEmpty())
+            return true;
         GridPosition nearest = targetingService.findNearestEnemyOrObjective(state, troop);
-        if (nearest == null) return false;
+        if (nearest == null)
+            return false;
         double dist = troop.getPosition().getEuclideanDistanceTo(nearest);
         return dist < troop.getPosition().getEuclideanDistanceTo(troop.getTargetPosition());
     }
 
     private void advanceAlongPath(double deltaTime, Troop troop, GameState state) {
-        if (troop.getPath().isEmpty()) return;
+        if (troop.getPath().isEmpty())
+            return;
         double deltaCells = troop.getMoveSpeed() * deltaTime;
         troop.addMoveProgress(deltaCells);
         while (troop.getMoveProgress() >= 1.0 && !troop.getPath().isEmpty()) {
@@ -105,8 +124,10 @@ public class TroopMovementService {
 
     private boolean isTileFree(GridPosition position, Troop self, java.util.List<Troop> troops) {
         for (Troop t : troops) {
-            if (t == self) continue;
-            if (!t.isAlive()) continue;
+            if (t == self)
+                continue;
+            if (!t.isAlive())
+                continue;
             if (t.getPosition().equals(position)) {
                 return false;
             }
@@ -115,10 +136,13 @@ public class TroopMovementService {
     }
 
     private Troop findEnemyTroopAt(GameState state, GridPosition pos, boolean isPlayer) {
-        if (pos == null) return null;
+        if (pos == null)
+            return null;
         for (Troop t : state.getActiveTroops()) {
-            if (t.isPlayerSide() == isPlayer) continue;
-            if (t.getPosition().equals(pos)) return t;
+            if (t.isPlayerSide() == isPlayer)
+                continue;
+            if (t.getPosition().equals(pos))
+                return t;
         }
         return null;
     }
@@ -127,9 +151,12 @@ public class TroopMovementService {
         Troop best = null;
         double bestDist = Double.MAX_VALUE;
         for (Troop t : state.getActiveTroops()) {
-            if (!t.isAlive()) continue;
-            if (t.isPlayerSide() == self.isPlayerSide()) continue;
-            if (!targetingService.isValidTarget(self, t)) continue;
+            if (!t.isAlive())
+                continue;
+            if (t.isPlayerSide() == self.isPlayerSide())
+                continue;
+            if (!targetingService.isValidTarget(self, t))
+                continue;
             double dist = self.getPosition().getEuclideanDistanceTo(t.getPosition());
             if (targetingService.isInRange(self, t) && dist < bestDist) {
                 bestDist = dist;
@@ -173,14 +200,19 @@ public class TroopMovementService {
         Building best = null;
         double bestDist = Double.MAX_VALUE;
         for (Building b : state.getActiveBuildings()) {
-            if (!b.isAlive()) continue;
-            if (b.isPlayerSide() == self.isPlayerSide()) continue;
-            if (self.getBaseCard().getTarget() == TargetType.AIR) continue; // cannot hit buildings
+            if (!b.isAlive())
+                continue;
+            if (b.isPlayerSide() == self.isPlayerSide())
+                continue;
+            if (self.getBaseCard().getTarget() == TargetType.AIR)
+                continue; // cannot hit buildings
             // Measure distance to nearest perimeter tile of building footprint
             double dist = distanceToBuildingPerimeter(state.getArena(), self.getPosition(), b);
-            double rangeTiles = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles() : self.getAttackRange();
+            double rangeTiles = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles()
+                    : self.getAttackRange();
             boolean inRange;
-            if (self.getCombatStats() != null && self.getCombatStats().getAttackType() == CombatStats.AttackType.MELEE) {
+            if (self.getCombatStats() != null
+                    && self.getCombatStats().getAttackType() == CombatStats.AttackType.MELEE) {
                 rangeTiles = Math.max(rangeTiles, 1);
                 double threshold = Math.max(1.5, rangeTiles);
                 inRange = dist <= threshold;
@@ -203,19 +235,24 @@ public class TroopMovementService {
         java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
         for (GridCell cell : arena.getAllCells()) {
             TileType t = cell.getTileType();
-            boolean enemyTowerTile = self.isPlayerSide() ? (t == TileType.PRINCESS_TOWER_COMPUTER || t == TileType.KING_TOWER_COMPUTER)
+            boolean enemyTowerTile = self.isPlayerSide()
+                    ? (t == TileType.PRINCESS_TOWER_COMPUTER || t == TileType.KING_TOWER_COMPUTER)
                     : (t == TileType.PRINCESS_TOWER_USER || t == TileType.KING_TOWER_USER);
-            if (!enemyTowerTile) continue;
+            if (!enemyTowerTile)
+                continue;
             Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
-            if (tower == null || tower.getCurrentHealth() <= 0) continue;
+            if (tower == null || tower.getCurrentHealth() <= 0)
+                continue;
             groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
         }
         for (java.util.Map.Entry<Tower, java.util.List<GridCell>> e : groups.entrySet()) {
             Tower tower = e.getKey();
             double dist = distanceToTowerPerimeter(self.getPosition(), e.getValue());
-            double rangeTiles = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles() : self.getAttackRange();
+            double rangeTiles = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles()
+                    : self.getAttackRange();
             boolean inRange;
-            if (self.getCombatStats() != null && self.getCombatStats().getAttackType() == CombatStats.AttackType.MELEE) {
+            if (self.getCombatStats() != null
+                    && self.getCombatStats().getAttackType() == CombatStats.AttackType.MELEE) {
                 rangeTiles = Math.max(rangeTiles, 1);
                 double threshold = Math.max(1.5, rangeTiles);
                 inRange = dist <= threshold;
@@ -240,14 +277,18 @@ public class TroopMovementService {
         for (int dx = 0; dx < w; dx++) {
             GridPosition top = GridPosition.tryCreate(x0 + dx, y0);
             GridPosition bottom = GridPosition.tryCreate(x0 + dx, y0 + h - 1);
-            if (top != null) best = Math.min(best, from.getEuclideanDistanceTo(top));
-            if (bottom != null) best = Math.min(best, from.getEuclideanDistanceTo(bottom));
+            if (top != null)
+                best = Math.min(best, from.getEuclideanDistanceTo(top));
+            if (bottom != null)
+                best = Math.min(best, from.getEuclideanDistanceTo(bottom));
         }
         for (int dy = 0; dy < h; dy++) {
             GridPosition left = GridPosition.tryCreate(x0, y0 + dy);
             GridPosition right = GridPosition.tryCreate(x0 + w - 1, y0 + dy);
-            if (left != null) best = Math.min(best, from.getEuclideanDistanceTo(left));
-            if (right != null) best = Math.min(best, from.getEuclideanDistanceTo(right));
+            if (left != null)
+                best = Math.min(best, from.getEuclideanDistanceTo(left));
+            if (right != null)
+                best = Math.min(best, from.getEuclideanDistanceTo(right));
         }
         return best;
     }
@@ -267,14 +308,18 @@ public class TroopMovementService {
         for (int x = minX; x <= maxX; x++) {
             GridPosition top = GridPosition.tryCreate(x, minY);
             GridPosition bottom = GridPosition.tryCreate(x, maxY);
-            if (top != null) best = Math.min(best, from.getEuclideanDistanceTo(top));
-            if (bottom != null) best = Math.min(best, from.getEuclideanDistanceTo(bottom));
+            if (top != null)
+                best = Math.min(best, from.getEuclideanDistanceTo(top));
+            if (bottom != null)
+                best = Math.min(best, from.getEuclideanDistanceTo(bottom));
         }
         for (int y = minY; y <= maxY; y++) {
             GridPosition left = GridPosition.tryCreate(minX, y);
             GridPosition right = GridPosition.tryCreate(maxX, y);
-            if (left != null) best = Math.min(best, from.getEuclideanDistanceTo(left));
-            if (right != null) best = Math.min(best, from.getEuclideanDistanceTo(right));
+            if (left != null)
+                best = Math.min(best, from.getEuclideanDistanceTo(left));
+            if (right != null)
+                best = Math.min(best, from.getEuclideanDistanceTo(right));
         }
         return best;
     }

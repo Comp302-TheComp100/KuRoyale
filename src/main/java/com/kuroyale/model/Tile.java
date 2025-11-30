@@ -3,12 +3,10 @@ package com.kuroyale.model;
 /**
  * Represents a single cell on the arena grid.
  * Information Expert: Knows its own coordinates and type.
- * 
  * @deprecated This class is kept for backward compatibility only.
  *             Use {@link GridCell} for new code as it provides enhanced
  *             functionality
- *             including occupancy tracking and position management.
- */
+ *             including occupancy tracking and position management.*/
 @Deprecated
 public class Tile {
     private final int x;

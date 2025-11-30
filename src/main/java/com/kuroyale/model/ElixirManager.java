@@ -1,9 +1,7 @@
 package com.kuroyale.model;
 
-/**
- * Manages elixir state and regeneration.
- * Implements 2x Elixir mode (1 elixir every 1.4 seconds).
- */
+/*Manages elixir state and regeneration.
+ * Implements 2x Elixir mode (1 elixir every 1.4 seconds).*/
 public class ElixirManager {
     public static final double MAX_ELIXIR = 10.0;
     public static final double STARTING_ELIXIR = 5.0;
@@ -24,11 +22,11 @@ public class ElixirManager {
         this.doubleElixirActive = active;
     }
 
-    /**
-     * Updates elixir based on time passed.
-     * 
-     * @param deltaTime Time passed in seconds
-     */
+    public boolean isDoubleElixir() {
+        return doubleElixirActive;
+    }
+
+    //Updates elixir based on time passed.
     public void update(double deltaTime) {
         if (currentElixir < MAX_ELIXIR) {
             double rate = doubleElixirActive ? REGENERATION_RATE_DOUBLE : REGENERATION_RATE_NORMAL;
@@ -39,22 +37,10 @@ public class ElixirManager {
         }
     }
 
-    /**
-     * Checks if enough elixir is available.
-     * 
-     * @param cost Cost to check
-     * @return true if affordable
-     */
-    public boolean canAfford(int cost) {
-        return currentElixir >= cost;
-    }
+    //Checks if enough elixir is available.
+    public boolean canAfford(int cost) {return currentElixir >= cost;}
 
-    /**
-     * Spends elixir if available.
-     * 
-     * @param cost Amount to spend
-     * @return true if spent successfully, false if not enough
-     */
+    //Spends elixir if available
     public boolean spend(int cost) {
         if (canAfford(cost)) {
             currentElixir -= cost;
@@ -63,11 +49,7 @@ public class ElixirManager {
         return false;
     }
 
-    public int getCurrentElixirInt() {
-        return (int) currentElixir;
-    }
+    public int getCurrentElixirInt() {return (int) currentElixir;}
 
-    public double getCurrentElixir() {
-        return currentElixir;
-    }
+    public double getCurrentElixir() {return currentElixir;}
 }

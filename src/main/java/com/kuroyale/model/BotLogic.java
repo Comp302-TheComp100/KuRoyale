@@ -2,11 +2,8 @@ package com.kuroyale.model;
 
 import java.util.Random;
 
-/**
- * Basic AI for the opponent.
- * Strategy: Waits for full elixir, then places a random affordable unit at the
- * bridge.
- */
+/*Basic AI for the opponent.
+ * Strategy: Waits for full elixir, then places a random affordable unit at the bridge.*/
 public class BotLogic {
     private final ElixirManager elixirManager;
     private final Hand hand;
@@ -21,18 +18,11 @@ public class BotLogic {
         this.timeSinceLastMove = 0;
     }
 
-    /**
-     * Updates bot state and decides on moves.
-     * 
-     * @param deltaTime Time passed in seconds
-     * @param gameState Current game state (for checking valid placements)
-     * @return A Move object if the bot makes a move, null otherwise
-     */
+    //Updates bot state and decides on moves
     public Move update(double deltaTime, GameState gameState) {
         elixirManager.update(deltaTime);
         timeSinceLastMove += deltaTime;
 
-        // Simple Logic:
         // 1. Wait until elixir is high (>= 7) or full
         // 2. Wait for move delay
         // 3. Pick a random card from hand
@@ -49,7 +39,6 @@ public class BotLogic {
         for (int i = 0; i < Hand.HAND_SIZE; i++) {
             Card card = hand.getCard(i);
             if (card != null && elixirManager.canAfford(card.getCost())) {
-                // Found affordable card
 
                 // Pick random position in top half (opponent side)
                 // Arena is 18x32. Top half is y < 16.

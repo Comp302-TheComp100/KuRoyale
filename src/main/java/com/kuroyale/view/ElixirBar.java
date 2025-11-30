@@ -34,11 +34,11 @@ public class ElixirBar extends VBox {
         this.elixirLabel.setStyle(
                 "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 16px; -fx-effect: dropshadow(one-pass-box, black, 2, 0.5, 0, 0);");
 
-        // x2 indicator (hidden by default)
-        this.doubleElixirLabel = new Label("x2");
+        // x2 indicator (visible by default now)
+        this.doubleElixirLabel = new Label("x1");
         this.doubleElixirLabel.setStyle(
-                "-fx-font-weight: bold; -fx-text-fill: #D000D0; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
-        this.doubleElixirLabel.setVisible(false);
+                "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+        this.doubleElixirLabel.setVisible(true);
 
         labelContainer.getChildren().addAll(elixirLabel, doubleElixirLabel);
 
@@ -47,12 +47,16 @@ public class ElixirBar extends VBox {
         this.progressBar.setPrefWidth(200);
         this.progressBar.setPrefHeight(20);
         this.progressBar.getStyleClass().add("elixir-progress-bar");
-        // Style the bar color to purple/magenta like Clash Royale
-        this.progressBar.setStyle("-fx-accent: #D000D0;");
+        // Style the bar color to pink like Clash Royale
+        this.progressBar.setStyle("-fx-accent: #FF00FF;");
 
         this.getChildren().addAll(labelContainer, progressBar);
 
         update();
+    }
+
+    public void setDoubleElixirActive(boolean active) {
+        // doubleElixirLabel.setVisible(active); // No longer hiding it
     }
 
     public void update() {
@@ -64,9 +68,16 @@ public class ElixirBar extends VBox {
 
         // Update bar
         progressBar.setProgress(current / max);
-    }
 
-    public void setDoubleElixirActive(boolean active) {
-        doubleElixirLabel.setVisible(active);
+        // Update speed indicator
+        if (elixirManager.isDoubleElixir()) {
+            doubleElixirLabel.setText("x2");
+            doubleElixirLabel.setStyle(
+                    "-fx-font-weight: bold; -fx-text-fill: #FF00FF; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+        } else {
+            doubleElixirLabel.setText("x1");
+            doubleElixirLabel.setStyle(
+                    "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+        }
     }
 }

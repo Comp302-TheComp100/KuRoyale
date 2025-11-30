@@ -10,9 +10,7 @@ public class Tower {
     private TargetType targetType;
     private double attackCooldown;
 
-    public enum TowerType {
-        PRINCESS, KING
-    }
+    public enum TowerType {PRINCESS, KING}
 
     public Tower(TowerType type) {
         this.type = type;
@@ -42,40 +40,31 @@ public class Tower {
             this.currentHealth = 0;
         }
     }
-
+    // Getters
     public double getHealthPercentage() {
         return currentHealth / maxHealth;
     }
-
-    // Getters
     public double getMaxHealth() {
         return maxHealth;
     }
-
     public double getCurrentHealth() {
         return currentHealth;
     }
-
     public double getDamage() {
         return damage;
     }
-
     public double getHitSpeed() {
         return hitSpeed;
     }
-
     public double getRange() {
         return range;
     }
-
     public TargetType getTargetType() {
         return targetType;
     }
-
     public TowerType getType() {
         return type;
     }
-
     public double getAttackCooldown() { return attackCooldown; }
     public void setAttackCooldown(double cd) { this.attackCooldown = cd; }
 }
