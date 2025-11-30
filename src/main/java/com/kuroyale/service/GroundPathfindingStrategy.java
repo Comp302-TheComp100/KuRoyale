@@ -47,7 +47,7 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
             for (GridPosition neighbor : arena.getAdjacentPositions(current)) { // 4-dir for ground
                 if (closedSet.contains(neighbor)) continue;
                 GridCell cell = arena.getCell(neighbor);
-                if (cell == null || !cell.isWalkable()) continue;
+                if (cell == null || !cell.isWalkable() || cell.isOccupied()) continue;
 
                 int tentativeG = gScore.getOrDefault(current, Integer.MAX_VALUE - 1) + 1; // cost 1 per move
 

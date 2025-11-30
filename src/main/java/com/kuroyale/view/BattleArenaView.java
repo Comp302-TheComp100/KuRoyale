@@ -105,6 +105,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         renderArena();
     }
 
+
     private java.util.function.BiConsumer<Integer, Integer> onGridClick;
 
     public void setOnGridClicked(java.util.function.BiConsumer<Integer, Integer> handler) {
@@ -306,6 +307,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
             unitLayer.getChildren().add(unitNode);
 
+
             // Troop health bar above the unit
             double maxHp = troop.getBaseCard().getHp();
             double curHp = Math.max(0, troop.getCurrentHealth());
@@ -364,7 +366,68 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             }
         }
 
-        // Remove all placed card markers; units/towers/spells are visualized elsewhere.
+        // Render active buildings (3x3 by default) with grid spanning like towers
+        java.util.List<com.kuroyale.model.Building> buildings = gameState.getActiveBuildings();
+        for (com.kuroyale.model.Building b : buildings) {
+            int x = b.getPosition().getX();
+            int y = b.getPosition().getY();
+            int w = Math.max(1, b.getWidth());
+            int h = Math.max(1, b.getHeight());
+
+            StackPane buildingStack = new StackPane();
+            buildingStack.setPrefSize(TILE_SIZE * w, TILE_SIZE * h);
+
+            try {
+                String imgPath = b.getImagePath();
+                java.io.InputStream is = imgPath != null ? getClass().getResourceAsStream(imgPath) : null;
+                if (is != null) {
+                    javafx.scene.image.Image img = new javafx.scene.image.Image(is);
+                    javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView(img);
+                    imageView.setFitWidth(TILE_SIZE * w);
+                    imageView.setFitHeight(TILE_SIZE * h);
+                    imageView.setPreserveRatio(false); // force exact tile footprint
+                    imageView.setSmooth(true);
+                    buildingStack.getChildren().add(imageView);
+                } else {
+                    javafx.scene.shape.Rectangle fallback = new javafx.scene.shape.Rectangle(TILE_SIZE * w, TILE_SIZE * h);
+                    fallback.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.DARKBLUE : javafx.scene.paint.Color.DARKRED);
+                    fallback.setStroke(javafx.scene.paint.Color.BLACK);
+                    fallback.setStrokeWidth(0.5);
+                    buildingStack.getChildren().add(fallback);
+                }
+            } catch (Exception e) {
+                javafx.scene.shape.Rectangle fallback = new javafx.scene.shape.Rectangle(TILE_SIZE * w, TILE_SIZE * h);
+                fallback.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.DARKBLUE : javafx.scene.paint.Color.DARKRED);
+                fallback.setStroke(javafx.scene.paint.Color.BLACK);
+                fallback.setStrokeWidth(0.5);
+                buildingStack.getChildren().add(fallback);
+            }
+
+            // Health bar (centered at top)
+            double maxHp = b.getMaxHealth();
+            double curHp = Math.max(0, b.getCurrentHealth());
+            double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
+            double hbWidth = Math.max(40, TILE_SIZE * w - 6);
+            double hbHeight = 12;
+
+            javafx.scene.shape.Rectangle bg = new javafx.scene.shape.Rectangle(hbWidth, hbHeight);
+            bg.setFill(javafx.scene.paint.Color.DARKBLUE);
+            bg.setStroke(javafx.scene.paint.Color.BLACK);
+            bg.setStrokeWidth(0.5);
+
+            javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(hbWidth * pct, hbHeight);
+            fg.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.ROYALBLUE : javafx.scene.paint.Color.CRIMSON);
+            StackPane hb = new StackPane(bg, fg);
+            hb.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            StackPane.setAlignment(hb, javafx.geometry.Pos.TOP_CENTER);
+            StackPane.setMargin(hb, new javafx.geometry.Insets(2, 0, 0, 0));
+            buildingStack.getChildren().add(hb);
+
+            // Add to grid spanning its footprint
+            grid.add(buildingStack, x, y, w, h);
+            GridPane.setHalignment(buildingStack, javafx.geometry.HPos.CENTER);
+            GridPane.setValignment(buildingStack, javafx.geometry.VPos.CENTER);
+        }
     }
 
     /**

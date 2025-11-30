@@ -17,6 +17,9 @@ public class Card {
     private final String description;
     private final int count; // For swarm troops
     private final int lifetime; // For buildings
+    // Optional footprint for buildings (tiles). Defaults to 3x3 if unset.
+    private int footprintWidthTiles = 3;
+    private int footprintHeightTiles = 3;
 
     public Card(String name, int cost, CardType type, int hp, int damage, double hitSpeed,
             double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
@@ -53,6 +56,14 @@ public class Card {
     public int getCount() {return count;}
     public int getLifetime() {
         return lifetime;
+    }
+
+    // Building footprint accessors (no-op for troops/spells)
+    public int getFootprintWidthTiles() { return footprintWidthTiles; }
+    public int getFootprintHeightTiles() { return footprintHeightTiles; }
+    public void setFootprintTiles(int width, int height) {
+        if (width > 0) this.footprintWidthTiles = width;
+        if (height > 0) this.footprintHeightTiles = height;
     }
 
     public String getImagePath() {
