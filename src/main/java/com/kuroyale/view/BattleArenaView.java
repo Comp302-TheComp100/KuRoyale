@@ -435,6 +435,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         // Visual projectiles for towers and buildings (moving dots)
         renderTowerProjectiles();
         renderBuildingProjectiles();
+
+        // Render transient spell AoE overlays and auto-remove after 1s
+        renderSpellEffects();
     }
 
     /**
@@ -648,6 +651,26 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     unitLayer.getChildren().add(dot);
                 }
             }
+        }
+    }
+
+    private void renderSpellEffects() {
+        java.util.List<com.kuroyale.model.GameState.SpellEffect> effects = gameState.getActiveSpellEffects();
+        if (effects == null || effects.isEmpty()) return;
+        for (com.kuroyale.model.GameState.SpellEffect se : effects) {
+            com.kuroyale.model.GridPosition c = se.center;
+            if (c == null) continue;
+            javafx.scene.Node centerCell = getGridCell(c.getX(), c.getY());
+            if (centerCell == null) continue;
+            javafx.geometry.Bounds cb = centerCell.getBoundsInParent();
+            double cx = cb.getMinX() + cb.getWidth() / 2.0;
+            double cy = cb.getMinY() + cb.getHeight() / 2.0;
+            double rPixels = se.radiusTiles * TILE_SIZE;
+            javafx.scene.shape.Circle aoe = new javafx.scene.shape.Circle(cx, cy, rPixels);
+            aoe.setFill(se.isPlayerSide ? javafx.scene.paint.Color.color(0.2,0.6,1.0,0.18) : javafx.scene.paint.Color.color(1.0,0.3,0.2,0.18));
+            aoe.setStroke(javafx.scene.paint.Color.color(1,1,1,0.6));
+            aoe.setStrokeWidth(1.2);
+            unitLayer.getChildren().add(aoe);
         }
     }
 }

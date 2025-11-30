@@ -20,6 +20,7 @@ public class GameState {
     private final List<PlacedCard> placedCards;
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
+    private final List<SpellEffect> activeSpellEffects;
     private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
     private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
 
@@ -42,6 +43,7 @@ public class GameState {
         this.placedCards = new ArrayList<>();
         this.activeTroops = new ArrayList<>();
         this.activeBuildings = new ArrayList<>();
+        this.activeSpellEffects = new ArrayList<>();
     }
 
     public void update(double deltaTime) {
@@ -81,6 +83,8 @@ public class GameState {
         updateBuildingsCombat(deltaTime);
         // Towers attack enemies similarly
         updateTowersCombat(deltaTime);
+        // Update spell visuals lifetime
+        updateSpellEffects(deltaTime);
 
         // Cleanup destroyed buildings and free their occupied tiles
         if (!activeBuildings.isEmpty()) {
@@ -169,6 +173,9 @@ public class GameState {
                         occupyFootprint(building);
                         activeBuildings.add(building);
                     }
+                } else if (card.getType() == CardType.SPELL) {
+                    // Apply spell immediately at target position
+                    applySpellEffect(isPlayer, card, x, y);
                 }
                 return true;
             }
@@ -227,11 +234,108 @@ public class GameState {
                 occupyFootprint(building);
                 activeBuildings.add(building);
             }
+        } else if (card.getType() == CardType.SPELL) {
+            applySpellEffect(isPlayer, card, x, y);
         }
     }
 
     public Hand getPlayerHand() {
         return playerHand;
+    }
+
+    // Apply spell effects: simple AoE damage around target (affects enemy troops, buildings, and towers)
+    private void applySpellEffect(boolean isPlayer, Card spell, int x, int y) {
+        // Use card damage and range as radius in tiles
+        int radius = (int) Math.max(0, Math.round(spell.getRange()));
+        int damage = Math.max(0, spell.getDamage());
+        GridPosition center = GridPosition.tryCreate(x, y);
+        if (center == null) return;
+
+        // Damage enemy troops
+        for (Troop t : new java.util.ArrayList<>(activeTroops)) {
+            if (!t.isAlive()) continue;
+            if (t.isPlayerSide() == isPlayer) continue;
+            double dist = center.getEuclideanDistanceTo(t.getPosition());
+            if (dist <= radius) {
+                t.takeDamage(damage);
+            }
+        }
+        activeTroops.removeIf(t -> !t.isAlive());
+
+        // Damage enemy buildings
+        for (Building b : new java.util.ArrayList<>(activeBuildings)) {
+            if (!b.isAlive()) continue;
+            if (b.isPlayerSide() == isPlayer) continue;
+            int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
+            int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
+            GridPosition bc = GridPosition.tryCreate(cx, cy);
+            double dist = bc != null ? center.getEuclideanDistanceTo(bc) : center.getEuclideanDistanceTo(b.getPosition());
+            if (dist <= radius) {
+                b.takeDamage(damage);
+                if (!b.isAlive()) {
+                    freeFootprint(b);
+                }
+            }
+        }
+        activeBuildings.removeIf(b -> !b.isAlive());
+
+        // Damage enemy towers
+        java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
+        for (GridCell cell : arena.getAllCells()) {
+            TileType tt = cell.getTileType();
+            boolean enemyTowerTile = isPlayer ? (tt == TileType.PRINCESS_TOWER_COMPUTER || tt == TileType.KING_TOWER_COMPUTER)
+                    : (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER);
+            if (!enemyTowerTile) continue;
+            Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
+            if (tower == null || tower.getCurrentHealth() <= 0) continue;
+            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
+        }
+        for (java.util.Map.Entry<Tower, java.util.List<GridCell>> e : groups.entrySet()) {
+            java.util.List<GridCell> cells = e.getValue();
+            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+            for (GridCell c : cells) {
+                int px = c.getPosition().getX();
+                int py = c.getPosition().getY();
+                minX = Math.min(minX, px);
+                minY = Math.min(minY, py);
+                maxX = Math.max(maxX, px);
+                maxY = Math.max(maxY, py);
+            }
+            int cx = (minX + maxX) / 2;
+            int cy = (minY + maxY) / 2;
+            GridPosition tc = GridPosition.tryCreate(cx, cy);
+            double dist = tc != null ? center.getEuclideanDistanceTo(tc) : 0.0;
+            if (dist <= radius) {
+                e.getKey().takeDamage(damage);
+            }
+        }
+        // Track effect for UI for 1 second
+        activeSpellEffects.add(new SpellEffect(GridPosition.tryCreate(x, y), radius, isPlayer, 1.0));
+    }
+
+    private void updateSpellEffects(double deltaTime) {
+        if (activeSpellEffects.isEmpty()) return;
+        java.util.Iterator<SpellEffect> it = activeSpellEffects.iterator();
+        while (it.hasNext()) {
+            SpellEffect se = it.next();
+            se.timeRemaining -= deltaTime;
+            if (se.timeRemaining <= 0) {
+                it.remove();
+            }
+        }
+    }
+
+    public static class SpellEffect {
+        public final GridPosition center;
+        public final int radiusTiles;
+        public final boolean isPlayerSide;
+        public double timeRemaining;
+        public SpellEffect(GridPosition center, int radiusTiles, boolean isPlayerSide, double timeSeconds) {
+            this.center = center;
+            this.radiusTiles = radiusTiles;
+            this.isPlayerSide = isPlayerSide;
+            this.timeRemaining = timeSeconds;
+        }
     }
 
     private void updateBuildingsCombat(double deltaTime) {
@@ -356,6 +460,8 @@ public class GameState {
     public List<Building> getActiveBuildings() {
         return activeBuildings;
     }
+
+    public List<SpellEffect> getActiveSpellEffects() { return activeSpellEffects; }
 
     private void occupyFootprint(Building b) {
         for (int dx = 0; dx < b.getWidth(); dx++) {
