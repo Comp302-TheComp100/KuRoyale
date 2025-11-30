@@ -20,6 +20,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     private final GameState gameState;
     private final javafx.scene.control.Label timerLabel;
     private final javafx.scene.control.Label scoreLabel;
+    private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
 
     private static final int TILE_SIZE = 18; // Matches ArenaDesignController
 
@@ -81,7 +82,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
         Pane arenaPane = new Pane(grid, unitLayer);
         // Set preferred size to match grid size
-        arenaPane.setMaxSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        arenaPane.setPrefSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
 
         // Bind unitLayer position to grid position to ensure perfect alignment
         unitLayer.layoutXProperty().bind(grid.layoutXProperty());
@@ -114,6 +115,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
     private void renderArena() {
         grid.getChildren().clear();
+        cellIndex.clear();
         Arena arena = gameState.getArena();
 
         for (int x = 0; x < Arena.WIDTH; x++) {
@@ -130,6 +132,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     rect.setStroke(Color.BLACK);
                     rect.setStrokeWidth(0.2);
                     grid.add(rect, x, y);
+                    indexCellNode(x, y, rect);
                 } else {
                     Rectangle rect = new Rectangle(TILE_SIZE, TILE_SIZE);
                     // Style based on type
@@ -153,6 +156,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     rect.setStroke(Color.BLACK);
                     rect.setStrokeWidth(0.2);
                     grid.add(rect, x, y);
+                    indexCellNode(x, y, rect);
                 }
             }
         }
@@ -222,9 +226,11 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         double healthPercentage = currentHealth / maxHealth;
         javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(width * healthPercentage, height);
         fg.setFill(Color.ROYALBLUE);
+        fg.setId("towerHpFg_" + x + "_" + y);
 
         // Health Text: "1400" (Remaining only)
         javafx.scene.text.Text healthText = new javafx.scene.text.Text(String.format("%.0f", currentHealth));
+        healthText.setId("towerHpText_" + x + "_" + y);
         // Font like Clash Royale: Bold, Impact-like
         healthText.setFont(javafx.scene.text.Font.font("Arial Black", javafx.scene.text.FontWeight.BOLD, 10));
         healthText.setFill(Color.WHITE);
@@ -248,6 +254,12 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         grid.add(towerStack, x, y, size, size);
         GridPane.setHalignment(towerStack, javafx.geometry.HPos.CENTER);
         GridPane.setValignment(towerStack, javafx.geometry.VPos.CENTER);
+        // Index each covered coordinate to the stack (center tile will resolve via bounds)
+        for (int dx = 0; dx < size; dx++) {
+            for (int dy = 0; dy < size; dy++) {
+                indexCellNode(x + dx, y + dy, towerStack);
+            }
+        }
     }
 
     private boolean isTowerTile(TileType type) {
@@ -275,6 +287,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         scoreLabel.setText(String.format("%d - %d", gameState.getPlayerScore(), gameState.getBotScore()));
 
         unitLayer.getChildren().clear();
+
+        // Update existing tower health bars (inside grid stack panes)
+        updateExistingTowerHealthBars();
 
         // Render active moving troops
         java.util.List<com.kuroyale.model.Troop> troops = gameState.getActiveTroops();
@@ -444,19 +459,15 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
      * Helper method to get the grid cell node at the specified grid coordinates.
      */
     private javafx.scene.Node getGridCell(int x, int y) {
-        for (javafx.scene.Node node : grid.getChildren()) {
-            Integer colIndex = GridPane.getColumnIndex(node);
-            Integer rowIndex = GridPane.getRowIndex(node);
+        return cellIndex.getOrDefault(key(x, y), null);
+    }
 
-            // Handle null indices (default to 0)
-            int col = (colIndex == null) ? 0 : colIndex;
-            int row = (rowIndex == null) ? 0 : rowIndex;
+    private void indexCellNode(int x, int y, javafx.scene.Node node) {
+        cellIndex.put(key(x, y), node);
+    }
 
-            if (col == x && row == y) {
-                return node;
-            }
-        }
-        return null;
+    private long key(int x, int y) {
+        return (((long) x) << 32) | (y & 0xFFFFFFFFL);
     }
 
     public void highlightValidCells(boolean show, boolean isSpell) {
@@ -671,6 +682,43 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             aoe.setStroke(javafx.scene.paint.Color.color(1,1,1,0.6));
             aoe.setStrokeWidth(1.2);
             unitLayer.getChildren().add(aoe);
+        }
+    }
+
+    // Update the health bar rectangles/text created in renderTowerAt
+    private void updateExistingTowerHealthBars() {
+        com.kuroyale.model.Arena arena = gameState.getArena();
+        if (arena.getLayout() == null) return;
+        com.kuroyale.model.ArenaLayout layout = arena.getLayout();
+        // Princess towers
+        if (layout.getPrincessTowerPositions() != null) {
+            for (com.kuroyale.model.GridPosition p : layout.getPrincessTowerPositions()) {
+                updateSingleTowerBar(p.getX(), p.getY(), 3);
+                updateSingleTowerBar(p.getX(), com.kuroyale.model.Arena.HEIGHT - 3 - p.getY(), 3);
+            }
+        }
+        // King towers
+        if (layout.getKingTowerPosition() != null) {
+            com.kuroyale.model.GridPosition p = layout.getKingTowerPosition();
+            updateSingleTowerBar(p.getX(), p.getY(), 4);
+            updateSingleTowerBar(p.getX(), com.kuroyale.model.Arena.HEIGHT - 4 - p.getY(), 4);
+        }
+    }
+
+    private void updateSingleTowerBar(int x, int y, int size) {
+        com.kuroyale.model.Tower tower = gameState.getArena().getTowerAt(x, y);
+        if (tower == null) return;
+        double currentHealth = tower.getCurrentHealth();
+        double maxHealth = tower.getMaxHealth();
+        double width = size == 4 ? 50 : 40;
+        double pct = maxHealth > 0 ? Math.max(0, currentHealth) / maxHealth : 0.0;
+        javafx.scene.Node fgNode = grid.lookup("#towerHpFg_" + x + "_" + y);
+        if (fgNode instanceof javafx.scene.shape.Rectangle) {
+            ((javafx.scene.shape.Rectangle) fgNode).setWidth(width * pct);
+        }
+        javafx.scene.Node textNode = grid.lookup("#towerHpText_" + x + "_" + y);
+        if (textNode instanceof javafx.scene.text.Text) {
+            ((javafx.scene.text.Text) textNode).setText(String.format("%.0f", currentHealth));
         }
     }
 }
