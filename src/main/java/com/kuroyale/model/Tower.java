@@ -8,6 +8,7 @@ public class Tower {
     private double hitSpeed;
     private double range;
     private TargetType targetType;
+    private double attackCooldown;
 
     public enum TowerType {
         PRINCESS, KING
@@ -32,6 +33,7 @@ public class Tower {
         }
         this.currentHealth = this.maxHealth;
         this.targetType = TargetType.BOTH;
+        this.attackCooldown = 0.0;
     }
 
     public void takeDamage(double amount) {
@@ -73,4 +75,7 @@ public class Tower {
     public TowerType getType() {
         return type;
     }
+
+    public double getAttackCooldown() { return attackCooldown; }
+    public void setAttackCooldown(double cd) { this.attackCooldown = cd; }
 }

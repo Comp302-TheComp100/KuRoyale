@@ -30,20 +30,73 @@ public class TargetingService {
             if (dist <= detectionRadius && dist < bestDist) { bestDist = dist; bestPos = pos; }
         }
 
-        // 2) Consider placed enemy buildings (and spells ignored)
-        for (GameState.PlacedCard pc : state.getPlacedCards()) {
-            if (pc.isPlayer == troop.isPlayerSide()) continue;
-            if (pc.card.getType() == CardType.SPELL) continue; // ignore spells as targets
-            if (troop.isBuildingOnly() && pc.card.getType() != CardType.BUILDING) continue;
-            GridPosition pos = GridPosition.tryCreate(pc.x, pc.y);
-            if (pos == null) continue;
-            double dist = troopPos.getEuclideanDistanceTo(pos);
-            if (dist < bestDist) { bestDist = dist; bestPos = pos; }
+        // 2) Consider active enemy buildings (live entities)
+        for (Building b : state.getActiveBuildings()) {
+            if (!b.isAlive()) continue;
+            if (b.isPlayerSide() == troop.isPlayerSide()) continue;
+            if (troop.isBuildingOnly()) {
+                // building-only troops prioritize buildings
+            }
+            // Use nearest perimeter tile around the building footprint as target
+            GridPosition perimeter = nearestPerimeterTile(state.getArena(), b, troopPos);
+            if (perimeter == null) continue;
+            double dist = troopPos.getEuclideanDistanceTo(perimeter);
+            if (dist < bestDist) { bestDist = dist; bestPos = perimeter; }
         }
 
         if (bestPos != null) return bestPos;
         // fallback to nearest enemy tower cell
         return findNearestEnemyTower(state.getArena(), troop);
+    }
+
+    private GridPosition buildingCenter(Building b) {
+        if (b == null || b.getPosition() == null) return null;
+        int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
+        int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
+        return GridPosition.tryCreate(cx, cy);
+    }
+
+    // Find the nearest walkable, unoccupied perimeter tile adjacent to the building footprint
+    private GridPosition nearestPerimeterTile(Arena arena, Building b, GridPosition from) {
+        int x0 = b.getPosition().getX();
+        int y0 = b.getPosition().getY();
+        int w = Math.max(1, b.getWidth());
+        int h = Math.max(1, b.getHeight());
+        GridPosition best = null;
+        double bestDist = Double.MAX_VALUE;
+        // Check tiles around footprint borders (one tile outward)
+        for (int dx = -1; dx <= w; dx++) {
+            // top perimeter
+            GridPosition p1 = GridPosition.tryCreate(x0 + dx, y0 - 1);
+            best = pickIfBetter(arena, from, best, p1, bestDist);
+            if (best != null) bestDist = from.getEuclideanDistanceTo(best);
+            // bottom perimeter
+            GridPosition p2 = GridPosition.tryCreate(x0 + dx, y0 + h);
+            best = pickIfBetter(arena, from, best, p2, bestDist);
+            if (best != null) bestDist = from.getEuclideanDistanceTo(best);
+        }
+        for (int dy = 0; dy < h; dy++) {
+            // left perimeter
+            GridPosition p3 = GridPosition.tryCreate(x0 - 1, y0 + dy);
+            best = pickIfBetter(arena, from, best, p3, bestDist);
+            if (best != null) bestDist = from.getEuclideanDistanceTo(best);
+            // right perimeter
+            GridPosition p4 = GridPosition.tryCreate(x0 + w, y0 + dy);
+            best = pickIfBetter(arena, from, best, p4, bestDist);
+            if (best != null) bestDist = from.getEuclideanDistanceTo(best);
+        }
+        return best;
+    }
+
+    private GridPosition pickIfBetter(Arena arena, GridPosition from, GridPosition currentBest, GridPosition candidate, double currentBestDist) {
+        if (candidate == null) return currentBest;
+        GridCell cell = arena.getCell(candidate);
+        if (cell == null || !cell.canPlaceUnit() || cell.isOccupied()) return currentBest;
+        double dist = from.getEuclideanDistanceTo(candidate);
+        if (currentBest == null || dist < currentBestDist) {
+            return candidate;
+        }
+        return currentBest;
     }
 
     private GridPosition findNearestEnemyTower(Arena arena, Troop troop) {

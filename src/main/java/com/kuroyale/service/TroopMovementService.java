@@ -26,14 +26,30 @@ public class TroopMovementService {
             }
             // If in attack range, handle combat; else move
             Troop targetTroop = findNearestEnemyTroopInRange(state, troop);
+            Building targetBuilding = null;
+            Tower targetTower = null;
             boolean canAttack = targetTroop != null;
-            if (canAttack) {
+            if (!canAttack) {
+                targetBuilding = findNearestEnemyBuildingInRange(state, troop);
+                canAttack = targetBuilding != null;
+            }
+            if (!canAttack) {
+                targetTower = findNearestEnemyTowerInRange(state, troop);
+                canAttack = targetTower != null;
+            }
+            if (canAttack && targetTroop != null) {
                 troop.setUnitState(UnitState.ATTACKING);
                 handleAttack(deltaTime, troop, targetTroop);
                 if (!targetTroop.isAlive()) {
                     targetTroop.setUnitState(UnitState.DESTROYED);
                     toRemove.add(targetTroop);
                 }
+            } else if (canAttack && targetBuilding != null) {
+                troop.setUnitState(UnitState.ATTACKING);
+                handleAttack(deltaTime, troop, targetBuilding);
+            } else if (canAttack && targetTower != null) {
+                troop.setUnitState(UnitState.ATTACKING);
+                handleAttack(deltaTime, troop, targetTower);
             } else {
                 troop.setUnitState(UnitState.MOVING);
                 advanceAlongPath(deltaTime, troop, state);
@@ -131,5 +147,135 @@ public class TroopMovementService {
         } else {
             attacker.setAttackCooldown(cd);
         }
+    }
+
+    private void handleAttack(double deltaTime, Troop attacker, Building target) {
+        double cd = attacker.getAttackCooldown() - deltaTime;
+        if (cd <= 0) {
+            combatService.applyDamage(attacker, target);
+            attacker.setAttackCooldown(attacker.getCombatStats().getHitSpeedSeconds());
+        } else {
+            attacker.setAttackCooldown(cd);
+        }
+    }
+
+    private void handleAttack(double deltaTime, Troop attacker, Tower target) {
+        double cd = attacker.getAttackCooldown() - deltaTime;
+        if (cd <= 0) {
+            combatService.applyDamage(attacker, target);
+            attacker.setAttackCooldown(attacker.getCombatStats().getHitSpeedSeconds());
+        } else {
+            attacker.setAttackCooldown(cd);
+        }
+    }
+
+    private Building findNearestEnemyBuildingInRange(GameState state, Troop self) {
+        Building best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (Building b : state.getActiveBuildings()) {
+            if (!b.isAlive()) continue;
+            if (b.isPlayerSide() == self.isPlayerSide()) continue;
+            if (self.getBaseCard().getTarget() == TargetType.AIR) continue; // cannot hit buildings
+            // Measure distance to nearest perimeter tile of building footprint
+            double dist = distanceToBuildingPerimeter(state.getArena(), self.getPosition(), b);
+            double rangeTiles = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles() : self.getAttackRange();
+            boolean inRange;
+            if (self.getCombatStats() != null && self.getCombatStats().getAttackType() == CombatStats.AttackType.MELEE) {
+                rangeTiles = Math.max(rangeTiles, 1);
+                double threshold = Math.max(1.5, rangeTiles);
+                inRange = dist <= threshold;
+            } else {
+                inRange = dist <= rangeTiles;
+            }
+            if (inRange && dist < bestDist) {
+                bestDist = dist;
+                best = b;
+            }
+        }
+        return best;
+    }
+
+    private Tower findNearestEnemyTowerInRange(GameState state, Troop self) {
+        Tower best = null;
+        double bestDist = Double.MAX_VALUE;
+        Arena arena = state.getArena();
+        // Compute groups of tower footprints to measure distance to perimeter
+        java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
+        for (GridCell cell : arena.getAllCells()) {
+            TileType t = cell.getTileType();
+            boolean enemyTowerTile = self.isPlayerSide() ? (t == TileType.PRINCESS_TOWER_COMPUTER || t == TileType.KING_TOWER_COMPUTER)
+                    : (t == TileType.PRINCESS_TOWER_USER || t == TileType.KING_TOWER_USER);
+            if (!enemyTowerTile) continue;
+            Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
+            if (tower == null || tower.getCurrentHealth() <= 0) continue;
+            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
+        }
+        for (java.util.Map.Entry<Tower, java.util.List<GridCell>> e : groups.entrySet()) {
+            Tower tower = e.getKey();
+            double dist = distanceToTowerPerimeter(self.getPosition(), e.getValue());
+            double rangeTiles = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles() : self.getAttackRange();
+            boolean inRange;
+            if (self.getCombatStats() != null && self.getCombatStats().getAttackType() == CombatStats.AttackType.MELEE) {
+                rangeTiles = Math.max(rangeTiles, 1);
+                double threshold = Math.max(1.5, rangeTiles);
+                inRange = dist <= threshold;
+            } else {
+                inRange = dist <= rangeTiles;
+            }
+            if (inRange && dist < bestDist) {
+                bestDist = dist;
+                best = tower;
+            }
+        }
+        return best;
+    }
+
+    private double distanceToBuildingPerimeter(Arena arena, GridPosition from, Building b) {
+        int x0 = b.getPosition().getX();
+        int y0 = b.getPosition().getY();
+        int w = Math.max(1, b.getWidth());
+        int h = Math.max(1, b.getHeight());
+        double best = Double.MAX_VALUE;
+        // distance to footprint boundary cells (edge of the rectangle)
+        for (int dx = 0; dx < w; dx++) {
+            GridPosition top = GridPosition.tryCreate(x0 + dx, y0);
+            GridPosition bottom = GridPosition.tryCreate(x0 + dx, y0 + h - 1);
+            if (top != null) best = Math.min(best, from.getEuclideanDistanceTo(top));
+            if (bottom != null) best = Math.min(best, from.getEuclideanDistanceTo(bottom));
+        }
+        for (int dy = 0; dy < h; dy++) {
+            GridPosition left = GridPosition.tryCreate(x0, y0 + dy);
+            GridPosition right = GridPosition.tryCreate(x0 + w - 1, y0 + dy);
+            if (left != null) best = Math.min(best, from.getEuclideanDistanceTo(left));
+            if (right != null) best = Math.min(best, from.getEuclideanDistanceTo(right));
+        }
+        return best;
+    }
+
+    private double distanceToTowerPerimeter(GridPosition from, java.util.List<GridCell> cells) {
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+        for (GridCell c : cells) {
+            int x = c.getPosition().getX();
+            int y = c.getPosition().getY();
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+        double best = Double.MAX_VALUE;
+        // distance to footprint boundary cells (edge of the rectangle)
+        for (int x = minX; x <= maxX; x++) {
+            GridPosition top = GridPosition.tryCreate(x, minY);
+            GridPosition bottom = GridPosition.tryCreate(x, maxY);
+            if (top != null) best = Math.min(best, from.getEuclideanDistanceTo(top));
+            if (bottom != null) best = Math.min(best, from.getEuclideanDistanceTo(bottom));
+        }
+        for (int y = minY; y <= maxY; y++) {
+            GridPosition left = GridPosition.tryCreate(minX, y);
+            GridPosition right = GridPosition.tryCreate(maxX, y);
+            if (left != null) best = Math.min(best, from.getEuclideanDistanceTo(left));
+            if (right != null) best = Math.min(best, from.getEuclideanDistanceTo(right));
+        }
+        return best;
     }
 }

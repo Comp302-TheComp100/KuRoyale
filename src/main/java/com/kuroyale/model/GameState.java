@@ -21,6 +21,7 @@ public class GameState {
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
     private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
+    private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
 
     private double gameTime = 180.0; // 3 minutes
     private int playerScore = 0;
@@ -76,8 +77,22 @@ public class GameState {
         // Update placed cards (lifetimes, movement, etc. - future work)
         troopMovementService.updateTroops(deltaTime, this, activeTroops);
 
-        // Cleanup destroyed buildings (future: decay timers)
-        activeBuildings.removeIf(b -> !b.isAlive());
+        // Buildings attack like troops: find targets and apply damage
+        updateBuildingsCombat(deltaTime);
+        // Towers attack enemies similarly
+        updateTowersCombat(deltaTime);
+
+        // Cleanup destroyed buildings and free their occupied tiles
+        if (!activeBuildings.isEmpty()) {
+            java.util.Iterator<Building> it = activeBuildings.iterator();
+            while (it.hasNext()) {
+                Building b = it.next();
+                if (!b.isAlive()) {
+                    freeFootprint(b);
+                    it.remove();
+                }
+            }
+        }
     }
 
     public boolean isDoubleElixir() {
@@ -118,8 +133,8 @@ public class GameState {
             Card card = pendingCard != null ? pendingCard : playerHand.getCard(handIndex);
             if (card != null && playerElixir.spend(card.getCost())) {
                 playerHand.playCard(handIndex);
+                placedCards.add(new PlacedCard(card, x, y, isPlayer));
                 if (card.getType() == CardType.TROOP) {
-                    placedCards.add(new PlacedCard(card, x, y, isPlayer));
                     int count = Math.max(1, card.getCount());
                     for (int i = 0; i < count; i++) {
                         GridPosition spawn = GridPosition.tryCreate(x, y);
@@ -149,8 +164,8 @@ public class GameState {
                     }
                     GridPosition topLeft = GridPosition.tryCreate(x, y);
                     if (topLeft != null) {
-                        placedCards.add(new PlacedCard(card, x, y, isPlayer));
                         Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath());
+                        building.configureCombatFromCard(card);
                         occupyFootprint(building);
                         activeBuildings.add(building);
                     }
@@ -181,8 +196,8 @@ public class GameState {
 
     // Overload for direct card placement (used by Bot)
     public void placeCard(boolean isPlayer, Card card, int x, int y) {
+        placedCards.add(new PlacedCard(card, x, y, isPlayer));
         if (card.getType() == CardType.TROOP) {
-            placedCards.add(new PlacedCard(card, x, y, isPlayer));
             int count = Math.max(1, card.getCount());
             for (int i = 0; i < count; i++) {
                 GridPosition spawn = GridPosition.tryCreate(x, y);
@@ -194,9 +209,7 @@ public class GameState {
         } else if (card.getType() == CardType.BUILDING) {
             int bw = Math.max(1, card.getFootprintWidthTiles());
             int bh = Math.max(1, card.getFootprintHeightTiles());
-            int mx = Math.max(0, bw - 1);
-            int my = Math.max(0, bh - 1);
-            if (x < mx || y < my || (x + bw) > (Arena.WIDTH - mx) || (y + bh) > (Arena.HEIGHT - my)) {
+            if (x < 0 || y < 0 || (x + bw) >= Arena.WIDTH || (y + bh) >= Arena.HEIGHT) {
                 return; // ignore invalid bot placement
             }
             for (int dx = 0; dx < bw; dx++) {
@@ -209,8 +222,8 @@ public class GameState {
             }
             GridPosition topLeft = GridPosition.tryCreate(x, y);
             if (topLeft != null) {
-                placedCards.add(new PlacedCard(card, x, y, isPlayer));
                 Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath());
+                building.configureCombatFromCard(card);
                 occupyFootprint(building);
                 activeBuildings.add(building);
             }
@@ -219,6 +232,109 @@ public class GameState {
 
     public Hand getPlayerHand() {
         return playerHand;
+    }
+
+    private void updateBuildingsCombat(double deltaTime) {
+        for (Building b : activeBuildings) {
+            if (!b.isAlive()) continue;
+            // Find nearest enemy troop within range respecting target type
+            Troop best = null;
+            double bestDist = Double.MAX_VALUE;
+            for (Troop t : activeTroops) {
+                if (!t.isAlive()) continue;
+                if (t.isPlayerSide() == b.isPlayerSide()) continue;
+                if (!b.canTargetTroop(t)) continue;
+                // Measure from building center
+                int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
+                int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
+                GridPosition center = GridPosition.tryCreate(cx, cy);
+                double dist = center != null ? center.getEuclideanDistanceTo(t.getPosition()) : b.getPosition().getEuclideanDistanceTo(t.getPosition());
+                if (dist <= b.getRangeTiles() && dist < bestDist) {
+                    bestDist = dist;
+                    best = t;
+                }
+            }
+            if (best != null) {
+                double cd = b.getAttackCooldown() - deltaTime;
+                if (cd <= 0) {
+                    combatService.applyDamage(b, best);
+                    b.setAttackCooldown(Math.max(0.1, b.getHitSpeedSeconds()));
+                } else {
+                    b.setAttackCooldown(cd);
+                }
+            } else {
+                // Cooldown still ticks down when idle
+                double cd = Math.max(0.0, b.getAttackCooldown() - deltaTime);
+                b.setAttackCooldown(cd);
+            }
+        }
+        // Remove dead troops post building attacks
+        activeTroops.removeIf(t -> !t.isAlive());
+    }
+
+    private void updateTowersCombat(double deltaTime) {
+        // Collect unique towers with inferred side and footprint size
+        java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
+        for (GridCell cell : arena.getAllCells()) {
+            TileType tt = cell.getTileType();
+            boolean isTowerTile = tt == TileType.PRINCESS_TOWER_USER || tt == TileType.PRINCESS_TOWER_COMPUTER
+                    || tt == TileType.KING_TOWER_USER || tt == TileType.KING_TOWER_COMPUTER;
+            if (!isTowerTile) continue;
+            Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
+            if (tower == null) continue;
+            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
+        }
+        for (java.util.Map.Entry<Tower, java.util.List<GridCell>> entry : groups.entrySet()) {
+            Tower tower = entry.getKey();
+            if (tower.getCurrentHealth() <= 0) continue;
+            java.util.List<GridCell> cells = entry.getValue();
+            // Infer side and center from cells
+            boolean isPlayerTower = false; // default
+            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+            for (GridCell c : cells) {
+                TileType tt = c.getTileType();
+                if (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER) isPlayerTower = true;
+                int x = c.getPosition().getX();
+                int y = c.getPosition().getY();
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+            int cx = (minX + maxX) / 2;
+            int cy = (minY + maxY) / 2;
+            GridPosition center = GridPosition.tryCreate(cx, cy);
+
+            // Find nearest enemy troop within tower range
+            Troop best = null;
+            double bestDist = Double.MAX_VALUE;
+            for (Troop t : activeTroops) {
+                if (!t.isAlive()) continue;
+                if (t.isPlayerSide() == isPlayerTower) continue;
+                // Respect target type
+                if (tower.getTargetType() == TargetType.GROUND && t.isAirUnit()) continue;
+                double dist = center != null ? center.getEuclideanDistanceTo(t.getPosition()) : 0.0;
+                if (dist <= Math.round(tower.getRange()) && dist < bestDist) {
+                    bestDist = dist;
+                    best = t;
+                }
+            }
+            // Attack using cooldown
+            double cd = tower.getAttackCooldown() - deltaTime;
+            if (best != null) {
+                if (cd <= 0) {
+                    combatService.applyDamage(tower, best);
+                    tower.setAttackCooldown(Math.max(0.1, tower.getHitSpeed()));
+                } else {
+                    tower.setAttackCooldown(cd);
+                }
+            } else {
+                // tick down
+                tower.setAttackCooldown(Math.max(0.0, cd));
+            }
+        }
+        // Remove any dead troops after tower attacks
+        activeTroops.removeIf(t -> !t.isAlive());
     }
 
     public ElixirManager getPlayerElixir() {
@@ -261,6 +377,30 @@ public class GameState {
             }
         }
     }
+
+    private void freeFootprint(Building b) {
+        for (int dx = 0; dx < b.getWidth(); dx++) {
+            for (int dy = 0; dy < b.getHeight(); dy++) {
+                int gx = b.getPosition().getX() + dx;
+                int gy = b.getPosition().getY() + dy;
+                GridPosition pos = GridPosition.tryCreate(gx, gy);
+                if (pos != null) {
+                    GridCell cell = arena.getCell(pos);
+                    if (cell != null) {
+                        if (cell.isOccupied() && cell.getOccupant() == b) {
+                            try {
+                                cell.clearOccupant();
+                            } catch (IllegalStateException e) {
+                                // ignore if invalid; occupancy will be reset by tile type
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    
 
     // Inner class to track placed units
     public static class PlacedCard {

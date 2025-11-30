@@ -366,14 +366,13 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             }
         }
 
-        // Render active buildings (3x3 by default) with grid spanning like towers
+        // Render active buildings onto unitLayer so they disappear when removed
         java.util.List<com.kuroyale.model.Building> buildings = gameState.getActiveBuildings();
         for (com.kuroyale.model.Building b : buildings) {
             int x = b.getPosition().getX();
             int y = b.getPosition().getY();
             int w = Math.max(1, b.getWidth());
             int h = Math.max(1, b.getHeight());
-
             StackPane buildingStack = new StackPane();
             buildingStack.setPrefSize(TILE_SIZE * w, TILE_SIZE * h);
 
@@ -385,7 +384,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView(img);
                     imageView.setFitWidth(TILE_SIZE * w);
                     imageView.setFitHeight(TILE_SIZE * h);
-                    imageView.setPreserveRatio(false); // force exact tile footprint
+                    imageView.setPreserveRatio(false);
                     imageView.setSmooth(true);
                     buildingStack.getChildren().add(imageView);
                 } else {
@@ -417,17 +416,25 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
             javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(hbWidth * pct, hbHeight);
             fg.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.ROYALBLUE : javafx.scene.paint.Color.CRIMSON);
-            StackPane hb = new StackPane(bg, fg);
-            hb.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-            StackPane.setAlignment(hb, javafx.geometry.Pos.TOP_CENTER);
-            StackPane.setMargin(hb, new javafx.geometry.Insets(2, 0, 0, 0));
-            buildingStack.getChildren().add(hb);
+            StackPane hbPane = new StackPane(bg, fg);
+            hbPane.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            StackPane.setAlignment(hbPane, javafx.geometry.Pos.TOP_CENTER);
+            StackPane.setMargin(hbPane, new javafx.geometry.Insets(2, 0, 0, 0));
+            buildingStack.getChildren().add(hbPane);
 
-            // Add to grid spanning its footprint
-            grid.add(buildingStack, x, y, w, h);
-            GridPane.setHalignment(buildingStack, javafx.geometry.HPos.CENTER);
-            GridPane.setValignment(buildingStack, javafx.geometry.VPos.CENTER);
+            // Position on unitLayer using the top-left cell's bounds
+            javafx.scene.Node topLeftCell = getGridCell(x, y);
+            if (topLeftCell != null) {
+                javafx.geometry.Bounds bnds = topLeftCell.getBoundsInParent();
+                buildingStack.setLayoutX(bnds.getMinX());
+                buildingStack.setLayoutY(bnds.getMinY());
+            }
+            unitLayer.getChildren().add(buildingStack);
         }
+
+        // Visual projectiles for towers and buildings (moving dots)
+        renderTowerProjectiles();
+        renderBuildingProjectiles();
     }
 
     /**
@@ -526,5 +533,121 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             if (dist <= range && dist < bestDist) { bestDist = dist; best = t; }
         }
         return best;
+    }
+
+    // Visualize tower shots as moving dots towards target troops
+    private void renderTowerProjectiles() {
+        com.kuroyale.model.Arena arena = gameState.getArena();
+        java.util.Map<com.kuroyale.model.Tower, java.util.List<com.kuroyale.model.GridCell>> groups = new java.util.HashMap<>();
+        for (com.kuroyale.model.GridCell cell : arena.getAllCells()) {
+            com.kuroyale.model.TileType tt = cell.getTileType();
+            boolean isTowerTile = tt == com.kuroyale.model.TileType.PRINCESS_TOWER_USER || tt == com.kuroyale.model.TileType.PRINCESS_TOWER_COMPUTER
+                    || tt == com.kuroyale.model.TileType.KING_TOWER_USER || tt == com.kuroyale.model.TileType.KING_TOWER_COMPUTER;
+            if (!isTowerTile) continue;
+            com.kuroyale.model.Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
+            if (tower == null || tower.getCurrentHealth() <= 0) continue;
+            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
+        }
+        for (java.util.Map.Entry<com.kuroyale.model.Tower, java.util.List<com.kuroyale.model.GridCell>> e : groups.entrySet()) {
+            com.kuroyale.model.Tower tower = e.getKey();
+            java.util.List<com.kuroyale.model.GridCell> cells = e.getValue();
+            boolean isPlayerTower = false;
+            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+            for (com.kuroyale.model.GridCell c : cells) {
+                com.kuroyale.model.TileType tt = c.getTileType();
+                if (tt == com.kuroyale.model.TileType.PRINCESS_TOWER_USER || tt == com.kuroyale.model.TileType.KING_TOWER_USER) isPlayerTower = true;
+                int x = c.getPosition().getX();
+                int y = c.getPosition().getY();
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+            int cx = (minX + maxX) / 2;
+            int cy = (minY + maxY) / 2;
+            javafx.scene.Node centerCell = getGridCell(cx, cy);
+            if (centerCell == null) continue;
+            javafx.geometry.Bounds cb = centerCell.getBoundsInParent();
+            double sx = cb.getMinX() + cb.getWidth() / 2.0;
+            double sy = cb.getMinY() + cb.getHeight() / 2.0;
+
+            // Find nearest enemy troop within tower range
+            com.kuroyale.model.Troop target = null;
+            double bestDist = Double.MAX_VALUE;
+            for (com.kuroyale.model.Troop t : gameState.getActiveTroops()) {
+                if (!t.isAlive()) continue;
+                if (t.isPlayerSide() == isPlayerTower) continue;
+                if (tower.getTargetType() == com.kuroyale.model.TargetType.GROUND && t.isAirUnit()) continue;
+                javafx.scene.Node tn = getGridCell(t.getPosition().getX(), t.getPosition().getY());
+                if (tn == null) continue;
+                javafx.geometry.Bounds tb = tn.getBoundsInParent();
+                double tx = tb.getMinX() + tb.getWidth() / 2.0;
+                double ty = tb.getMinY() + tb.getHeight() / 2.0;
+                double dist = Math.hypot(tx - sx, ty - sy) / TILE_SIZE; // in tiles approx
+                if (dist <= Math.round(tower.getRange()) && dist < bestDist) { bestDist = dist; target = t; }
+            }
+            if (target != null) {
+                double duration = Math.max(0.15, tower.getHitSpeed());
+                double cooldown = tower.getAttackCooldown();
+                double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration));
+                javafx.scene.Node tn = getGridCell(target.getPosition().getX(), target.getPosition().getY());
+                if (tn != null) {
+                    javafx.geometry.Bounds tb = tn.getBoundsInParent();
+                    double tx = tb.getMinX() + tb.getWidth() / 2.0;
+                    double ty = tb.getMinY() + tb.getHeight() / 2.0;
+                    javafx.scene.shape.Circle dot = new javafx.scene.shape.Circle(sx + (tx - sx) * phase, sy + (ty - sy) * phase, 2.5);
+                    dot.setFill(isPlayerTower ? javafx.scene.paint.Color.LIGHTSKYBLUE : javafx.scene.paint.Color.ORANGERED);
+                    dot.setStroke(javafx.scene.paint.Color.color(0,0,0,0.35));
+                    dot.setStrokeWidth(0.8);
+                    unitLayer.getChildren().add(dot);
+                }
+            }
+        }
+    }
+
+    // Visualize building shots as moving dots towards target troops
+    private void renderBuildingProjectiles() {
+        for (com.kuroyale.model.Building b : gameState.getActiveBuildings()) {
+            if (!b.isAlive()) continue;
+            int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
+            int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
+            javafx.scene.Node centerCell = getGridCell(cx, cy);
+            if (centerCell == null) continue;
+            javafx.geometry.Bounds cb = centerCell.getBoundsInParent();
+            double sx = cb.getMinX() + cb.getWidth() / 2.0;
+            double sy = cb.getMinY() + cb.getHeight() / 2.0;
+
+            // Find nearest enemy troop within building range
+            com.kuroyale.model.Troop target = null;
+            double bestDist = Double.MAX_VALUE;
+            for (com.kuroyale.model.Troop t : gameState.getActiveTroops()) {
+                if (!t.isAlive()) continue;
+                if (t.isPlayerSide() == b.isPlayerSide()) continue;
+                if (!b.canTargetTroop(t)) continue;
+                javafx.scene.Node tn = getGridCell(t.getPosition().getX(), t.getPosition().getY());
+                if (tn == null) continue;
+                javafx.geometry.Bounds tb = tn.getBoundsInParent();
+                double tx = tb.getMinX() + tb.getWidth() / 2.0;
+                double ty = tb.getMinY() + tb.getHeight() / 2.0;
+                double dist = Math.hypot(tx - sx, ty - sy) / TILE_SIZE; // tiles approx
+                if (dist <= b.getRangeTiles() && dist < bestDist) { bestDist = dist; target = t; }
+            }
+            if (target != null) {
+                double duration = Math.max(0.15, b.getHitSpeedSeconds());
+                double cooldown = b.getAttackCooldown();
+                double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration));
+                javafx.scene.Node tn = getGridCell(target.getPosition().getX(), target.getPosition().getY());
+                if (tn != null) {
+                    javafx.geometry.Bounds tb = tn.getBoundsInParent();
+                    double tx = tb.getMinX() + tb.getWidth() / 2.0;
+                    double ty = tb.getMinY() + tb.getHeight() / 2.0;
+                    javafx.scene.shape.Circle dot = new javafx.scene.shape.Circle(sx + (tx - sx) * phase, sy + (ty - sy) * phase, 2.5);
+                    dot.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.LIGHTSKYBLUE : javafx.scene.paint.Color.ORANGERED);
+                    dot.setStroke(javafx.scene.paint.Color.color(0,0,0,0.35));
+                    dot.setStrokeWidth(0.8);
+                    unitLayer.getChildren().add(dot);
+                }
+            }
+        }
     }
 }
