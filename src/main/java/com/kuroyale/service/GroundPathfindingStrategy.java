@@ -7,36 +7,65 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
     @Override
     public Deque<GridPosition> computePath(Arena arena, Troop troop, GridPosition destination) {
         Deque<GridPosition> path = new ArrayDeque<>();
-        if (destination == null) return path;
+        if (arena == null || troop == null || destination == null) return path;
+
         // If destination is not walkable (e.g., tower cell), pick nearest walkable cell
         GridCell destCell = arena.getCell(destination);
         if (destCell == null || !destCell.isWalkable()) {
             destination = findNearestWalkable(arena, destination);
             if (destination == null) return path; // No valid reachable target
         }
-        if (troop.getPosition().equals(destination)) return path;
-        // Simple BFS for now (replaceable with A* later)
+
         GridPosition start = troop.getPosition();
-        Queue<GridPosition> queue = new ArrayDeque<>();
-        Map<GridPosition, GridPosition> prev = new HashMap<>();
-        queue.add(start);
-        prev.put(start, null);
-        while (!queue.isEmpty()) {
-            GridPosition current = queue.poll();
-            if (current.equals(destination)) break;
-            for (GridPosition neighbor : arena.getAdjacentPositions(current)) {
-                if (!prev.containsKey(neighbor)) {
-                    GridCell cell = arena.getCell(neighbor);
-                    if (cell != null && cell.isWalkable()) {
-                        prev.put(neighbor, current);
-                        queue.add(neighbor);
+        if (start == null || start.equals(destination)) return path;
+
+        // A* search
+        Map<GridPosition, GridPosition> cameFrom = new HashMap<>();
+        Map<GridPosition, Integer> gScore = new HashMap<>();
+        Map<GridPosition, Integer> fScore = new HashMap<>();
+
+        Comparator<GridPosition> byFScore = Comparator.comparingInt(p -> fScore.getOrDefault(p, Integer.MAX_VALUE));
+        PriorityQueue<GridPosition> openSet = new PriorityQueue<>(byFScore);
+
+        gScore.put(start, 0);
+        fScore.put(start, heuristic(start, destination));
+        openSet.add(start);
+
+        Set<GridPosition> closedSet = new HashSet<>();
+
+        while (!openSet.isEmpty()) {
+            GridPosition current = openSet.poll();
+            if (current.equals(destination)) {
+                // reconstruct path
+                GridPosition cur = current;
+                while (cur != null) { path.addFirst(cur); cur = cameFrom.get(cur); }
+                return path;
+            }
+
+            closedSet.add(current);
+
+            for (GridPosition neighbor : arena.getAdjacentPositions(current)) { // 4-dir for ground
+                if (closedSet.contains(neighbor)) continue;
+                GridCell cell = arena.getCell(neighbor);
+                if (cell == null || !cell.isWalkable()) continue;
+
+                int tentativeG = gScore.getOrDefault(current, Integer.MAX_VALUE - 1) + 1; // cost 1 per move
+
+                boolean isBetter = tentativeG < gScore.getOrDefault(neighbor, Integer.MAX_VALUE);
+                if (isBetter) {
+                    cameFrom.put(neighbor, current);
+                    gScore.put(neighbor, tentativeG);
+                    fScore.put(neighbor, tentativeG + heuristic(neighbor, destination));
+                    // Update openSet priority; if already present, remove and re-add
+                    if (openSet.contains(neighbor)) {
+                        openSet.remove(neighbor);
                     }
+                    openSet.add(neighbor);
                 }
             }
         }
-        if (!prev.containsKey(destination)) return path; // no path
-        GridPosition cur = destination;
-        while (cur != null) { path.addFirst(cur); cur = prev.get(cur); }
+
+        // No path found
         return path;
     }
 
@@ -55,5 +84,11 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
             }
         }
         return null;
+    }
+
+    // Manhattan distance heuristic suitable for 4-directional grid movement
+    private int heuristic(GridPosition a, GridPosition b) {
+        if (a == null || b == null) return Integer.MAX_VALUE / 4;
+        return Math.abs(a.getX() - b.getX()) + Math.abs(a.getY() - b.getY());
     }
 }

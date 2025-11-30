@@ -45,7 +45,27 @@ public class ArenaService {
      */
     public ArenaLayout createDefaultLayout() {
         ArenaLayout layout = new ArenaLayout("Default Arena");
-        // No default bridges
+        // Add a central 2x2 bridge across the river (y = 15,16)
+        int midXStart = Math.max(0, (Arena.WIDTH / 2) - 1);
+        layout.addBridgePosition(midXStart, 15);
+        layout.addBridgePosition(midXStart + 1, 15);
+        layout.addBridgePosition(midXStart, 16);
+        layout.addBridgePosition(midXStart + 1, 16);
+
+        // Place two Princess towers on player's side (bottom half), 3x3 each
+        // Left princess
+        int princessLeftX = 2;
+        int princessY = Arena.HEIGHT - 6; // leave margin from bottom
+        layout.addPrincessTowerPosition(princessLeftX, princessY);
+        // Right princess
+        int princessRightX = Arena.WIDTH - 5; // 3x3 top-left fits within width
+        layout.addPrincessTowerPosition(princessRightX, princessY);
+
+        // Place one King tower centered at bottom, 4x4
+        int kingX = (Arena.WIDTH / 2) - 2; // top-left of 4x4
+        int kingY = Arena.HEIGHT - 6; // align roughly with princess towers
+        layout.setKingTowerPosition(kingX, kingY);
+
         return layout;
     }
 
