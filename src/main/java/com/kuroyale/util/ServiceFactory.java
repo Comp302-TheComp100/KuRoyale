@@ -71,3 +71,4 @@ public class ServiceFactory {
     //Resets the singleton instance
     static void reset() {instance = null;}
 }
+

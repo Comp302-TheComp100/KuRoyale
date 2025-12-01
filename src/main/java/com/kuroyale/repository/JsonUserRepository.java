@@ -7,26 +7,29 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.awt.Point;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.kuroyale.model.ArenaLayout;
+import com.kuroyale.model.GridPosition;
 import com.kuroyale.model.User;
 
 /**
  * JSON-based implementation of UserRepository
  * Handles persistence of User objects to JSON file
  * Follows Pure Fabrication - created to handle persistence concerns
- * Follows Low Coupling - separated from business logic*/
+ * Follows Low Coupling - separated from business logic
+ */
 public class JsonUserRepository implements UserRepository {
 
     private static final String DATA_DIR = System.getProperty("user.home") + File.separator + ".kuroyale";
     private static final String USERS_FILE = DATA_DIR + File.separator + "users.json";
 
-    //Constructor ensures data directory exists
-    public JsonUserRepository() {ensureDataDirectoryExists();}
+    // Constructor ensures data directory exists
+    public JsonUserRepository() {
+        ensureDataDirectoryExists();
+    }
 
     @Override
     public User findByUsername(String username) throws IOException {
@@ -111,6 +114,21 @@ public class JsonUserRepository implements UserRepository {
                     }
                 }
 
+                // Load Princess tower positions
+                if (arenaJson.has("princessTowers")) {
+                    JSONArray towersArray = arenaJson.getJSONArray("princessTowers");
+                    for (int j = 0; j < towersArray.length(); j++) {
+                        JSONObject towerPos = towersArray.getJSONObject(j);
+                        layout.addPrincessTowerPosition(towerPos.getInt("x"), towerPos.getInt("y"));
+                    }
+                }
+
+                // Load King tower position
+                if (arenaJson.has("kingTower")) {
+                    JSONObject kingTower = arenaJson.getJSONObject("kingTower");
+                    layout.setKingTowerPosition(kingTower.getInt("x"), kingTower.getInt("y"));
+                }
+
                 user.setArenaLayout(layout);
             }
 
@@ -125,7 +143,7 @@ public class JsonUserRepository implements UserRepository {
         return findByUsername(username) != null;
     }
 
-    //Saves all users to the JSON file
+    // Saves all users to the JSON file
     private void saveAll(List<User> users) throws IOException {
         ensureDataDirectoryExists();
 
@@ -151,13 +169,31 @@ public class JsonUserRepository implements UserRepository {
 
                 // Save bridge positions
                 JSONArray bridgesArray = new JSONArray();
-                for (Point bridge : layout.getBridgePositions()) {
+                for (GridPosition bridge : layout.getBridgePositions()) {
                     JSONObject bridgePos = new JSONObject();
-                    bridgePos.put("x", bridge.x);
-                    bridgePos.put("y", bridge.y);
+                    bridgePos.put("x", bridge.getX());
+                    bridgePos.put("y", bridge.getY());
                     bridgesArray.put(bridgePos);
                 }
                 arenaJson.put("bridgePositions", bridgesArray);
+
+                // Save Princess tower positions
+                JSONArray princessArray = new JSONArray();
+                for (GridPosition tower : layout.getPrincessTowerPositions()) {
+                    JSONObject towerPos = new JSONObject();
+                    towerPos.put("x", tower.getX());
+                    towerPos.put("y", tower.getY());
+                    princessArray.put(towerPos);
+                }
+                arenaJson.put("princessTowers", princessArray);
+
+                // Save King tower position
+                if (layout.getKingTowerPosition() != null) {
+                    JSONObject kingTower = new JSONObject();
+                    kingTower.put("x", layout.getKingTowerPosition().getX());
+                    kingTower.put("y", layout.getKingTowerPosition().getY());
+                    arenaJson.put("kingTower", kingTower);
+                }
 
                 jsonUser.put("arenaLayout", arenaJson);
             }
@@ -171,7 +207,7 @@ public class JsonUserRepository implements UserRepository {
         }
     }
 
-    //Ensures the data directory exists
+    // Ensures the data directory exists
     private void ensureDataDirectoryExists() {
         File dataDir = new File(DATA_DIR);
         if (!dataDir.exists()) {
@@ -179,3 +215,4 @@ public class JsonUserRepository implements UserRepository {
         }
     }
 }
+

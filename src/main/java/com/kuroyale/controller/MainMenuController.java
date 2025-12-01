@@ -1,8 +1,13 @@
 package com.kuroyale.controller;
 
 import java.io.IOException;
+import java.util.List;
 
+import com.kuroyale.model.User;
+import com.kuroyale.service.AuthenticationService;
+import com.kuroyale.service.GameStartValidator;
 import com.kuroyale.util.AudioManager;
+import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.SoundEffectUtil;
 
 import javafx.fxml.FXML;
@@ -45,7 +50,7 @@ public class MainMenuController {
         playMainMenuMusic();
     }
 
-    //Initialize styles after FXML is loaded
+    // Initialize styles after FXML is loaded
     private void initializeStyles() {
         // Apply CSS classes
         root.getStyleClass().add("main-menu-background");
@@ -65,12 +70,22 @@ public class MainMenuController {
         addMenuButtonHoverEffects(settingsButton);
     }
 
-    //Add programmatic hover effects for menu buttons (scale transforms)
+    // Add programmatic hover effects for menu buttons (scale transforms)
     private void addMenuButtonHoverEffects(Button button) {
-        button.setOnMouseEntered(e -> {button.setScaleX(1.05);button.setScaleY(1.05);});
-        button.setOnMouseExited(e -> {button.setScaleX(1.0);button.setScaleY(1.0);});
-        button.setOnMousePressed(e -> {button.setTranslateY(2);});
-        button.setOnMouseReleased(e -> {button.setTranslateY(0);});
+        button.setOnMouseEntered(e -> {
+            button.setScaleX(1.05);
+            button.setScaleY(1.05);
+        });
+        button.setOnMouseExited(e -> {
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+        });
+        button.setOnMousePressed(e -> {
+            button.setTranslateY(2);
+        });
+        button.setOnMouseReleased(e -> {
+            button.setTranslateY(0);
+        });
     }
 
     @FXML
@@ -96,11 +111,44 @@ public class MainMenuController {
     @FXML
     private void handleStartMatch() {
         SoundEffectUtil.playButtonClick();
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Coming Soon");
-        alert.setHeaderText("Start Match");
-        alert.setContentText("This feature will be available soon!");
-        alert.showAndWait();
+
+        // Get current user and validate game start conditions
+        AuthenticationService authService = ServiceFactory.getInstance().getAuthenticationService();
+        User currentUser = authService.getCurrentUser();
+
+        if (currentUser == null) {
+            showError("You must be logged in to start a match.");
+            return;
+        }
+
+        // Validate game start conditions
+        GameStartValidator validator = new GameStartValidator();
+        List<String> validationErrors = validator.validateGameStart(currentUser);
+
+        if (!validationErrors.isEmpty()) {
+            // Build error message from all validation errors
+            StringBuilder errorMessage = new StringBuilder("Cannot start match. Please fix the following issues:\n\n");
+            for (String error : validationErrors) {
+                errorMessage.append("• ").append(error).append("\n");
+            }
+            showError(errorMessage.toString());
+            return;
+        }
+
+        // All validations passed, proceed to battle
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/battle.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) startMatchButton.getScene().getWindow();
+            Scene scene = new Scene(root, 1280, 720);
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setTitle("KU Royale - Battle");
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Battle: " + e.getMessage());
+        }
     }
 
     @FXML
@@ -146,7 +194,7 @@ public class MainMenuController {
         alert.showAndWait();
     }
 
-    //Plays the main menu music in a loop
+    // Plays the main menu music in a loop
     private void playMainMenuMusic() {
         try {
             // Only create and start music if it's not already playing

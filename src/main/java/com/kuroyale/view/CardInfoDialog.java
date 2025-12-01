@@ -145,6 +145,9 @@ public class CardInfoDialog extends StackPane {
         if (card.getRange() > 0) {addStat(statsBox, "Range", card.getRange() + " tiles");}
         if (card.getSpeed() != SpeedType.NONE) {addStat(statsBox, "Speed", formatSpeed(card.getSpeed().toString()));}
         addStat(statsBox, "Target", card.getTarget().toString());
+        if (card.getType() == com.kuroyale.model.CardType.TROOP) {
+            addStat(statsBox, "Unit Type", card.isAirUnit() ? "Air" : "Ground");
+        }
         if (card.isAreaEffect()) {addStat(statsBox, "Area Effect", "Yes");}
         if (card.getCount() > 1) {addStat(statsBox, "Count", card.getCount() + "x");}
         if (card.getLifetime() > 0) {addStat(statsBox, "Lifetime", card.getLifetime() + "s");}

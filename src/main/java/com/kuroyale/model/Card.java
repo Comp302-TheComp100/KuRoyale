@@ -11,13 +11,18 @@ public class Card {
     private final double range;
     private final SpeedType speed;
     private final TargetType target;
+    // Indicates whether the unit itself is airborne (flies over terrain)
+    private final boolean airUnit;
     private final boolean areaEffect;
     private final String description;
-    private final int count; // For swarm troops (e.g., Skeletons spawn 4)
+    private final int count; // For swarm troops
     private final int lifetime; // For buildings
+    // Optional footprint for buildings (tiles). Defaults to 3x3 if unset.
+    private int footprintWidthTiles = 3;
+    private int footprintHeightTiles = 3;
 
     public Card(String name, int cost, CardType type, int hp, int damage, double hitSpeed,
-            double range, SpeedType speed, TargetType target, boolean areaEffect,
+            double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
             String description, int count, int lifetime) {
         this.name = name;
         this.cost = cost;
@@ -28,6 +33,7 @@ public class Card {
         this.range = range;
         this.speed = speed;
         this.target = target;
+        this.airUnit = airUnit;
         this.areaEffect = areaEffect;
         this.description = description;
         this.count = count;
@@ -35,44 +41,29 @@ public class Card {
     }
 
     // Getters
-    public String getName() {
-        return name;
-    }
-    public int getCost() {
-        return cost;
-    }
-    public CardType getType() {
-        return type;
-    }
-    public int getHp() {
-        return hp;
-    }
-    public int getDamage() {
-        return damage;
-    }
-    public double getHitSpeed() {
-        return hitSpeed;
-    }
-    public double getRange() {
-        return range;
-    }
-    public SpeedType getSpeed() {
-        return speed;
-    }
-    public TargetType getTarget() {
-        return target;
-    }
-    public boolean isAreaEffect() {
-        return areaEffect;
-    }
-    public String getDescription() {
-        return description;
-    }
-    public int getCount() {
-        return count;
-    }
+    public String getName() {return name;}
+    public int getCost() {return cost;}
+    public CardType getType() {return type;}
+    public int getHp() {return hp;}
+    public int getDamage() {return damage;}
+    public double getHitSpeed() {return hitSpeed;}
+    public double getRange() {return range;}
+    public SpeedType getSpeed() {return speed;}
+    public TargetType getTarget() {return target;}
+    public boolean isAirUnit() {return airUnit;}
+    public boolean isAreaEffect() {return areaEffect;}
+    public String getDescription() {return description;}
+    public int getCount() {return count;}
     public int getLifetime() {
         return lifetime;
+    }
+
+    // Building footprint accessors (no-op for troops/spells)
+    public int getFootprintWidthTiles() { return footprintWidthTiles; }
+    public int getFootprintHeightTiles() { return footprintHeightTiles; }
+    public void setFootprintTiles(int width, int height) {
+        if (width > 0) this.footprintWidthTiles = width;
+        if (height > 0) this.footprintHeightTiles = height;
     }
 
     public String getImagePath() {
@@ -97,7 +88,6 @@ public class Card {
         Card card = (Card) obj;
         return name.equals(card.name);
     }
-
     @Override
     public int hashCode() {return name.hashCode();}
 }
