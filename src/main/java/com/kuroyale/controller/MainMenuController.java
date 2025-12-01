@@ -37,6 +37,8 @@ public class MainMenuController {
     @FXML
     private Button startMatchButton;
     @FXML
+    private Button resumeGameButton;
+    @FXML
     private Button arenaDesignButton;
     @FXML
     private Button settingsButton;
@@ -60,12 +62,14 @@ public class MainMenuController {
         }
         deckBuilderButton.getStyleClass().add("menu-button");
         startMatchButton.getStyleClass().add("menu-button");
+        resumeGameButton.getStyleClass().add("menu-button");
         arenaDesignButton.getStyleClass().add("menu-button");
         settingsButton.getStyleClass().add("menu-button");
 
         // Add programmatic hover effects for scale transforms
         addMenuButtonHoverEffects(deckBuilderButton);
         addMenuButtonHoverEffects(startMatchButton);
+        addMenuButtonHoverEffects(resumeGameButton);
         addMenuButtonHoverEffects(arenaDesignButton);
         addMenuButtonHoverEffects(settingsButton);
     }
@@ -109,6 +113,24 @@ public class MainMenuController {
     }
 
     @FXML
+    private void handleResumeGame() {
+        SoundEffectUtil.playButtonClick();
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/saved-games.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) resumeGameButton.getScene().getWindow();
+            Scene scene = new Scene(root, 1280, 720);
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setTitle("KU Royale - Saved Games");
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Saved Games: " + e.getMessage());
+        }
+    }
+
+    @FXML
     private void handleStartMatch() {
         SoundEffectUtil.playButtonClick();
 
@@ -139,6 +161,10 @@ public class MainMenuController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/battle.fxml"));
             Parent root = loader.load();
+            
+            // Get the controller and start a NEW game
+            BattleController battleController = loader.getController();
+            battleController.startGame();
 
             Stage stage = (Stage) startMatchButton.getScene().getWindow();
             Scene scene = new Scene(root, 1280, 720);

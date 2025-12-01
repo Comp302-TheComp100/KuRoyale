@@ -40,6 +40,10 @@ public class Tower {
             this.currentHealth = 0;
         }
     }
+    
+    public void setCurrentHealth(double health) {
+        this.currentHealth = Math.max(0, Math.min(health, maxHealth));
+    }
     // Getters
     public double getHealthPercentage() {
         return currentHealth / maxHealth;

@@ -1,12 +1,14 @@
 package com.kuroyale.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /*Represents the persistent configuration of an arena.
  * Information Expert: Knows the layout configuration (bridges, towers, etc.).
  */
-public class ArenaLayout {
+public class ArenaLayout implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String name;
     private List<GridPosition> bridgePositions;
     private List<GridPosition> princessTowerPositions; // User's Princess towers (max 2)

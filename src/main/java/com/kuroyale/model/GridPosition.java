@@ -1,5 +1,6 @@
 package com.kuroyale.model;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /*Immutable value object representing a grid coordinate (x, y) in the arena.
@@ -8,7 +9,8 @@ import java.util.Objects;
  * - x ranges from 0 to 17 (18 columns)
  * - y ranges from 0 to 31 (32 rows)
  * - Origin (0, 0) is at the top-left corner*/
-public class GridPosition {
+public class GridPosition implements Serializable {
+    private static final long serialVersionUID = 1L;
     public static final int MIN_X = 0;
     public static final int MAX_X = Arena.WIDTH - 1;
     public static final int MIN_Y = 0;

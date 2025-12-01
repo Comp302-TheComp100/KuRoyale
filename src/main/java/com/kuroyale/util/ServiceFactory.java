@@ -6,6 +6,7 @@ import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.CardCatalog;
 import com.kuroyale.service.DeckManagementService;
 import com.kuroyale.service.ArenaService;
+import com.kuroyale.service.GameSaveService;
 
 /**
  * Service Factory for managing service instances and dependencies
@@ -22,6 +23,7 @@ public class ServiceFactory {
     private final AuthenticationService authenticationService;
     private final DeckManagementService deckManagementService;
     private final ArenaService arenaService;
+    private final GameSaveService gameSaveService;
 
     /**
      * Private constructor to enforce singleton pattern
@@ -38,6 +40,7 @@ public class ServiceFactory {
         this.authenticationService = new AuthenticationService(userRepository);
         this.deckManagementService = new DeckManagementService(userRepository, cardCatalog);
         this.arenaService = new ArenaService(userRepository);
+        this.gameSaveService = new GameSaveService();
     }
 
     //Gets the singleton instance of ServiceFactory
@@ -67,6 +70,9 @@ public class ServiceFactory {
 
     //Gets the ArenaService instance
     public ArenaService getArenaService() {return arenaService;}
+
+    //Gets the GameSaveService instance
+    public GameSaveService getGameSaveService() {return gameSaveService;}
 
     //Resets the singleton instance
     static void reset() {instance = null;}

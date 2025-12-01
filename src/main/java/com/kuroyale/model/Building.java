@@ -8,6 +8,7 @@ public class Building {
     private double maxHealth;
     private double currentHealth;
     private final String imagePath; // optional image path from card
+    private String cardName; // Store the card name for save/load functionality
     // Lifetime tracking for time-based depreciation
     private final int lifetimeSeconds; // Total lifetime in seconds (0 = infinite)
     private double remainingLifetime; // Remaining lifetime in seconds
@@ -44,10 +45,19 @@ public class Building {
     public void configureCombatFromCard(Card card) {
         if (card == null)
             return;
+        this.cardName = card.getName();
         this.damage = card.getDamage();
         this.hitSpeedSeconds = card.getHitSpeed();
         this.rangeTiles = (int) Math.round(card.getRange());
         this.targetType = card.getTarget();
+    }
+    
+    public String getCardName() {
+        return cardName;
+    }
+    
+    public void setCardName(String cardName) {
+        this.cardName = cardName;
     }
 
     public GridPosition getPosition() {

@@ -30,6 +30,7 @@
                         <!-- HandView added dynamically -->
                     </VBox>
                     
+                    <Button text="Pause" onAction="#handlePause" styleClass="menu-button-small"/>
                     <Button text="Exit Battle" onAction="#handleExit" styleClass="menu-button-small"/>
                 </VBox>
             </left>
@@ -46,10 +47,14 @@
         </BorderPane>
     </AnchorPane>
     
-    <!-- Overlay for Game Over, etc. -->
+    <!-- Overlay for Game Over, Pause Menu, etc. -->
     <VBox fx:id="overlayContainer" alignment="CENTER" visible="false" style="-fx-background-color: rgba(0,0,0,0.7);">
         <Label text="GAME OVER" style="-fx-text-fill: white; -fx-font-size: 48px; -fx-font-weight: bold;"/>
         <Button text="Back to Menu" onAction="#handleExit" styleClass="menu-button"/>
+    </VBox>
+    
+    <!-- Pause Menu Overlay -->
+    <VBox fx:id="pauseMenuContainer" alignment="CENTER" visible="false" style="-fx-background-color: rgba(0,0,0,0.8);">
     </VBox>
     
 </StackPane>

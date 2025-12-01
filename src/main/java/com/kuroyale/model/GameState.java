@@ -45,6 +45,73 @@ public class GameState {
         this.activeBuildings = new ArrayList<>();
         this.activeSpellEffects = new ArrayList<>();
     }
+    
+    /**
+     * Restores game state from saved data
+     */
+    public void restoreFromSaved(double gameTime, boolean isDoubleElixir, int playerScore, int botScore,
+                                 double playerElixir, double botElixir) {
+        this.gameTime = gameTime;
+        this.isDoubleElixir = isDoubleElixir;
+        this.playerScore = playerScore;
+        this.botScore = botScore;
+        
+        // Restore elixir
+        this.playerElixir.setCurrentElixir(playerElixir);
+        this.botElixir.setCurrentElixir(botElixir);
+        
+        if (isDoubleElixir) {
+            this.playerElixir.setDoubleElixir(true);
+            this.botElixir.setDoubleElixir(true);
+        }
+    }
+    
+    /**
+     * Restores tower health from saved data
+     */
+    public void restoreTowerHealth(SavedGameState.SavedTower savedTower) {
+        // Find the matching tower in the arena
+        java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
+        for (GridCell cell : arena.getAllCells()) {
+            TileType tt = cell.getTileType();
+            boolean isTowerTile = tt == TileType.PRINCESS_TOWER_USER || 
+                                 tt == TileType.PRINCESS_TOWER_COMPUTER ||
+                                 tt == TileType.KING_TOWER_USER || 
+                                 tt == TileType.KING_TOWER_COMPUTER;
+            if (!isTowerTile) continue;
+            
+            Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
+            if (tower == null) continue;
+            
+            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
+        }
+        
+        // Match saved tower to actual tower by position and type
+        for (java.util.Map.Entry<Tower, java.util.List<GridCell>> entry : groups.entrySet()) {
+            Tower tower = entry.getKey();
+            java.util.List<GridCell> cells = entry.getValue();
+            
+            if (cells.isEmpty()) continue;
+            
+            // Get tower position (top-left)
+            int minX = cells.stream().mapToInt(c -> c.getPosition().getX()).min().orElse(0);
+            int minY = cells.stream().mapToInt(c -> c.getPosition().getY()).min().orElse(0);
+            
+            // Check if player side matches
+            TileType firstTileType = cells.get(0).getTileType();
+            boolean isPlayerSide = firstTileType == TileType.PRINCESS_TOWER_USER || 
+                                  firstTileType == TileType.KING_TOWER_USER;
+            
+            // Check if type and position match
+            if (tower.getType().name().equals(savedTower.getTowerType()) &&
+                isPlayerSide == savedTower.isPlayerSide() &&
+                minX == savedTower.getGridX() &&
+                minY == savedTower.getGridY()) {
+                tower.setCurrentHealth(savedTower.getCurrentHealth());
+                break;
+            }
+        }
+    }
 
     public void update(double deltaTime) {
         if (gameTime > 0) {

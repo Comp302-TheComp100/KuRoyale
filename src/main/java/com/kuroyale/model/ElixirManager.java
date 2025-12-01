@@ -52,4 +52,9 @@ public class ElixirManager {
     public int getCurrentElixirInt() {return (int) currentElixir;}
 
     public double getCurrentElixir() {return currentElixir;}
+    
+    //Sets the current elixir (used for loading saved games)
+    public void setCurrentElixir(double elixir) {
+        this.currentElixir = Math.max(0, Math.min(elixir, MAX_ELIXIR));
+    }
 }
