@@ -10,7 +10,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import javafx.geometry.Point2D;
 
 /**
  * Renders the battle arena and placed units.
@@ -18,10 +17,16 @@ import javafx.geometry.Point2D;
 public class BattleArenaView extends javafx.scene.layout.BorderPane {
     private final GridPane grid;
     private final Pane unitLayer;
+    private final Pane arenaPane;
     private final GameState gameState;
     private final javafx.scene.control.Label timerLabel;
     private final javafx.scene.control.Label scoreLabel;
     private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
+    
+    // Track hovered tile for highlighting
+    private int currentHoveredTileX = -1;
+    private int currentHoveredTileY = -1;
+    private javafx.scene.Node currentHoveredOverlay = null;
 
     private static final int TILE_SIZE = 18; // Matches ArenaDesignController
 
@@ -83,7 +88,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         // placement
         unitLayer.setMouseTransparent(true);
 
-        Pane arenaPane = new Pane(grid, unitLayer);
+        this.arenaPane = new Pane(grid, unitLayer);
         // Set preferred size to match grid size
         arenaPane.setPrefSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
 
@@ -94,10 +99,26 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         // Handle clicks directly on the arena pane to get correct local coordinates
         arenaPane.setOnMouseClicked(e -> {
             if (onGridClick != null) {
-                int tileX = (int) (e.getX() / TILE_SIZE);
-                int tileY = (int) (e.getY() / TILE_SIZE);
-                onGridClick.accept(tileX, tileY);
+                int[] coords = calculateTileCoordinates(e.getX(), e.getY());
+                if (coords != null) {
+                    onGridClick.accept(coords[0], coords[1]);
+                }
             }
+        });
+        
+        // Handle mouse movement for hover highlighting
+        arenaPane.setOnMouseMoved(e -> {
+            int[] coords = calculateTileCoordinates(e.getX(), e.getY());
+            if (coords != null) {
+                highlightHoveredTile(coords[0], coords[1]);
+            } else {
+                clearHoverHighlight();
+            }
+        });
+        
+        // Clear hover highlight when mouse leaves arena
+        arenaPane.setOnMouseExited(e -> {
+            clearHoverHighlight();
         });
 
         StackPane centerContainer = new StackPane(arenaPane);
@@ -174,10 +195,14 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     private final java.util.Map<com.kuroyale.model.Troop, javafx.geometry.Point2D> lastTroopPositions = new java.util.HashMap<>();
     // Track active troop visuals to prevent recreation (fixes animation loop)
     private final java.util.Map<com.kuroyale.model.Troop, javafx.scene.Node> activeTroopVisuals = new java.util.HashMap<>();
+    // Track active building visuals to prevent duplication
+    private final java.util.Map<com.kuroyale.model.Building, javafx.scene.Node> activeBuildingVisuals = new java.util.HashMap<>();
     // Track active projectiles to prevent trails
     private final java.util.Map<com.kuroyale.model.Troop, javafx.scene.Node> activeProjectiles = new java.util.HashMap<>();
     private final java.util.Map<com.kuroyale.model.Tower, javafx.scene.Node> activeTowerProjectiles = new java.util.HashMap<>();
     private final java.util.Map<com.kuroyale.model.Building, javafx.scene.Node> activeBuildingProjectiles = new java.util.HashMap<>();
+    // Track active spell effect visuals for cleanup
+    private final java.util.Map<com.kuroyale.model.GameState.SpellEffect, javafx.scene.Node> activeSpellVisuals = new java.util.HashMap<>();
     // Track last troop state to detect animation changes
     private final java.util.Map<com.kuroyale.model.Troop, String> lastTroopState = new java.util.HashMap<>();
 
@@ -401,17 +426,43 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     // Clamp progress to [0, 1] just in case
                     progress = Math.max(0.0, Math.min(1.0, progress));
 
-                    double startX = current.getX() * TILE_SIZE;
-                    double startY = current.getY() * TILE_SIZE;
-                    double endX = next.getX() * TILE_SIZE;
-                    double endY = next.getY() * TILE_SIZE;
+                    // Use actual cell bounds instead of arithmetic to avoid cumulative offset
+                    javafx.scene.Node currentCell = getGridCell(current.getX(), current.getY());
+                    javafx.scene.Node nextCell = getGridCell(next.getX(), next.getY());
 
-                    visualX = startX + (endX - startX) * progress;
-                    visualY = startY + (endY - startY) * progress;
+                    if (currentCell != null && nextCell != null) {
+                        javafx.geometry.Bounds currentBounds = currentCell.getBoundsInParent();
+                        javafx.geometry.Bounds nextBounds = nextCell.getBoundsInParent();
+
+                        double startX = currentBounds.getMinX();
+                        double startY = currentBounds.getMinY();
+                        double endX = nextBounds.getMinX();
+                        double endY = nextBounds.getMinY();
+
+                        visualX = startX + (endX - startX) * progress;
+                        visualY = startY + (endY - startY) * progress;
+                    } else {
+                        // Fallback to arithmetic if cells not found
+                        double startX = current.getX() * TILE_SIZE;
+                        double startY = current.getY() * TILE_SIZE;
+                        double endX = next.getX() * TILE_SIZE;
+                        double endY = next.getY() * TILE_SIZE;
+
+                        visualX = startX + (endX - startX) * progress;
+                        visualY = startY + (endY - startY) * progress;
+                    }
                 } else {
-                    // Not moving or no path, snap to grid
-                    visualX = troop.getPosition().getX() * TILE_SIZE;
-                    visualY = troop.getPosition().getY() * TILE_SIZE;
+                    // Not moving or no path, snap to grid using actual cell bounds
+                    javafx.scene.Node cell = getGridCell(troop.getPosition().getX(), troop.getPosition().getY());
+                    if (cell != null) {
+                        javafx.geometry.Bounds bounds = cell.getBoundsInParent();
+                        visualX = bounds.getMinX();
+                        visualY = bounds.getMinY();
+                    } else {
+                        // Fallback to arithmetic
+                        visualX = troop.getPosition().getX() * TILE_SIZE;
+                        visualY = troop.getPosition().getY() * TILE_SIZE;
+                    }
                 }
 
                 // Update last known position for reference (optional now, but good for debug)
@@ -609,28 +660,63 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             }
         }
 
-        // Render active buildings onto unitLayer so they disappear when removed
+        // Render active buildings with caching to prevent duplication
         java.util.List<com.kuroyale.model.Building> buildings = gameState.getActiveBuildings();
+        java.util.Set<com.kuroyale.model.Building> currentBuildings = new java.util.HashSet<>(buildings);
+
+        // Cleanup visuals for destroyed buildings
+        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.Building, javafx.scene.Node>> buildingIt = activeBuildingVisuals
+                .entrySet().iterator();
+        while (buildingIt.hasNext()) {
+            java.util.Map.Entry<com.kuroyale.model.Building, javafx.scene.Node> entry = buildingIt.next();
+            com.kuroyale.model.Building b = entry.getKey();
+            if (!currentBuildings.contains(b) || !b.isAlive()) {
+                // Building is destroyed or gone
+                unitLayer.getChildren().remove(entry.getValue());
+                buildingIt.remove();
+                // Also remove associated projectile
+                if (activeBuildingProjectiles.containsKey(b)) {
+                    unitLayer.getChildren().remove(activeBuildingProjectiles.get(b));
+                    activeBuildingProjectiles.remove(b);
+                }
+            }
+        }
+
         for (com.kuroyale.model.Building b : buildings) {
             int x = b.getPosition().getX();
             int y = b.getPosition().getY();
             int w = Math.max(1, b.getWidth());
             int h = Math.max(1, b.getHeight());
-            StackPane buildingStack = new StackPane();
-            buildingStack.setPrefSize(TILE_SIZE * w, TILE_SIZE * h);
 
-            try {
-                String imgPath = b.getImagePath();
-                java.io.InputStream is = imgPath != null ? getClass().getResourceAsStream(imgPath) : null;
-                if (is != null) {
-                    javafx.scene.image.Image img = new javafx.scene.image.Image(is);
-                    javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView(img);
-                    imageView.setFitWidth(TILE_SIZE * w);
-                    imageView.setFitHeight(TILE_SIZE * h);
-                    imageView.setPreserveRatio(false);
-                    imageView.setSmooth(true);
-                    buildingStack.getChildren().add(imageView);
-                } else {
+            // Check if we already have a visual for this building
+            javafx.scene.Node buildingNode = activeBuildingVisuals.get(b);
+            if (buildingNode == null) {
+                // Create new building visual
+                StackPane buildingStack = new StackPane();
+                buildingStack.setPrefSize(TILE_SIZE * w, TILE_SIZE * h);
+
+                try {
+                    String imgPath = b.getImagePath();
+                    java.io.InputStream is = imgPath != null ? getClass().getResourceAsStream(imgPath) : null;
+                    if (is != null) {
+                        javafx.scene.image.Image img = new javafx.scene.image.Image(is);
+                        javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView(img);
+                        imageView.setFitWidth(TILE_SIZE * w);
+                        imageView.setFitHeight(TILE_SIZE * h);
+                        imageView.setPreserveRatio(false);
+                        imageView.setSmooth(true);
+                        buildingStack.getChildren().add(imageView);
+                    } else {
+                        javafx.scene.shape.Rectangle fallback = new javafx.scene.shape.Rectangle(TILE_SIZE * w,
+                                TILE_SIZE * h);
+                        fallback.setFill(
+                                b.isPlayerSide() ? javafx.scene.paint.Color.DARKBLUE
+                                        : javafx.scene.paint.Color.DARKRED);
+                        fallback.setStroke(javafx.scene.paint.Color.BLACK);
+                        fallback.setStrokeWidth(0.5);
+                        buildingStack.getChildren().add(fallback);
+                    }
+                } catch (Exception e) {
                     javafx.scene.shape.Rectangle fallback = new javafx.scene.shape.Rectangle(TILE_SIZE * w,
                             TILE_SIZE * h);
                     fallback.setFill(
@@ -639,43 +725,51 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     fallback.setStrokeWidth(0.5);
                     buildingStack.getChildren().add(fallback);
                 }
-            } catch (Exception e) {
-                javafx.scene.shape.Rectangle fallback = new javafx.scene.shape.Rectangle(TILE_SIZE * w, TILE_SIZE * h);
-                fallback.setFill(
-                        b.isPlayerSide() ? javafx.scene.paint.Color.DARKBLUE : javafx.scene.paint.Color.DARKRED);
-                fallback.setStroke(javafx.scene.paint.Color.BLACK);
-                fallback.setStrokeWidth(0.5);
-                buildingStack.getChildren().add(fallback);
+
+                // Health bar (centered at top) - will be updated each frame
+                double maxHp = b.getMaxHealth();
+                double curHp = Math.max(0, b.getCurrentHealth());
+                double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
+                double hbWidth = Math.max(40, TILE_SIZE * w - 6);
+                double hbHeight = 12;
+
+                javafx.scene.shape.Rectangle bg = new javafx.scene.shape.Rectangle(hbWidth, hbHeight);
+                bg.setFill(javafx.scene.paint.Color.DARKBLUE);
+                bg.setStroke(javafx.scene.paint.Color.BLACK);
+                bg.setStrokeWidth(0.5);
+                bg.setId("buildingHpBg_" + b.hashCode());
+
+                javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(hbWidth * pct, hbHeight);
+                fg.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.ROYALBLUE : javafx.scene.paint.Color.CRIMSON);
+                fg.setId("buildingHpFg_" + b.hashCode());
+                StackPane hbPane = new StackPane(bg, fg);
+                hbPane.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                StackPane.setAlignment(hbPane, javafx.geometry.Pos.TOP_CENTER);
+                StackPane.setMargin(hbPane, new javafx.geometry.Insets(2, 0, 0, 0));
+                buildingStack.getChildren().add(hbPane);
+
+                // Position on unitLayer using the top-left cell's bounds
+                javafx.scene.Node topLeftCell = getGridCell(x, y);
+                if (topLeftCell != null) {
+                    javafx.geometry.Bounds bnds = topLeftCell.getBoundsInParent();
+                    buildingStack.setLayoutX(bnds.getMinX());
+                    buildingStack.setLayoutY(bnds.getMinY());
+                }
+                unitLayer.getChildren().add(buildingStack);
+                activeBuildingVisuals.put(b, buildingStack);
+                buildingNode = buildingStack;
+            } else {
+                // Update existing building health bar
+                double maxHp = b.getMaxHealth();
+                double curHp = Math.max(0, b.getCurrentHealth());
+                double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
+                double hbWidth = Math.max(40, TILE_SIZE * w - 6);
+
+                javafx.scene.Node fgNode = buildingNode.lookup("#buildingHpFg_" + b.hashCode());
+                if (fgNode instanceof javafx.scene.shape.Rectangle) {
+                    ((javafx.scene.shape.Rectangle) fgNode).setWidth(hbWidth * pct);
+                }
             }
-
-            // Health bar (centered at top)
-            double maxHp = b.getMaxHealth();
-            double curHp = Math.max(0, b.getCurrentHealth());
-            double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
-            double hbWidth = Math.max(40, TILE_SIZE * w - 6);
-            double hbHeight = 12;
-
-            javafx.scene.shape.Rectangle bg = new javafx.scene.shape.Rectangle(hbWidth, hbHeight);
-            bg.setFill(javafx.scene.paint.Color.DARKBLUE);
-            bg.setStroke(javafx.scene.paint.Color.BLACK);
-            bg.setStrokeWidth(0.5);
-
-            javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(hbWidth * pct, hbHeight);
-            fg.setFill(b.isPlayerSide() ? javafx.scene.paint.Color.ROYALBLUE : javafx.scene.paint.Color.CRIMSON);
-            StackPane hbPane = new StackPane(bg, fg);
-            hbPane.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-            StackPane.setAlignment(hbPane, javafx.geometry.Pos.TOP_CENTER);
-            StackPane.setMargin(hbPane, new javafx.geometry.Insets(2, 0, 0, 0));
-            buildingStack.getChildren().add(hbPane);
-
-            // Position on unitLayer using the top-left cell's bounds
-            javafx.scene.Node topLeftCell = getGridCell(x, y);
-            if (topLeftCell != null) {
-                javafx.geometry.Bounds bnds = topLeftCell.getBoundsInParent();
-                buildingStack.setLayoutX(bnds.getMinX());
-                buildingStack.setLayoutY(bnds.getMinY());
-            }
-            unitLayer.getChildren().add(buildingStack);
         }
 
         // Visual projectiles for towers and buildings (moving dots)
@@ -686,6 +780,34 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         renderSpellEffects();
     }
 
+    /**
+     * Helper method to calculate tile coordinates from mouse position.
+     * Finds which cell actually contains the mouse point to avoid offset issues.
+     * 
+     * @param mouseX Mouse X coordinate relative to arenaPane
+     * @param mouseY Mouse Y coordinate relative to arenaPane
+     * @return Array [tileX, tileY] if valid, null if out of bounds
+     */
+    private int[] calculateTileCoordinates(double mouseX, double mouseY) {
+        // Use arithmetic calculation (same approach that works when no card is selected)
+        // This avoids issues with bounds that include effects when card is selected
+        javafx.geometry.Bounds gridBounds = grid.getBoundsInParent();
+        
+        // Calculate relative position within grid
+        double gridX = mouseX - gridBounds.getMinX();
+        double gridY = mouseY - gridBounds.getMinY();
+        
+        // Calculate tile coordinates using arithmetic (works consistently regardless of effects)
+        int tileX = (int) Math.floor(gridX / TILE_SIZE);
+        int tileY = (int) Math.floor(gridY / TILE_SIZE);
+        
+        // Ensure coordinates are within valid bounds
+        if (tileX >= 0 && tileX < Arena.WIDTH && tileY >= 0 && tileY < Arena.HEIGHT) {
+            return new int[] { tileX, tileY };
+        }
+        return null;
+    }
+    
     /**
      * Helper method to get the grid cell node at the specified grid coordinates.
      */
@@ -750,10 +872,91 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     }
                 } else {
                     // Reset - remove effects
+                    // Note: hover highlight uses border stroke, not effect, so it won't be affected
                     rect.setEffect(null);
                 }
             }
         }
+    }
+
+    /**
+     * Highlights the tile at the specified coordinates to show where the mouse is hovering.
+     * Uses Clash Royale-style overlay with semi-transparent fill and flush border (no gaps).
+     */
+    private void highlightHoveredTile(int tileX, int tileY) {
+        // If hovering over the same tile, no need to update
+        if (currentHoveredTileX == tileX && currentHoveredTileY == tileY) {
+            return;
+        }
+        
+        // Clear previous hover highlight
+        clearHoverHighlight();
+        
+        // Get the cell node for the hovered tile to get its bounds
+        javafx.scene.Node node = getGridCell(tileX, tileY);
+        if (node == null) {
+            return;
+        }
+        
+        // Skip towers (StackPanes) for hover highlight
+        if (node instanceof StackPane) {
+            return;
+        }
+        
+        // Get cell bounds WITHOUT effects (getBoundsInLocal doesn't include effects)
+        // Then convert to parent coordinates to get actual position
+        // This matches how troops are positioned but avoids effect-induced size changes
+        javafx.geometry.Bounds localBounds = node.getBoundsInLocal();
+        
+        // Convert local bounds (0,0 to TILE_SIZE, TILE_SIZE) to parent (arenaPane) coordinates
+        // This gives us the actual cell position without effects
+        javafx.geometry.Point2D topLeft = node.localToParent(0, 0);
+        javafx.geometry.Point2D bottomRight = node.localToParent(TILE_SIZE, TILE_SIZE);
+        
+        // Calculate actual cell dimensions and position without effects
+        double cellX = topLeft.getX();
+        double cellY = topLeft.getY();
+        double cellWidth = bottomRight.getX() - topLeft.getX();
+        double cellHeight = bottomRight.getY() - topLeft.getY();
+        
+        // Use TILE_SIZE for overlay dimensions (not bounds which include effects)
+        // This ensures consistent size regardless of card selection state
+        Rectangle overlay = new Rectangle(TILE_SIZE, TILE_SIZE);
+        
+        // Clash Royale style: semi-transparent cyan fill with bright border
+        overlay.setFill(Color.color(0.0, 0.8, 1.0, 0.25)); // Cyan with 25% opacity
+        overlay.setStroke(Color.CYAN);
+        overlay.setStrokeWidth(2.0);
+        overlay.setStrokeType(javafx.scene.shape.StrokeType.INSIDE); // Stroke inside to avoid gaps
+        
+        // Position overlay using actual cell position (without effects)
+        // This matches how troops are positioned and works regardless of card selection
+        overlay.setLayoutX(cellX);
+        overlay.setLayoutY(cellY);
+        
+        // Make overlay transparent to mouse events so clicks pass through
+        overlay.setMouseTransparent(true);
+        
+        // Add overlay to unitLayer
+        unitLayer.getChildren().add(overlay);
+        
+        // Track current hovered tile
+        currentHoveredTileX = tileX;
+        currentHoveredTileY = tileY;
+        currentHoveredOverlay = overlay;
+    }
+    
+    /**
+     * Clears the hover highlight from the currently hovered tile.
+     */
+    private void clearHoverHighlight() {
+        if (currentHoveredOverlay != null) {
+            unitLayer.getChildren().remove(currentHoveredOverlay);
+            currentHoveredOverlay = null;
+        }
+        
+        currentHoveredTileX = -1;
+        currentHoveredTileY = -1;
     }
 
     public GridPane getGrid() {
@@ -999,9 +1202,31 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
     private void renderSpellEffects() {
         java.util.List<com.kuroyale.model.GameState.SpellEffect> effects = gameState.getActiveSpellEffects();
+        java.util.Set<com.kuroyale.model.GameState.SpellEffect> currentEffects = new java.util.HashSet<>();
+        if (effects != null) {
+            currentEffects.addAll(effects);
+        }
+
+        // Cleanup expired spell visuals
+        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.GameState.SpellEffect, javafx.scene.Node>> spellIt = activeSpellVisuals
+                .entrySet().iterator();
+        while (spellIt.hasNext()) {
+            java.util.Map.Entry<com.kuroyale.model.GameState.SpellEffect, javafx.scene.Node> entry = spellIt.next();
+            if (!currentEffects.contains(entry.getKey())) {
+                // Spell effect expired, remove visual
+                unitLayer.getChildren().remove(entry.getValue());
+                spellIt.remove();
+            }
+        }
+
+        // Create visuals for new spell effects
         if (effects == null || effects.isEmpty())
             return;
         for (com.kuroyale.model.GameState.SpellEffect se : effects) {
+            // Skip if we already have a visual for this effect
+            if (activeSpellVisuals.containsKey(se))
+                continue;
+
             com.kuroyale.model.GridPosition c = se.center;
             if (c == null)
                 continue;
@@ -1018,6 +1243,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             aoe.setStroke(javafx.scene.paint.Color.color(1, 1, 1, 0.6));
             aoe.setStrokeWidth(1.2);
             unitLayer.getChildren().add(aoe);
+            activeSpellVisuals.put(se, aoe);
         }
     }
 

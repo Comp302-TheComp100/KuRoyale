@@ -27,6 +27,9 @@ public class GameState {
     private boolean isDoubleElixir = false;
     private boolean isGameOver = false;
     private boolean playerWon = false;
+    
+    // Track towers that have already been scored to avoid double-counting
+    private java.util.Set<Tower> scoredTowers = new java.util.HashSet<>();
 
     public GameState(Deck playerDeck, Deck botDeck, Arena arena) {
         this.playerHand = new Hand(playerDeck);
@@ -60,6 +63,7 @@ public class GameState {
                     isGameOver = true;
                 }
             }
+
         }
 
         playerElixir.update(deltaTime);
@@ -76,6 +80,13 @@ public class GameState {
         // Update placed cards (lifetimes, movement, etc. - future work)
         troopMovementService.updateTroops(deltaTime, this, activeTroops);
 
+        // Update buildings (lifetime depreciation)
+        for (Building b : activeBuildings) {
+            if (b.isAlive()) {
+                b.update(deltaTime);
+            }
+        }
+
         updateBuildingsCombat(deltaTime);
         updateTowersCombat(deltaTime);
         updateSpellEffects(deltaTime);
@@ -90,6 +101,11 @@ public class GameState {
                     it.remove();
                 }
             }
+        }
+
+        // Check for destroyed towers and update scores (must be before removeDeadTowers)
+        if (!isGameOver) {
+            checkAndScoreDestroyedTowers();
         }
 
         // Cleanup destroyed towers
@@ -110,13 +126,23 @@ public class GameState {
         }
     }
 
-    public boolean isDoubleElixir() {return isDoubleElixir;}
-    public boolean isGameOver() {return isGameOver;}
-    public boolean isPlayerWinner() {return playerWon;}
+    public boolean isDoubleElixir() {
+        return isDoubleElixir;
+    }
+
+    public boolean isGameOver() {
+        return isGameOver;
+    }
+
+    public boolean isPlayerWinner() {
+        return playerWon;
+    }
 
     public boolean placeCard(boolean isPlayer, int handIndex, int x, int y) {
         // Validate position
-        if (x < 0 || x >= Arena.WIDTH || y < 0 || y >= Arena.HEIGHT) {return false;}
+        if (x < 0 || x >= Arena.WIDTH || y < 0 || y >= Arena.HEIGHT) {
+            return false;
+        }
 
         // Check if card is a spell (can be placed anywhere)
         boolean isSpell = false;
@@ -129,10 +155,14 @@ public class GameState {
         }
 
         // Validate terrain (Grass or Bridge only) - UNLESS it's a spell
-        if (!isSpell && !arena.getCell(x, y).canPlaceUnit()) {return false;}
+        if (!isSpell && !arena.getCell(x, y).canPlaceUnit()) {
+            return false;
+        }
 
         // Validate side (Player can only deploy on bottom half) - UNLESS it's a spell
-        if (!isSpell && isPlayer && y < Arena.HEIGHT / 2) {return false;}
+        if (!isSpell && isPlayer && y < Arena.HEIGHT / 2) {
+            return false;
+        }
 
         if (isPlayer) {
             Card card = pendingCard != null ? pendingCard : playerHand.getCard(handIndex);
@@ -169,7 +199,7 @@ public class GameState {
                     }
                     GridPosition topLeft = GridPosition.tryCreate(x, y);
                     if (topLeft != null) {
-                        Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath());
+                        Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(), card.getLifetime());
                         building.configureCombatFromCard(card);
                         occupyFootprint(building);
                         activeBuildings.add(building);
@@ -185,9 +215,17 @@ public class GameState {
         return false;
     }
 
-    public double getGameTime() {return gameTime;}
-    public int getPlayerScore() {return playerScore;}
-    public int getBotScore() {return botScore;}
+    public double getGameTime() {
+        return gameTime;
+    }
+
+    public int getPlayerScore() {
+        return playerScore;
+    }
+
+    public int getBotScore() {
+        return botScore;
+    }
 
     // Overload for direct card placement (used by Bot)
     public void placeCard(boolean isPlayer, Card card, int x, int y) {
@@ -217,7 +255,7 @@ public class GameState {
             }
             GridPosition topLeft = GridPosition.tryCreate(x, y);
             if (topLeft != null) {
-                Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath());
+                Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(), card.getLifetime());
                 building.configureCombatFromCard(card);
                 occupyFootprint(building);
                 activeBuildings.add(building);
@@ -381,6 +419,75 @@ public class GameState {
         activeTroops.removeIf(t -> !t.isAlive());
     }
 
+    /**
+     * Checks for destroyed towers and updates scores accordingly.
+     * Princess towers: +1 point to the attacker
+     * King towers: Set attacker's score to 3 and end the game
+     */
+    private void checkAndScoreDestroyedTowers() {
+        // Collect unique towers with inferred side and type
+        java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
+        for (GridCell cell : arena.getAllCells()) {
+            TileType tt = cell.getTileType();
+            boolean isTowerTile = tt == TileType.PRINCESS_TOWER_USER || tt == TileType.PRINCESS_TOWER_COMPUTER
+                    || tt == TileType.KING_TOWER_USER || tt == TileType.KING_TOWER_COMPUTER;
+            if (!isTowerTile)
+                continue;
+            Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
+            if (tower == null)
+                continue;
+            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
+        }
+        
+        // Process each unique tower
+        for (java.util.Map.Entry<Tower, java.util.List<GridCell>> entry : groups.entrySet()) {
+            Tower tower = entry.getKey();
+            
+            // Skip if already scored or still alive
+            if (scoredTowers.contains(tower) || tower.getCurrentHealth() > 0)
+                continue;
+            
+            // Determine ownership and type from cells
+            boolean isPlayerTower = false;
+            boolean isKingTower = false;
+            for (GridCell c : entry.getValue()) {
+                TileType tt = c.getTileType();
+                if (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER)
+                    isPlayerTower = true;
+                if (tt == TileType.KING_TOWER_USER || tt == TileType.KING_TOWER_COMPUTER)
+                    isKingTower = true;
+            }
+            
+            // Mark as scored to avoid double-counting
+            scoredTowers.add(tower);
+            
+            // Update scores based on tower type and ownership
+            if (isKingTower) {
+                // King tower destroyed: set score to 3 and end game
+                if (isPlayerTower) {
+                    // Player's king tower destroyed by bot
+                    botScore = 3;
+                    isGameOver = true;
+                    playerWon = false;
+                } else {
+                    // Bot's king tower destroyed by player
+                    playerScore = 3;
+                    isGameOver = true;
+                    playerWon = true;
+                }
+            } else {
+                // Princess tower destroyed: +1 point to attacker
+                if (isPlayerTower) {
+                    // Player's princess tower destroyed by bot
+                    botScore++;
+                } else {
+                    // Bot's princess tower destroyed by player
+                    playerScore++;
+                }
+            }
+        }
+    }
+
     private void updateTowersCombat(double deltaTime) {
         // Collect unique towers with inferred side and footprint size
         java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
@@ -453,17 +560,29 @@ public class GameState {
         activeTroops.removeIf(t -> !t.isAlive());
     }
 
-    public ElixirManager getPlayerElixir() {return playerElixir;}
+    public ElixirManager getPlayerElixir() {
+        return playerElixir;
+    }
 
-    public Arena getArena() {return arena;}
+    public Arena getArena() {
+        return arena;
+    }
 
-    public List<PlacedCard> getPlacedCards() {return placedCards;}
+    public List<PlacedCard> getPlacedCards() {
+        return placedCards;
+    }
 
-    public List<Troop> getActiveTroops() {return activeTroops;}
+    public List<Troop> getActiveTroops() {
+        return activeTroops;
+    }
 
-    public List<Building> getActiveBuildings() {return activeBuildings;}
+    public List<Building> getActiveBuildings() {
+        return activeBuildings;
+    }
 
-    public List<SpellEffect> getActiveSpellEffects() {return activeSpellEffects;}
+    public List<SpellEffect> getActiveSpellEffects() {
+        return activeSpellEffects;
+    }
 
     private void occupyFootprint(Building b) {
         for (int dx = 0; dx < b.getWidth(); dx++) {
