@@ -23,9 +23,11 @@ public class Arena {
         initializeGrid();
     }
 
-    /*Initializes the grid with GridCell objects.
+    /*
+     * Initializes the grid with GridCell objects.
      * Sets up terrain (grass, water, bridges) based on layout.
-     * Places towers and mirrors user's layout for computer side. */
+     * Places towers and mirrors user's layout for computer side.
+     */
     private void initializeGrid() {
         // Initialize all cells as grass by default
         for (int x = 0; x < WIDTH; x++) {
@@ -62,7 +64,8 @@ public class Arena {
                         }
                     }
                 }
-                // Mirroring logic for computer side: The top-left of the mirrored tower should be:
+                // Mirroring logic for computer side: The top-left of the mirrored tower should
+                // be:
                 // x' = x and y' = HEIGHT - 3 - y
                 int mirroredY = HEIGHT - 3 - p.getY();
                 Tower computerTower = new Tower(Tower.TowerType.PRINCESS);
@@ -108,10 +111,12 @@ public class Arena {
         }
     }
 
-    //Checks if the given coordinates are within valid arena bounds.
-    public boolean isValidPosition(int x, int y) {return x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT;}
+    // Checks if the given coordinates are within valid arena bounds.
+    public boolean isValidPosition(int x, int y) {
+        return x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT;
+    }
 
-    //Checks if the given position is within valid arena bounds.
+    // Checks if the given position is within valid arena bounds.
     public boolean isValidPosition(GridPosition position) {
         if (position == null) {
             return false;
@@ -119,7 +124,7 @@ public class Arena {
         return isValidPosition(position.getX(), position.getY());
     }
 
-    //Gets the GridCell at the specified position.
+    // Gets the GridCell at the specified position.
     public GridCell getCell(GridPosition position) {
         if (!isValidPosition(position)) {
             return null;
@@ -127,7 +132,7 @@ public class Arena {
         return grid[position.getX()][position.getY()];
     }
 
-    //Gets the GridCell at the specified coordinates (convenience method).
+    // Gets the GridCell at the specified coordinates (convenience method).
     public GridCell getCell(int x, int y) {
         if (!isValidPosition(x, y)) {
             return null;
@@ -135,13 +140,13 @@ public class Arena {
         return grid[x][y];
     }
 
-    //Checks if a unit can be placed at the specified position.
+    // Checks if a unit can be placed at the specified position.
     public boolean canPlaceUnit(GridPosition position) {
         GridCell cell = getCell(position);
         return cell != null && cell.canPlaceUnit();
     }
 
-    //Places a unit at the specified position.
+    // Places a unit at the specified position.
     public void placeUnit(GridPosition position, Object unit) {
         GridCell cell = getCell(position);
         if (cell == null) {
@@ -150,7 +155,7 @@ public class Arena {
         cell.setOccupant(unit);
     }
 
-    //Removes the unit at the specified position.
+    // Removes the unit at the specified position.
     public void removeUnit(GridPosition position) {
         GridCell cell = getCell(position);
         if (cell != null) {
@@ -158,7 +163,8 @@ public class Arena {
         }
     }
 
-    //Gets all adjacent positions to the specified position (4-directional: up,down, left, right).
+    // Gets all adjacent positions to the specified position (4-directional:
+    // up,down, left, right).
     public List<GridPosition> getAdjacentPositions(GridPosition position) {
         List<GridPosition> adjacent = new ArrayList<>();
         if (position == null) {
@@ -181,7 +187,7 @@ public class Arena {
         return adjacent;
     }
 
-    //Gets all adjacent positions including diagonals (8-directional)
+    // Gets all adjacent positions including diagonals (8-directional)
     public List<GridPosition> getAdjacentPositionsWithDiagonals(GridPosition position) {
         List<GridPosition> adjacent = new ArrayList<>();
         if (position == null) {
@@ -206,7 +212,7 @@ public class Arena {
         return adjacent;
     }
 
-    //Gets all cells in the grid as a flat list.
+    // Gets all cells in the grid as a flat list.
     public List<GridCell> getAllCells() {
         List<GridCell> cells = new ArrayList<>();
         for (int x = 0; x < WIDTH; x++) {
@@ -217,14 +223,14 @@ public class Arena {
         return cells;
     }
 
-    //Gets all cells that are currently occupied by units.
+    // Gets all cells that are currently occupied by units.
     public List<GridCell> getOccupiedCells() {
         return getAllCells().stream()
                 .filter(GridCell::isOccupied)
                 .collect(Collectors.toList());
     }
 
-    //Gets all cells within a rectangular region.
+    // Gets all cells within a rectangular region.
     public List<GridCell> getCellsInRegion(GridPosition topLeft, GridPosition bottomRight) {
         List<GridCell> cells = new ArrayList<>();
         if (topLeft == null || bottomRight == null) {
@@ -245,7 +251,7 @@ public class Arena {
         return cells;
     }
 
-    //Gets all cells within a certain distance from a center position.
+    // Gets all cells within a certain distance from a center position.
     public List<GridCell> getCellsInRadius(GridPosition center, int radius) {
         List<GridCell> cells = new ArrayList<>();
         if (center == null || radius < 0) {
@@ -264,17 +270,20 @@ public class Arena {
         return cells;
     }
 
-    //Gets the arena layout.
-    public ArenaLayout getLayout() {return layout;}
+    // Gets the arena layout.
+    public ArenaLayout getLayout() {
+        return layout;
+    }
 
-    //Gets the tower at the specified position.
+    // Gets the tower at the specified position.
     public Tower getTowerAt(int x, int y) {
         if (!isValidPosition(x, y))
             return null;
         return towerMap.get(grid[x][y].getPosition());
     }
 
-    //Removes a tower from the arena.Clears the tower from the map and resets the tiles to GRASS
+    // Removes a tower from the arena.Clears the tower from the map and resets the
+    // tiles to GRASS
     public void removeTower(Tower tower) {
         if (tower == null)
             return;
@@ -293,12 +302,13 @@ public class Arena {
             GridCell cell = getCell(pos);
             if (cell != null) {
                 cell.setTileType(TileType.GRASS);
-                // Also ensure no occupant is left if it was the tower itself (though tower is not an occupant in the GridCell, it's a TileType)
+                // Also ensure no occupant is left if it was the tower itself (though tower is
+                // not an occupant in the GridCell, it's a TileType)
             }
         }
     }
 
-    //Removes all towers that have 0 or less health
+    // Removes all towers that have 0 or less health
     public void removeDeadTowers() {
         // Collect dead towers first to avoid concurrent modification
         java.util.Set<Tower> deadTowers = new java.util.HashSet<>();
@@ -313,7 +323,7 @@ public class Arena {
         }
     }
 
-    //Checks if the player's King Tower is alive.
+    // Checks if the player's King Tower is alive.
     public boolean isPlayerKingAlive() {
         for (java.util.Map.Entry<GridPosition, Tower> entry : towerMap.entrySet()) {
             if (entry.getValue().getType() == Tower.TowerType.KING) {
@@ -327,7 +337,7 @@ public class Arena {
         return false;
     }
 
-    //Checks if the bot's King Tower is alive.
+    // Checks if the bot's King Tower is alive.
     public boolean isBotKingAlive() {
         for (java.util.Map.Entry<GridPosition, Tower> entry : towerMap.entrySet()) {
             if (entry.getValue().getType() == Tower.TowerType.KING) {
@@ -339,20 +349,5 @@ public class Arena {
             }
         }
         return false;
-    }
-
-    /** Backward Compatibility Methods
-     * Gets the tile at the specified position (backward compatibility).
-     *
-     * @deprecated Use getCell() instead. This method is kept for backward
-     *             compatibility.
-     */
-    @Deprecated
-    public Tile getTile(int x, int y) {
-        GridCell cell = getCell(x, y);
-        if (cell == null) {
-            return null;
-        }
-        return new Tile(x, y, cell.getTileType());
     }
 }

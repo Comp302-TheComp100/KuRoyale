@@ -134,19 +134,25 @@ public class ArenaDesignController {
         // Pass 1: Render Grid (Ground)
         for (int x = 0; x < com.kuroyale.model.Arena.WIDTH; x++) {
             for (int y = 0; y < com.kuroyale.model.Arena.HEIGHT; y++) {
-                com.kuroyale.model.Tile tile = arena.getTile(x, y);
+                com.kuroyale.model.GridCell cell = arena.getCell(x, y);
                 javafx.scene.shape.Rectangle rect = new javafx.scene.shape.Rectangle(18, 18);
 
                 // For towers, render underlying terrain (grass)
                 // Bridges are rendered as SADDLEBROWN tiles here
-                if (isTower(tile.getType())) {
-                    rect.setFill(javafx.scene.paint.Color.LIGHTGREEN);
+                if (isTower(cell.getTileType())) {
+                    // Use checkered pattern for grass under towers
+                    if ((x + y) % 2 == 0) {
+                        rect.setFill(javafx.scene.paint.Color.rgb(124, 252, 0)); // LawnGreen
+                    } else {
+                        rect.setFill(javafx.scene.paint.Color.rgb(50, 205, 50)); // LimeGreen
+                    }
                 } else {
-                    updateTileStyle(rect, tile.getType());
+                    updateTileStyle(rect, cell.getTileType(), x, y);
                 }
 
-                rect.setStroke(javafx.scene.paint.Color.BLACK);
-                rect.setStrokeWidth(0.5);
+                // Remove borders for seamless appearance
+                rect.setStroke(javafx.scene.paint.Color.TRANSPARENT);
+                rect.setStrokeWidth(0.0);
 
                 // Add interaction
                 final int finalX = x;
@@ -207,7 +213,7 @@ public class ArenaDesignController {
 
                 // Click to remove for bridges (towers handled in Pass 2)
                 rect.setOnMouseClicked(e -> {
-                    com.kuroyale.model.TileType tileType = tile.getType();
+                    com.kuroyale.model.TileType tileType = cell.getTileType();
 
                     if (tileType == com.kuroyale.model.TileType.BRIDGE) {
                         // Remove the 2x2 bridge
@@ -249,7 +255,8 @@ public class ArenaDesignController {
     }
 
     private void renderStructureImages() {
-        // Bridges are rendered as tiles in Pass 1, no image overlay needed as per request
+        // Bridges are rendered as tiles in Pass 1, no image overlay needed as per
+        // request
         // Render User Princess Towers
         for (GridPosition p : currentLayout.getPrincessTowerPositions()) {
             addTowerImage(p.getX(), p.getY(), princessTowerUserImg, true, false);
@@ -340,10 +347,15 @@ public class ArenaDesignController {
         arenaGrid.add(healthBarContainer, x, y, colSpan, 1);
     }
 
-    private void updateTileStyle(javafx.scene.shape.Rectangle rect, com.kuroyale.model.TileType type) {
+    private void updateTileStyle(javafx.scene.shape.Rectangle rect, com.kuroyale.model.TileType type, int x, int y) {
         switch (type) {
             case GRASS:
-                rect.setFill(javafx.scene.paint.Color.LIGHTGREEN);
+                // Checkered pattern matching battle arena
+                if ((x + y) % 2 == 0) {
+                    rect.setFill(javafx.scene.paint.Color.rgb(124, 252, 0)); // LawnGreen
+                } else {
+                    rect.setFill(javafx.scene.paint.Color.rgb(50, 205, 50)); // LimeGreen
+                }
                 break;
             case WATER:
                 rect.setFill(javafx.scene.paint.Color.LIGHTBLUE);
@@ -429,12 +441,14 @@ public class ArenaDesignController {
         int startX = x - 1;
         int startY = y - 1;
         // Check bounds for 3x3 tower using startX/startY
-        if (startX < 0 || startY < 0 || startX + 2 >= com.kuroyale.model.Arena.WIDTH || startY + 2 >= com.kuroyale.model.Arena.HEIGHT) {
+        if (startX < 0 || startY < 0 || startX + 2 >= com.kuroyale.model.Arena.WIDTH
+                || startY + 2 >= com.kuroyale.model.Arena.HEIGHT) {
             return;
         }
 
         // Check if position is already occupied by a tower (3x3 overlap check)
-        // We check if any cell in the new 3x3 area overlaps with any existing tower's 3x3 area
+        // We check if any cell in the new 3x3 area overlaps with any existing tower's
+        // 3x3 area
         boolean occupied = false;
 
         // Check against existing Princess towers
@@ -476,7 +490,8 @@ public class ArenaDesignController {
         int startX = x - 2;
         int startY = y - 2;
         // Check bounds for 4x4 tower using startX/startY
-        if (startX < 0 || startY < 0 || startX + 3 >= com.kuroyale.model.Arena.WIDTH || startY + 3 >= com.kuroyale.model.Arena.HEIGHT) {
+        if (startX < 0 || startY < 0 || startX + 3 >= com.kuroyale.model.Arena.WIDTH
+                || startY + 3 >= com.kuroyale.model.Arena.HEIGHT) {
             return;
         }
 
