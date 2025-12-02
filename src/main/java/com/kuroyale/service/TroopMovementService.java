@@ -19,14 +19,11 @@ public class TroopMovementService {
             // Update pathfinding cooldown
             troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
 
-            // Only check for retargeting if cooldown is ready or we have no target
-            if (troop.getTargetPosition() == null
-                    || (troop.getPathfindingCooldown() <= 0 && shouldRetarget(state, troop))) {
+            // Only check for retargeting if cooldown is ready or no target
+            if (troop.getTargetPosition() == null || (troop.getPathfindingCooldown() <= 0 && shouldRetarget(state, troop))) {
                 GridPosition newTarget = targetingService.findNearestEnemyOrObjective(state, troop);
 
-                // Optimization: If target hasn't changed significantly, don't recompute path
-                // (For now, just recompute but less frequently thanks to cooldown)
-
+                //If target hasn't changed significantly, don't recompute path
                 troop.setTargetPosition(newTarget);
                 troop.clearPath();
                 if (newTarget != null) {
@@ -89,7 +86,6 @@ public class TroopMovementService {
 
     private boolean shouldRetarget(GameState state, Troop troop) {
         // Instant retarget if new closer enemy appears inside attack range or path
-        // empty
         if (troop.getPath().isEmpty())
             return true;
         GridPosition nearest = targetingService.findNearestEnemyOrObjective(state, troop);
@@ -116,7 +112,6 @@ public class TroopMovementService {
                 troop.getPath().pollFirst();
                 troop.consumeMoveProgress(1.0);
             } else {
-                // Stop advancing this tick; optionally could try alternative paths
                 break;
             }
         }
@@ -205,7 +200,7 @@ public class TroopMovementService {
             if (b.isPlayerSide() == self.isPlayerSide())
                 continue;
             if (self.getBaseCard().getTarget() == TargetType.AIR)
-                continue; // cannot hit buildings
+                continue;
             // Measure distance to nearest perimeter tile of building footprint
             double dist = distanceToBuildingPerimeter(state.getArena(), self.getPosition(), b);
             double rangeTiles = self.getCombatStats() != null ? self.getCombatStats().getRangeTiles()

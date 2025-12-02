@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/*Manages a deck of 8 cards
- * Follows Information Expert GRASP pattern - Deck knows about its own cards
- * and has responsibility for operations on the deck*/
+//Manages a deck of 8 cards. Information Expert: Deck knows about its own cards and has responsibility for operations on the deck
 public class Deck {
     private static final int MAX_CARDS = 8;
     private final List<Card> cards;
@@ -65,7 +63,6 @@ public class Deck {
                 .map(Card::getName)
                 .collect(Collectors.toList());
     }
-    
     //Gets the maximum number of cards allowed in a deck
     public static int getMaxCards() {
         return MAX_CARDS;

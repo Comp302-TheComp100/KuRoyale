@@ -3,12 +3,10 @@ package com.kuroyale.model;
 import java.io.Serializable;
 import java.util.Objects;
 
-/*Immutable value object representing a grid coordinate (x, y) in the arena.
- * Information Expert: Knows how to validate and compare positions.
- * Coordinate System:
- * - x ranges from 0 to 17 (18 columns)
- * - y ranges from 0 to 31 (32 rows)
- * - Origin (0, 0) is at the top-left corner*/
+/*Information Expert: Knows how to validate and compare positions.
+ * x ranges from 0 to 17 (18 columns)
+ * y ranges from 0 to 31 (32 rows)
+ * Origin (0, 0) is at top left corner */
 public class GridPosition implements Serializable {
     private static final long serialVersionUID = 1L;
     public static final int MIN_X = 0;
@@ -45,7 +43,7 @@ public class GridPosition implements Serializable {
     // Checks if this position is within valid arena bounds.
     public boolean isValid() {return isValidCoordinate(x, y);}
 
-    //Calculates Manhattan distance to another position.
+    //Calculates distance to another position.
     public int getDistanceTo(GridPosition other) {
         if (other == null) {
             throw new IllegalArgumentException("Cannot calculate distance to null position");
@@ -72,7 +70,6 @@ public class GridPosition implements Serializable {
     }
 
     public int getX() {return x;}
-
     public int getY() {return y;}
 
     @Override

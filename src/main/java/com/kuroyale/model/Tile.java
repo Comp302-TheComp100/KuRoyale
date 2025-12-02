@@ -1,12 +1,9 @@
 package com.kuroyale.model;
 
-/**
- * Represents a single cell on the arena grid.
+/** Represents a single cell on the arena grid.
  * Information Expert: Knows its own coordinates and type.
  * @deprecated This class is kept for backward compatibility only.
- *             Use {@link GridCell} for new code as it provides enhanced
- *             functionality
- *             including occupancy tracking and position management.*/
+ *Use {@link GridCell} for new code as it provides enhanced functionality including occupancy tracking and position management.*/
 @Deprecated
 public class Tile {
     private final int x;
@@ -22,7 +19,6 @@ public class Tile {
     public int getX() {
         return x;
     }
-
     public int getY() {
         return y;
     }
@@ -30,7 +26,6 @@ public class Tile {
     public TileType getType() {
         return type;
     }
-
     public void setType(TileType type) {
         this.type = type;
     }

@@ -17,20 +17,20 @@ public class TargetingService {
             detectionRadius = (int) Math.floor(cardRange + 2);
         }
 
-        // 1) Consider active enemy troops within detection radius
+        // Consider active enemy troops within detection radius
         for (Troop other : state.getActiveTroops()) {
             if (other.isPlayerSide() == troop.isPlayerSide()) continue;
-            // Building-only troops ignore enemy troops
+            // Building only troops ignore enemy troops
             if (troop.isBuildingOnly()) continue;
-            // Ground troops cannot target air-only enemies if target type is GROUND
+            // Ground troops cannot target air only enemies if target type is ground
             if (troop.getBaseCard().getTarget() == TargetType.GROUND && other.isAirUnit()) continue;
-            // Air-only attackers cannot hit ground-only if target type is AIR (edge-case); handled by BOTH
+            // Air only attackers cannot hit ground only if target type is air; handled by both
             GridPosition pos = other.getPosition();
             double dist = troopPos.getEuclideanDistanceTo(pos);
             if (dist <= detectionRadius && dist < bestDist) { bestDist = dist; bestPos = pos; }
         }
 
-        // 2) Consider active enemy buildings (live entities)
+        // Consider active enemy buildings
         for (Building b : state.getActiveBuildings()) {
             if (!b.isAlive()) continue;
             if (b.isPlayerSide() == troop.isPlayerSide()) continue;
@@ -127,7 +127,7 @@ public class TargetingService {
         double dist = a.getEuclideanDistanceTo(b);
         double rangeTiles = attacker.getCombatStats() != null ? attacker.getCombatStats().getRangeTiles() : attacker.getAttackRange();
         if (attacker.getCombatStats() != null && attacker.getCombatStats().getAttackType() == CombatStats.AttackType.MELEE) {
-            // Allow melee to hit adjacent including diagonals; be generous for contact
+            // Allow melee to hit adjacent including diagonals
             rangeTiles = Math.max(rangeTiles, 1);
             double threshold = Math.max(1.5, rangeTiles);
             return dist <= threshold;

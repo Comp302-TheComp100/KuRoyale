@@ -7,7 +7,7 @@ public class GridCell {
     private final GridPosition position;
     private TileType tileType;
     private boolean occupied;
-    private Object occupant; // Reference to the occupying unit (for future game implementation)
+    private Object occupant; // Reference to the occupying unit
 
     //Creates a new grid cell.
     public GridCell(GridPosition position, TileType tileType) {
@@ -29,8 +29,7 @@ public class GridCell {
     /*Checks if a unit can be placed on this cell.
      * A cell is valid for placement if:
      * - It's not currently occupied
-     * - It's not water (unless it's a bridge)
-     * - It's grass or bridge terrain */
+     * - It's grass */
     public boolean canPlaceUnit() {
         if (occupied) {
             return false;
@@ -90,16 +89,11 @@ public class GridCell {
 
     /*Checks if this cell is walkable (for pathfinding).
      * A cell is walkable if it's grass, bridge, or road.
-     * Water and Towers are not walkable.*/
-    public boolean isWalkable() {
-        return tileType == TileType.GRASS ||
-                tileType == TileType.BRIDGE ||
-                tileType == TileType.ROAD;
-    }
+     * Water and Buildings are not walkable.*/
+    public boolean isWalkable() {return tileType == TileType.GRASS || tileType == TileType.BRIDGE || tileType == TileType.ROAD;}
 
     @Override
     public String toString() {
-        return String.format("GridCell[pos=%s, type=%s, occupied=%b]",
-                position, tileType, occupied);
+        return String.format("GridCell[pos=%s, type=%s, occupied=%b]", position, tileType, occupied);
     }
 }

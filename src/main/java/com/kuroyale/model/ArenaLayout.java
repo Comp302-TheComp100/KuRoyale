@@ -5,8 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /*Represents the persistent configuration of an arena.
- * Information Expert: Knows the layout configuration (bridges, towers, etc.).
- */
+ * Information Expert: Knows the layout configuration (bridges, towers, etc.). */
 public class ArenaLayout implements Serializable {
     private static final long serialVersionUID = 1L;
     private String name;
@@ -24,7 +23,6 @@ public class ArenaLayout implements Serializable {
     public String getName() {
         return name;
     }
-
     public void setName(String name) {
         this.name = name;
     }
@@ -32,7 +30,6 @@ public class ArenaLayout implements Serializable {
     public List<GridPosition> getBridgePositions() {
         return bridgePositions;
     }
-
     public void setBridgePositions(List<GridPosition> bridgePositions) {this.bridgePositions = bridgePositions;}
 
     public void addBridgePosition(int x, int y) {
@@ -42,9 +39,7 @@ public class ArenaLayout implements Serializable {
     public List<GridPosition> getPrincessTowerPositions() {
         return princessTowerPositions;
     }
-
     public void setPrincessTowerPositions(List<GridPosition> princessTowerPositions) {this.princessTowerPositions = princessTowerPositions;}
-
     public void addPrincessTowerPosition(int x, int y) {
         this.princessTowerPositions.add(new GridPosition(x, y));
     }
@@ -52,11 +47,9 @@ public class ArenaLayout implements Serializable {
     public GridPosition getKingTowerPosition() {
         return kingTowerPosition;
     }
-
     public void setKingTowerPosition(GridPosition kingTowerPosition) {
         this.kingTowerPosition = kingTowerPosition;
     }
-
     public void setKingTowerPosition(int x, int y) {
         this.kingTowerPosition = new GridPosition(x, y);
     }

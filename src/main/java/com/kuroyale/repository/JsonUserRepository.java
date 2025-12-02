@@ -15,12 +15,10 @@ import com.kuroyale.model.ArenaLayout;
 import com.kuroyale.model.GridPosition;
 import com.kuroyale.model.User;
 
-/**
- * JSON-based implementation of UserRepository
+/*JSON-based implementation of UserRepository
  * Handles persistence of User objects to JSON file
- * Follows Pure Fabrication - created to handle persistence concerns
- * Follows Low Coupling - separated from business logic
- */
+ * Pure Fabrication - created to handle persistence concerns
+ * Low Coupling - separated from business logic */
 public class JsonUserRepository implements UserRepository {
 
     private static final String DATA_DIR = System.getProperty("user.home") + File.separator + ".kuroyale";
@@ -203,7 +201,7 @@ public class JsonUserRepository implements UserRepository {
 
         // Write to file
         try (FileWriter writer = new FileWriter(USERS_FILE)) {
-            writer.write(jsonArray.toString(2)); // Pretty print with 2-space indent
+            writer.write(jsonArray.toString(2)); // with 2-space indent
         }
     }
 

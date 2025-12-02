@@ -7,10 +7,8 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Service responsible for saving and loading game states.
- * Manages persistence of match data to allow players to pause and resume games.
- */
+/*Service responsible for saving and loading game states.
+ * Manages persistence of match data to allow players to pause and resume games.*/
 public class GameSaveService {
     private static final String SAVE_DIRECTORY = "saved_games";
     private static final String SAVE_FILE_EXTENSION = ".krsave";
@@ -30,13 +28,7 @@ public class GameSaveService {
         }
     }
     
-    /**
-     * Saves the current game state to disk
-     * @param gameState The current game state to save
-     * @param user The current user
-     * @param layout The arena layout
-     * @return The SavedGameState object if successful, null otherwise
-     */
+    // Saves the current game state to disk
     public SavedGameState saveGame(GameState gameState, User user, ArenaLayout layout) {
         try {
             // Capture current game state
@@ -66,10 +58,7 @@ public class GameSaveService {
         }
     }
     
-    /**
-     * Loads all saved games for the current or any user
-     * @return List of saved game states
-     */
+    //Loads all saved games for the current or any user
     public List<SavedGameState> loadAllSavedGames() {
         List<SavedGameState> savedGames = new ArrayList<>();
         
@@ -78,9 +67,7 @@ public class GameSaveService {
                 return savedGames;
             }
             
-            List<Path> saveFiles = Files.list(saveDirectory)
-                    .filter(path -> path.toString().endsWith(SAVE_FILE_EXTENSION))
-                    .collect(Collectors.toList());
+            List<Path> saveFiles = Files.list(saveDirectory).filter(path -> path.toString().endsWith(SAVE_FILE_EXTENSION)).collect(Collectors.toList());
             
             for (Path saveFile : saveFiles) {
                 try (ObjectInputStream ois = new ObjectInputStream(
@@ -103,27 +90,15 @@ public class GameSaveService {
         return savedGames;
     }
     
-    /**
-     * Loads saved games for a specific player
-     * @param playerUsername The username to filter by
-     * @return List of saved game states for that player
-     */
+    // Loads saved games for a specific player.
     public List<SavedGameState> loadSavedGamesForPlayer(String playerUsername) {
-        return loadAllSavedGames().stream()
-                .filter(save -> save.getPlayerUsername().equals(playerUsername))
-                .collect(Collectors.toList());
+        return loadAllSavedGames().stream().filter(save -> save.getPlayerUsername().equals(playerUsername)).collect(Collectors.toList());
     }
     
-    /**
-     * Deletes a saved game
-     * @param saveId The ID of the save to delete
-     * @return true if successful, false otherwise
-     */
+    // Deletes a saved game
     public boolean deleteSavedGame(String saveId) {
         try {
-            List<Path> files = Files.list(saveDirectory)
-                    .filter(path -> path.toString().endsWith(SAVE_FILE_EXTENSION))
-                    .collect(Collectors.toList());
+            List<Path> files = Files.list(saveDirectory).filter(path -> path.toString().endsWith(SAVE_FILE_EXTENSION)).collect(Collectors.toList());
             
             for (Path file : files) {
                 try (ObjectInputStream ois = new ObjectInputStream(
@@ -144,9 +119,7 @@ public class GameSaveService {
         return false;
     }
     
-    /**
-     * Captures the current game state into a SavedGameState object
-     */
+    //Captures the current game state into a SavedGameState object
     private SavedGameState captureGameState(GameState gameState, User user, ArenaLayout layout) {
         // Capture player hand and deck
         Hand playerHand = gameState.getPlayerHand();
@@ -155,8 +128,7 @@ public class GameSaveService {
                 .collect(Collectors.toList());
         
         // Get deck from user
-        List<String> playerDeckCards = user != null ? 
-                new ArrayList<>(user.getDeck()) : new ArrayList<>();
+        List<String> playerDeckCards = user != null ? new ArrayList<>(user.getDeck()) : new ArrayList<>();
         
         // Capture draw pile (next cards)
         List<String> playerDrawPileCards = new ArrayList<>();
@@ -164,9 +136,7 @@ public class GameSaveService {
             playerDrawPileCards.add(playerHand.getNextCard().getName());
         }
         
-        // Capture bot state (similar to player)
-        // Note: Bot logic is internal to GameState, so we'll need to access it
-        // For now, use same deck as player (mirror match)
+        // Capture bot state
         List<String> botDeckCards = new ArrayList<>(playerDeckCards);
         List<String> botHandCards = new ArrayList<>();
         List<String> botDrawPileCards = new ArrayList<>();
@@ -179,10 +149,7 @@ public class GameSaveService {
         Map<Tower, List<GridCell>> towerGroups = new HashMap<>();
         for (GridCell cell : arena.getAllCells()) {
             TileType tt = cell.getTileType();
-            boolean isTowerTile = tt == TileType.PRINCESS_TOWER_USER || 
-                                 tt == TileType.PRINCESS_TOWER_COMPUTER ||
-                                 tt == TileType.KING_TOWER_USER || 
-                                 tt == TileType.KING_TOWER_COMPUTER;
+            boolean isTowerTile = tt == TileType.PRINCESS_TOWER_USER || tt == TileType.PRINCESS_TOWER_COMPUTER || tt == TileType.KING_TOWER_USER || tt == TileType.KING_TOWER_COMPUTER;
             if (!isTowerTile) continue;
             
             Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
@@ -204,17 +171,9 @@ public class GameSaveService {
             
             // Determine if player side
             TileType firstTileType = cells.get(0).getTileType();
-            boolean isPlayerSide = firstTileType == TileType.PRINCESS_TOWER_USER || 
-                                  firstTileType == TileType.KING_TOWER_USER;
+            boolean isPlayerSide = firstTileType == TileType.PRINCESS_TOWER_USER || firstTileType == TileType.KING_TOWER_USER;
             
-            savedTowers.add(new SavedGameState.SavedTower(
-                tower.getType().name(),
-                isPlayerSide,
-                (int) tower.getCurrentHealth(),
-                (int) tower.getMaxHealth(),
-                minX,
-                minY
-            ));
+            savedTowers.add(new SavedGameState.SavedTower(tower.getType().name(), isPlayerSide, (int) tower.getCurrentHealth(), (int) tower.getMaxHealth(), minX, minY));
         }
         
         // Capture active troops
@@ -238,10 +197,8 @@ public class GameSaveService {
                         building.getImagePath().replaceAll(".*/", "").replace(".png", ""), // Fallback to image path
                     building.isPlayerSide(),
                     (int) building.getCurrentHealth(),
-                    building.getPosition().getX(),
-                    building.getPosition().getY(),
-                    building.getWidth(),
-                    building.getHeight(),
+                    building.getPosition().getX(), building.getPosition().getY(),
+                    building.getWidth(), building.getHeight(),
                     building.getRemainingLifetime()
                 ))
                 .collect(Collectors.toList());
@@ -253,32 +210,18 @@ public class GameSaveService {
             gameState.getPlayerScore(),
             gameState.getBotScore(),
             gameState.getPlayerElixir().getCurrentElixir(),
-            playerDeckCards,
-            playerHandCards,
-            playerDrawPileCards,
+            playerDeckCards, playerHandCards, playerDrawPileCards,
             10.0, // Bot elixir - would need to expose from GameState
-            botDeckCards,
-            botHandCards,
-            botDrawPileCards,
+            botDeckCards, botHandCards, botDrawPileCards,
             layout,
-            savedTowers,
-            savedTroops,
-            savedBuildings
+            savedTowers, savedTroops, savedBuildings
         );
     }
     
-    /**
-     * Generates a unique filename for a saved game
-     */
+    // Generates a unique filename for a saved game
     private String generateFileName(SavedGameState savedGame) {
-        String timestamp = savedGame.getSaveTime()
-                .toString()
-                .replaceAll("[:\\-.]", "")
-                .replace("T", "_");
-        return String.format("%s_%s%s", 
-                savedGame.getPlayerUsername(), 
-                timestamp,
-                SAVE_FILE_EXTENSION);
+        String timestamp = savedGame.getSaveTime().toString().replaceAll("[:\\-.]", "").replace("T", "_");
+
+        return String.format("%s_%s%s", savedGame.getPlayerUsername(), timestamp, SAVE_FILE_EXTENSION);
     }
 }
-

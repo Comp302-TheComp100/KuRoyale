@@ -17,7 +17,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) {
         try {
             // Initialize ServiceFactory
-            // Follows Low Coupling - centralized service management
+            // Low Coupling - centralized service management
             ServiceFactory.initialize();
             
             // Load custom fonts

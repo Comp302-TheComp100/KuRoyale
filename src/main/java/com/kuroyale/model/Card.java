@@ -11,7 +11,7 @@ public class Card {
     private final double range;
     private final SpeedType speed;
     private final TargetType target;
-    // Indicates whether the unit itself is airborne (flies over terrain)
+    // Indicates whether the unit itself is flying
     private final boolean airUnit;
     private final boolean areaEffect;
     private final String description;
@@ -66,8 +66,7 @@ public class Card {
         if (height > 0) this.footprintHeightTiles = height;
     }
 
-    public String getImagePath() {
-        return "/images/cards/" + name.toLowerCase(java.util.Locale.ENGLISH).replace(" ", "_").replace(".", "") + ".png";}
+    public String getImagePath() {return "/images/cards/" + name.toLowerCase(java.util.Locale.ENGLISH).replace(" ", "_").replace(".", "") + ".png";}
 
     //Calculates damage per second (DPS)
     public double getDPS() {

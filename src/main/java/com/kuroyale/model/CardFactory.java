@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 /*Factory class for creating all card instances in the game
  * Separates card creation logic from the Card model
- *  Creator  pattern - Factory has initialization data for cards
- * Made instance-based to support Low Coupling*/
+ * Creator  - Factory has initialization data for cards
+ * Made instance based to support Low Coupling*/
 public class CardFactory {
     public Card createKnight() {
         return new Card("Knight", 3, CardType.TROOP, 600, 75, 1.1, 0,

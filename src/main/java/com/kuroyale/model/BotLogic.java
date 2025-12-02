@@ -2,8 +2,7 @@ package com.kuroyale.model;
 
 import java.util.Random;
 
-/*Basic AI for the opponent.
- * Strategy: Waits for full elixir, then places a random affordable unit at the bridge.*/
+//Basic AI for the opponent. Waits for full elixir, then places a random affordable unit at the bridge.
 public class BotLogic {
     private final ElixirManager elixirManager;
     private final Hand hand;
@@ -41,12 +40,12 @@ public class BotLogic {
 
                 // Pick random position in top half (opponent side)
                 // Arena is 18x32. Top half is y < 16.
-                // Spawn area usually y < 14
+                // Spawn area y < 14
                 int x = random.nextInt(Arena.WIDTH);
                 int y = random.nextInt(14);
 
                 // Validate position using GameState's arena
-                // Check if the cell allows unit placement (not a tower, not water, etc.)
+                // Check if the cell allows unit placement
                 if (gameState.getArena().isValidPosition(x, y) &&
                         gameState.getArena().getCell(x, y).canPlaceUnit()) {
 
@@ -62,13 +61,8 @@ public class BotLogic {
         return null;
     }
 
-    public ElixirManager getElixirManager() {
-        return elixirManager;
-    }
-
-    public Hand getHand() {
-        return hand;
-    }
+    public ElixirManager getElixirManager() {return elixirManager;}
+    public Hand getHand() {return hand;}
 
     public static class Move {
         public final Card card;

@@ -15,10 +15,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
-/**
- * Controller for the Battle screen.
- * Manages the game loop, user input, and UI updates.
- */
+/*Controller for the Battle screen.
+ * Manages the game loop, user input, and UI updates.*/
 public class BattleController {
 
     @FXML
@@ -56,9 +54,7 @@ public class BattleController {
         this.cardCatalog = factory.getCardCatalog();
     }
     
-    /**
-     * Sets a saved game to load from
-     */
+    //Sets a saved game to load from
     public void setLoadedSavedGame(SavedGameState savedGame) {
         this.loadedSavedGame = savedGame;
     }
@@ -69,10 +65,7 @@ public class BattleController {
         // The actual initialization happens in startGame() which is called after setup
     }
     
-    /**
-     * Starts the game - either from scratch or from a saved state
-     * Must be called AFTER setLoadedSavedGame() if loading a saved game
-     */
+    /*Starts the game. Must be called AFTER setLoadedSavedGame() if loading a saved game */
     public void startGame() {
         // Initialize game state
         User currentUser = authService.getCurrentUser();
@@ -92,8 +85,7 @@ public class BattleController {
             initializeFromSavedGame(loadedSavedGame);
         } else {
             System.out.println("▶️ STARTING NEW GAME");
-            // Start new game
-            // Load user data
+            // Start new game and Load user data
             // Convert List<String> to Deck object
             Deck playerDeck = createDeckFromNames(currentUser.getDeck());
             ArenaLayout playerLayout = arenaService.loadArenaLayout(); // Load saved layout
@@ -152,7 +144,7 @@ public class BattleController {
 
     private Deck createBotDeck() {
         // Create a simple deck for bot
-        // For MVP, just use the player's deck (mirror match)
+        // For simplicity, uses the player's deck
         return createDeckFromNames(authService.getCurrentUser().getDeck());
     }
 
@@ -185,15 +177,13 @@ public class BattleController {
             return;
         }
         
-        // Update Game Logic
+        // Update Game Logic and UI
         gameState.update(deltaTime);
-
-        // Update UI
         elixirBar.update();
         handView.update();
         arenaView.update();
 
-        // Check for Double Elixir (track state but don't show popup)
+        // Check for Double Elixir
         if (gameState.isDoubleElixir() && !doubleElixirShown) {
             doubleElixirShown = true;
             // Visual indicators are handled by ElixirBar and BattleArenaView
@@ -250,7 +240,7 @@ public class BattleController {
                     arenaView.highlightValidCells(false, false);
                 } else {
                     // Failed (not enough elixir, invalid position, etc.)
-                    // Feedback?
+                    // no feedback needed
                 }
             }
         }
@@ -261,7 +251,6 @@ public class BattleController {
         if (gameOverShown) {
             return; // Don't allow pause after game over
         }
-        
         isPaused = true;
         showPauseMenu();
     }
@@ -363,9 +352,7 @@ public class BattleController {
         pause.play();
     }
     
-    /**
-     * Initializes game state from a saved game
-     */
+    //Initializes game state from a saved game
     private void initializeFromSavedGame(SavedGameState savedGame) {
         // Create decks from saved card names
         Deck playerDeck = createDeckFromNames(savedGame.getPlayerDeckCards());
@@ -496,7 +483,6 @@ public class BattleController {
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
             javafx.scene.Parent root = loader.load();
-
             javafx.stage.Stage stage = (javafx.stage.Stage) arenaContainer.getScene().getWindow();
             javafx.scene.Scene scene = new javafx.scene.Scene(root, 1280, 720);
             scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());

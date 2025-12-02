@@ -5,8 +5,7 @@ import java.util.List;
 import com.kuroyale.util.PasswordUtil;
 
 /*Represents a user account with username, password hash, and saved deck
- * Follows Information Expert GRASP pattern - User knows about its own data
- * and has responsibility for operations on that data*/
+ * Information Expert - User knows about its own data and has responsibility for operations on that data*/
 public class User {
     private String username;
     private String passwordHash;

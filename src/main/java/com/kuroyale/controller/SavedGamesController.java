@@ -18,9 +18,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Controller for the Saved Games screen
- */
+//Controller for the Saved Games screen
 public class SavedGamesController {
 
     @FXML

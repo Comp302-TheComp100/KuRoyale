@@ -6,8 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
-/*Manages the 4-card hand drawn from the 8-card deck.
- * Handles cycling cards as they are played.*/
+//Manages the 4-card hand drawn from the 8-card deck. Handles cycling cards as they are played.
 public class Hand {
     public static final int HAND_SIZE = 4;
 
@@ -52,7 +51,6 @@ public class Hand {
         }
 
         updateNextCard();
-
         return playedCard;
     }
 

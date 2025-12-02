@@ -2,15 +2,15 @@ package com.kuroyale.model;
 
 public class Building {
     private final GridPosition position; // top-left grid position
-    private final int width; // tiles
-    private final int height; // tiles
+    private final int width;
+    private final int height;
     private final boolean playerSide; // owner
     private double maxHealth;
     private double currentHealth;
     private final String imagePath; // optional image path from card
     private String cardName; // Store the card name for save/load functionality
-    // Lifetime tracking for time-based depreciation
-    private final int lifetimeSeconds; // Total lifetime in seconds (0 = infinite)
+    // Lifetime tracking for depreciation
+    private final int lifetimeSeconds; // Total lifetime in seconds
     private double remainingLifetime; // Remaining lifetime in seconds
     // Combat
     private int damage;
@@ -55,76 +55,56 @@ public class Building {
     public String getCardName() {
         return cardName;
     }
-    
     public void setCardName(String cardName) {
         this.cardName = cardName;
     }
-
     public GridPosition getPosition() {
         return position;
     }
-
     public int getWidth() {
         return width;
     }
-
     public int getHeight() {
         return height;
     }
-
     public boolean isPlayerSide() {
         return playerSide;
     }
-
     public double getMaxHealth() {
         return maxHealth;
     }
-
     public double getCurrentHealth() {
         return currentHealth;
     }
-
     public String getImagePath() {
         return imagePath;
     }
-
     public int getDamage() {
         return damage;
     }
-
     public double getHitSpeedSeconds() {
         return hitSpeedSeconds;
     }
-
     public int getRangeTiles() {
         return rangeTiles;
     }
-
     public TargetType getTargetType() {
         return targetType;
     }
-
     public double getAttackCooldown() {
         return attackCooldown;
     }
-
     public void setAttackCooldown(double cd) {
         this.attackCooldown = cd;
     }
-
     public int getLifetimeSeconds() {
         return lifetimeSeconds;
     }
-
     public double getRemainingLifetime() {
         return remainingLifetime;
     }
 
-    /**
-     * Update building state (lifetime depreciation)
-     * 
-     * @param deltaTime Time elapsed in seconds
-     */
+    //Update building state (lifetime depreciation)
     public void update(double deltaTime) {
         if (lifetimeSeconds > 0) {
             remainingLifetime -= deltaTime;

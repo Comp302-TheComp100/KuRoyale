@@ -249,9 +249,7 @@ public class ArenaDesignController {
     }
 
     private void renderStructureImages() {
-        // Bridges are rendered as tiles in Pass 1, no image overlay needed as per
-        // request
-
+        // Bridges are rendered as tiles in Pass 1, no image overlay needed as per request
         // Render User Princess Towers
         for (GridPosition p : currentLayout.getPrincessTowerPositions()) {
             addTowerImage(p.getX(), p.getY(), princessTowerUserImg, true, false);
@@ -295,8 +293,7 @@ public class ArenaDesignController {
 
         arenaGrid.add(imageView, x, y, size, size);
 
-        // Add Health Bar
-        // Determine max health based on tower type
+        // Add Health Bar and Determine max health based on tower type
         double maxHealth = 1400; // Default Princess
         if (isKing) {
             maxHealth = 2400;
@@ -323,9 +320,9 @@ public class ArenaDesignController {
         javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(width * healthPercentage, height);
         fg.setFill(javafx.scene.paint.Color.ROYALBLUE);
 
-        // Health Text: "1400" (Remaining only)
+        // Health Text: "1400"
         javafx.scene.text.Text healthText = new javafx.scene.text.Text(String.format("%.0f", currentHealth));
-        // Font like Clash Royale: Bold, Impact-like
+        // Font like Clash Royale
         healthText.setFont(javafx.scene.text.Font.font("Arial Black", javafx.scene.text.FontWeight.BOLD, 10));
         healthText.setFill(javafx.scene.paint.Color.WHITE);
         healthText.setStroke(javafx.scene.paint.Color.BLACK);
@@ -437,8 +434,7 @@ public class ArenaDesignController {
         }
 
         // Check if position is already occupied by a tower (3x3 overlap check)
-        // We check if any cell in the new 3x3 area overlaps with any existing tower's
-        // 3x3 area
+        // We check if any cell in the new 3x3 area overlaps with any existing tower's 3x3 area
         boolean occupied = false;
 
         // Check against existing Princess towers
@@ -448,7 +444,6 @@ public class ArenaDesignController {
                 break;
             }
         }
-
         // Check against King tower (4x4)
         if (!occupied && currentLayout.getKingTowerPosition() != null) {
             GridPosition k = currentLayout.getKingTowerPosition();
@@ -456,7 +451,6 @@ public class ArenaDesignController {
                 occupied = true;
             }
         }
-
         if (occupied) {
             return;
         }
@@ -478,7 +472,7 @@ public class ArenaDesignController {
             return;
         }
 
-        // Treat drop cell as center -> top-left start for 4x4
+        // Treat drop cell as center. top-left start for 4x4
         int startX = x - 2;
         int startY = y - 2;
         // Check bounds for 4x4 tower using startX/startY
@@ -486,7 +480,7 @@ public class ArenaDesignController {
             return;
         }
 
-        // Check if position is already occupied by a Princess tower (overlap check)
+        // Check if position is already occupied by a Princess tower
         // Princess is 3x3, King is 4x4
         boolean occupied = false;
         for (GridPosition p : currentLayout.getPrincessTowerPositions()) {

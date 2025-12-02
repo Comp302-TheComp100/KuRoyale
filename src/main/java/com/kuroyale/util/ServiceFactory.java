@@ -8,11 +8,9 @@ import com.kuroyale.service.DeckManagementService;
 import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.GameSaveService;
 
-/**
- * Service Factory for managing service instances and dependencies
- * Follows Pure Fabrication GRASP pattern - created to manage object creation and dependencies
- * Follows Low Coupling - centralizes dependency management
- */
+/*Service Factory for managing service instances and dependencies
+ * Pure Fabrication - created to manage object creation and dependencies
+ * Low Coupling - centralizes dependency management*/
 public class ServiceFactory {
 
     private static ServiceFactory instance;
@@ -25,10 +23,8 @@ public class ServiceFactory {
     private final ArenaService arenaService;
     private final GameSaveService gameSaveService;
 
-    /**
-     * Private constructor to enforce singleton pattern
-     * Follows Creator pattern - ServiceFactory has initialization data for services
-     */
+    /*Private constructor to enforce singleton pattern
+     * Creator pattern - ServiceFactory has initialization data for services*/
     private ServiceFactory() {
         // Create repository
         this.userRepository = new JsonUserRepository();

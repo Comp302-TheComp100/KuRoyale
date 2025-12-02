@@ -11,41 +11,37 @@ import com.kuroyale.model.Deck;
 import com.kuroyale.model.User;
 import com.kuroyale.repository.UserRepository;
 
-/**
- * Service for managing deck operations
- * Follows Controller GRASP pattern - coordinates deck management operations
- * Follows High Cohesion - focused solely on deck management concerns
- */
+/*Service for managing deck operations
+ * Controller: coordinates deck management operations
+ * High Cohesion: focused solely on deck management concerns*/
 public class DeckManagementService {
     
     private final UserRepository userRepository;
     private final CardCatalog cardCatalog;
     
-    //Creates a DeckManagementService - Follows Low Coupling
+    //Creates a DeckManagementService: Low Coupling
     public DeckManagementService(UserRepository userRepository, CardCatalog cardCatalog) {
         this.userRepository = userRepository;
         this.cardCatalog = cardCatalog;
     }
     
-    //Adds a card to a deck - Delegates to Deck domain object (Information Expert)
+    //Adds a card to a deck. Delegates to Deck domain object (Information Expert)
     public boolean addCardToDeck(Deck deck, Card card) {
         return deck.addCard(card);
     }
     
-    //Removes a card from a dec - Delegates to Deck domain object (Information Expert)
+    //Removes a card from a dec.Delegates to Deck domain object (Information Expert)
     public boolean removeCardFromDeck(Deck deck, Card card) {
         return deck.removeCard(card);
     }
     
-    //Replaces a card in the deck with another card - Delegates to Deck domain object (Information Expert)
+    //Replaces a card in the deck with another card. Delegates to Deck domain object (Information Expert)
     public boolean replaceCardInDeck(Deck deck, Card oldCard, Card newCard) {
         return deck.replaceCard(oldCard, newCard);
     }
     
-    /**
-     * Saves a user's deck to persistent storage
-     * Follows Controller pattern - coordinates between Deck and User
-     */
+    /*Saves a user's deck to persistent storage
+     * Controller pattern: coordinates between Deck and User*/
     public void saveDeck(User user, Deck deck) throws IOException {
         // Get card names from deck (Information Expert)
         List<String> cardNames = deck.getCardNames();

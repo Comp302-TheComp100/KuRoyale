@@ -21,7 +21,7 @@ import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 
 /*Controller for the login/sign-in screen
- *  Controller GRASP pattern - thin controller that delegates to services
+ *  Controller - delegates to services
  *  Low Coupling - uses services via dependency injection
  *  High Cohesion - focused only on UI concerns*/
 public class LoginController {
@@ -60,20 +60,14 @@ public class LoginController {
         if (titleLabel != null) {
             titleLabel.getStyleClass().add("login-title-label");
         }
-
-        // Apply CSS classes
         usernameField.getStyleClass().add("login-form-field");
         passwordField.getStyleClass().add("login-form-field");
         createAccountButton.getStyleClass().add("login-button");
         loginButton.getStyleClass().add("login-button");
-        
-        // Apply error label CSS class
         errorLabel.getStyleClass().add("error-label");
         
         addLoginButtonHoverEffects(createAccountButton);
         addLoginButtonHoverEffects(loginButton);
-        
-        // Play start screen music
         playStartMusic();
     }
     

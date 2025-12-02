@@ -4,8 +4,7 @@ import javafx.css.PseudoClass;
 import javafx.scene.effect.InnerShadow;
 import javafx.scene.paint.Color;
 
-/**
- * Utility class for dynamic styling effects and constants
+/*Utility class for dynamic styling effects and constants
  * Complex programmatic effects that CSS cannot handle*/
 public class StyleHelper {
 
@@ -40,7 +39,6 @@ public class StyleHelper {
 
     // Font family (used in inline styles)
     public static final String FONT_FAMILY = "Clash";
-
     //Get inner shadow effect for recessed elements
     public static InnerShadow getInnerShadowEffect() {
         InnerShadow innerShadow = new InnerShadow();

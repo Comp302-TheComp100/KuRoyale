@@ -7,8 +7,7 @@ import java.util.stream.Collectors;
 /*Represents the active game board during a match.
  * Information Expert: Knows the state of the board (cells, valid positions, occupancy).
  * Creator: Creates and manages GridCell instances.
- * High Cohesion: Focuses solely on map geometry and state.
- */
+ * High Cohesion: Focuses solely on map geometry and state. */
 public class Arena {
     public static final int WIDTH = 18;
     public static final int HEIGHT = 32;
@@ -24,11 +23,9 @@ public class Arena {
         initializeGrid();
     }
 
-    /**
-     * Initializes the grid with GridCell objects.
+    /*Initializes the grid with GridCell objects.
      * Sets up terrain (grass, water, bridges) based on layout.
-     * Places towers and mirrors user's layout for computer side.
-     */
+     * Places towers and mirrors user's layout for computer side. */
     private void initializeGrid() {
         // Initialize all cells as grass by default
         for (int x = 0; x < WIDTH; x++) {
@@ -65,11 +62,8 @@ public class Arena {
                         }
                     }
                 }
-
-                // Mirror for computer side (3x3)
-                // Mirroring logic: The top-left of the mirrored tower should be:
-                // x' = x
-                // y' = HEIGHT - 3 - y
+                // Mirroring logic for computer side: The top-left of the mirrored tower should be:
+                // x' = x and y' = HEIGHT - 3 - y
                 int mirroredY = HEIGHT - 3 - p.getY();
                 Tower computerTower = new Tower(Tower.TowerType.PRINCESS);
                 for (int dx = 0; dx < 3; dx++) {
@@ -280,10 +274,7 @@ public class Arena {
         return towerMap.get(grid[x][y].getPosition());
     }
 
-    /**
-     * Removes a tower from the arena.
-     * Clears the tower from the map and resets the tiles to GRASS.
-     */
+    //Removes a tower from the arena.Clears the tower from the map and resets the tiles to GRASS
     public void removeTower(Tower tower) {
         if (tower == null)
             return;
@@ -302,8 +293,7 @@ public class Arena {
             GridCell cell = getCell(pos);
             if (cell != null) {
                 cell.setTileType(TileType.GRASS);
-                // Also ensure no occupant is left if it was the tower itself (though tower is
-                // not an occupant in the GridCell sense usually, it's a TileType)
+                // Also ensure no occupant is left if it was the tower itself (though tower is not an occupant in the GridCell, it's a TileType)
             }
         }
     }

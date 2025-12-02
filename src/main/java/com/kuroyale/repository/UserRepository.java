@@ -5,8 +5,8 @@ import java.util.List;
 
 import com.kuroyale.model.User;
 
-/** Repository interface for User persistence operations
- * Follows Pure Fabrication and Polymorphism patterns, provides abstraction for data access*/
+/* Repository interface for User persistence operations
+ * Pure Fabrication and Polymorphism patterns, provides abstraction for data access*/
 public interface UserRepository {
     
     //Finds a user by username

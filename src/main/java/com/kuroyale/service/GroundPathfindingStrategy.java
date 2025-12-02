@@ -9,7 +9,7 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
         Deque<GridPosition> path = new ArrayDeque<>();
         if (arena == null || troop == null || destination == null) return path;
 
-        // If destination is not walkable (e.g., tower cell), pick nearest walkable cell
+        // If destination is not walkable, pick nearest walkable cell
         GridCell destCell = arena.getCell(destination);
         if (destCell == null || !destCell.isWalkable()) {
             destination = findNearestWalkable(arena, destination);
@@ -86,7 +86,7 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
         return null;
     }
 
-    // Manhattan distance heuristic suitable for 4-directional grid movement
+    // heuristic distance suitable for 4-directional grid movement
     private int heuristic(GridPosition a, GridPosition b) {
         if (a == null || b == null) return Integer.MAX_VALUE / 4;
         return Math.abs(a.getX() - b.getX()) + Math.abs(a.getY() - b.getY());

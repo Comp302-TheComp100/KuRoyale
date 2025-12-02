@@ -3,16 +3,14 @@ package com.kuroyale.util;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 
-/**
- * Utility class for playing sound effects throughout the application
+/*Utility class for playing sound effects throughout the application
  * Maintains a single MediaPlayer instance to prevent overlapping sounds */
 public class SoundEffectUtil {
 
     private static MediaPlayer buttonClickPlayer;
     private static Media buttonClickMedia;
 
-    /**
-     * Plays the button click sound effect
+    /*Plays the button click sound effect
      * Stops any currently playing sound before starting a new one to prevent overlapping */
     public static void playButtonClick() {
         AudioManager audioManager = AudioManager.getInstance();
@@ -30,7 +28,6 @@ public class SoundEffectUtil {
 
             // Set volume from AudioManager
             buttonClickPlayer.setVolume(audioManager.getSFXVolume());
-
             // Always stop the player regardless of status to fix delay issues
             buttonClickPlayer.stop();
 

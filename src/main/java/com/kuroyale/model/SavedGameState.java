@@ -6,10 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Represents a saved game state that can be persisted and reloaded.
- * Contains all necessary data to restore a match from where it was saved.
- */
+/*Represents a saved game state that can be persisted and reloaded.
+ * Contains all necessary data to restore a match from where it was saved. */
 public class SavedGameState implements Serializable {
     private static final long serialVersionUID = 1L;
     
@@ -43,9 +41,7 @@ public class SavedGameState implements Serializable {
     private final List<SavedTroop> activeTroops;
     private final List<SavedBuilding> activeBuildings;
     
-    /**
-     * Constructor for creating a saved game state
-     */
+    //Constructor for creating a saved game state
     public SavedGameState(String playerUsername, double gameTime, boolean isDoubleElixir,
                          int playerScore, int botScore,
                          double playerElixir, List<String> playerDeckCards, 
@@ -96,25 +92,17 @@ public class SavedGameState implements Serializable {
     public List<SavedTroop> getActiveTroops() { return new ArrayList<>(activeTroops); }
     public List<SavedBuilding> getActiveBuildings() { return new ArrayList<>(activeBuildings); }
     
-    /**
-     * Gets a formatted string showing the time remaining
-     */
+    //Gets a formatted string showing the time remaining
     public String getFormattedTimeRemaining() {
         int minutes = (int) gameTime / 60;
         int seconds = (int) gameTime % 60;
         return String.format("%d:%02d", minutes, seconds);
     }
     
-    /**
-     * Gets a formatted string showing the save date/time
-     */
-    public String getFormattedSaveTime() {
-        return saveTime.toString().replace("T", " ").substring(0, 19);
-    }
+    //Gets a formatted string showing the save date/time
+    public String getFormattedSaveTime() {return saveTime.toString().replace("T", " ").substring(0, 19);}
     
-    /**
-     * Represents a saved tower state
-     */
+    //Represents a saved tower state
     public static class SavedTower implements Serializable {
         private static final long serialVersionUID = 1L;
         
@@ -143,9 +131,7 @@ public class SavedGameState implements Serializable {
         public int getGridY() { return gridY; }
     }
     
-    /**
-     * Represents a saved troop state
-     */
+    //Represents a saved troop state
     public static class SavedTroop implements Serializable {
         private static final long serialVersionUID = 1L;
         
@@ -174,9 +160,7 @@ public class SavedGameState implements Serializable {
         public String getState() { return state; }
     }
     
-    /**
-     * Represents a saved building state
-     */
+    //Represents a saved building state
     public static class SavedBuilding implements Serializable {
         private static final long serialVersionUID = 1L;
         
@@ -211,4 +195,3 @@ public class SavedGameState implements Serializable {
         public double getRemainingLifetime() { return remainingLifetime; }
     }
 }
-

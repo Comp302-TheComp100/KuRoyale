@@ -54,7 +54,6 @@ public class MainMenuController {
 
     // Initialize styles after FXML is loaded
     private void initializeStyles() {
-        // Apply CSS classes
         root.getStyleClass().add("main-menu-background");
 
         if (titleLabel != null) {
@@ -84,12 +83,8 @@ public class MainMenuController {
             button.setScaleX(1.0);
             button.setScaleY(1.0);
         });
-        button.setOnMousePressed(e -> {
-            button.setTranslateY(2);
-        });
-        button.setOnMouseReleased(e -> {
-            button.setTranslateY(0);
-        });
+        button.setOnMousePressed(e -> {button.setTranslateY(2);});
+        button.setOnMouseReleased(e -> {button.setTranslateY(0);});
     }
 
     @FXML
@@ -157,12 +152,12 @@ public class MainMenuController {
             return;
         }
 
-        // All validations passed, proceed to battle
+        // After all validations passed, proceed to battle
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/battle.fxml"));
             Parent root = loader.load();
             
-            // Get the controller and start a NEW game
+            // Get the controller and start a new game
             BattleController battleController = loader.getController();
             battleController.startGame();
 

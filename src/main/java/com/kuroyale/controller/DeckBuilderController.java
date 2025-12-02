@@ -36,7 +36,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 /* Controller for the deck builder screen
- *  Controller GRASP pattern - thin controller that delegates to services
+ *  Controller -  delegates to services
  *  Low Coupling - uses services via dependency injection
  *  High Cohesion - focused on UI presentation and user interactions*/
 public class DeckBuilderController {
@@ -80,7 +80,7 @@ public class DeckBuilderController {
     @FXML
     private HBox averageElixirContainer;
 
-    // Service dependencies (injected via ServiceFactory)
+    // Service dependencies
     private AuthenticationService authService;
     private DeckManagementService deckService;
     private CardCatalog cardCatalog;

@@ -7,29 +7,20 @@ import com.kuroyale.repository.UserRepository;
 import com.kuroyale.util.PasswordUtil;
 import com.kuroyale.util.ValidationUtil;
 
-/**
- * Service for handling user authentication and registration
- * Follows Low Coupling - uses repository interface, not concrete implementation
- * Follows High Cohesion - focused solely on authentication concerns
- */
+/*Service for handling user authentication and registration
+ * Low Coupling: uses repository interface, not concrete implementation
+ * High Cohesion: focused solely on authentication concerns*/
 public class AuthenticationService {
-    
     private final UserRepository userRepository;
     private User currentUser;
     
-    /**
-     * Creates an AuthenticationService with the given repository
-     * Follows Low Coupling via Dependency Injection
-     */
+    //Creates an AuthenticationService with the given repository
     public AuthenticationService(UserRepository userRepository) {
         this.userRepository = userRepository;
         this.currentUser = null;
     }
     
-    /**
-     * Registers a new user account
-     * Follows Creator pattern - creates User objects with initialization data
-     */
+    //Registers a new user account. Creator pattern: creates User objects with initialization data
     public User register(String username, String password) throws IOException {
         // Validate username
         if (!ValidationUtil.isValidUsername(username)) {
@@ -37,14 +28,10 @@ public class AuthenticationService {
         }
         
         // Validate password
-        if (!ValidationUtil.isValidPassword(password)) {
-            return null;
-        }
+        if (!ValidationUtil.isValidPassword(password)) {return null;}
         
         // Check if username already exists
-        if (userRepository.existsByUsername(username)) {
-            return null;
-        }
+        if (userRepository.existsByUsername(username)) {return null;}
         
         // Create new user with hashed password
         // Creator: Service has the initialization data (username, password hash)
@@ -73,24 +60,16 @@ public class AuthenticationService {
     }
     
     //Sets the currently logged-in user
-    public void setCurrentUser(User user) {
-        this.currentUser = user;
-    }
+    public void setCurrentUser(User user) {this.currentUser = user;}
     
     //Gets the currently logged-in user
-    public User getCurrentUser() {
-        return currentUser;
-    }
+    public User getCurrentUser() {return currentUser;}
     
     //Checks if a user is currently logged in
-    public boolean isLoggedIn() {
-        return currentUser != null;
-    }
+    public boolean isLoggedIn() {return currentUser != null;}
     
     //Logs out the current user
-    public void logout() {
-        this.currentUser = null;
-    }
+    public void logout() {this.currentUser = null;}
 
     //Saves the current user's data
     public void saveCurrentUser() throws IOException {
@@ -100,4 +79,3 @@ public class AuthenticationService {
         userRepository.save(currentUser);
     }
 }
-
