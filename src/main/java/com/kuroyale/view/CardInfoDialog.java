@@ -34,7 +34,7 @@ public class CardInfoDialog extends StackPane {
         // Full screen overlay
         getStyleClass().add("overlay-background");
 
-        // Main container - apply CSS class
+        // Main container
         VBox mainContainer = new VBox(15);
         mainContainer.setAlignment(Pos.CENTER);
         mainContainer.setMaxWidth(350);

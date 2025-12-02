@@ -10,19 +10,30 @@ import javafx.scene.Scene;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-//Main entry point for KU Royale application - Initializes the ServiceFactory
+import java.awt.Taskbar;
+import java.awt.Toolkit;
+import java.awt.Image;
+
+//Main entry point for KU Royale application. Initializes the ServiceFactory
 public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
         try {
-            // Initialize ServiceFactory
-            // Low Coupling - centralized service management
+            // Low Coupling: centralized service management
             ServiceFactory.initialize();
-            
+
             // Load custom fonts
             Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Regular.otf"), 12);
             Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Bold.otf"), 12);
+
+            // Set taskbar/dock icon
+            if (Taskbar.isTaskbarSupported()) {
+                Taskbar taskbar = Taskbar.getTaskbar();
+                Image icon = Toolkit.getDefaultToolkit().getImage(
+                        Main.class.getResource("/images/Clash_Royale_App_Icon (1).png"));
+                taskbar.setIconImage(icon);
+            }
 
             // Load login page first
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
@@ -34,7 +45,7 @@ public class Main extends Application {
 
             // Create scene (1280x720 HD resolution)
             Scene scene = new Scene(root, 1280, 720);
-            
+
             // Load application stylesheet
             scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
 

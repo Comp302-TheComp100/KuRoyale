@@ -11,11 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-/**
- * Visual representation of the player's 4-card hand.
- * Highlights affordable cards and handles selection.
- * Now displays vertically for left sidebar.
- */
+/*Visual representation of the player's 4-card hand.
+ * Highlights affordable cards and handles selection.*/
 public class HandView extends VBox {
     private final Hand hand;
     private final ElixirManager elixirManager;
@@ -44,9 +41,7 @@ public class HandView extends VBox {
         for (int i = 0; i < Hand.HAND_SIZE; i++) {
             Card card = hand.getCard(i);
             CardView view = new CardView(card); // Assuming CardView exists and takes Card
-            // We might need to adjust CardView or create a wrapper if CardView is too
-            // complex
-            // For now, assuming CardView is usable. If not, we'll fix it.
+            // We might need to adjust CardView or create a wrapper if CardView is too complex
 
             // Make it smaller for hand view
             view.setPrefWidth(60);
@@ -74,7 +69,6 @@ public class HandView extends VBox {
             if (card != null && elixirManager.canAfford(card.getCost())) {
                 selectedIndex = index;
             } else {
-                // Shake animation or sound for "cannot afford"
                 return;
             }
         }
@@ -86,17 +80,14 @@ public class HandView extends VBox {
     }
 
     public void update() {
-        // Refresh cards if they changed (e.g. after play)
+        // Refresh cards if they changed
         for (int i = 0; i < Hand.HAND_SIZE; i++) {
             Card card = hand.getCard(i);
             CardView view = cardViews.get(i);
 
-            // Check if card object changed (cycled)
-            if (view.getCard() != card) { // Assuming CardView has getCard() or we check equality
+            // Check if card object changed
+            if (view.getCard() != card) { // Assuming CardView has getCard() or check equality
                 // Re-create or update view
-                // For simplicity, let's just re-initialize if needed, but better to update
-                // content
-                // Since CardView might be complex, let's just replace the view in children
                 CardView newView = new CardView(card);
                 newView.setPrefWidth(60);
                 newView.setPrefHeight(80);

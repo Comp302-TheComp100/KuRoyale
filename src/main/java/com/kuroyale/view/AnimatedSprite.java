@@ -15,14 +15,10 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * AnimatedSprite for rendering animated GIF troops using frame-by-frame
- * animation.
- * GRASP Principles:
- * - Information Expert: Knows how to extract and display GIF frames
- * - Creator: Created by BattleArenaView when rendering troops
- * - Low Coupling: Only depends on JavaFX and ImageIO
- */
+/* AnimatedSprite for rendering animated GIF troops using animation.
+ * Information Expert: Knows how to extract and display GIF frames
+ * Creator: Created by BattleArenaView when rendering troops
+ * Low Coupling: Only depends on JavaFX and ImageIO*/
 public class AnimatedSprite extends ImageView {
 
     private List<Image> frames;
@@ -32,23 +28,12 @@ public class AnimatedSprite extends ImageView {
     private Timeline timeline;
     private double speedMultiplier = 1.0;
 
-    /**
-     * Creates an animated sprite from a GIF path.
-     * 
-     * @param gifPath Path to the GIF resource
-     * @param size    Size in pixels to fit the sprite
-     */
+    // Creates an animated sprite from a GIF path.
     public AnimatedSprite(String gifPath, double size) {
         this(gifPath, size, 1.0);
     }
 
-    /**
-     * Creates an animated sprite from a GIF path with speed control.
-     * 
-     * @param gifPath         Path to the GIF resource
-     * @param size            Size in pixels to fit the sprite
-     * @param speedMultiplier Animation speed multiplier (1.0 = normal 10fps)
-     */
+    //Creates an animated sprite from a GIF path with speed control.
     public AnimatedSprite(String gifPath, double size, double speedMultiplier) {
         super();
         this.speedMultiplier = speedMultiplier;
@@ -70,8 +55,6 @@ public class AnimatedSprite extends ImageView {
                             if (loadedFrames != null && !loadedFrames.isEmpty()) {
                                 frameCache.put(gifPath, loadedFrames);
                                 // Only update if we haven't been stopped or changed in the meantime
-                                // (For simplicity, we just update. A more robust solution might check a
-                                // 'currentPath' tag)
                                 this.frames = loadedFrames;
                                 initAnimation();
                             }
@@ -92,12 +75,7 @@ public class AnimatedSprite extends ImageView {
         }
     }
 
-    /**
-     * Updates the animation to a new GIF and speed without recreating the object.
-     * 
-     * @param gifPath         Path to the new GIF resource
-     * @param speedMultiplier New animation speed multiplier
-     */
+    // Updates the animation to a new GIF and speed without recreating the object.
     public void updateAnimation(String gifPath, double speedMultiplier) {
         this.speedMultiplier = speedMultiplier;
 
@@ -147,7 +125,6 @@ public class AnimatedSprite extends ImageView {
                     break; // No more frames
                 }
             }
-
             reader.dispose();
             imageInputStream.close();
             inputStream.close();
@@ -160,9 +137,7 @@ public class AnimatedSprite extends ImageView {
         return loadedFrames;
     }
 
-    /**
-     * Starts the frame-by-frame animation.
-     */
+    // Starts the frame-by-frame animation.
     private void startAnimation() {
         // Cycle through frames based on speed multiplier
         // Base duration is 100ms (10 FPS)
@@ -173,33 +148,21 @@ public class AnimatedSprite extends ImageView {
         timeline.play();
     }
 
-    /**
-     * Advances to the next frame.
-     */
+    // Advances to the next frame.
     private void nextFrame() {
         currentFrame = (currentFrame + 1) % frames.size();
         setImage(frames.get(currentFrame));
     }
 
-    /**
-     * Stops the animation.
-     */
+    // Stops the animation.
     public void stop() {
         if (timeline != null) {
             timeline.stop();
         }
     }
 
-    /**
-     * Helper to construct GIF path based on troop properties.
-     * Naming pattern: {CardName}_{state}_{side}_{W}-{H}.gif
-     * 
-     * @param cardName     Name of the card (e.g., "Giant")
-     * @param state        Animation state: "walk" or "fight"
-     * @param isPlayerSide true for player, false for opponent
-     * @param isRage       true if in rage mode
-     * @return Path to GIF resource
-     */
+    // Helper to construct GIF path based on troop properties.
+    // Naming: {CardName}_{state}_{side}_{W}-{H}.gif
     public static String buildGifPath(String cardName, String state, boolean isPlayerSide, boolean isRage) {
         String side = isPlayerSide ? "player" : "opponent";
         String rageStr = isRage ? "-rage" : "";
@@ -208,24 +171,19 @@ public class AnimatedSprite extends ImageView {
         String fileName = cardName.replace(" ", "");
 
         // Pattern: {CardName}_{state}{-rage}_{side}_{W}-{H}.gif
-        // For simplicity, we'll use a lookup for dimensions
         String dimensions = getAnimationDimensions(fileName);
 
-        return String.format("/gifs/%s_%s%s_%s_%s.gif",
-                fileName, state, rageStr, side, dimensions);
+        return String.format("/gifs/%s_%s%s_%s_%s.gif", fileName, state, rageStr, side, dimensions);
     }
 
-    /**
-     * Returns the dimension string for a given card name.
-     * This maps card names to their GIF dimensions.
-     */
+    // Returns the dimension string for a given card name.
+    // This maps card names to their GIF dimensions.
     private static String getAnimationDimensions(String cardName) {
-        // Based on the GIF files provided
         switch (cardName) {
             case "Giant":
                 return "109-109";
             case "Archer":
-                return "62-62"; // walk dimension; fight is different but we'll use walk as default
+                return "62-62";
             case "Barbarian":
                 return "115-90";
             case "Valkyrie":
@@ -237,13 +195,11 @@ public class AnimatedSprite extends ImageView {
             case "BabyDragon":
                 return "88-80";
             default:
-                return "62-62"; // Default fallback
+                return "62-62";
         }
     }
 
-    /**
-     * Checks if the given card name has a supported animation.
-     */
+    // Checks if the given card name has a supported animation.
     public static boolean isAnimated(String cardName) {
         switch (cardName) {
             case "Giant":

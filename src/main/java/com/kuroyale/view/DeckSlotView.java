@@ -30,7 +30,7 @@ public class DeckSlotView extends StackPane {
         setMaxSize(90, 120);
         getStyleClass().add("deck-slot");
 
-        // Create placeholder (+ icon)
+        // Create placeholder
         placeholderLabel = new Label("+");
         placeholderLabel.setFont(new Font(48));
         placeholderLabel.setStyle("-fx-text-fill: rgba(148, 163, 184, 0.3);");
@@ -49,8 +49,8 @@ public class DeckSlotView extends StackPane {
 
         getChildren().add(content);
 
-        // Hover effects for filled deck slots (cards in deck)
-        // Use same animation as CardView - simple scale transform
+        // Hover effects for filled deck slots
+        // Use same animation as CardView
         setOnMouseEntered(e -> {
             if (!isEmpty()) {
                 // Same scale as CardView (1.02)
@@ -117,8 +117,7 @@ public class DeckSlotView extends StackPane {
             String color = getPlaceholderColor(card.getType());
             placeholder.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 8;");
 
-            Label placeholderLabel = new Label(card.getName().substring(0, Math.min(3, card.getName().length()))
-                    .toUpperCase(java.util.Locale.ENGLISH));
+            Label placeholderLabel = new Label(card.getName().substring(0, Math.min(3, card.getName().length())).toUpperCase(java.util.Locale.ENGLISH));
             placeholderLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
             placeholder.getChildren().add(placeholderLabel);
             content.getChildren().add(placeholder);
@@ -167,8 +166,7 @@ public class DeckSlotView extends StackPane {
 
         StackPane imageContainer = new StackPane();
         imageContainer.setStyle("-fx-background-color: transparent;");
-        // Add children in order: cardImage (bottom), highlightOverlay (middle),
-        // costPane (top)
+        // Add children in order: cardImage (bottom), highlightOverlay (middle), costPane (top)
         imageContainer.getChildren().addAll(cardImage, highlightOverlay, costPane);
 
         // Position cost at top left

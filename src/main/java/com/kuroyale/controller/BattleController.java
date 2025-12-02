@@ -194,7 +194,6 @@ public class BattleController {
         if (gameState.isGameOver() && !gameOverShown) {
             gameOverShown = true;
             gameLoop.stop();
-            System.out.println("Game Over! Showing popup...");
             showGameOverPopup();
         }
     }
@@ -267,7 +266,6 @@ public class BattleController {
         if (currentUser != null && currentArenaLayout != null) {
             SavedGameState savedGame = gameSaveService.saveGame(gameState, currentUser, currentArenaLayout);
             if (savedGame != null) {
-                System.out.println("Game saved successfully!");
                 showSaveConfirmation();
             } else {
                 System.err.println("Failed to save game");
@@ -284,8 +282,6 @@ public class BattleController {
         if (currentUser != null && currentArenaLayout != null) {
             SavedGameState savedGame = gameSaveService.saveGame(gameState, currentUser, currentArenaLayout);
             if (savedGame != null) {
-                System.out.println("Game saved successfully!");
-                // Show confirmation briefly
                 showSaveConfirmationBrief();
             } else {
                 System.err.println("Failed to save game");
@@ -382,7 +378,6 @@ public class BattleController {
         }
         
         // Restore active troops
-        System.out.println("Restoring " + savedGame.getActiveTroops().size() + " troops...");
         for (SavedGameState.SavedTroop savedTroop : savedGame.getActiveTroops()) {
             Card card = cardCatalog.getCardByName(savedTroop.getCardName());
             if (card != null) {
@@ -401,17 +396,15 @@ public class BattleController {
                         troop.setUnitState(UnitState.IDLE);
                     }
                     gameState.getActiveTroops().add(troop);
-                    System.out.println("  ✓ Restored " + savedTroop.getCardName() + " at (" + savedTroop.getGridX() + "," + savedTroop.getGridY() + ")");
                 } else {
-                    System.out.println("  ✗ Invalid position for " + savedTroop.getCardName());
+                    //System.out.println("  ✗ Invalid position for " + savedTroop.getCardName());
                 }
             } else {
-                System.out.println("  ✗ Card not found: " + savedTroop.getCardName());
+                //System.out.println("  ✗ Card not found: " + savedTroop.getCardName());
             }
         }
         
         // Restore active buildings
-        System.out.println("Restoring " + savedGame.getActiveBuildings().size() + " buildings...");
         for (SavedGameState.SavedBuilding savedBuilding : savedGame.getActiveBuildings()) {
             Card card = cardCatalog.getCardByName(savedBuilding.getCardName());
             if (card != null) {
@@ -454,24 +447,13 @@ public class BattleController {
                     }
                     
                     gameState.getActiveBuildings().add(building);
-                    System.out.println("  ✓ Restored " + savedBuilding.getCardName() + " at (" + savedBuilding.getGridX() + "," + savedBuilding.getGridY() + ")");
                 } else {
-                    System.out.println("  ✗ Invalid position for " + savedBuilding.getCardName());
+                    //System.out.println("  ✗ Invalid position for " + savedBuilding.getCardName());
                 }
             } else {
-                System.out.println("  ✗ Card not found: " + savedBuilding.getCardName());
+               // System.out.println("  ✗ Card not found: " + savedBuilding.getCardName());
             }
         }
-        
-        System.out.println("=== GAME LOADED ===");
-        System.out.println("Saved at: " + savedGame.getFormattedSaveTime());
-        System.out.println("Time remaining: " + savedGame.getFormattedTimeRemaining());
-        System.out.println("Score - Player: " + savedGame.getPlayerScore() + " Bot: " + savedGame.getBotScore());
-        System.out.println("Elixir - Player: " + savedGame.getPlayerElixir() + " Bot: " + savedGame.getBotElixir());
-        System.out.println("Restored troops: " + gameState.getActiveTroops().size());
-        System.out.println("Restored buildings: " + gameState.getActiveBuildings().size());
-        System.out.println("Towers restored: " + savedGame.getTowers().size());
-        System.out.println("===================");
     }
 
     @FXML

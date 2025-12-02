@@ -11,9 +11,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 
-/**
- * Renders the battle arena and placed units.
- */
+// Renders the battle arena and placed units.
 public class BattleArenaView extends javafx.scene.layout.BorderPane {
     private final GridPane grid;
     private final Pane unitLayer;
@@ -84,8 +82,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         this.grid.setVgap(0);
         this.unitLayer = new Pane();
 
-        // Make unit layer transparent to mouse events so clicks go to grid for
-        // placement
+        // Make unit layer transparent to mouse events so clicks go to grid for placement
         unitLayer.setMouseTransparent(true);
 
         this.arenaPane = new Pane(grid, unitLayer);
@@ -117,16 +114,13 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         });
         
         // Clear hover highlight when mouse leaves arena
-        arenaPane.setOnMouseExited(e -> {
-            clearHoverHighlight();
-        });
+        arenaPane.setOnMouseExited(e -> {clearHoverHighlight();});
 
         StackPane centerContainer = new StackPane(arenaPane);
         centerContainer.setAlignment(javafx.geometry.Pos.TOP_CENTER); // Align to top as requested
         centerContainer.setPadding(new javafx.geometry.Insets(20, 0, 0, 0)); // Add some top padding
 
         this.setCenter(centerContainer);
-
         renderArena();
     }
 
@@ -148,10 +142,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                 TileType type = cell.getTileType();
 
                 // Treat towers as grass for the base tile so they look right when destroyed
-                if (type == TileType.PRINCESS_TOWER_USER ||
-                        type == TileType.PRINCESS_TOWER_COMPUTER ||
-                        type == TileType.KING_TOWER_USER ||
-                        type == TileType.KING_TOWER_COMPUTER) {
+                if (type == TileType.PRINCESS_TOWER_USER || type == TileType.PRINCESS_TOWER_COMPUTER || type == TileType.KING_TOWER_USER || type == TileType.KING_TOWER_COMPUTER) {
                     type = TileType.GRASS;
                 }
 
@@ -191,9 +182,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     }
 
     private final java.util.Map<com.kuroyale.model.GridPosition, javafx.scene.Node> activeTowerVisuals = new java.util.HashMap<>();
-    // Track last visual positions for interpolation (Pixel coordinates now)
+    // Track last visual positions for interpolation
     private final java.util.Map<com.kuroyale.model.Troop, javafx.geometry.Point2D> lastTroopPositions = new java.util.HashMap<>();
-    // Track active troop visuals to prevent recreation (fixes animation loop)
+    // Track active troop visuals to prevent recreation
     private final java.util.Map<com.kuroyale.model.Troop, javafx.scene.Node> activeTroopVisuals = new java.util.HashMap<>();
     // Track active building visuals to prevent duplication
     private final java.util.Map<com.kuroyale.model.Building, javafx.scene.Node> activeBuildingVisuals = new java.util.HashMap<>();
@@ -274,11 +265,10 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         // Health Text: "1400" (Remaining only)
         javafx.scene.text.Text healthText = new javafx.scene.text.Text(String.format("%.0f", currentHealth));
         healthText.setId("towerHpText_" + x + "_" + y);
-        // Font like Clash Royale: Bold, Impact-like
         healthText.setFont(javafx.scene.text.Font.font("Arial Black", javafx.scene.text.FontWeight.BOLD, 10));
         healthText.setFill(Color.WHITE);
         healthText.setStroke(Color.BLACK);
-        healthText.setStrokeWidth(0.5); // Thicker stroke for CR look
+        healthText.setStrokeWidth(0.5);
 
         StackPane healthBarContainer = new StackPane();
         // Align foreground to left
@@ -297,8 +287,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         grid.add(towerStack, x, y, size, size);
         GridPane.setHalignment(towerStack, javafx.geometry.HPos.CENTER);
         GridPane.setValignment(towerStack, javafx.geometry.VPos.CENTER);
-        // Index each covered coordinate to the stack (center tile will resolve via
-        // bounds)
+        // Index each covered coordinate to the stack
         for (int dx = 0; dx < size; dx++) {
             for (int dy = 0; dy < size; dy++) {
                 indexCellNode(x + dx, y + dy, towerStack);
@@ -325,9 +314,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
         // Update Score
         scoreLabel.setText(String.format("%d - %d", gameState.getPlayerScore(), gameState.getBotScore()));
-
-        // DO NOT clear unitLayer here, as we are caching visuals now.
-        // unitLayer.getChildren().clear();
 
         // Remove destroyed towers
         java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.GridPosition, javafx.scene.Node>> it = activeTowerVisuals
@@ -362,15 +348,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     ((AnimatedSprite) node).stop();
                 }
                 unitLayer.getChildren().remove(node);
-                // Also remove health bar parts if they were added separately (currently they
-                // are added to unitLayer)
-                // Note: The current implementation adds health bars to unitLayer every frame,
-                // which is inefficient.
-                // For now, we just remove the main unit node. The health bars are cleared by
-                // unitLayer.getChildren().clear()
-                // but wait, we removed that clear() call? No, we need to remove the clear()
-                // call to support caching!
-
                 // Remove associated health bars
                 String hpBarId = "hp_" + t.hashCode();
                 unitLayer.getChildren().removeIf(n -> hpBarId.equals(n.getId()));
@@ -399,12 +376,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             }
         }
 
-        // We must NOT clear unitLayer if we want to cache visuals.
-        // However, the original code cleared unitLayer every frame.
-        // We need to change how we manage children.
-        // Let's remove the clear() call at the top of update() and manage children
-        // manually.
-
         for (com.kuroyale.model.Troop troop : troops) {
             com.kuroyale.model.GridPosition pos = troop.getPosition();
             javafx.scene.Node cellNode = getGridCell(pos.getX(), pos.getY());
@@ -413,7 +384,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                 javafx.geometry.Bounds cellBounds = cellNode.getBoundsInParent();
 
                 // Visual interpolation for smooth movement
-                // Calculate visual position using linear interpolation based on moveProgress
                 double visualX, visualY;
 
                 if (troop.getPath() != null && !troop.getPath().isEmpty()
@@ -423,7 +393,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
                     // Linear interpolation: start + (end - start) * progress
                     double progress = troop.getMoveProgress();
-                    // Clamp progress to [0, 1] just in case
                     progress = Math.max(0.0, Math.min(1.0, progress));
 
                     // Use actual cell bounds instead of arithmetic to avoid cumulative offset
@@ -503,7 +472,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                                 needsCreation = true;
                             }
                         } else {
-                            // Was not a sprite (maybe fallback circle), recreate
                             unitLayer.getChildren().remove(unitNode);
                             needsCreation = true;
                         }
@@ -568,14 +536,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                 unitNode.setLayoutX(visualX);
                 unitNode.setLayoutY(visualY);
 
-                // Handle Health Bar (recreate every frame for now as it's simple shapes)
-                // Remove old health bars for this troop if any (tricky without ID)
-                // Alternative: Add health bar to a Group with the unitNode?
-                // For now, let's just clear and redraw health bars, but NOT the unit nodes.
-                // But wait, we removed unitLayer.clear().
-                // We need to manage health bars better.
-                // Let's attach health bar ID to look it up.
-
                 String hpBarId = "hp_" + troop.hashCode();
                 unitLayer.getChildren().removeIf(n -> hpBarId.equals(n.getId())); // Troop health bar above the unit
                 double maxHp = troop.getBaseCard().getHp();
@@ -609,7 +569,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
                 unitLayer.getChildren().addAll(hpBg, hpFg);
 
-                // Attack feedback: projectile for ranged units (glow removed)
+                //  projectile for ranged units
                 if (troop.getUnitState() == com.kuroyale.model.UnitState.ATTACKING) {
                     // Projectile for ranged attackers (moving dot)
                     if (troop.getCombatStats() != null &&
@@ -665,8 +625,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         java.util.Set<com.kuroyale.model.Building> currentBuildings = new java.util.HashSet<>(buildings);
 
         // Cleanup visuals for destroyed buildings
-        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.Building, javafx.scene.Node>> buildingIt = activeBuildingVisuals
-                .entrySet().iterator();
+        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.Building, javafx.scene.Node>> buildingIt = activeBuildingVisuals.entrySet().iterator();
         while (buildingIt.hasNext()) {
             java.util.Map.Entry<com.kuroyale.model.Building, javafx.scene.Node> entry = buildingIt.next();
             com.kuroyale.model.Building b = entry.getKey();
@@ -780,24 +739,17 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         renderSpellEffects();
     }
 
-    /**
-     * Helper method to calculate tile coordinates from mouse position.
-     * Finds which cell actually contains the mouse point to avoid offset issues.
-     * 
-     * @param mouseX Mouse X coordinate relative to arenaPane
-     * @param mouseY Mouse Y coordinate relative to arenaPane
-     * @return Array [tileX, tileY] if valid, null if out of bounds
-     */
+    /* Helper method to calculate tile coordinates from mouse position.
+     * Finds which cell actually contains the mouse point to avoid offset issues.*/
     private int[] calculateTileCoordinates(double mouseX, double mouseY) {
         // Use arithmetic calculation (same approach that works when no card is selected)
-        // This avoids issues with bounds that include effects when card is selected
         javafx.geometry.Bounds gridBounds = grid.getBoundsInParent();
         
         // Calculate relative position within grid
         double gridX = mouseX - gridBounds.getMinX();
         double gridY = mouseY - gridBounds.getMinY();
         
-        // Calculate tile coordinates using arithmetic (works consistently regardless of effects)
+        // Calculate tile coordinates using arithmetic
         int tileX = (int) Math.floor(gridX / TILE_SIZE);
         int tileY = (int) Math.floor(gridY / TILE_SIZE);
         
@@ -808,9 +760,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         return null;
     }
     
-    /**
-     * Helper method to get the grid cell node at the specified grid coordinates.
-     */
+    //Helper method to get the grid cell node at the specified grid coordinates.
     private javafx.scene.Node getGridCell(int x, int y) {
         return cellIndex.getOrDefault(key(x, y), null);
     }
@@ -872,17 +822,13 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                     }
                 } else {
                     // Reset - remove effects
-                    // Note: hover highlight uses border stroke, not effect, so it won't be affected
                     rect.setEffect(null);
                 }
             }
         }
     }
 
-    /**
-     * Highlights the tile at the specified coordinates to show where the mouse is hovering.
-     * Uses Clash Royale-style overlay with semi-transparent fill and flush border (no gaps).
-     */
+    //Highlights the tile at the specified coordinates to show where the mouse is hovering.
     private void highlightHoveredTile(int tileX, int tileY) {
         // If hovering over the same tile, no need to update
         if (currentHoveredTileX == tileX && currentHoveredTileY == tileY) {
@@ -902,14 +848,10 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         if (node instanceof StackPane) {
             return;
         }
-        
-        // Get cell bounds WITHOUT effects (getBoundsInLocal doesn't include effects)
-        // Then convert to parent coordinates to get actual position
-        // This matches how troops are positioned but avoids effect-induced size changes
+
         javafx.geometry.Bounds localBounds = node.getBoundsInLocal();
         
         // Convert local bounds (0,0 to TILE_SIZE, TILE_SIZE) to parent (arenaPane) coordinates
-        // This gives us the actual cell position without effects
         javafx.geometry.Point2D topLeft = node.localToParent(0, 0);
         javafx.geometry.Point2D bottomRight = node.localToParent(TILE_SIZE, TILE_SIZE);
         
@@ -920,7 +862,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         double cellHeight = bottomRight.getY() - topLeft.getY();
         
         // Use TILE_SIZE for overlay dimensions (not bounds which include effects)
-        // This ensures consistent size regardless of card selection state
         Rectangle overlay = new Rectangle(TILE_SIZE, TILE_SIZE);
         
         // Clash Royale style: semi-transparent cyan fill with bright border
@@ -930,7 +871,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         overlay.setStrokeType(javafx.scene.shape.StrokeType.INSIDE); // Stroke inside to avoid gaps
         
         // Position overlay using actual cell position (without effects)
-        // This matches how troops are positioned and works regardless of card selection
         overlay.setLayoutX(cellX);
         overlay.setLayoutY(cellY);
         
@@ -946,9 +886,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         currentHoveredOverlay = overlay;
     }
     
-    /**
-     * Clears the hover highlight from the currently hovered tile.
-     */
+    //Clears the hover highlight from the currently hovered tile.
     private void clearHoverHighlight() {
         if (currentHoveredOverlay != null) {
             unitLayer.getChildren().remove(currentHoveredOverlay);
@@ -962,12 +900,11 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     public GridPane getGrid() {
         return grid;
     }
-
     public int getTileSize() {
         return TILE_SIZE;
     }
 
-    // Helper: find nearest enemy troop within range (view-side approximation)
+    //find nearest enemy troop within range
     private com.kuroyale.model.Troop findNearestEnemyTroopInRange(com.kuroyale.model.Troop self) {
         com.kuroyale.model.Troop best = null;
         double bestDist = Double.MAX_VALUE;

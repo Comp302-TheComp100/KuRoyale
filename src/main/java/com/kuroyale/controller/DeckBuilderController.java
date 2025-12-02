@@ -508,7 +508,6 @@ public class DeckBuilderController {
 
     private void addCardToDeck(Card card) {
         if (deck.isFull()) {
-            System.out.println("Deck is full!");
             return;
         }
 

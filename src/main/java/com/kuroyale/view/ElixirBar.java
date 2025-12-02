@@ -7,10 +7,8 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-/**
- * Visual elixir meter.
- * Shows current/max elixir and an animated progress bar.
- */
+/*Visual elixir meter.
+ * Shows current/max elixir and an animated progress bar.*/
 public class ElixirBar extends VBox {
     private final ProgressBar progressBar;
     private final Label elixirLabel;
@@ -28,13 +26,13 @@ public class ElixirBar extends VBox {
         HBox labelContainer = new HBox(10);
         labelContainer.setAlignment(Pos.CENTER);
 
-        // Label: "7 / 10"
+        //Elixir Label
         this.elixirLabel = new Label();
         this.elixirLabel.getStyleClass().add("elixir-label");
         this.elixirLabel.setStyle(
                 "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 16px; -fx-effect: dropshadow(one-pass-box, black, 2, 0.5, 0, 0);");
 
-        // x2 indicator (visible by default now)
+        // x2 indicator
         this.doubleElixirLabel = new Label("x1");
         this.doubleElixirLabel.setStyle(
                 "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
@@ -47,17 +45,13 @@ public class ElixirBar extends VBox {
         this.progressBar.setPrefWidth(200);
         this.progressBar.setPrefHeight(20);
         this.progressBar.getStyleClass().add("elixir-progress-bar");
-        // Style the bar color to pink like Clash Royale
         this.progressBar.setStyle("-fx-accent: #FF00FF;");
 
         this.getChildren().addAll(labelContainer, progressBar);
-
         update();
     }
 
-    public void setDoubleElixirActive(boolean active) {
-        // doubleElixirLabel.setVisible(active); // No longer hiding it
-    }
+    public void setDoubleElixirActive(boolean active) {doubleElixirLabel.setVisible(active);}
 
     public void update() {
         double current = elixirManager.getCurrentElixir();
