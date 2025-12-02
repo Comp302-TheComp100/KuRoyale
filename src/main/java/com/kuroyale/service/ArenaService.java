@@ -72,11 +72,9 @@ public class ArenaService {
             // Save to current user's profile
             currentUser.setArenaLayout(layout);
             userRepository.save(currentUser);
-            System.out.println("Saving arena layout to user profile: " + layout.getName());
         } else {
             // Fallback to in-memory storage if no user logged in
             this.savedLayout = layout;
-            System.out.println("Saving arena layout (in-memory): " + layout.getName());
         }
     }
 

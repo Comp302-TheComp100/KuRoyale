@@ -43,12 +43,6 @@ public class GameSaveService {
                 oos.writeObject(savedGame);
             }
 
-            System.out.println("=== GAME SAVED ===");
-            System.out.println("File: " + fileName);
-            System.out.println("Troops saved: " + savedGame.getActiveTroops().size());
-            System.out.println("Buildings saved: " + savedGame.getActiveBuildings().size());
-            System.out.println("Towers saved: " + savedGame.getTowers().size());
-            System.out.println("==================");
             return savedGame;
 
         } catch (IOException e) {
@@ -124,7 +118,6 @@ public class GameSaveService {
                 if (fileSaveId != null && fileSaveId.equals(saveId)) {
                     try {
                         Files.delete(file);
-                        System.out.println("Deleted save: " + file.getFileName());
                         return true;
                     } catch (IOException e) {
                         System.err.println("Failed to delete file: " + file.getFileName() + " - " + e.getMessage());
