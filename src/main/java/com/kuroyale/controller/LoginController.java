@@ -2,15 +2,12 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.model.Login;
+import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.SoundEffectUtil;
-import com.kuroyale.util.ValidationUtil;
 
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -18,45 +15,36 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
-import javafx.stage.Stage;
 
-/*Controller for the login/sign-in screen
- *  Controller - delegates to services
- *  Low Coupling - uses services via dependency injection
- *  High Cohesion - focused only on UI concerns*/
+/* Controller for the login/sign-in screen
+ * Implements Model-View-Controller (MVC) - Controller component
+ * Logic is delegated to the LoginModel. Navigation is centralized in SceneLoader. */
 public class LoginController {
-    @FXML
-    private VBox root;
-    @FXML
-    private TextField usernameField;
-    @FXML
-    private PasswordField passwordField;
-    @FXML
-    private Button createAccountButton;
-    @FXML
-    private Button loginButton;
-    @FXML
-    private Label errorLabel;
-    @FXML
-    private Label titleLabel;
-    
-    // Service dependencies (injected via ServiceFactory)
-    private AuthenticationService authService;
-    
+    @FXML private VBox root;
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Button createAccountButton;
+    @FXML private Button loginButton;
+    @FXML private Label errorLabel;
+    @FXML private Label titleLabel;
+
+    // Instantiate the Model
+    private final Login model = new Login();
+    //Instantiate the SceneLoader
+    private final SceneLoader sceneLoader = new SceneLoader();
+
     // MediaPlayer for start screen music
     private MediaPlayer startMusicPlayer;
 
     @FXML
     private void initialize() {
-        // Get service from factory (dependency injection)
-        this.authService = ServiceFactory.getInstance().getAuthenticationService();
+        // Initialization for the controller itself
     }
 
-    //Initialize styles after FXML is loaded
+    // Initialize styles after FXML is loaded
     public void initializeStyles() {
-        // Apply CSS classes
         root.getStyleClass().add("main-menu-background");
-        
+
         if (titleLabel != null) {
             titleLabel.getStyleClass().add("login-title-label");
         }
@@ -65,24 +53,24 @@ public class LoginController {
         createAccountButton.getStyleClass().add("login-button");
         loginButton.getStyleClass().add("login-button");
         errorLabel.getStyleClass().add("error-label");
-        
+
         addLoginButtonHoverEffects(createAccountButton);
         addLoginButtonHoverEffects(loginButton);
         playStartMusic();
     }
-    
-    //Add programmatic hover effects for login buttons (scale transforms)
-    private void addLoginButtonHoverEffects(Button button) {
+
+    // Add programmatic hover effects for login buttons (scale transforms)
+    private void addLoginButtonHoverEffects(Node button) {
         button.setOnMouseEntered(e -> {
             button.setScaleX(1.05);
             button.setScaleY(1.05);
         });
-        
+
         button.setOnMouseExited(e -> {
             button.setScaleX(1.0);
             button.setScaleY(1.0);
         });
-        
+
         button.setOnMousePressed(e -> {button.setTranslateY(2);});
         button.setOnMouseReleased(e -> {button.setTranslateY(0);});
     }
@@ -93,32 +81,25 @@ public class LoginController {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
-        // Clear previous error
         clearError();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            showError("Please enter both username and password");
-            return;
-        }
-
-        // Validate using ValidationUtil (business rule)
-        if (!ValidationUtil.isValidUsername(username)) {
-            showError(ValidationUtil.getUsernameRequirements());
-            return;
-        }
-        
-        if (!ValidationUtil.isValidPassword(password)) {
-            showError(ValidationUtil.getPasswordRequirements());
+        //Delegate all validation logic to the Model
+        String validationError = model.validateCredentials(username, password);
+        if (!validationError.isEmpty()) {
+            showError(validationError);
             return;
         }
 
         try {
-            com.kuroyale.model.User user = authService.register(username, password);
+            // Delegate registration logic to the Model
+            com.kuroyale.model.User user = model.registerUser(username, password);
+
             if (user != null) {
-                authService.setCurrentUser(user);
+                // Success
                 stopStartMusic();
                 navigateToMainMenu();
             } else {
+                // Failure (e.g., username exists)
                 showError("Username already exists. Please choose a different username.");
             }
         } catch (IOException e) {
@@ -133,21 +114,25 @@ public class LoginController {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
-        // Clear previous error
         clearError();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            showError("Please enter both username and password");
+        // Delegate all validation logic to the Model
+        String validationError = model.validateCredentials(username, password);
+        if (!validationError.isEmpty()) {
+            showError(validationError);
             return;
         }
 
         try {
-            com.kuroyale.model.User user = authService.authenticate(username, password);
+            //Delegate authentication logic to the Model
+            com.kuroyale.model.User user = model.authenticateUser(username, password);
+
             if (user != null) {
-                authService.setCurrentUser(user);
+                // Success
                 stopStartMusic();
                 navigateToMainMenu();
             } else {
+                // Failure (invalid credentials)
                 showError("Invalid username or password");
             }
         } catch (IOException e) {
@@ -156,19 +141,19 @@ public class LoginController {
         }
     }
 
-    //Clears error message
+    // Clears error message
     private void clearError() {
         errorLabel.setText("");
         errorLabel.setVisible(false);
     }
 
-    //Shows an error message (UI concern)
+    // Shows an error message
     private void showError(String message) {
         errorLabel.setText(message);
         errorLabel.setVisible(true);
     }
 
-    //Plays the start screen music
+    // Plays the start screen music
     private void playStartMusic() {
         try {
             String soundPath = getClass().getResource("/musics/start.mp3").toExternalForm();
@@ -176,12 +161,11 @@ public class LoginController {
             startMusicPlayer = new MediaPlayer(media);
             startMusicPlayer.play();
         } catch (Exception e) {
-            // Silently fail if sound cannot be played
             e.printStackTrace();
         }
     }
-    
-    //Stops the start screen music
+
+    // Stops the start screen music
     private void stopStartMusic() {
         if (startMusicPlayer != null) {
             startMusicPlayer.stop();
@@ -189,18 +173,11 @@ public class LoginController {
         }
     }
 
-    //Navigates to the main menu (UI concern)
+    // Navigates to the main menu
     private void navigateToMainMenu() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
-            Parent root = loader.load();
-
-            Stage stage = (Stage) loginButton.getScene().getWindow();
-            Scene scene = new Scene(root, 1280, 720);
-            // Load stylesheet for new scene
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale");
+            // Use the centralized SceneLoader utility
+            sceneLoader.load(loginButton, "/fxml/main-menu.fxml", "KU Royale", null);
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to load main menu: " + e.getMessage());

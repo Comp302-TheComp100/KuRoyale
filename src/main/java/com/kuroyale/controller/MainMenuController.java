@@ -3,48 +3,36 @@ package com.kuroyale.controller;
 import java.io.IOException;
 import java.util.List;
 
-import com.kuroyale.model.User;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.GameStartValidator;
+import com.kuroyale.model.MenuModel; // Import the new Model
 import com.kuroyale.util.AudioManager;
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.SceneLoader; // Import the new utility
 import com.kuroyale.util.SoundEffectUtil;
 
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
-
+import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
-import javafx.stage.Stage;
 
 /* Controller for the main menu screen
- *  Controller GRASP pattern - thin controller focused on UI concerns
- *  Low Coupling - uses services via dependency injection*/
+ * Implements Model-View-Controller (MVC) - Controller component*/
 public class MainMenuController {
 
-    @FXML
-    private AnchorPane root;
-    @FXML
-    private Label titleLabel;
-    @FXML
-    private Button deckBuilderButton;
-    @FXML
-    private Button startMatchButton;
-    @FXML
-    private Button resumeGameButton;
-    @FXML
-    private Button arenaDesignButton;
-    @FXML
-    private Button settingsButton;
+    @FXML private AnchorPane root;
+    @FXML private Label titleLabel;
+    @FXML private Button deckBuilderButton;
+    @FXML private Button startMatchButton;
+    @FXML private Button resumeGameButton;
+    @FXML private Button arenaDesignButton;
+    @FXML private Button settingsButton;
 
-    // Static MediaPlayer for main menu music to persist across scene changes
     private static MediaPlayer mainMenuMusicPlayer;
+    private final MenuModel model = new MenuModel();
+    private final SceneLoader sceneLoader = new SceneLoader();
 
     @FXML
     private void initialize() {
@@ -74,7 +62,7 @@ public class MainMenuController {
     }
 
     // Add programmatic hover effects for menu buttons (scale transforms)
-    private void addMenuButtonHoverEffects(Button button) {
+    private void addMenuButtonHoverEffects(Node button) {
         button.setOnMouseEntered(e -> {
             button.setScaleX(1.05);
             button.setScaleY(1.05);
@@ -91,16 +79,7 @@ public class MainMenuController {
     private void handleDeckBuilder() {
         SoundEffectUtil.playButtonClick();
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/deck-builder.fxml"));
-            Parent root = loader.load();
-
-            // Styles are initialized in DeckBuilderController's initialize() method
-            Stage stage = (Stage) deckBuilderButton.getScene().getWindow();
-            Scene scene = new Scene(root, 1280, 720);
-            // Load stylesheet for new scene
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Deck Builder");
+            sceneLoader.load(deckBuilderButton, "/fxml/deck-builder.fxml", "KU Royale - Deck Builder", null);
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to load Deck Builder: " + e.getMessage());
@@ -111,14 +90,7 @@ public class MainMenuController {
     private void handleResumeGame() {
         SoundEffectUtil.playButtonClick();
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/saved-games.fxml"));
-            Parent root = loader.load();
-
-            Stage stage = (Stage) resumeGameButton.getScene().getWindow();
-            Scene scene = new Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Saved Games");
+            sceneLoader.load(resumeGameButton, "/fxml/saved-games.fxml", "KU Royale - Saved Games", null);
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to load Saved Games: " + e.getMessage());
@@ -129,43 +101,25 @@ public class MainMenuController {
     private void handleStartMatch() {
         SoundEffectUtil.playButtonClick();
 
-        // Get current user and validate game start conditions
-        AuthenticationService authService = ServiceFactory.getInstance().getAuthenticationService();
-        User currentUser = authService.getCurrentUser();
-
-        if (currentUser == null) {
-            showError("You must be logged in to start a match.");
-            return;
-        }
-
-        // Validate game start conditions
-        GameStartValidator validator = new GameStartValidator();
-        List<String> validationErrors = validator.validateGameStart(currentUser);
+        // Delegate all business logic to the Model
+        List<String> validationErrors = model.validateAndPrepareMatchStart();
 
         if (!validationErrors.isEmpty()) {
-            // Build error message from all validation errors
+            //Controller/View: Handle the Model's error response
             StringBuilder errorMessage = new StringBuilder("Cannot start match. Please fix the following issues:\n\n");
-            for (String error : validationErrors) {
-                errorMessage.append("• ").append(error).append("\n");
-            }
+            validationErrors.forEach(error -> errorMessage.append("• ").append(error).append("\n"));
             showError(errorMessage.toString());
             return;
         }
 
-        // After all validations passed, proceed to battle
+        //Controller/Navigation: If valid, load the next scene.
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/battle.fxml"));
-            Parent root = loader.load();
-            
-            // Get the controller and start a new game
-            BattleController battleController = loader.getController();
-            battleController.startGame();
-
-            Stage stage = (Stage) startMatchButton.getScene().getWindow();
-            Scene scene = new Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Battle");
+            // Use the SceneLoader with a special initializer lambda for BattleController
+            sceneLoader.load(startMatchButton, "/fxml/battle.fxml", "KU Royale - Battle", controller -> {
+                if (controller instanceof BattleController battleController) {
+                    battleController.startGame();
+                }
+            });
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to load Battle: " + e.getMessage());
@@ -176,14 +130,7 @@ public class MainMenuController {
     private void handleArenaDesign() {
         SoundEffectUtil.playButtonClick();
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/arena-design.fxml"));
-            Parent root = loader.load();
-
-            Stage stage = (Stage) arenaDesignButton.getScene().getWindow();
-            Scene scene = new Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Arena Design");
+            sceneLoader.load(arenaDesignButton, "/fxml/arena-design.fxml", "KU Royale - Arena Design", null);
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to load Arena Design: " + e.getMessage());
@@ -194,13 +141,9 @@ public class MainMenuController {
     private void handleSettings() {
         SoundEffectUtil.playButtonClick();
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/settings.fxml"));
-            Parent root = loader.load();
-
-            Stage stage = (Stage) settingsButton.getScene().getWindow();
-            Scene scene = new Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
+            // Note: Settings title is usually set in its own controller/FMXL,
+            // but we pass a title here for consistency
+            sceneLoader.load(settingsButton, "/fxml/settings.fxml", "KU Royale - Settings", null);
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to load Settings: " + e.getMessage());
@@ -215,10 +158,8 @@ public class MainMenuController {
         alert.showAndWait();
     }
 
-    // Plays the main menu music in a loop
     private void playMainMenuMusic() {
         try {
-            // Only create and start music if it's not already playing
             if (mainMenuMusicPlayer == null) {
                 String soundPath = getClass().getResource("/musics/main_menu.mp3").toExternalForm();
                 Media media = new Media(soundPath);
@@ -227,14 +168,12 @@ public class MainMenuController {
                 AudioManager.getInstance().registerMusicPlayer(mainMenuMusicPlayer);
                 mainMenuMusicPlayer.play();
             } else {
-                // If music player exists but is not playing, resume it
                 MediaPlayer.Status status = mainMenuMusicPlayer.getStatus();
                 if (status == MediaPlayer.Status.STOPPED || status == MediaPlayer.Status.PAUSED) {
                     mainMenuMusicPlayer.play();
                 }
             }
         } catch (Exception e) {
-            // Silently fail if sound cannot be played
             e.printStackTrace();
         }
     }

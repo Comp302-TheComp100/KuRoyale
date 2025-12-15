@@ -42,14 +42,14 @@
                maxWidth="500"/>
         
         <VBox alignment="CENTER" spacing="15">
-            <Button fx:id="createAccountButton" 
+            <Button fx:id="createAccountButton"
                     text="CREATE ACCOUNT" 
                     onAction="#handleCreateAccount"
                     prefWidth="250"
                     maxWidth="400"
                     prefHeight="60"/>
             
-            <Button fx:id="loginButton" 
+            <Button fx:id="loginButton"
                     text="LOGIN" 
                     onAction="#handleLogin"
                     prefWidth="250"

@@ -30,7 +30,7 @@
         <Label fx:id="titleLabel" text="KU ROYALE"/>
         
         <VBox alignment="CENTER" spacing="20">
-            <Button fx:id="deckBuilderButton" 
+            <Button fx:id="deckBuilderButton"
                     text="DECK BUILDER" 
                     onAction="#handleDeckBuilder"
                     prefWidth="300"
@@ -44,7 +44,7 @@
                 </graphic>
             </Button>
             
-            <Button fx:id="startMatchButton" 
+            <Button fx:id="startMatchButton"
                     text="START MATCH" 
                     onAction="#handleStartMatch"
                     prefWidth="300"
@@ -58,7 +58,7 @@
                 </graphic>
             </Button>
             
-            <Button fx:id="resumeGameButton" 
+            <Button fx:id="resumeGameButton"
                     text="RESUME GAME" 
                     onAction="#handleResumeGame"
                     prefWidth="300"
@@ -72,7 +72,7 @@
                 </graphic>
             </Button>
 
-            <Button fx:id="arenaDesignButton" 
+            <Button fx:id="arenaDesignButton"
                     text="ARENA DESIGN" 
                     onAction="#handleArenaDesign"
                     prefWidth="300"
@@ -89,7 +89,7 @@
     </VBox>
 
     <!-- Settings Button (Top Right) -->
-    <Button fx:id="settingsButton" 
+    <Button fx:id="settingsButton"
             onAction="#handleSettings"
             AnchorPane.topAnchor="30.0" 
             AnchorPane.rightAnchor="30.0"

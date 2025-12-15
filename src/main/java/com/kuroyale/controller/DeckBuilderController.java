@@ -46,8 +46,7 @@ public class DeckBuilderController {
     private static final int DECK_SLOT_ROWS = 2;
     private static final int DECK_SLOT_COLS = 4;
     private static final int BUTTON_GAP = 5;
-    private static final int CARD_BUTTON_OFFSET_Y = -13; // Vertical offset for bottom grid card buttons (negative =
-                                                         // higher/closer)
+    private static final int CARD_BUTTON_OFFSET_Y = -13; // Vertical offset for bottom grid card buttons (negative = higher/closer)
     private static final int CARD_CONTAINER_SPACING = 5;
 
     // Slot dimensions and layout constants
@@ -59,26 +58,16 @@ public class DeckBuilderController {
     private static final int SLOT_CONTAINER_HEIGHT = 280;
     private static final int RECESSED_RECT_OFFSET_Y = 20; // Deck slots are 20px lower than brown background
 
-    @FXML
-    private AnchorPane deckSlotsBackground;
-    @FXML
-    private AnchorPane deckSlotsContainer;
-    @FXML
-    private AnchorPane cardsGridBackground;
-    @FXML
-    private GridPane cardsGrid;
-    @FXML
-    private ScrollPane cardsScrollPane;
-    @FXML
-    private StackPane rootPane;
-    @FXML
-    private Button backButton;
-    @FXML
-    private Label averageElixirValue;
-    @FXML
-    private Label battleDeckTitle;
-    @FXML
-    private HBox averageElixirContainer;
+    @FXML private AnchorPane deckSlotsBackground;
+    @FXML private AnchorPane deckSlotsContainer;
+    @FXML private AnchorPane cardsGridBackground;
+    @FXML private GridPane cardsGrid;
+    @FXML private ScrollPane cardsScrollPane;
+    @FXML private StackPane rootPane;
+    @FXML private Button backButton;
+    @FXML private Label averageElixirValue;
+    @FXML private Label battleDeckTitle;
+    @FXML private HBox averageElixirContainer;
 
     // Service dependencies
     private AuthenticationService authService;
@@ -92,7 +81,7 @@ public class DeckBuilderController {
     private Map<Card, VBox> cardContainerMap; // Track card containers for hiding/showing
     private DeckSlotView selectedDeckSlot;
     private HBox deckSlotButtonsBox;
-    private boolean replaceMode; // Track if we're in replace mode
+    private boolean replaceMode; // Track if in replace mode
     private Card cardToReplace; // Card selected for replacement
 
     @FXML

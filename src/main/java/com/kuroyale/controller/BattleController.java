@@ -19,16 +19,11 @@ import javafx.scene.layout.VBox;
  * Manages the game loop, user input, and UI updates.*/
 public class BattleController {
 
-    @FXML
-    private StackPane arenaContainer;
-    @FXML
-    private HBox elixirContainer;
-    @FXML
-    private VBox handContainer;
-    @FXML
-    private VBox overlayContainer;
-    @FXML
-    private VBox pauseMenuContainer;
+    @FXML private StackPane arenaContainer;
+    @FXML private HBox elixirContainer;
+    @FXML private VBox handContainer;
+    @FXML private VBox overlayContainer;
+    @FXML private VBox pauseMenuContainer;
 
     private GameState gameState;
     private BattleArenaView arenaView;
@@ -61,7 +56,6 @@ public class BattleController {
 
     @FXML
     public void initialize() {
-        // Note: We don't initialize the game here because loadedSavedGame might not be set yet
         // The actual initialization happens in startGame() which is called after setup
     }
     
@@ -70,7 +64,6 @@ public class BattleController {
         // Initialize game state
         User currentUser = authService.getCurrentUser();
         if (currentUser == null) {
-            // Should not happen if flow is correct, but handle gracefully
             handleExit();
             return;
         }
@@ -106,9 +99,7 @@ public class BattleController {
         arenaContainer.getChildren().add(arenaView);
 
         // Handle clicks on arena for card placement
-        arenaView.setOnGridClicked((tileX, tileY) -> {
-            handleArenaClick(tileX, tileY);
-        });
+        arenaView.setOnGridClicked((tileX, tileY) -> {handleArenaClick(tileX, tileY);});
 
         elixirBar = new ElixirBar(gameState.getPlayerElixir());
         elixirContainer.getChildren().add(elixirBar);
@@ -239,7 +230,6 @@ public class BattleController {
                     arenaView.highlightValidCells(false, false);
                 } else {
                     // Failed (not enough elixir, invalid position, etc.)
-                    // no feedback needed
                 }
             }
         }
@@ -272,7 +262,6 @@ public class BattleController {
             }
         }
         
-        // Exit to main menu
         handleExit();
     }
     
@@ -288,7 +277,6 @@ public class BattleController {
             }
         }
         
-        // Resume game
         handleResume();
     }
     
@@ -298,8 +286,7 @@ public class BattleController {
         
         VBox content = new VBox(30);
         content.setAlignment(javafx.geometry.Pos.CENTER);
-        content.setStyle(
-                "-fx-background-color: #2a2a2a; -fx-padding: 50; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 3;");
+        content.setStyle("-fx-background-color: #2a2a2a; -fx-padding: 50; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 3;");
         content.setMaxSize(500, 400);
         
         javafx.scene.control.Label title = new javafx.scene.control.Label("PAUSED");
@@ -396,12 +383,8 @@ public class BattleController {
                         troop.setUnitState(UnitState.IDLE);
                     }
                     gameState.getActiveTroops().add(troop);
-                } else {
-                    //System.out.println("  ✗ Invalid position for " + savedTroop.getCardName());
-                }
-            } else {
-                //System.out.println("  ✗ Card not found: " + savedTroop.getCardName());
-            }
+                } else {}
+            } else {}
         }
         
         // Restore active buildings
@@ -445,14 +428,9 @@ public class BattleController {
                             }
                         }
                     }
-                    
                     gameState.getActiveBuildings().add(building);
-                } else {
-                    //System.out.println("  ✗ Invalid position for " + savedBuilding.getCardName());
-                }
-            } else {
-               // System.out.println("  ✗ Card not found: " + savedBuilding.getCardName());
-            }
+                } else {}
+            } else {}
         }
     }
 
