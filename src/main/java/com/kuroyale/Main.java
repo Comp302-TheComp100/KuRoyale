@@ -10,9 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-import java.awt.Taskbar;
-import java.awt.Toolkit;
-import java.awt.Image;
+import javafx.scene.image.Image;
 
 //Main entry point for KU Royale application. Initializes the ServiceFactory
 public class Main extends Application {
@@ -27,13 +25,9 @@ public class Main extends Application {
             Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Regular.otf"), 12);
             Font.loadFont(getClass().getResourceAsStream("/fonts/Clash_Bold.otf"), 12);
 
-            // Set taskbar/dock icon
-            if (Taskbar.isTaskbarSupported()) {
-                Taskbar taskbar = Taskbar.getTaskbar();
-                Image icon = Toolkit.getDefaultToolkit().getImage(
-                        Main.class.getResource("/images/Clash_Royale_App_Icon (1).png"));
-                taskbar.setIconImage(icon);
-            }
+            // Set application icon
+            Image icon = new Image(getClass().getResourceAsStream("/images/Clash_Royale_App_Icon (1).png"));
+            primaryStage.getIcons().add(icon);
 
             // Load login page first
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
