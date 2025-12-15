@@ -3,6 +3,8 @@ package com.kuroyale.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.kuroyale.service.TargetingService;
+
 //Central game state manager.Holds references to player and bot states, arena, and manages the game loop updates.
 public class GameState {
     private final Hand playerHand;
@@ -17,6 +19,7 @@ public class GameState {
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
     private final List<SpellEffect> activeSpellEffects;
+    private final TargetingService targetingService = new TargetingService();
     private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
     private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
 
@@ -392,6 +395,275 @@ public class GameState {
         activeSpellEffects.add(new SpellEffect(GridPosition.tryCreate(x, y), radius, isPlayer, 1.0));
     }
 
+    /**
+     * Apply circular area damage originating from a troop attack.
+     * Center is derived from the primary target to keep targeting logic unchanged.
+     */
+    public void applyAreaDamageFromTroop(Troop attacker, Troop primaryTarget) {
+        if (attacker == null || primaryTarget == null || !primaryTarget.isAlive())
+            return;
+        GridPosition center = primaryTarget.getPosition();
+        if (center == null)
+            return;
+        int radiusTiles = computeAoERadiusTiles(attacker);
+        if (radiusTiles <= 0)
+            return;
+        applyAreaDamageFromTroopInternal(attacker, center, radiusTiles);
+    }
+
+    public void applyAreaDamageFromTroop(Troop attacker, Building primaryTarget) {
+        if (attacker == null || primaryTarget == null || !primaryTarget.isAlive())
+            return;
+        GridPosition center = buildingCenter(primaryTarget);
+        if (center == null)
+            return;
+        int radiusTiles = computeAoERadiusTiles(attacker);
+        if (radiusTiles <= 0)
+            return;
+        applyAreaDamageFromTroopInternal(attacker, center, radiusTiles);
+    }
+
+    public void applyAreaDamageFromTroop(Troop attacker, Tower primaryTarget) {
+        if (attacker == null || primaryTarget == null || primaryTarget.getCurrentHealth() <= 0)
+            return;
+        GridPosition center = towerCenter(primaryTarget);
+        if (center == null)
+            return;
+        int radiusTiles = computeAoERadiusTiles(attacker);
+        if (radiusTiles <= 0)
+            return;
+        applyAreaDamageFromTroopInternal(attacker, center, radiusTiles);
+    }
+
+    private int computeAoERadiusTiles(Troop attacker) {
+        // Fixed small splash radius for all area-effect troops
+        if (attacker == null)
+            return 0;
+        return 1;
+    }
+
+    private GridPosition buildingCenter(Building b) {
+        if (b == null || b.getPosition() == null)
+            return null;
+        int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
+        int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
+        return GridPosition.tryCreate(cx, cy);
+    }
+
+    private GridPosition towerCenter(Tower tower) {
+        if (tower == null)
+            return null;
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+        for (GridCell cell : arena.getAllCells()) {
+            Tower t = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
+            if (t != tower)
+                continue;
+            int px = cell.getPosition().getX();
+            int py = cell.getPosition().getY();
+            minX = Math.min(minX, px);
+            minY = Math.min(minY, py);
+            maxX = Math.max(maxX, px);
+            maxY = Math.max(maxY, py);
+        }
+        if (minX == Integer.MAX_VALUE)
+            return null;
+        int cx = (minX + maxX) / 2;
+        int cy = (minY + maxY) / 2;
+        return GridPosition.tryCreate(cx, cy);
+    }
+
+    /**
+     * Core AoE implementation shared by all troop-based area attacks.
+     * Respects TargetType for air/ground restrictions and can optionally show a short-lived visual ring.
+     */
+    private void applyAreaDamageFromTroopInternal(Troop attacker, GridPosition center, int radiusTiles) {
+        if (attacker == null || center == null || radiusTiles <= 0)
+            return;
+
+        int damage = attacker.getCombatStats() != null ? attacker.getCombatStats().getDamage() : 0;
+        if (damage <= 0)
+            return;
+
+        TargetType targetType = attacker.getBaseCard() != null ? attacker.getBaseCard().getTarget() : TargetType.BOTH;
+
+        // Damage enemy troops, enforcing TargetType via TargetingService
+        for (Troop t : new java.util.ArrayList<>(activeTroops)) {
+            if (!t.isAlive())
+                continue;
+            if (t.isPlayerSide() == attacker.isPlayerSide())
+                continue;
+            if (!targetingService.isValidTarget(attacker, t))
+                continue;
+            int dx = Math.abs(t.getPosition().getX() - center.getX());
+            int dy = Math.abs(t.getPosition().getY() - center.getY());
+            // Plus-shaped small splash: center + 4 orthogonal neighbors
+            if (dx + dy <= radiusTiles) {
+                t.takeDamage(damage);
+            }
+        }
+        activeTroops.removeIf(t -> !t.isAlive());
+
+        // Damage enemy buildings if attacker can hit ground/structures
+        if (targetType != TargetType.AIR && targetType != TargetType.NONE && !activeBuildings.isEmpty()) {
+            for (Building b : new java.util.ArrayList<>(activeBuildings)) {
+                if (!b.isAlive())
+                    continue;
+                if (b.isPlayerSide() == attacker.isPlayerSide())
+                    continue;
+                GridPosition bc = buildingCenter(b);
+                if (bc == null)
+                    continue;
+                int dx = Math.abs(bc.getX() - center.getX());
+                int dy = Math.abs(bc.getY() - center.getY());
+                if (dx + dy <= radiusTiles) {
+                    b.takeDamage(damage);
+                    if (!b.isAlive()) {
+                        freeFootprint(b);
+                    }
+                }
+            }
+            activeBuildings.removeIf(b -> !b.isAlive());
+        }
+
+        // Damage enemy towers if attacker can hit ground/structures
+        if (targetType != TargetType.AIR && targetType != TargetType.NONE) {
+            java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
+            for (GridCell cell : arena.getAllCells()) {
+                TileType tt = cell.getTileType();
+                boolean enemyTowerTile = attacker.isPlayerSide()
+                        ? (tt == TileType.PRINCESS_TOWER_COMPUTER || tt == TileType.KING_TOWER_COMPUTER)
+                        : (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER);
+                if (!enemyTowerTile)
+                    continue;
+                Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
+                if (tower == null || tower.getCurrentHealth() <= 0)
+                    continue;
+                groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
+            }
+            for (java.util.Map.Entry<Tower, java.util.List<GridCell>> e : groups.entrySet()) {
+                Tower tower = e.getKey();
+                java.util.List<GridCell> cells = e.getValue();
+                int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+                for (GridCell c : cells) {
+                    int px = c.getPosition().getX();
+                    int py = c.getPosition().getY();
+                    minX = Math.min(minX, px);
+                    minY = Math.min(minY, py);
+                    maxX = Math.max(maxX, px);
+                    maxY = Math.max(maxY, py);
+                }
+                int cx = (minX + maxX) / 2;
+                int cy = (minY + maxY) / 2;
+                GridPosition tc = GridPosition.tryCreate(cx, cy);
+                if (tc == null)
+                    continue;
+                int dx = Math.abs(tc.getX() - center.getX());
+                int dy = Math.abs(tc.getY() - center.getY());
+                if (dx + dy <= radiusTiles) {
+                    tower.takeDamage(damage);
+                }
+            }
+        }
+
+        // Short-lived visual ring for this AoE, rendered via BattleArenaView.renderSpellEffects
+        activeSpellEffects.add(new SpellEffect(center, radiusTiles, attacker.isPlayerSide(), 0.3));
+    }
+
+    /**
+     * Apply circular area damage originating from a building attack or death explosion.
+     * Only damages enemy troops and respects the building's targeting rules.
+     */
+    private void applyAreaDamageFromBuilding(Building attacker, GridPosition center, int radiusTiles) {
+        if (attacker == null || center == null || radiusTiles <= 0)
+            return;
+
+        int damage = attacker.getDamage();
+        if (damage <= 0)
+            return;
+
+        // Damage enemy troops respecting building target rules
+        for (Troop t : new java.util.ArrayList<>(activeTroops)) {
+            if (!t.isAlive())
+                continue;
+            if (t.isPlayerSide() == attacker.isPlayerSide())
+                continue;
+            if (!attacker.canTargetTroop(t))
+                continue;
+            int dx = Math.abs(t.getPosition().getX() - center.getX());
+            int dy = Math.abs(t.getPosition().getY() - center.getY());
+            // Plus-shaped small splash: center + 4 orthogonal neighbors
+            if (dx + dy <= radiusTiles) {
+                t.takeDamage(damage);
+            }
+        }
+        activeTroops.removeIf(t -> !t.isAlive());
+
+        // Optional: also damage nearby enemy buildings/towers if this building can hit ground/structures
+        TargetType bt = attacker.getTargetType();
+        if (bt != TargetType.AIR && bt != TargetType.NONE) {
+            // Buildings
+            for (Building b : new java.util.ArrayList<>(activeBuildings)) {
+                if (!b.isAlive())
+                    continue;
+                if (b.isPlayerSide() == attacker.isPlayerSide())
+                    continue;
+                GridPosition bc = buildingCenter(b);
+                if (bc == null)
+                    continue;
+                int dx = Math.abs(bc.getX() - center.getX());
+                int dy = Math.abs(bc.getY() - center.getY());
+                if (dx + dy <= radiusTiles) {
+                    b.takeDamage(damage);
+                    if (!b.isAlive()) {
+                        freeFootprint(b);
+                    }
+                }
+            }
+            activeBuildings.removeIf(b -> !b.isAlive());
+
+            // Towers
+            java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
+            for (GridCell cell : arena.getAllCells()) {
+                TileType tt = cell.getTileType();
+                boolean enemyTowerTile = attacker.isPlayerSide()
+                        ? (tt == TileType.PRINCESS_TOWER_COMPUTER || tt == TileType.KING_TOWER_COMPUTER)
+                        : (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER);
+                if (!enemyTowerTile)
+                    continue;
+                Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
+                if (tower == null || tower.getCurrentHealth() <= 0)
+                    continue;
+                groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
+            }
+            for (java.util.Map.Entry<Tower, java.util.List<GridCell>> e : groups.entrySet()) {
+                Tower tower = e.getKey();
+                java.util.List<GridCell> cells = e.getValue();
+                int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+                for (GridCell c : cells) {
+                    int px = c.getPosition().getX();
+                    int py = c.getPosition().getY();
+                    minX = Math.min(minX, px);
+                    minY = Math.min(minY, py);
+                    maxX = Math.max(maxX, px);
+                    maxY = Math.max(maxY, py);
+                }
+                int cx = (minX + maxX) / 2;
+                int cy = (minY + maxY) / 2;
+                GridPosition tc = GridPosition.tryCreate(cx, cy);
+                if (tc == null)
+                    continue;
+                int dx = Math.abs(tc.getX() - center.getX());
+                int dy = Math.abs(tc.getY() - center.getY());
+                if (dx + dy <= radiusTiles) {
+                    tower.takeDamage(damage);
+                }
+            }
+        }
+
+        // Short-lived visual ring for this AoE, rendered via BattleArenaView.renderSpellEffects
+        activeSpellEffects.add(new SpellEffect(center, radiusTiles, attacker.isPlayerSide(), 0.3));
+    }
+
     private void updateSpellEffects(double deltaTime) {
         if (activeSpellEffects.isEmpty())
             return;
@@ -447,7 +719,15 @@ public class GameState {
             if (best != null) {
                 double cd = b.getAttackCooldown() - deltaTime;
                 if (cd <= 0) {
-                    combatService.applyDamage(b, best);
+                    if (b.isAreaEffect()) {
+                        // Small fixed-radius splash around the primary target troop
+                        GridPosition impactCenter = best.getPosition();
+                        if (impactCenter != null) {
+                            applyAreaDamageFromBuilding(b, impactCenter, 1);
+                        }
+                    } else {
+                        combatService.applyDamage(b, best);
+                    }
                     b.setAttackCooldown(Math.max(0.1, b.getHitSpeedSeconds()));
                 } else {
                     b.setAttackCooldown(cd);
@@ -460,6 +740,23 @@ public class GameState {
         }
         // Remove dead troops post building attacks
         activeTroops.removeIf(t -> !t.isAlive());
+
+        // Trigger death explosion for area-effect buildings (e.g., Bomb Tower)
+        if (!activeBuildings.isEmpty()) {
+            java.util.List<Building> deadAreaBuildings = new java.util.ArrayList<>();
+            for (Building b : activeBuildings) {
+                if (!b.isAlive() && b.isAreaEffect()) {
+                    deadAreaBuildings.add(b);
+                }
+            }
+            for (Building b : deadAreaBuildings) {
+                GridPosition center = buildingCenter(b);
+                if (center != null) {
+                    applyAreaDamageFromBuilding(b, center, 1);
+                }
+                // Footprint will be freed in the main update loop where inactive buildings are removed
+            }
+        }
     }
 
     /*Checks for destroyed towers and updates scores accordingly.

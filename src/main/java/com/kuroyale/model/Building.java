@@ -18,6 +18,7 @@ public class Building {
     private int rangeTiles;
     private TargetType targetType = TargetType.GROUND; // default
     private double attackCooldown;
+    private boolean areaEffect = false;
 
     public Building(GridPosition position, int width, int height, boolean playerSide, double maxHealth,
             String imagePath) {
@@ -50,6 +51,7 @@ public class Building {
         this.hitSpeedSeconds = card.getHitSpeed();
         this.rangeTiles = (int) Math.round(card.getRange());
         this.targetType = card.getTarget();
+        this.areaEffect = card.isAreaEffect();
     }
     
     public String getCardName() {
@@ -90,6 +92,9 @@ public class Building {
     }
     public TargetType getTargetType() {
         return targetType;
+    }
+    public boolean isAreaEffect() {
+        return areaEffect;
     }
     public double getAttackCooldown() {
         return attackCooldown;
