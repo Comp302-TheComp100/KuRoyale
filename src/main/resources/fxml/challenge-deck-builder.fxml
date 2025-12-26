@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<StackPane fx:id="rootPane" xmlns="http://javafx.com/javafx"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.kuroyale.controller.ChallengeDeckBuilderController"
+           prefWidth="1280" prefHeight="720">
+    
+    <AnchorPane prefWidth="1280" prefHeight="720">
+        
+        <!-- Challenge Banner at Top -->
+        <HBox fx:id="challengeBanner" 
+              layoutY="10"
+              alignment="CENTER"
+              prefWidth="1280"
+              spacing="15">
+            <Label fx:id="challengeNameLabel" text="Challenge Name"/>
+            <Label fx:id="challengeRulesLabel" text="Rules preview"/>
+        </HBox>
+        
+        <!-- Battle Deck Title - Centered -->
+        <HBox fx:id="battleDeckTitleContainer" 
+              layoutY="50"
+              alignment="CENTER"
+              prefWidth="1280">
+            <Label fx:id="battleDeckTitle" text="Build Your Challenge Deck"/>
+        </HBox>
+        
+        <!-- Deck Slots Background Area - shows empty rectangles -->
+        <AnchorPane fx:id="deckSlotsBackground" 
+                    layoutX="330" layoutY="90"
+                    prefWidth="620" prefHeight="340">
+            
+            <!-- Average Elixir Cost Display - Centered inside brown area at bottom -->
+            <HBox fx:id="averageElixirContainer" 
+                  layoutY="300" 
+                  spacing="5" 
+                  alignment="CENTER">
+                <Label text="Average Elixir cost:"/>
+                <Label fx:id="averageElixirValue" text="0.0"/>
+                <ImageView fitWidth="25" fitHeight="25" preserveRatio="true">
+                    <image>
+                        <Image url="@/images/card_elixir.png"/>
+                    </image>
+                </ImageView>
+            </HBox>
+        </AnchorPane>
+        
+        <!-- Deck Slots Container - transparent, slots positioned individually, moved down -->
+        <AnchorPane fx:id="deckSlotsContainer" 
+              layoutX="330" layoutY="110"
+              prefWidth="620" prefHeight="280"
+              style="-fx-background-color: transparent;">
+        </AnchorPane>
+        
+        <!-- Validation Status -->
+        <HBox fx:id="validationBox"
+              layoutX="330" layoutY="430"
+              prefWidth="620"
+              alignment="CENTER"
+              spacing="10">
+            <Label fx:id="validationIcon" text="❌"/>
+            <Label fx:id="validationLabel" text="Select cards to build your deck"/>
+        </HBox>
+        
+        <!-- Cards Grid Background - fixed brown background -->
+        <AnchorPane fx:id="cardsGridBackground" 
+                   layoutX="330" layoutY="460"
+                   prefWidth="620" prefHeight="260">
+        </AnchorPane>
+        
+        <!-- Cards Grid Area - transparent scroll pane, only cards scroll -->
+        <ScrollPane fx:id="cardsScrollPane" 
+                   layoutX="0" layoutY="460"
+                   prefWidth="1280" prefHeight="260"
+                   fitToWidth="true">
+            <VBox alignment="CENTER" style="-fx-background-color: transparent; -fx-padding: 20;">
+                <GridPane fx:id="cardsGrid" alignment="CENTER"/>
+            </VBox>
+        </ScrollPane>
+        
+        <!-- Back Button -->
+        <Button fx:id="backButton" 
+                layoutX="50" layoutY="670"
+                text="← BACK" 
+                onAction="#handleBack"/>
+        
+        <!-- Start Challenge Button -->
+        <Button fx:id="startChallengeButton" 
+                layoutX="1050" layoutY="660"
+                text="⚔️ START CHALLENGE" 
+                onAction="#handleStartChallenge"
+                disable="true"/>
+    </AnchorPane>
+    
+</StackPane>

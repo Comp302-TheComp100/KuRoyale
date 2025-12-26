@@ -7,6 +7,7 @@ import com.kuroyale.service.CardCatalog;
 import com.kuroyale.service.DeckManagementService;
 import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.GameSaveService;
+import com.kuroyale.service.ChallengeService;
 
 /*Service Factory for managing service instances and dependencies
  * Pure Fabrication - created to manage object creation and dependencies
@@ -22,9 +23,12 @@ public class ServiceFactory {
     private final DeckManagementService deckManagementService;
     private final ArenaService arenaService;
     private final GameSaveService gameSaveService;
+    private ChallengeService challengeService; // Lazy initialized
 
-    /*Private constructor to enforce singleton pattern
-     * Creator pattern - ServiceFactory has initialization data for services*/
+    /*
+     * Private constructor to enforce singleton pattern
+     * Creator pattern - ServiceFactory has initialization data for services
+     */
     private ServiceFactory() {
         // Create repository
         this.userRepository = new JsonUserRepository();
@@ -39,7 +43,7 @@ public class ServiceFactory {
         this.gameSaveService = new GameSaveService();
     }
 
-    //Gets the singleton instance of ServiceFactory
+    // Gets the singleton instance of ServiceFactory
     public static synchronized ServiceFactory getInstance() {
         if (instance == null) {
             instance = new ServiceFactory();
@@ -47,30 +51,51 @@ public class ServiceFactory {
         return instance;
     }
 
-    //Initializes the ServiceFactory
+    // Initializes the ServiceFactory
     public static void initialize() {
         getInstance();
     }
 
-    //Gets the UserRepository instance
-    public UserRepository getUserRepository() {return userRepository;}
+    // Gets the UserRepository instance
+    public UserRepository getUserRepository() {
+        return userRepository;
+    }
 
-    //Gets the CardCatalog instance
-    public CardCatalog getCardCatalog() {return cardCatalog;}
+    // Gets the CardCatalog instance
+    public CardCatalog getCardCatalog() {
+        return cardCatalog;
+    }
 
-    //Gets the AuthenticationService instance
-    public AuthenticationService getAuthenticationService() {return authenticationService;}
+    // Gets the AuthenticationService instance
+    public AuthenticationService getAuthenticationService() {
+        return authenticationService;
+    }
 
-    //Gets the DeckManagementService instance
-    public DeckManagementService getDeckManagementService() {return deckManagementService;}
+    // Gets the DeckManagementService instance
+    public DeckManagementService getDeckManagementService() {
+        return deckManagementService;
+    }
 
-    //Gets the ArenaService instance
-    public ArenaService getArenaService() {return arenaService;}
+    // Gets the ArenaService instance
+    public ArenaService getArenaService() {
+        return arenaService;
+    }
 
-    //Gets the GameSaveService instance
-    public GameSaveService getGameSaveService() {return gameSaveService;}
+    // Gets the GameSaveService instance
+    public GameSaveService getGameSaveService() {
+        return gameSaveService;
+    }
 
-    //Resets the singleton instance
-    static void reset() {instance = null;}
+    // Gets the ChallengeService instance
+    public ChallengeService getChallengeService() {
+        if (challengeService == null) {
+            challengeService = new ChallengeService();
+        }
+        return challengeService;
+    }
+
+    // Resets the singleton instance
+    static void reset() {
+        instance = null;
+    }
 }
-

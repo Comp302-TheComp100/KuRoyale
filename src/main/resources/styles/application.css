@@ -407,3 +407,130 @@
   -fx-padding: 20;
   -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 15, 0, 0, 5);
 }
+
+/* ============================================
+   CHALLENGE MODE STYLES
+   ============================================ */
+
+.challenge-subtitle {
+  -fx-font-size: 16px;
+  -fx-font-family: "Clash", Arial;
+  -fx-text-fill: rgba(255, 255, 255, 0.8);
+}
+
+/* Base Challenge Card */
+.challenge-card {
+  -fx-background-color: linear-gradient(to bottom, #3d3d5c 0%, #2d2d44 100%);
+  -fx-background-radius: 15;
+  -fx-border-radius: 15;
+  -fx-border-width: 3;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0, 0, 4);
+}
+
+/* Locked Challenge Card */
+.challenge-card-locked {
+  -fx-background-color: linear-gradient(to bottom, #4a4a5a 0%, #3a3a4a 100%);
+  -fx-border-color: #5a5a6a;
+  -fx-opacity: 0.85;
+}
+
+/* Unlocked Challenge Card */
+.challenge-card-unlocked {
+  -fx-background-color: linear-gradient(to bottom, #4a3d6a 0%, #3d2d5c 100%);
+  -fx-border-color: #8b5cf6;
+  -fx-cursor: hand;
+}
+
+.challenge-card-unlocked:hover {
+  -fx-background-color: linear-gradient(to bottom, #5a4d7a 0%, #4d3d6c 100%);
+  -fx-border-color: #a78bfa;
+}
+
+/* Completed Challenge Card */
+.challenge-card-completed {
+  -fx-background-color: linear-gradient(to bottom, #2d5a3d 0%, #1d4a2d 100%);
+  -fx-border-color: #10b981;
+  -fx-cursor: hand;
+}
+
+.challenge-card-completed:hover {
+  -fx-background-color: linear-gradient(to bottom, #3d6a4d 0%, #2d5a3d 100%);
+  -fx-border-color: #34d399;
+}
+
+/* Challenge Card Text */
+.challenge-name {
+  -fx-font-size: 24px;
+  -fx-font-weight: bold;
+  -fx-font-family: "Clash", Arial;
+  -fx-text-fill: white;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 5, 0, 0, 2);
+}
+
+.challenge-description {
+  -fx-font-size: 14px;
+  -fx-font-family: "Clash", Arial;
+  -fx-text-fill: rgba(255, 255, 255, 0.9);
+  -fx-text-alignment: center;
+}
+
+.challenge-rules {
+  -fx-font-size: 12px;
+  -fx-font-family: "Clash", Arial;
+  -fx-text-fill: rgba(255, 255, 255, 0.7);
+  -fx-text-alignment: center;
+  -fx-padding: 10 20 10 20;
+  -fx-background-color: rgba(0, 0, 0, 0.2);
+  -fx-background-radius: 8;
+}
+
+.challenge-reward {
+  -fx-font-size: 16px;
+  -fx-font-weight: bold;
+  -fx-font-family: "Clash", Arial;
+  -fx-text-fill: #fbbf24;
+}
+
+/* Challenge Buttons */
+.challenge-button {
+  -fx-background-color: linear-gradient(to bottom, #10b981 0%, #059669 100%);
+  -fx-text-fill: white;
+  -fx-font-size: 16px;
+  -fx-font-weight: bold;
+  -fx-font-family: "Clash", Arial;
+  -fx-background-radius: 8;
+  -fx-border-radius: 8;
+  -fx-border-color: #047857;
+  -fx-border-width: 2;
+  -fx-padding: 10 30 10 30;
+  -fx-cursor: hand;
+}
+
+.challenge-button:hover {
+  -fx-background-color: linear-gradient(to bottom, #34d399 0%, #10b981 100%);
+}
+
+.challenge-button:pressed {
+  -fx-background-color: linear-gradient(to bottom, #059669 0%, #047857 100%);
+}
+
+.challenge-button-locked {
+  -fx-background-color: linear-gradient(to bottom, #6b7280 0%, #4b5563 100%);
+  -fx-text-fill: rgba(255, 255, 255, 0.6);
+  -fx-font-size: 16px;
+  -fx-font-weight: bold;
+  -fx-font-family: "Clash", Arial;
+  -fx-background-radius: 8;
+  -fx-border-radius: 8;
+  -fx-border-color: #374151;
+  -fx-border-width: 2;
+  -fx-padding: 10 30 10 30;
+}
+
+/* Ladder Connecting Line */
+.challenge-ladder-line {
+  -fx-stroke: #fbbf24;
+  -fx-stroke-width: 4;
+  -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.5), 5, 0, 0, 0);
+}
+

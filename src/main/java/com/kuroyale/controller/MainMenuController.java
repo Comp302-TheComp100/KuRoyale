@@ -22,13 +22,22 @@ import javafx.scene.media.MediaPlayer;
  * Implements Model-View-Controller (MVC) - Controller component*/
 public class MainMenuController {
 
-    @FXML private AnchorPane root;
-    @FXML private Label titleLabel;
-    @FXML private Button deckBuilderButton;
-    @FXML private Button startMatchButton;
-    @FXML private Button resumeGameButton;
-    @FXML private Button arenaDesignButton;
-    @FXML private Button settingsButton;
+    @FXML
+    private AnchorPane root;
+    @FXML
+    private Label titleLabel;
+    @FXML
+    private Button deckBuilderButton;
+    @FXML
+    private Button startMatchButton;
+    @FXML
+    private Button resumeGameButton;
+    @FXML
+    private Button arenaDesignButton;
+    @FXML
+    private Button challengesButton;
+    @FXML
+    private Button settingsButton;
 
     private static MediaPlayer mainMenuMusicPlayer;
     private final MenuModel model = new MenuModel();
@@ -51,6 +60,7 @@ public class MainMenuController {
         startMatchButton.getStyleClass().add("menu-button");
         resumeGameButton.getStyleClass().add("menu-button");
         arenaDesignButton.getStyleClass().add("menu-button");
+        challengesButton.getStyleClass().add("menu-button");
         settingsButton.getStyleClass().add("menu-button");
 
         // Add programmatic hover effects for scale transforms
@@ -58,6 +68,7 @@ public class MainMenuController {
         addMenuButtonHoverEffects(startMatchButton);
         addMenuButtonHoverEffects(resumeGameButton);
         addMenuButtonHoverEffects(arenaDesignButton);
+        addMenuButtonHoverEffects(challengesButton);
         addMenuButtonHoverEffects(settingsButton);
     }
 
@@ -71,8 +82,12 @@ public class MainMenuController {
             button.setScaleX(1.0);
             button.setScaleY(1.0);
         });
-        button.setOnMousePressed(e -> {button.setTranslateY(2);});
-        button.setOnMouseReleased(e -> {button.setTranslateY(0);});
+        button.setOnMousePressed(e -> {
+            button.setTranslateY(2);
+        });
+        button.setOnMouseReleased(e -> {
+            button.setTranslateY(0);
+        });
     }
 
     @FXML
@@ -105,14 +120,14 @@ public class MainMenuController {
         List<String> validationErrors = model.validateAndPrepareMatchStart();
 
         if (!validationErrors.isEmpty()) {
-            //Controller/View: Handle the Model's error response
+            // Controller/View: Handle the Model's error response
             StringBuilder errorMessage = new StringBuilder("Cannot start match. Please fix the following issues:\n\n");
             validationErrors.forEach(error -> errorMessage.append("• ").append(error).append("\n"));
             showError(errorMessage.toString());
             return;
         }
 
-        //Controller/Navigation: If valid, load the next scene.
+        // Controller/Navigation: If valid, load the next scene.
         try {
             // Use the SceneLoader with a special initializer lambda for BattleController
             sceneLoader.load(startMatchButton, "/fxml/battle.fxml", "KU Royale - Battle", controller -> {
@@ -134,6 +149,17 @@ public class MainMenuController {
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to load Arena Design: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleChallenges() {
+        SoundEffectUtil.playButtonClick();
+        try {
+            sceneLoader.load(challengesButton, "/fxml/challenge-selection.fxml", "KU Royale - Challenges", null);
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Challenges: " + e.getMessage());
         }
     }
 
