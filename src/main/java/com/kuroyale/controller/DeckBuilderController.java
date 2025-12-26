@@ -7,13 +7,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import com.kuroyale.service.*;
 import com.kuroyale.view.*;
 import com.kuroyale.model.Card;
 import com.kuroyale.model.Deck;
-import com.kuroyale.model.User;
+import com.kuroyale.model.DeckBuilderModel;
 import com.kuroyale.util.ButtonFactory;
-import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.util.StyleHelper;
 
@@ -69,10 +67,8 @@ public class DeckBuilderController {
     @FXML private Label battleDeckTitle;
     @FXML private HBox averageElixirContainer;
 
-    // Service dependencies
-    private AuthenticationService authService;
-    private DeckManagementService deckService;
-    private CardCatalog cardCatalog;
+    // TEAM_003: MVC pattern - use Model instead of direct service access
+    private final DeckBuilderModel model = new DeckBuilderModel();
 
     private Deck deck;
     private List<DeckSlotView> deckSlots;
@@ -86,12 +82,7 @@ public class DeckBuilderController {
 
     @FXML
     private void initialize() {
-        // Get services from factory
-        ServiceFactory factory = ServiceFactory.getInstance();
-        this.authService = factory.getAuthenticationService();
-        this.deckService = factory.getDeckManagementService();
-        this.cardCatalog = factory.getCardCatalog();
-
+        // TEAM_003: Model handles service dependencies
         deck = new Deck();
         deckSlots = new ArrayList<>();
         cardContainerMap = new HashMap<>();
@@ -228,7 +219,8 @@ public class DeckBuilderController {
     }
 
     private void loadAllCards() {
-        List<Card> allCards = cardCatalog.getAllCards();
+        // TEAM_003: Delegate to Model
+        List<Card> allCards = model.getAllCards();
 
         // Store all cards for later reorganization
         for (Card card : allCards) {
@@ -258,8 +250,9 @@ public class DeckBuilderController {
         // Clear the grid
         cardsGrid.getChildren().clear();
 
+        // TEAM_003: Delegate to Model
         // Get all cards in consistent order: Troops, Buildings, Spells
-        List<Card> allCards = cardCatalog.getAllCards();
+        List<Card> allCards = model.getAllCards();
         int column = 0;
         int row = 0;
 
@@ -584,7 +577,8 @@ public class DeckBuilderController {
 
         // If we found the slot, perform the replacement
         if (targetSlot != null) {
-            deckService.replaceCardInDeck(deck, oldCard, newCard);
+            // TEAM_003: Delegate to Model
+            model.replaceCardInDeck(deck, oldCard, newCard);
 
             // Replace the card in the UI at the SAME position (UI concern)
             targetSlot.setCard(newCard);
@@ -651,20 +645,16 @@ public class DeckBuilderController {
     //Updates the average elixir cost display
     private void updateAverageElixirCost() {
         if (averageElixirValue != null) {
-            // Delegate calculation to service (Information Expert)
-            double avgCost = deckService.getDeckAverageElixirCost(deck);
+            // TEAM_003: Delegate to Model
+            double avgCost = model.getDeckAverageElixirCost(deck);
             averageElixirValue.setText(String.format(Locale.ENGLISH, "%.1f", avgCost));
         }
     }
 
     //Loads the user's saved deck from their account with exact slot positions of cards
     private void loadUserDeck() {
-        User currentUser = authService.getCurrentUser();
-        if (currentUser == null) {
-            return; // No user logged in
-        }
-
-        Map<Integer, Card> deckMap = deckService.loadUserDeckWithPositions(currentUser);
+        // TEAM_003: Delegate to Model
+        Map<Integer, Card> deckMap = model.loadUserDeckWithPositions();
 
         // Update UI with loaded cards
         for (Map.Entry<Integer, Card> entry : deckMap.entrySet()) {
@@ -683,11 +673,6 @@ public class DeckBuilderController {
 
     //Saves the current deck to the user's account in their exact slot positions
     private void saveDeck() {
-        User currentUser = authService.getCurrentUser();
-        if (currentUser == null) {
-            return; // No user logged in
-        }
-
         // Build map of slot positions to cards (UI data)
         Map<Integer, Card> slotCards = new HashMap<>();
         for (int i = 0; i < deckSlots.size(); i++) {
@@ -697,9 +682,9 @@ public class DeckBuilderController {
             }
         }
 
-        // Delegate to service (Controller pattern)
+        // TEAM_003: Delegate to Model
         try {
-            deckService.saveDeckWithPositions(currentUser, slotCards);
+            model.saveDeckWithPositions(slotCards);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Failed to save deck: " + e.getMessage());

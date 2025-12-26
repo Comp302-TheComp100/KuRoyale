@@ -1,7 +1,7 @@
 package com.kuroyale.controller;
 
 import java.io.IOException;
-import com.kuroyale.util.AudioManager;
+import com.kuroyale.model.SettingsModel;
 import com.kuroyale.util.SoundEffectUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -21,25 +21,28 @@ public class SettingsController {
     @FXML private CheckBox buttonSoundsCheckBox;
     @FXML private Button backButton;
 
+    // TEAM_003: MVC pattern - use Model instead of direct AudioManager access
+    private final SettingsModel model = new SettingsModel();
+
     @FXML
     private void initialize() {
-        // Initialize sliders with current values from AudioManager
-        AudioManager audioManager = AudioManager.getInstance();
-        musicSlider.setValue(audioManager.getMusicVolume());
-        sfxSlider.setValue(audioManager.getSFXVolume());
-        buttonSoundsCheckBox.setSelected(audioManager.isButtonSoundsEnabled());
+        // TEAM_003: Delegate to Model
+        // Initialize sliders with current values from Model
+        musicSlider.setValue(model.getMusicVolume());
+        sfxSlider.setValue(model.getSFXVolume());
+        buttonSoundsCheckBox.setSelected(model.isButtonSoundsEnabled());
 
-        // Add listeners to update AudioManager when sliders change
+        // Add listeners to update Model when sliders change
         musicSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            audioManager.setMusicVolume(newVal.doubleValue());
+            model.setMusicVolume(newVal.doubleValue());
         });
 
         sfxSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            audioManager.setSFXVolume(newVal.doubleValue());
+            model.setSFXVolume(newVal.doubleValue());
         });
 
         buttonSoundsCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            audioManager.setButtonSoundsEnabled(newVal);
+            model.setButtonSoundsEnabled(newVal);
         });
 
         // Add hover effects to back button

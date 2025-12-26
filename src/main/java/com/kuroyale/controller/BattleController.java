@@ -1,11 +1,6 @@
 package com.kuroyale.controller;
 
 import com.kuroyale.model.*;
-import com.kuroyale.service.ArenaService;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.DeckManagementService;
-import com.kuroyale.service.GameSaveService;
-import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.view.BattleArenaView;
 import com.kuroyale.view.ElixirBar;
 import com.kuroyale.view.HandView;
@@ -34,20 +29,8 @@ public class BattleController {
     private boolean isPaused = false;
     private SavedGameState loadedSavedGame = null;
 
-    private final AuthenticationService authService;
-    private final ArenaService arenaService;
-    private final DeckManagementService deckService;
-    private final GameSaveService gameSaveService;
-    private final com.kuroyale.service.CardCatalog cardCatalog;
-
-    public BattleController() {
-        ServiceFactory factory = ServiceFactory.getInstance();
-        this.authService = factory.getAuthenticationService();
-        this.arenaService = factory.getArenaService();
-        this.deckService = factory.getDeckManagementService();
-        this.gameSaveService = factory.getGameSaveService();
-        this.cardCatalog = factory.getCardCatalog();
-    }
+    // TEAM_003: MVC pattern - use Model instead of direct service access
+    private final BattleModel model = new BattleModel();
     
     //Sets a saved game to load from
     public void setLoadedSavedGame(SavedGameState savedGame) {
@@ -61,15 +44,16 @@ public class BattleController {
     
     /*Starts the game. Must be called AFTER setLoadedSavedGame() if loading a saved game */
     public void startGame() {
+        // TEAM_003: Delegate to Model
         // Initialize game state
-        User currentUser = authService.getCurrentUser();
+        User currentUser = model.getCurrentUser();
         if (currentUser == null) {
             handleExit();
             return;
         }
 
         // Set current user in arena service to load their saved layout
-        arenaService.setCurrentUser(currentUser);
+        model.setCurrentUserInArenaService(currentUser);
 
         // Check if loading from saved game
         if (loadedSavedGame != null) {
@@ -80,15 +64,15 @@ public class BattleController {
             System.out.println("▶️ STARTING NEW GAME");
             // Start new game and Load user data
             // Convert List<String> to Deck object
-            Deck playerDeck = createDeckFromNames(currentUser.getDeck());
-            ArenaLayout playerLayout = arenaService.loadArenaLayout(); // Load saved layout
+            Deck playerDeck = model.createDeckFromNames(currentUser.getDeck());
+            ArenaLayout playerLayout = model.loadArenaLayout(); // Load saved layout
             currentArenaLayout = playerLayout;
 
             // Create Arena
-            Arena arena = arenaService.createArena(playerLayout);
+            Arena arena = model.createArena(playerLayout);
 
             // Create Bot Deck (Random or fixed)
-            Deck botDeck = createBotDeck();
+            Deck botDeck = model.createBotDeck(currentUser);
 
             // Initialize GameState
             gameState = new GameState(playerDeck, botDeck, arena);
@@ -120,24 +104,6 @@ public class BattleController {
         startGameLoop();
     }
 
-    private Deck createDeckFromNames(java.util.List<String> cardNames) {
-        Deck deck = new Deck();
-        if (cardNames != null) {
-            for (String name : cardNames) {
-                Card card = cardCatalog.getCardByName(name);
-                if (card != null) {
-                    deck.addCard(card);
-                }
-            }
-        }
-        return deck;
-    }
-
-    private Deck createBotDeck() {
-        // Create a simple deck for bot
-        // For simplicity, uses the player's deck
-        return createDeckFromNames(authService.getCurrentUser().getDeck());
-    }
 
     private void startGameLoop() {
         gameLoop = new AnimationTimer() {
@@ -251,10 +217,11 @@ public class BattleController {
     }
     
     private void handleSaveAndExit() {
+        // TEAM_003: Delegate to Model
         // Save the game
-        User currentUser = authService.getCurrentUser();
+        User currentUser = model.getCurrentUser();
         if (currentUser != null && currentArenaLayout != null) {
-            SavedGameState savedGame = gameSaveService.saveGame(gameState, currentUser, currentArenaLayout);
+            SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout);
             if (savedGame != null) {
                 showSaveConfirmation();
             } else {
@@ -266,10 +233,11 @@ public class BattleController {
     }
     
     private void handleSaveAndResume() {
+        // TEAM_003: Delegate to Model
         // Save the game
-        User currentUser = authService.getCurrentUser();
+        User currentUser = model.getCurrentUser();
         if (currentUser != null && currentArenaLayout != null) {
-            SavedGameState savedGame = gameSaveService.saveGame(gameState, currentUser, currentArenaLayout);
+            SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout);
             if (savedGame != null) {
                 showSaveConfirmationBrief();
             } else {
@@ -337,14 +305,15 @@ public class BattleController {
     
     //Initializes game state from a saved game
     private void initializeFromSavedGame(SavedGameState savedGame) {
+        // TEAM_003: Delegate to Model
         // Create decks from saved card names
-        Deck playerDeck = createDeckFromNames(savedGame.getPlayerDeckCards());
-        Deck botDeck = createDeckFromNames(savedGame.getBotDeckCards());
+        Deck playerDeck = model.createDeckFromNames(savedGame.getPlayerDeckCards());
+        Deck botDeck = model.createDeckFromNames(savedGame.getBotDeckCards());
         
         // Load arena layout from saved game
         ArenaLayout layout = savedGame.getArenaLayout();
         currentArenaLayout = layout;
-        Arena arena = arenaService.createArena(layout);
+        Arena arena = model.createArena(layout);
         
         // Create game state
         gameState = new GameState(playerDeck, botDeck, arena);
@@ -364,9 +333,10 @@ public class BattleController {
             gameState.restoreTowerHealth(savedTower);
         }
         
+        // TEAM_003: Delegate to Model
         // Restore active troops
         for (SavedGameState.SavedTroop savedTroop : savedGame.getActiveTroops()) {
-            Card card = cardCatalog.getCardByName(savedTroop.getCardName());
+            Card card = model.getCardByName(savedTroop.getCardName());
             if (card != null) {
                 GridPosition pos = GridPosition.tryCreate(savedTroop.getGridX(), savedTroop.getGridY());
                 if (pos != null) {
@@ -387,9 +357,10 @@ public class BattleController {
             } else {}
         }
         
+        // TEAM_003: Delegate to Model
         // Restore active buildings
         for (SavedGameState.SavedBuilding savedBuilding : savedGame.getActiveBuildings()) {
-            Card card = cardCatalog.getCardByName(savedBuilding.getCardName());
+            Card card = model.getCardByName(savedBuilding.getCardName());
             if (card != null) {
                 GridPosition pos = GridPosition.tryCreate(savedBuilding.getGridX(), savedBuilding.getGridY());
                 if (pos != null) {

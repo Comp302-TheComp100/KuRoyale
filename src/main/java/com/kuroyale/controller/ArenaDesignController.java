@@ -1,11 +1,10 @@
 package com.kuroyale.controller;
 
+import com.kuroyale.model.ArenaDesignModel;
 import com.kuroyale.model.ArenaLayout;
 import com.kuroyale.model.GridPosition;
-import com.kuroyale.service.ArenaService;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.util.ServiceFactory;
 import javafx.fxml.FXML;
+import java.util.List;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 
@@ -19,8 +18,8 @@ public class ArenaDesignController {
     @FXML
     private TextField arenaNameField;
 
-    private final ArenaService arenaService;
-    private final AuthenticationService authService;
+    // TEAM_003: MVC pattern - use Model instead of direct service access
+    private final ArenaDesignModel model = new ArenaDesignModel();
     private ArenaLayout currentLayout;
 
     private javafx.scene.image.Image princessTowerUserImg;
@@ -29,10 +28,7 @@ public class ArenaDesignController {
     private javafx.scene.image.Image kingTowerComputerImg;
 
     public ArenaDesignController() {
-        // Get services from factory (Dependency Injection / Service Locator)
-        ServiceFactory factory = ServiceFactory.getInstance();
-        this.arenaService = factory.getArenaService();
-        this.authService = factory.getAuthenticationService();
+        // TEAM_003: Model handles service dependencies
     }
 
     @FXML
@@ -73,12 +69,13 @@ public class ArenaDesignController {
             e.printStackTrace();
         }
 
+        // TEAM_003: Delegate to Model
         // Set current user in arena service so it can save to user's profile
-        if (authService.isLoggedIn()) {
-            arenaService.setCurrentUser(authService.getCurrentUser());
+        if (model.isLoggedIn()) {
+            model.setCurrentUserInArenaService(model.getCurrentUser());
         }
         // Load the saved layout
-        currentLayout = arenaService.loadArenaLayout();
+        currentLayout = model.loadArenaLayout();
 
         if (arenaNameField != null) {
             arenaNameField.setText(currentLayout.getName());
@@ -128,8 +125,9 @@ public class ArenaDesignController {
         arenaGrid.getColumnConstraints().clear();
         arenaGrid.getRowConstraints().clear();
 
+        // TEAM_003: Delegate to Model
         // Create a temporary Arena from the layout to get the full grid state
-        com.kuroyale.model.Arena arena = arenaService.createArena(currentLayout);
+        com.kuroyale.model.Arena arena = model.createArena(currentLayout);
 
         // Pass 1: Render Grid (Ground)
         for (int x = 0; x < com.kuroyale.model.Arena.WIDTH; x++) {
@@ -522,17 +520,10 @@ public class ArenaDesignController {
     @FXML
     public void handleSave() {
         if (currentLayout != null) {
-            // Validation: Check for required elements
-            if (currentLayout.getBridgePositions().isEmpty()) {
-                showAlert("Invalid Layout", "You must place at least one bridge.");
-                return;
-            }
-            if (currentLayout.getPrincessTowerPositions().size() != 2) {
-                showAlert("Invalid Layout", "You must place exactly two Princess towers.");
-                return;
-            }
-            if (currentLayout.getKingTowerPosition() == null) {
-                showAlert("Invalid Layout", "You must place one King tower.");
+            // TEAM_003: Delegate validation to Model
+            List<String> validationErrors = model.validateLayout(currentLayout);
+            if (!validationErrors.isEmpty()) {
+                showAlert("Invalid Layout", validationErrors.get(0));
                 return;
             }
 
@@ -541,7 +532,8 @@ public class ArenaDesignController {
                 currentLayout.setName(name);
             }
             try {
-                arenaService.saveArenaLayout(currentLayout);
+                // TEAM_003: Delegate to Model
+                model.saveArenaLayout(currentLayout);
 
                 javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
                         javafx.scene.control.Alert.AlertType.INFORMATION);
