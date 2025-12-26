@@ -228,7 +228,7 @@ public class ChallengeDetailDialog extends StackPane {
 
         String threeStarTime = String.format("%d:%02d", challenge.getThreeStarTimeSeconds() / 60,
                 challenge.getThreeStarTimeSeconds() % 60);
-        box.getChildren().add(createConditionRow("3 ⭐", "Win under " + threeStarTime));
+        box.getChildren().add(createConditionRow("3 ⭐", "Win under " + threeStarTime + " OR No Damage"));
 
         return box;
     }

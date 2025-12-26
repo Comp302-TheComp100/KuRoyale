@@ -137,6 +137,13 @@ public class GameState {
                 gameTime = 0;
                 if (!isGameOver) {
                     isGameOver = true;
+                    // Timeout: Winner is determined by score (towers destroyed)
+                    if (playerScore > botScore) {
+                        playerWon = true;
+                    } else {
+                        // Tie or Loss results in failure
+                        playerWon = false;
+                    }
                 }
             }
 
@@ -213,6 +220,42 @@ public class GameState {
 
     public boolean isPlayerWinner() {
         return playerWon;
+    }
+
+    public int getPlayerDamageTaken() {
+        int damage = 0;
+        // Since we don't know easily which tower belongs to whom without position,
+        // we have to be careful. But getTowerAt uses grid position.
+
+        // Better approach: Iterate all cells, if it's a player tower tile, check the
+        // tower.
+        // But towers are multi-tile.
+
+        // We can just iterate the unique towers and check their type/side?
+        // Tower class doesn't store "side". It stores "Type" (King/Princess).
+        // Side is determined by placement location in Arena (TileType).
+
+        // So we must iterate cells or towerMap.
+        // Arena doesn't expose towerMap keys directly.
+        // Let's iterate all cells to find unique towers belonging to player.
+        java.util.Set<Tower> playerTowers = new java.util.HashSet<>();
+
+        for (int x = 0; x < Arena.WIDTH; x++) {
+            for (int y = 0; y < Arena.HEIGHT; y++) {
+                GridCell cell = arena.getCell(x, y);
+                TileType tt = cell.getTileType();
+                if (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER) {
+                    Tower t = arena.getTowerAt(x, y);
+                    if (t != null)
+                        playerTowers.add(t);
+                }
+            }
+        }
+
+        for (Tower t : playerTowers) {
+            damage += (t.getMaxHealth() - t.getCurrentHealth());
+        }
+        return damage;
     }
 
     public boolean placeCard(boolean isPlayer, int handIndex, int x, int y) {

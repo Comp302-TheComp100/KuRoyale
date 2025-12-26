@@ -199,7 +199,7 @@ public class BattleController {
     private void handleChallengeGameOver() {
         boolean playerWon = gameState.isPlayerWinner();
         int timeSeconds = (int) (180.0 - gameState.getGameTime()); // Approximate
-        int damageTaken = 0; // TODO: Track damage properly in GameState if needed for stars
+        int damageTaken = gameState.getPlayerDamageTaken();
 
         // Calculate stars locally for display
         int stars = 0;
@@ -233,16 +233,18 @@ public class BattleController {
         starBox.setAlignment(javafx.geometry.Pos.CENTER);
         if (playerWon) {
             for (int i = 0; i < 3; i++) {
-                javafx.scene.control.Label star = new javafx.scene.control.Label(i < stars ? "⭐" : "☆");
-                star.setStyle(
-                        "-fx-font-size: 40px; -fx-text-fill: #ffd700; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0, 0, 0);");
+                javafx.scene.control.Label star = new javafx.scene.control.Label("★");
+                String starFill = i < stars ? "#ffd700" : "#555";
+                star.setStyle("-fx-font-size: 40px; -fx-text-fill: " + starFill
+                        + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0, 0, 0);");
                 starBox.getChildren().add(star);
             }
         }
 
         // Stats Display
         String timeStr = String.format("%d:%02d", timeSeconds / 60, timeSeconds % 60);
-        javafx.scene.control.Label timeLabel = new javafx.scene.control.Label("Time: " + timeStr);
+        javafx.scene.control.Label timeLabel = new javafx.scene.control.Label(
+                "Time: " + timeStr + "  Damage: " + damageTaken);
         timeLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white; -fx-font-family: 'Clash', Arial;");
 
         // Star Conditions Feedback
@@ -252,18 +254,21 @@ public class BattleController {
 
         conditionsBox.getChildren().add(createConditionLabel("Win", true, playerWon));
         if (playerWon) {
-            boolean twoStars = stars >= 2;
-            boolean threeStars = stars >= 3;
+            // Re-check conditions logic to display correctly what was met
+            // 2 stars: time <= 2 star time
+            boolean metTime2 = timeSeconds <= currentChallenge.getTwoStarTimeSeconds();
             conditionsBox.getChildren()
                     .add(createConditionLabel(
                             "Under " + String.format("%d:%02d", currentChallenge.getTwoStarTimeSeconds() / 60,
                                     currentChallenge.getTwoStarTimeSeconds() % 60),
-                            twoStars, twoStars));
-            conditionsBox.getChildren()
-                    .add(createConditionLabel(
-                            "Under " + String.format("%d:%02d", currentChallenge.getThreeStarTimeSeconds() / 60,
-                                    currentChallenge.getThreeStarTimeSeconds() % 60),
-                            threeStars, threeStars));
+                            metTime2, true));
+
+            // 3 stars: no damage OR time <= 3 star time
+            boolean metDamage = damageTaken == 0;
+            boolean metTime3 = timeSeconds <= currentChallenge.getThreeStarTimeSeconds();
+            String threeStarText = "Under " + String.format("%d:%02d", currentChallenge.getThreeStarTimeSeconds() / 60,
+                    currentChallenge.getThreeStarTimeSeconds() % 60) + " OR No Damage";
+            conditionsBox.getChildren().add(createConditionLabel(threeStarText, metDamage || metTime3, true));
         }
 
         javafx.scene.control.Label msg = new javafx.scene.control.Label(

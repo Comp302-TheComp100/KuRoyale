@@ -237,13 +237,18 @@ public class ChallengeSelectionController {
     /**
      * Creates star rating display.
      */
+    /**
+     * Creates star rating display with filled colored stars.
+     */
     private HBox createStarRating(int starsEarned) {
-        HBox starBox = new HBox(5);
+        HBox starBox = new HBox(3);
         starBox.setAlignment(Pos.CENTER);
 
         for (int i = 0; i < 3; i++) {
-            Label star = new Label(i < starsEarned ? "⭐" : "☆");
-            star.setStyle("-fx-font-size: 24px;");
+            Label star = new Label("★");
+            String color = i < starsEarned ? "#ffd700" : "#555"; // Gold for earned, Gray for unearned
+            star.setStyle("-fx-font-size: 28px; -fx-text-fill: " + color
+                    + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 5, 0, 0, 0);");
             starBox.getChildren().add(star);
         }
 

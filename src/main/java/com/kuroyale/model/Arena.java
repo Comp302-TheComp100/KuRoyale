@@ -23,9 +23,11 @@ public class Arena {
         initializeGrid();
     }
 
-    /*Initializes the grid with GridCell objects.
+    /*
+     * Initializes the grid with GridCell objects.
      * Sets up terrain (grass, water, bridges) based on layout.
-     * Places towers and mirrors user's layout for computer side.  */
+     * Places towers and mirrors user's layout for computer side.
+     */
     private void initializeGrid() {
         // Initialize all cells as grass by default
         for (int x = 0; x < WIDTH; x++) {
@@ -62,7 +64,8 @@ public class Arena {
                         }
                     }
                 }
-                // Mirroring logic for computer side: The top-left of the mirrored tower should be
+                // Mirroring logic for computer side: The top-left of the mirrored tower should
+                // be
                 // x' = x and y' = HEIGHT - 3 - y
                 int mirroredY = HEIGHT - 3 - p.getY();
                 Tower computerTower = new Tower(Tower.TowerType.PRINCESS);
@@ -279,7 +282,13 @@ public class Arena {
         return towerMap.get(grid[x][y].getPosition());
     }
 
-    // Removes a tower from the arena.Clears the tower from the map and resets the tiles to GRASS
+    /* Returns a set of all unique active towers on the board. */
+    public java.util.Set<Tower> getAllTowers() {
+        return new java.util.HashSet<>(towerMap.values());
+    }
+
+    // Removes a tower from the arena.Clears the tower from the map and resets the
+    // tiles to GRASS
     public void removeTower(Tower tower) {
         if (tower == null)
             return;
@@ -298,7 +307,8 @@ public class Arena {
             GridCell cell = getCell(pos);
             if (cell != null) {
                 cell.setTileType(TileType.GRASS);
-                // Also ensure no occupant is left if it was the tower itself (though tower is not an occupant in the GridCell, it's a TileType)
+                // Also ensure no occupant is left if it was the tower itself (though tower is
+                // not an occupant in the GridCell, it's a TileType)
             }
         }
     }
