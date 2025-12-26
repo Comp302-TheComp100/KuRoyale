@@ -4,7 +4,6 @@ import com.kuroyale.controller.LoginController;
 import com.kuroyale.util.ServiceFactory;
 
 import javafx.application.Application;
-// TEAM_001: Removed unused import
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.text.Font;
@@ -29,7 +28,6 @@ public class Main extends Application {
             Image icon = new Image(getClass().getResourceAsStream("/images/Clash_Royale_App_Icon (1).png"));
             primaryStage.getIcons().add(icon);
 
-            // TEAM_001: Use LoginView directly instead of FXML (Rule 5)
             com.kuroyale.view.LoginView loginView = new com.kuroyale.view.LoginView();
             LoginController controller = new LoginController(loginView);
             Parent root = loginView;

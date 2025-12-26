@@ -21,12 +21,10 @@ public class SettingsController {
     @FXML private CheckBox buttonSoundsCheckBox;
     @FXML private Button backButton;
 
-    // TEAM_003: MVC pattern - use Model instead of direct AudioManager access
     private final SettingsModel model = new SettingsModel();
 
     @FXML
     private void initialize() {
-        // TEAM_003: Delegate to Model
         // Initialize sliders with current values from Model
         musicSlider.setValue(model.getMusicVolume());
         sfxSlider.setValue(model.getSFXVolume());

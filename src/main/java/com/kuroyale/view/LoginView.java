@@ -9,7 +9,6 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
-// TEAM_002: View component for the login screen following MVC pattern
 // Manages all UI components for login/registration interface
 public class LoginView extends VBox {
     private final Label titleLabel;
@@ -23,7 +22,6 @@ public class LoginView extends VBox {
         // Set root container properties
         setAlignment(Pos.CENTER);
         setSpacing(30);
-        // TEAM_001: Removed 50px padding that caused white borders
         setPadding(Insets.EMPTY);
         getStyleClass().add("main-menu-background");
 
@@ -158,3 +156,4 @@ public class LoginView extends VBox {
         return passwordField.getText();
     }
 }
+

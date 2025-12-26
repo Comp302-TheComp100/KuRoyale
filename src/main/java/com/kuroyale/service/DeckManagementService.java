@@ -64,7 +64,8 @@ public class DeckManagementService {
         // Load each card by name from catalog
         for (String cardName : user.getDeck()) {
             if (cardName != null && !cardName.isEmpty()) {
-                Card card = cardCatalog.getCardByName(cardName);
+                int level = user.getCardLevel(cardName);
+                Card card = cardCatalog.createCardWithLevel(cardName, level);
                 if (card != null) {
                     deck.addCard(card);
                 }
@@ -86,7 +87,8 @@ public class DeckManagementService {
         for (int i = 0; i < savedDeck.size(); i++) {
             String cardName = savedDeck.get(i);
             if (cardName != null && !cardName.isEmpty()) {
-                Card card = cardCatalog.getCardByName(cardName);
+                int level = user.getCardLevel(cardName);
+                Card card = cardCatalog.createCardWithLevel(cardName, level);
                 if (card != null) {
                     deckMap.put(i, card);
                 }

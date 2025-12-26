@@ -1,7 +1,10 @@
 package com.kuroyale.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import com.kuroyale.util.PasswordUtil;
 
 /*Represents a user account with username, password hash, and saved deck
@@ -11,15 +14,21 @@ public class User {
     private String passwordHash;
     private List<String> deck; // List of card names
     private ArenaLayout arenaLayout; // User's custom arena layout
+    private int gold;
+    private Map<String, Integer> cardLevels;
 
     public User() {
         this.deck = new ArrayList<>();
+        this.gold = 0;
+        this.cardLevels = new HashMap<>();
     }
 
     public User(String username, String passwordHash) {
         this.username = username;
         this.passwordHash = passwordHash;
         this.deck = new ArrayList<>();
+        this.gold = 0;
+        this.cardLevels = new HashMap<>();
     }
 
     public String getUsername() {
@@ -41,6 +50,47 @@ public class User {
     }
     public void setDeck(List<String> deck) {
         this.deck = deck != null ? deck : new ArrayList<>();
+    }
+
+    public int getGold() {
+        return gold;
+    }
+    public void setGold(int gold) {
+        this.gold = Math.max(0, gold);
+    }
+
+    public Map<String, Integer> getCardLevels() {
+        return cardLevels;
+    }
+
+    public void setCardLevels(Map<String, Integer> cardLevels) {
+        if (cardLevels == null) {
+            this.cardLevels = new HashMap<>();
+            return;
+        }
+        this.cardLevels = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : cardLevels.entrySet()) {
+            int clampedLevel = Math.max(Card.MIN_LEVEL, Math.min(Card.MAX_LEVEL, entry.getValue()));
+            this.cardLevels.put(entry.getKey(), clampedLevel);
+        }
+    }
+
+    //Gets the saved level for a specific card (defaults to 1)
+    public int getCardLevel(String cardName) {
+        if (cardName == null) {
+            return 1;
+        }
+        Integer level = cardLevels.get(cardName);
+        return level != null ? level : 1;
+    }
+
+    //Sets the saved level for a specific card
+    public void setCardLevel(String cardName, int level) {
+        if (cardName == null || cardName.isEmpty()) {
+            return;
+        }
+        int clampedLevel = Math.max(Card.MIN_LEVEL, Math.min(Card.MAX_LEVEL, level));
+        cardLevels.put(cardName, clampedLevel);
     }
 
     // Information Expert: User knows its own password and can validate it

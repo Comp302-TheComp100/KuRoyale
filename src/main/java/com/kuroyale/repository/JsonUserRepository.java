@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -87,15 +89,35 @@ public class JsonUserRepository implements UserRepository {
             User user = new User();
             user.setUsername(jsonUser.getString("username"));
             user.setPasswordHash(jsonUser.getString("passwordHash"));
+            user.setGold(jsonUser.optInt("gold", 0));
 
             // Load deck
             if (jsonUser.has("deck")) {
                 JSONArray deckArray = jsonUser.getJSONArray("deck");
                 List<String> deck = new ArrayList<>();
+                Map<String, Integer> cardLevels = new HashMap<>();
                 for (int j = 0; j < deckArray.length(); j++) {
-                    deck.add(deckArray.getString(j));
+                    Object entry = deckArray.get(j);
+                    if (entry instanceof JSONObject) {
+                        // New format: { "name": "Knight", "level": 2 }
+                        JSONObject deckEntry = (JSONObject) entry;
+                        String name = deckEntry.optString("name", null);
+                        if (name != null && !name.isEmpty()) {
+                            deck.add(name);
+                            int level = deckEntry.optInt("level", 1);
+                            int clampedLevel = Math.max(com.kuroyale.model.Card.MIN_LEVEL, Math.min(com.kuroyale.model.Card.MAX_LEVEL, level));
+                            cardLevels.put(name, clampedLevel);
+                        }
+                    } else {
+                        // Legacy format: plain string card name
+                        String name = deckArray.getString(j);
+                        deck.add(name);
+                        // Default to level 1 for legacy entries
+                        cardLevels.put(name, 1);
+                    }
                 }
                 user.setDeck(deck);
+                user.setCardLevels(cardLevels);
             }
 
             // Load arena layout
@@ -151,11 +173,17 @@ public class JsonUserRepository implements UserRepository {
             JSONObject jsonUser = new JSONObject();
             jsonUser.put("username", user.getUsername());
             jsonUser.put("passwordHash", user.getPasswordHash());
+            jsonUser.put("gold", user.getGold());
 
-            // Save deck
             JSONArray deckArray = new JSONArray();
             for (String cardName : user.getDeck()) {
-                deckArray.put(cardName);
+                if (cardName == null || cardName.isEmpty()) {
+                    continue;
+                }
+                JSONObject deckEntry = new JSONObject();
+                deckEntry.put("name", cardName);
+                deckEntry.put("level", user.getCardLevel(cardName));
+                deckArray.put(deckEntry);
             }
             jsonUser.put("deck", deckArray);
 

@@ -5,8 +5,9 @@ public class Card {
     private final String name;
     private final int cost;
     private final CardType type;
-    private final int hp;
-    private final int damage;
+    private final Rarity rarity;
+    private final int baseHp;
+    private final int baseDamage;
     private final double hitSpeed;
     private final double range;
     private final SpeedType speed;
@@ -17,18 +18,22 @@ public class Card {
     private final String description;
     private final int count; // For swarm troops
     private final int lifetime; // For buildings
+    public static final int MAX_LEVEL = 3;
+    public static final int MIN_LEVEL = 1;
+    private int level = 1;
     // Optional footprint for buildings (tiles). Defaults to 3x3 if unset.
     private int footprintWidthTiles = 3;
     private int footprintHeightTiles = 3;
 
-    public Card(String name, int cost, CardType type, int hp, int damage, double hitSpeed,
+    public Card(String name, int cost, CardType type, Rarity rarity, int hp, int damage, double hitSpeed,
             double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
             String description, int count, int lifetime) {
         this.name = name;
         this.cost = cost;
         this.type = type;
-        this.hp = hp;
-        this.damage = damage;
+        this.rarity = rarity;
+        this.baseHp = hp;
+        this.baseDamage = damage;
         this.hitSpeed = hitSpeed;
         this.range = range;
         this.speed = speed;
@@ -44,8 +49,24 @@ public class Card {
     public String getName() {return name;}
     public int getCost() {return cost;}
     public CardType getType() {return type;}
-    public int getHp() {return hp;}
-    public int getDamage() {return damage;}
+    public Rarity getRarity() {return rarity;}
+    public int getBaseHp() {return baseHp;}
+    public int getBaseDamage() {return baseDamage;}
+
+    public int getHp() {
+        if (baseHp <= 0) {
+            // Spells and non-HP cards keep 0
+            return 0;
+        }
+        double multiplier = 1.0 + (Math.max(1, level) - 1) * 0.10;
+        return (int) Math.round(baseHp * multiplier);
+    }
+
+    public int getDamage() {
+        double multiplier = 1.0 + (Math.max(1, level) - 1) * 0.10;
+        return (int) Math.round(baseDamage * multiplier);
+    }
+
     public double getHitSpeed() {return hitSpeed;}
     public double getRange() {return range;}
     public SpeedType getSpeed() {return speed;}
@@ -56,6 +77,14 @@ public class Card {
     public int getCount() {return count;}
     public int getLifetime() {
         return lifetime;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = Math.max(MIN_LEVEL, Math.min(MAX_LEVEL, level));
     }
 
     // Building footprint accessors (no-op for troops/spells)
@@ -72,7 +101,7 @@ public class Card {
     public double getDPS() {
         if (hitSpeed == 0)
             return 0;
-        return damage / hitSpeed;
+        return getDamage() / hitSpeed;
     }
 
     @Override

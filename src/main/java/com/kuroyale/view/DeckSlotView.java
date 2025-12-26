@@ -83,6 +83,7 @@ public class DeckSlotView extends StackPane {
             placeholderLabel.setVisible(true);
             cardContent.setVisible(false);
             cardContent.getChildren().clear();
+            setStyle("");
         } else {
             // Show filled state
             pseudoClassStateChanged(FILLED_PSEUDO_CLASS, true);
@@ -91,6 +92,11 @@ public class DeckSlotView extends StackPane {
             }
             placeholderLabel.setVisible(false);
             cardContent.setVisible(true);
+            String rarityColor = getRarityColor();
+            setStyle("-fx-border-color: " + rarityColor + "; " +
+                    "-fx-border-width: 3; " +
+                    "-fx-border-radius: 8; " +
+                    "-fx-background-radius: 8;");
             updateCardDisplay();
         }
     }
@@ -164,14 +170,19 @@ public class DeckSlotView extends StackPane {
         highlightOverlay.setVisible(false);
         highlightOverlay.setMouseTransparent(true); // Allow clicks to pass through
 
+        Label levelLabel = createLevelIndicator();
+
         StackPane imageContainer = new StackPane();
         imageContainer.setStyle("-fx-background-color: transparent;");
-        // Add children in order: cardImage (bottom), highlightOverlay (middle), costPane (top)
-        imageContainer.getChildren().addAll(cardImage, highlightOverlay, costPane);
+        // Add children in order: cardImage (bottom), highlightOverlay (middle), costPane (top), levelLabel (top)
+        imageContainer.getChildren().addAll(cardImage, highlightOverlay, costPane, levelLabel);
 
         // Position cost at top left
         StackPane.setAlignment(costPane, javafx.geometry.Pos.TOP_LEFT);
         StackPane.setMargin(costPane, new javafx.geometry.Insets(-3, 0, 0, -3)); // Push into corner
+
+        StackPane.setAlignment(levelLabel, javafx.geometry.Pos.BOTTOM_RIGHT);
+        StackPane.setMargin(levelLabel, new javafx.geometry.Insets(0, 3, 3, 0));
 
         content.getChildren().add(imageContainer);
     }
@@ -181,6 +192,12 @@ public class DeckSlotView extends StackPane {
 
     //Checks if the slot is empty
     public boolean isEmpty() {return card == null;}
+
+    public void refreshCardDisplay() {
+        if (!isEmpty()) {
+            updateCardDisplay();
+        }
+    }
 
     //Clears the slot
     public void clear() {
@@ -230,6 +247,39 @@ public class DeckSlotView extends StackPane {
                 return "#8b5cf6";
             default:
                 return "#64748b";
+        }
+    }
+
+    private Label createLevelIndicator() {
+        int level = card.getLevel();
+        String stars = "";
+        for (int i = 0; i < level; i++) {
+            stars += "★";
+        }
+        
+        Label levelLabel = new Label(stars);
+        levelLabel.setStyle("-fx-font-size: 14px; " +
+                "-fx-font-weight: bold; " +
+                "-fx-text-fill: #fbbf24; " +
+                "-fx-background-color: rgba(0, 0, 0, 0.6); " +
+                "-fx-padding: 1 3 1 3; " +
+                "-fx-background-radius: 3;");
+        
+        return levelLabel;
+    }
+
+    private String getRarityColor() {
+        switch (card.getRarity()) {
+            case COMMON:
+                return "#9ca3af"; // Gray
+            case RARE:
+                return "#3b82f6"; // Blue
+            case EPIC:
+                return "#8b5cf6"; // Purple
+            case LEGENDARY:
+                return "#f59e0b"; // Orange/Gold
+            default:
+                return "#cbd5e1"; // Default gray
         }
     }
 }

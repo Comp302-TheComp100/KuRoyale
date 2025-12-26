@@ -14,6 +14,10 @@ import javafx.scene.layout.VBox;
  * Manages the game loop, user input, and UI updates.*/
 public class BattleController {
 
+    private static final int VICTORY_GOLD = 150;
+    private static final int DRAW_GOLD = 75;
+    private static final int DEFEAT_GOLD = 50;
+
     @FXML private StackPane arenaContainer;
     @FXML private HBox elixirContainer;
     @FXML private VBox handContainer;
@@ -29,7 +33,6 @@ public class BattleController {
     private boolean isPaused = false;
     private SavedGameState loadedSavedGame = null;
 
-    // TEAM_003: MVC pattern - use Model instead of direct service access
     private final BattleModel model = new BattleModel();
     
     //Sets a saved game to load from
@@ -44,7 +47,6 @@ public class BattleController {
     
     /*Starts the game. Must be called AFTER setLoadedSavedGame() if loading a saved game */
     public void startGame() {
-        // TEAM_003: Delegate to Model
         // Initialize game state
         User currentUser = model.getCurrentUser();
         if (currentUser == null) {
@@ -217,7 +219,6 @@ public class BattleController {
     }
     
     private void handleSaveAndExit() {
-        // TEAM_003: Delegate to Model
         // Save the game
         User currentUser = model.getCurrentUser();
         if (currentUser != null && currentArenaLayout != null) {
@@ -233,7 +234,6 @@ public class BattleController {
     }
     
     private void handleSaveAndResume() {
-        // TEAM_003: Delegate to Model
         // Save the game
         User currentUser = model.getCurrentUser();
         if (currentUser != null && currentArenaLayout != null) {
@@ -305,7 +305,6 @@ public class BattleController {
     
     //Initializes game state from a saved game
     private void initializeFromSavedGame(SavedGameState savedGame) {
-        // TEAM_003: Delegate to Model
         // Create decks from saved card names
         Deck playerDeck = model.createDeckFromNames(savedGame.getPlayerDeckCards());
         Deck botDeck = model.createDeckFromNames(savedGame.getBotDeckCards());
@@ -333,7 +332,6 @@ public class BattleController {
             gameState.restoreTowerHealth(savedTower);
         }
         
-        // TEAM_003: Delegate to Model
         // Restore active troops
         for (SavedGameState.SavedTroop savedTroop : savedGame.getActiveTroops()) {
             Card card = model.getCardByName(savedTroop.getCardName());
@@ -357,7 +355,6 @@ public class BattleController {
             } else {}
         }
         
-        // TEAM_003: Delegate to Model
         // Restore active buildings
         for (SavedGameState.SavedBuilding savedBuilding : savedGame.getActiveBuildings()) {
             Card card = model.getCardByName(savedBuilding.getCardName());
@@ -410,6 +407,12 @@ public class BattleController {
         if (gameLoop != null) {
             gameLoop.stop();
         }
+        
+        try {
+            awardGoldIfEligible();
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
 
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
@@ -422,5 +425,39 @@ public class BattleController {
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    private void awardGoldIfEligible() throws java.io.IOException {
+        if (gameState == null) {
+            return;
+        }
+        // Early exits (game not finished) grant no gold
+        if (!gameState.isGameOver()) {
+            return;
+        }
+        
+        User currentUser = model.getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        int playerScore = gameState.getPlayerScore();
+        int botScore = gameState.getBotScore();
+        
+        int bonus;
+        if (playerScore > botScore) {
+            bonus = VICTORY_GOLD;
+        } else if (playerScore == botScore) {
+            bonus = DRAW_GOLD;
+        } else {
+            bonus = DEFEAT_GOLD;
+        }
+        
+        if (bonus <= 0) {
+            return;
+        }
+        
+        currentUser.setGold(currentUser.getGold() + bonus);
+        model.saveCurrentUser();
     }
 }

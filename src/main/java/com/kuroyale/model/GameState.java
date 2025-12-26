@@ -126,6 +126,12 @@ public class GameState {
                 gameTime = 0;
                 if (!isGameOver) {
                     isGameOver = true;
+                    if (playerScore > botScore) {
+                        playerWon = true;
+                    } else {
+                        // For bot win or draw, playerWon remains false; draw is handled by consumers via scores
+                        playerWon = false;
+                    }
                 }
             }
 

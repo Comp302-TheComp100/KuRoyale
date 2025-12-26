@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.DeckManagementService;
 import com.kuroyale.service.GameSaveService;
 import com.kuroyale.util.ServiceFactory;
 
@@ -49,8 +48,13 @@ public class BattleModel {
     public Deck createDeckFromNames(List<String> cardNames) {
         Deck deck = new Deck();
         if (cardNames != null) {
+            User currentUser = authService.getCurrentUser();
             for (String name : cardNames) {
-                Card card = cardCatalog.getCardByName(name);
+                int level = 1;
+                if (currentUser != null) {
+                    level = currentUser.getCardLevel(name);
+                }
+                Card card = cardCatalog.createCardWithLevel(name, level);
                 if (card != null) {
                     deck.addCard(card);
                 }
@@ -67,6 +71,10 @@ public class BattleModel {
     //Saves the current game state
     public SavedGameState saveGame(GameState gameState, User user, ArenaLayout layout) {
         return gameSaveService.saveGame(gameState, user, layout);
+    }
+    
+    public void saveCurrentUser() throws java.io.IOException {
+        authService.saveCurrentUser();
     }
     
     //Gets a card by name from the catalog
