@@ -29,10 +29,12 @@ public class SavedGamesController {
     // 2. Scene Management: Instantiate the SceneLoader
     private final SceneLoader sceneLoader = new SceneLoader();
 
-    // Dependencies (Service classes removed from fields, now used only by the Model)
+    // Dependencies (Service classes removed from fields, now used only by the
+    // Model)
 
     public SavedGamesController() {
-        // Dependencies are now handled within the Model, simplifying the Controller constructor.
+        // Dependencies are now handled within the Model, simplifying the Controller
+        // constructor.
     }
 
     @FXML
@@ -68,83 +70,19 @@ public class SavedGamesController {
 
     // --- UI Construction (View/Controller concern) ---
 
-    private HBox createSavedGameEntry(SavedGameState savedGame) {
-        HBox entry = new HBox(20);
-        entry.setAlignment(Pos.CENTER_LEFT);
+    private javafx.scene.layout.HBox createSavedGameEntry(SavedGameState savedGame) {
+        return new com.kuroyale.view.SavedGameEntryView(savedGame,
+                new com.kuroyale.view.SavedGameEntryView.SavedGameListener() {
+                    @Override
+                    public void onLoad() {
+                        handleLoadGame(savedGame);
+                    }
 
-        // --- Styles (CSS should ideally handle most of this) ---
-        // For dynamic elements, inline styles are often necessary, but grouped here for clarity.
-        String baseStyle = "-fx-background-color: rgba(50, 50, 50, 0.9); " +
-                "-fx-padding: 20; " +
-                "-fx-background-radius: 10; " +
-                "-fx-border-color: #888; " +
-                "-fx-border-width: 2; " +
-                "-fx-border-radius: 10;";
-        String hoverStyle = "-fx-background-color: rgba(70, 70, 70, 0.9); " +
-                "-fx-padding: 20; " +
-                "-fx-background-radius: 10; " +
-                "-fx-border-color: #4CAF50; " + // Highlight color on hover
-                "-fx-border-width: 2; " +
-                "-fx-border-radius: 10;";
-
-        entry.setStyle(baseStyle);
-        entry.setPrefHeight(120);
-
-        // ... (InfoBox and ButtonBox creation remain the same) ...
-        VBox infoBox = new VBox(8);
-        infoBox.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(infoBox, Priority.ALWAYS);
-
-        Label dateLabel = new Label("Saved: " + savedGame.getFormattedSaveTime());
-        dateLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #aaaaaa;");
-
-        Label playerLabel = new Label("Player: " + savedGame.getPlayerUsername());
-        playerLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;");
-
-        Label timeLabel = new Label("Time Remaining: " + savedGame.getFormattedTimeRemaining());
-        timeLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #4CAF50;");
-
-        Label scoreLabel = new Label(String.format("Score: %d - %d", savedGame.getPlayerScore(), savedGame.getBotScore()));
-        scoreLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
-
-        Label elixirLabel = new Label(String.format("Elixir: %.1f/10", savedGame.getPlayerElixir()));
-        elixirLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #bb86fc;");
-
-        Label unitsLabel = new Label(String.format("Units: %d troops, %d buildings", savedGame.getActiveTroops().size(), savedGame.getActiveBuildings().size()));
-        unitsLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ffab40;");
-
-        infoBox.getChildren().addAll(dateLabel, playerLabel, timeLabel, scoreLabel, elixirLabel, unitsLabel);
-
-        // Right side - Action buttons
-        VBox buttonBox = new VBox(10);
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.setMinWidth(200);
-
-        Button loadButton = new Button("LOAD GAME");
-        loadButton.setStyle("-fx-font-size: 16px; -fx-padding: 10 30; -fx-background-color: #4CAF50; -fx-text-fill: white;");
-        loadButton.setPrefWidth(180);
-        loadButton.setOnAction(e -> handleLoadGame(savedGame));
-
-        Button deleteButton = new Button("🗑️ DELETE");
-        // Delete button styles and hover effect logic remain the same
-        String deleteBaseStyle = "-fx-font-size: 14px; -fx-padding: 8 30; -fx-background-color: #d32f2f; -fx-text-fill: white; -fx-font-weight: bold; -fx-border-color: #b71c1c; -fx-border-width: 1;";
-        String deleteHoverStyle = "-fx-font-size: 14px; -fx-padding: 8 30; -fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold; -fx-border-color: #b71c1c; -fx-border-width: 1;";
-
-        deleteButton.setStyle(deleteBaseStyle);
-        deleteButton.setPrefWidth(180);
-        deleteButton.setOnAction(e -> handleDeleteGame(savedGame));
-
-        deleteButton.setOnMouseEntered(event -> deleteButton.setStyle(deleteHoverStyle));
-        deleteButton.setOnMouseExited(event -> deleteButton.setStyle(deleteBaseStyle));
-
-        buttonBox.getChildren().addAll(loadButton, deleteButton);
-        entry.getChildren().addAll(infoBox, buttonBox);
-
-        // Hover effect for the entire entry
-        entry.setOnMouseEntered(e -> entry.setStyle(hoverStyle));
-        entry.setOnMouseExited(e -> entry.setStyle(baseStyle));
-
-        return entry;
+                    @Override
+                    public void onDelete() {
+                        handleDeleteGame(savedGame);
+                    }
+                });
     }
 
     // --- Action Handlers (Controller logic) ---

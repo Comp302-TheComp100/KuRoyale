@@ -4,6 +4,7 @@ import com.kuroyale.model.*;
 import com.kuroyale.view.battle.BattleArenaView;
 import com.kuroyale.view.battle.ElixirBar;
 import com.kuroyale.view.battle.HandView;
+import com.kuroyale.util.SceneLoader;
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.layout.HBox;
@@ -61,6 +62,7 @@ public class BattleController {
     private SavedGameState loadedSavedGame = null;
 
     private final BattleModel model = new BattleModel();
+    private final SceneLoader sceneLoader = new SceneLoader();
 
     // Challenge Mode Context
     private Challenge currentChallenge;
@@ -321,14 +323,7 @@ public class BattleController {
     @FXML
     private void handleExitToChallenges() {
         try {
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
-                    getClass().getResource("/fxml/challenge-selection.fxml"));
-            javafx.scene.Parent root = loader.load();
-            javafx.stage.Stage stage = (javafx.stage.Stage) arenaContainer.getScene().getWindow();
-            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Challenges");
+            sceneLoader.load(arenaContainer, "/fxml/challenge-selection.fxml", "KU Royale - Challenges", null);
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
@@ -406,33 +401,30 @@ public class BattleController {
     }
 
     private void handleSaveAndExit() {
-        // Save the game
-        User currentUser = model.getCurrentUser();
-        if (currentUser != null && currentArenaLayout != null) {
-            SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout);
-            if (savedGame != null) {
-                showSaveConfirmation();
-            } else {
-                System.err.println("Failed to save game");
-            }
+        if (saveGame()) {
+            showSaveConfirmation();
         }
-
         handleExit();
     }
 
     private void handleSaveAndResume() {
-        // Save the game
+        if (saveGame()) {
+            showSaveConfirmationBrief();
+        }
+        handleResume();
+    }
+
+    private boolean saveGame() {
         User currentUser = model.getCurrentUser();
         if (currentUser != null && currentArenaLayout != null) {
             SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout);
             if (savedGame != null) {
-                showSaveConfirmationBrief();
+                return true;
             } else {
                 System.err.println("Failed to save game");
             }
         }
-
-        handleResume();
+        return false;
     }
 
     private void showPauseMenu() {
@@ -512,13 +504,7 @@ public class BattleController {
         }
 
         try {
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
-            javafx.scene.Parent root = loader.load();
-            javafx.stage.Stage stage = (javafx.stage.Stage) arenaContainer.getScene().getWindow();
-            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Main Menu");
+            sceneLoader.load(arenaContainer, "/fxml/main-menu.fxml", "KU Royale - Main Menu", null);
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }

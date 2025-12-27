@@ -208,6 +208,63 @@ public class ArenaDesignModel {
         return true;
     }
 
+    public void placeBridge(ArenaLayout layout, int x) {
+        int startX = x;
+        if (startX >= Arena.WIDTH - 1) {
+            startX = Arena.WIDTH - 2;
+        }
+        int startY = GameConstants.RIVER_ROW_1;
+
+        for (int dx = 0; dx < GameConstants.BRIDGE_WIDTH; dx++) {
+            for (int dy = 0; dy < 2; dy++) {
+                layout.addBridgePosition(startX + dx, startY + dy);
+            }
+        }
+    }
+
+    public void removeBridge(ArenaLayout layout, int x) {
+        // Find the start of the 2x2 bridge block
+        int blockStart = x;
+        while (blockStart > 0) {
+            final int checkX = blockStart - 1;
+            boolean isBridgeLeft = layout.getBridgePositions().stream()
+                    .anyMatch(p -> p.getX() == checkX
+                            && (p.getY() == GameConstants.RIVER_ROW_1 || p.getY() == GameConstants.RIVER_ROW_2));
+            if (isBridgeLeft) {
+                blockStart--;
+            } else {
+                break;
+            }
+        }
+
+        int offset = x - blockStart;
+        int bridgeStartX = blockStart + (offset / 2) * 2;
+
+        layout.getBridgePositions().removeIf(
+                p -> (p.getX() == bridgeStartX || p.getX() == bridgeStartX + 1)
+                        && (p.getY() == GameConstants.RIVER_ROW_1 || p.getY() == GameConstants.RIVER_ROW_2));
+    }
+
+    public void placePrincessTower(ArenaLayout layout, int x, int y) {
+        int startX = x - 1;
+        int startY = y - 1;
+        layout.addPrincessTowerPosition(startX, startY);
+    }
+
+    public void removePrincessTower(ArenaLayout layout, int x, int y) {
+        layout.getPrincessTowerPositions().removeIf(p -> p.getX() == x && p.getY() == y);
+    }
+
+    public void placeKingTower(ArenaLayout layout, int x, int y) {
+        int startX = x - 2;
+        int startY = y - 2;
+        layout.setKingTowerPosition(startX, startY);
+    }
+
+    public void removeKingTower(ArenaLayout layout) {
+        layout.setKingTowerPosition(null);
+    }
+
     // Helper to check if two rectangles overlap
     private boolean isOverlap(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2) {
         return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
