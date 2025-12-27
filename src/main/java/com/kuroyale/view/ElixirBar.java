@@ -21,12 +21,14 @@ public class ElixirBar extends VBox {
         this.setAlignment(Pos.CENTER);
         this.setSpacing(5);
         this.getStyleClass().add("elixir-bar-container");
+        this.setMinWidth(220); // Ensure it has a minimum width
+        this.setMinHeight(60); // Ensure it has a minimum height
 
         // HBox to contain label and x2 indicator
         HBox labelContainer = new HBox(10);
         labelContainer.setAlignment(Pos.CENTER);
 
-        //Elixir Label
+        // Elixir Label
         this.elixirLabel = new Label();
         this.elixirLabel.getStyleClass().add("elixir-label");
         this.elixirLabel.setStyle(
@@ -45,13 +47,16 @@ public class ElixirBar extends VBox {
         this.progressBar.setPrefWidth(200);
         this.progressBar.setPrefHeight(20);
         this.progressBar.getStyleClass().add("elixir-progress-bar");
-        this.progressBar.setStyle("-fx-accent: #FF00FF;");
+        // Remove inline style that might conflict with CSS class
+        // this.progressBar.setStyle("-fx-accent: #FF00FF;");
 
         this.getChildren().addAll(labelContainer, progressBar);
         update();
     }
 
-    public void setDoubleElixirActive(boolean active) {doubleElixirLabel.setVisible(active);}
+    public void setDoubleElixirActive(boolean active) {
+        doubleElixirLabel.setVisible(active);
+    }
 
     public void update() {
         double current = elixirManager.getCurrentElixir();

@@ -25,16 +25,28 @@ import javafx.scene.media.MediaPlayer;
  * Implements Model-View-Controller (MVC) - Controller component*/
 public class MainMenuController {
 
-    @FXML private AnchorPane root;
-    @FXML private Label titleLabel;
-    @FXML private Button deckBuilderButton;
-    @FXML private Button startMatchButton;
-    @FXML private Button resumeGameButton;
-    @FXML private Button arenaDesignButton;
-    @FXML private Button challengesButton;
-    @FXML private Button settingsButton;
-    @FXML private HBox goldDisplay;
-    @FXML private Label goldLabel;
+    @FXML
+    private AnchorPane root;
+    @FXML
+    private Label titleLabel;
+    @FXML
+    private Button deckBuilderButton;
+    @FXML
+    private Button startMatchButton;
+    @FXML
+    private Button resumeGameButton;
+    @FXML
+    private Button arenaDesignButton;
+    @FXML
+    private Button challengesButton;
+    @FXML
+    private Button settingsButton;
+    @FXML
+    private Button questsButton;
+    @FXML
+    private HBox goldDisplay;
+    @FXML
+    private Label goldLabel;
 
     private static MediaPlayer mainMenuMusicPlayer;
     private final MenuModel model = new MenuModel();

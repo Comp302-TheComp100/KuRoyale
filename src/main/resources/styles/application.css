@@ -280,6 +280,42 @@
 }
 
 /* ============================================
+   ELIXIR BAR
+   ============================================ */
+
+.elixir-bar-container {
+  -fx-background-color: rgba(0, 0, 0, 0.6);
+  -fx-background-radius: 10;
+  -fx-padding: 10;
+  -fx-border-color: #d946ef;
+  /* Magenta border */
+  -fx-border-width: 2;
+  -fx-border-radius: 10;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 10, 0, 0, 2);
+  -fx-min-width: 220;
+}
+
+.elixir-progress-bar {
+  -fx-accent: #d946ef;
+  /* Magenta accent */
+  -fx-control-inner-background: #333;
+}
+
+.elixir-progress-bar .track {
+  -fx-background-color: #333;
+  -fx-background-radius: 5;
+  -fx-border-color: #555;
+  -fx-border-radius: 5;
+}
+
+.elixir-progress-bar .bar {
+  -fx-background-color: linear-gradient(to right, #d946ef, #a21caf);
+  -fx-background-radius: 5;
+  -fx-background-insets: 0;
+  -fx-effect: dropshadow(gaussian, rgba(217, 70, 239, 0.6), 10, 0, 0, 0);
+}
+
+/* ============================================
    DECK SLOTS
    ============================================ */
 
