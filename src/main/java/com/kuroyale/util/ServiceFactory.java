@@ -37,7 +37,7 @@ public class ServiceFactory {
         this.cardCatalog = new CardCatalog();
 
         // Create services with dependencies
-        this.authenticationService = new AuthenticationService(userRepository);
+        this.authenticationService = new AuthenticationService(userRepository, cardCatalog);
         this.deckManagementService = new DeckManagementService(userRepository, cardCatalog);
         this.arenaService = new ArenaService(userRepository);
         this.gameSaveService = new GameSaveService();

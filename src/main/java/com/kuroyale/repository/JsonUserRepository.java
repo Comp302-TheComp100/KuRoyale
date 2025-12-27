@@ -14,6 +14,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.kuroyale.model.ArenaLayout;
+import com.kuroyale.model.Card;
 import com.kuroyale.model.GridPosition;
 import com.kuroyale.model.User;
 
@@ -91,34 +92,46 @@ public class JsonUserRepository implements UserRepository {
             user.setPasswordHash(jsonUser.getString("passwordHash"));
             user.setGold(jsonUser.optInt("gold", 0));
 
-            // Load deck
+            Map<String, Integer> cardLevels = new HashMap<>();
+            if (jsonUser.has("cardLevels") && jsonUser.opt("cardLevels") instanceof JSONObject) {
+                JSONObject levelsJson = jsonUser.getJSONObject("cardLevels");
+                for (String cardName : levelsJson.keySet()) {
+                    int level = levelsJson.optInt(cardName, Card.MIN_LEVEL);
+                    int clampedLevel = Math.max(Card.MIN_LEVEL, Math.min(Card.MAX_LEVEL, level));
+                    cardLevels.put(cardName, clampedLevel);
+                }
+            }
+
+            // Also supports legacy deck entries stored as objects {name, level} and migrates levels into cardLevels.
             if (jsonUser.has("deck")) {
                 JSONArray deckArray = jsonUser.getJSONArray("deck");
                 List<String> deck = new ArrayList<>();
-                Map<String, Integer> cardLevels = new HashMap<>();
+
                 for (int j = 0; j < deckArray.length(); j++) {
                     Object entry = deckArray.get(j);
                     if (entry instanceof JSONObject) {
-                        // New format: { "name": "Knight", "level": 2 }
+                        // Legacy format: { "name": "Knight", "level": 2 }
                         JSONObject deckEntry = (JSONObject) entry;
-                        String name = deckEntry.optString("name", null);
-                        if (name != null && !name.isEmpty()) {
-                            deck.add(name);
-                            int level = deckEntry.optInt("level", 1);
-                            int clampedLevel = Math.max(com.kuroyale.model.Card.MIN_LEVEL, Math.min(com.kuroyale.model.Card.MAX_LEVEL, level));
+                        String name = deckEntry.optString("name", "");
+                        deck.add(name);
+
+                        // Seed cardLevels from legacy deck if missing
+                        if (name != null && !name.isEmpty() && !cardLevels.containsKey(name)) {
+                            int level = deckEntry.optInt("level", Card.MIN_LEVEL);
+                            int clampedLevel = Math.max(Card.MIN_LEVEL, Math.min(Card.MAX_LEVEL, level));
                             cardLevels.put(name, clampedLevel);
                         }
                     } else {
-                        // Legacy format: plain string card name
-                        String name = deckArray.getString(j);
-                        deck.add(name);
-                        // Default to level 1 for legacy entries
-                        cardLevels.put(name, 1);
+                        // New canonical format: string card name (or empty string for empty slot)
+                        String name = deckArray.optString(j, "");
+                        deck.add(name != null ? name : "");
                     }
                 }
+
                 user.setDeck(deck);
-                user.setCardLevels(cardLevels);
             }
+
+            user.setCardLevels(cardLevels);
 
             // Load arena layout
             if (jsonUser.has("arenaLayout")) {
@@ -176,16 +189,25 @@ public class JsonUserRepository implements UserRepository {
             jsonUser.put("gold", user.getGold());
 
             JSONArray deckArray = new JSONArray();
-            for (String cardName : user.getDeck()) {
-                if (cardName == null || cardName.isEmpty()) {
-                    continue;
+            if (user.getDeck() != null) {
+                for (String cardName : user.getDeck()) {
+                    deckArray.put(cardName != null ? cardName : "");
                 }
-                JSONObject deckEntry = new JSONObject();
-                deckEntry.put("name", cardName);
-                deckEntry.put("level", user.getCardLevel(cardName));
-                deckArray.put(deckEntry);
             }
             jsonUser.put("deck", deckArray);
+
+            JSONObject levelsJson = new JSONObject();
+            if (user.getCardLevels() != null) {
+                for (Map.Entry<String, Integer> entry : user.getCardLevels().entrySet()) {
+                    String cardName = entry.getKey();
+                    if (cardName == null || cardName.isEmpty()) {
+                        continue;
+                    }
+                    int clampedLevel = Math.max(Card.MIN_LEVEL, Math.min(Card.MAX_LEVEL, entry.getValue()));
+                    levelsJson.put(cardName, clampedLevel);
+                }
+            }
+            jsonUser.put("cardLevels", levelsJson);
 
             // Save arena layout
             if (user.getArenaLayout() != null) {

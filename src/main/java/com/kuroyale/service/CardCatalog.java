@@ -1,11 +1,14 @@
 package com.kuroyale.service;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.kuroyale.model.Card;
 import com.kuroyale.model.CardFactory;
+import com.kuroyale.model.User;
 
 /*Service that manages the catalog of available cards in the game
  * Information Expert: CardCatalog knows about all available cards
@@ -32,6 +35,28 @@ public class CardCatalog {
     //Gets all available cards in the game
     public List<Card> getAllCards() {
         return allCards;
+    }
+
+    public Set<String> getAllCardNames() {
+        Set<String> names = new HashSet<>();
+        for (Card card : allCards) {
+            if (card != null && card.getName() != null && !card.getName().isEmpty()) {
+                names.add(card.getName());
+            }
+        }
+        return names;
+    }
+
+    public void applyUserLevels(User user) {
+        if (user == null) {
+            return;
+        }
+        for (Card card : allCards) {
+            if (card == null) {
+                continue;
+            }
+            card.setLevel(user.getCardLevel(card.getName()));
+        }
     }
 
     //Finds a card by its name. Information Expert: CardCatalog knows all available cards

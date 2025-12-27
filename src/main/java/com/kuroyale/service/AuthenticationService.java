@@ -1,6 +1,7 @@
 package com.kuroyale.service;
 
 import java.io.IOException;
+import java.util.Set;
 
 import com.kuroyale.model.User;
 import com.kuroyale.repository.UserRepository;
@@ -12,12 +13,29 @@ import com.kuroyale.util.ValidationUtil;
  * High Cohesion: focused solely on authentication concerns*/
 public class AuthenticationService {
     private final UserRepository userRepository;
+    private final CardCatalog cardCatalog;
     private User currentUser;
     
     //Creates an AuthenticationService with the given repository
-    public AuthenticationService(UserRepository userRepository) {
+    public AuthenticationService(UserRepository userRepository, CardCatalog cardCatalog) {
         this.userRepository = userRepository;
+        this.cardCatalog = cardCatalog;
         this.currentUser = null;
+    }
+
+    private void ensureAllCardLevelsInitialized(User user) {
+        if (user == null || cardCatalog == null) {
+            return;
+        }
+        Set<String> allNames = cardCatalog.getAllCardNames();
+        for (String name : allNames) {
+            if (name == null || name.isEmpty()) {
+                continue;
+            }
+            if (!user.getCardLevels().containsKey(name)) {
+                user.setCardLevel(name, 1);
+            }
+        }
     }
     
     //Registers a new user account. Creator pattern: creates User objects with initialization data
@@ -37,6 +55,8 @@ public class AuthenticationService {
         // Creator: Service has the initialization data (username, password hash)
         String passwordHash = PasswordUtil.hashPassword(password);
         User newUser = new User(username, passwordHash);
+
+        ensureAllCardLevelsInitialized(newUser);
         
         // Persist user
         userRepository.save(newUser);
@@ -53,6 +73,8 @@ public class AuthenticationService {
         
         // Delegate password validation to User (Information Expert)
         if (user.validatePassword(password)) {
+            ensureAllCardLevelsInitialized(user);
+            userRepository.save(user);
             return user;
         }
         
@@ -60,7 +82,12 @@ public class AuthenticationService {
     }
     
     //Sets the currently logged-in user
-    public void setCurrentUser(User user) {this.currentUser = user;}
+    public void setCurrentUser(User user) {
+        this.currentUser = user;
+        if (user != null && cardCatalog != null) {
+            cardCatalog.applyUserLevels(user);
+        }
+    }
     
     //Gets the currently logged-in user
     public User getCurrentUser() {return currentUser;}
