@@ -287,22 +287,8 @@ public class GameState {
         // Remove dead troops post building attacks
         activeTroops.removeIf(t -> !t.isAlive());
 
-        // Trigger death explosion for area-effect buildings (e.g., Bomb Tower)
-        // Check for buildings that died this frame?
-        // Logic in original code checked activeBuildings for dead ones before cleanup.
-        // We moved cleanup to cleanupEntities(), which runs AFTER handleCombat.
-        // So dead buildings are still in activeBuildings list here but isAlive() is
-        // false.
-        // We need to iterate and check dead ones for death damage.
         for (Building b : activeBuildings) {
             if (!b.isAlive() && b.isAreaEffect()) { // Assuming death damage is tied to isAreaEffect like Bomb Tower
-                // The original code did this. We should replicate or improve.
-                // We need to ensure we don't trigger this multiple times.
-                // The original code removed them right after.
-                // Here cleanup is later.
-                // Problem: If we don't remove them, we might trigger death damage multiple
-                // times if update() runs twice before cleanup?
-                // No, cleanupEntities runs in same frame.
                 GridPosition center = b.getCenterPosition();
                 if (center != null) {
                     combatService.applyAreaDamage(this, center, 1.0, b.getDamage(), b.getTargetType(),
@@ -335,20 +321,6 @@ public class GameState {
 
     public int getPlayerDamageTaken() {
         int damage = 0;
-        // Since we don't know easily which tower belongs to whom without position,
-        // we have to be careful. But getTowerAt uses grid position.
-
-        // Better approach: Iterate all cells, if it's a player tower tile, check the
-        // tower.
-        // But towers are multi-tile.
-
-        // We can just iterate the unique towers and check their type/side?
-        // Tower class doesn't store "side". It stores "Type" (King/Princess).
-        // Side is determined by placement location in Arena (TileType).
-
-        // So we must iterate cells or towerMap.
-        // Arena doesn't expose towerMap keys directly.
-        // Let's iterate all cells to find unique towers belonging to player.
         java.util.Set<Tower> playerTowers = new java.util.HashSet<>();
 
         for (int x = 0; x < Arena.WIDTH; x++) {
@@ -368,64 +340,6 @@ public class GameState {
         }
         return damage;
     }
-
-    /*
-     * public boolean placeCard(boolean isPlayer, int handIndex, int x, int y) {
-     * // 1. Basic Validation (Player Specific)
-     * if (x < 0 || x >= Arena.WIDTH || y < 0 || y >= Arena.HEIGHT) {
-     * return false;
-     * }
-     * 
-     * // Validate side (Player can only deploy on bottom half), unless it's a spell
-     * boolean isSpell = false;
-     * Card pendingCard = null;
-     * if (isPlayer) {
-     * pendingCard = playerHand.getCard(handIndex);
-     * if (pendingCard != null && pendingCard.getType() == CardType.SPELL) {
-     * isSpell = true;
-     * }
-     * }
-     * 
-     * // Validate terrain (Grass or Bridge only) - unless it's a spell
-     * if (!isSpell && !arena.getCell(x, y).canPlaceUnit()) {
-     * return false;
-     * }
-     * 
-     * if (isPlayer && !isSpell && y < Arena.HEIGHT / 2) {
-     * return false;
-     * }
-     * 
-     * if (isPlayer) {
-     * Card card = pendingCard != null ? pendingCard :
-     * playerHand.getCard(handIndex);
-     * if (card == null)
-     * return false;
-     * 
-     * // 2. Cost Calculation (Challenge Logic)
-     * int cost = card.getCost();
-     * if (activeChallenge == ChallengeType.SPELL_BARRAGE && card.getType() ==
-     * CardType.SPELL) {
-     * cost = Math.max(1, cost - 1);
-     * }
-     * 
-     * // 3. Elixir Check & Spend
-     * if (playerElixir.spend(cost)) {
-     * // 4. Play Card & Spawn
-     * playerHand.playCard(handIndex);
-     * boolean success = spawnUnit(true, card, x, y);
-     * 
-     * // Track Elixir Spent (Quest) - Moved here to ensure it only triggers on
-     * // successful spend
-     * if (success) {
-     * com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-     * .updateProgress(com.kuroyale.model.QuestType.SPEND_ELIXIR, cost);
-     * }
-     * return success;
-     * }
-     * }
-     * return false;
-     * }
-     */
 
     public boolean placeCard(boolean isPlayer, int handIndex, int x, int y) {
         // 1. Basic Validation (Player Specific)
@@ -518,88 +432,6 @@ public class GameState {
      * 
      * @return true if spawn was successful (e.g. building footprint valid), false
      *         otherwise.
-     * 
-     *         private boolean spawnUnit(boolean isPlayer, Card card, int x, int y)
-     *         {
-     *         if (card == null)
-     *         return false;
-     * 
-     *         // 1. Specific Validation & Creation
-     *         if (card.getType() == CardType.BUILDING) {
-     *         // Validate Footprint
-     *         int bw = Math.max(1, card.getFootprintWidthTiles());
-     *         int bh = Math.max(1, card.getFootprintHeightTiles());
-     *         // Prevent exceeding bounds and enforce margin
-     *         int mx = Math.max(0, bw - 1);
-     *         int my = Math.max(0, bh - 1);
-     * 
-     *         if (x < mx || y < my || (x + bw) > (Arena.WIDTH - mx) || (y + bh) >
-     *         (Arena.HEIGHT - my)) {
-     *         return false;
-     *         }
-     * 
-     *         // Validate all cells in footprint
-     *         for (int dx = 0; dx < bw; dx++) {
-     *         for (int dy = 0; dy < bh; dy++) {
-     *         GridCell c = arena.getCell(x + dx, y + dy);
-     *         if (c == null || c.isOccupied() || !c.isWalkable()) {
-     *         return false;
-     *         }
-     *         }
-     *         }
-     * 
-     *         // Create Building
-     *         GridPosition topLeft = GridPosition.tryCreate(x, y);
-     *         if (topLeft != null) {
-     *         Building building = new Building(topLeft, bw, bh, isPlayer,
-     *         card.getHp(), card.getImagePath(),
-     *         card.getLifetime());
-     *         building.configureCombatFromCard(card);
-     *         arena.occupyFootprint(building);
-     *         activeBuildings.add(building);
-     *         }
-     *         } else if (card.getType() == CardType.TROOP) {
-     *         int count = Math.max(1, card.getCount());
-     *         for (int i = 0; i < count; i++) {
-     *         GridPosition spawn = GridPosition.tryCreate(x, y);
-     *         if (spawn != null) {
-     *         Troop troop = new Troop(card, spawn, isPlayer);
-     *         activeTroops.add(troop);
-     *         }
-     *         }
-     *         } else if (card.getType() == CardType.SPELL) {
-     *         applySpellEffect(isPlayer, card, x, y);
-     *         }
-     * 
-     *         // 2. Add to Placed History
-     *         placedCards.add(new PlacedCard(card, x, y, isPlayer));
-     * 
-     *         // 3. Quests & Achievements (Player Only)
-     *         if (isPlayer) {
-     *         // Track specialized Quests
-     *         if (card.getType() == CardType.SPELL) {
-     *         com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-     *         .updateProgress(com.kuroyale.model.QuestType.PLAY_SPELL_CARDS, 1);
-     *         } else if (card.getType() == CardType.TROOP) {
-     *         com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-     *         .updateProgress(com.kuroyale.model.QuestType.DEPLOY_TROOP_CARDS, 1);
-     *         // Track Swarm Troops (Army Builder)
-     *         if (card.getCount() > 1) {
-     *         com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
-     *         .updateProgress(com.kuroyale.model.AchievementType.ARMY_BUILDER,
-     *         card.getCount());
-     *         }
-     *         } else if (card.getType() == CardType.BUILDING) {
-     *         com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-     *         .updateProgress(com.kuroyale.model.QuestType.PLAY_BUILDING_CARDS, 1);
-     *         }
-     *         }
-     * 
-     *         return true;
-     *         }
-     */
-    /**
-     * Unified logic for spawning units (Troops, Buildings, Spells).
      */
 
     private boolean spawnUnit(boolean isPlayer, Card card, int x, int y) {
