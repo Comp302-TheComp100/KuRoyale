@@ -3,14 +3,11 @@ package com.kuroyale.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kuroyale.service.TargetingService;
-
 //Central game state manager.Holds references to player and bot states, arena, and manages the game loop updates.
 public class GameState {
     private final Hand playerHand;
     private final ElixirManager playerElixir;
 
-    private final Hand botHand;
     private final ElixirManager botElixir;
     private final BotLogic bot;
 
@@ -19,7 +16,6 @@ public class GameState {
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
     private final List<SpellEffect> activeSpellEffects;
-    private final TargetingService targetingService = new TargetingService();
     private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
     private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
 
@@ -42,7 +38,7 @@ public class GameState {
         this.playerElixir = new ElixirManager();
 
         this.bot = new BotLogic(botDeck);
-        this.botHand = bot.getHand();
+        // Removed: this.botHand = bot.getHand();
         this.botElixir = bot.getElixirManager();
 
         this.arena = arena;
@@ -123,6 +119,22 @@ public class GameState {
     }
 
     public void update(double deltaTime) {
+        updateGameTimer(deltaTime);
+
+        playerElixir.update(deltaTime);
+        botElixir.update(deltaTime);
+
+        if (!isGameOver) {
+            updateBot(deltaTime);
+        }
+
+        updateEntities(deltaTime);
+        handleCombat(deltaTime);
+        cleanupEntities();
+        checkWinConditions();
+    }
+
+    private void updateGameTimer(double deltaTime) {
         if (gameTime > 0) {
             gameTime -= deltaTime;
 
@@ -140,26 +152,23 @@ public class GameState {
                     if (playerScore > botScore) {
                         playerWon = true;
                     } else {
-                        // For bot win or draw, playerWon remains false; draw is handled by consumers via scores
+                        // For bot win or draw, playerWon remains false
                         playerWon = false;
                     }
                 }
             }
-
         }
+    }
 
-        playerElixir.update(deltaTime);
-        botElixir.update(deltaTime); // Ensure bot elixir is also updated
-
-        // Update Bot
-        if (!isGameOver) {
-            BotLogic.Move botMove = bot.update(deltaTime, this);
-            if (botMove != null) {
-                placeCard(false, botMove.card, botMove.x, botMove.y);
-            }
+    private void updateBot(double deltaTime) {
+        BotLogic.Move botMove = bot.update(deltaTime, this);
+        if (botMove != null) {
+            placeCard(false, botMove.card, botMove.x, botMove.y);
         }
+    }
 
-        // Update placed cards
+    private void updateEntities(double deltaTime) {
+        // Update placed cards/troops
         troopMovementService.updateTroops(deltaTime, this, activeTroops);
 
         // Update buildings (lifetime depreciation)
@@ -168,18 +177,22 @@ public class GameState {
                 b.update(deltaTime);
             }
         }
+    }
 
+    private void handleCombat(double deltaTime) {
         updateBuildingsCombat(deltaTime);
         updateTowersCombat(deltaTime);
         updateSpellEffects(deltaTime);
+    }
 
+    private void cleanupEntities() {
         // Cleanup destroyed buildings and free their occupied tiles
         if (!activeBuildings.isEmpty()) {
             java.util.Iterator<Building> it = activeBuildings.iterator();
             while (it.hasNext()) {
                 Building b = it.next();
                 if (!b.isAlive()) {
-                    freeFootprint(b);
+                    arena.freeFootprint(b);
                     it.remove();
                 }
             }
@@ -193,8 +206,9 @@ public class GameState {
 
         // Cleanup destroyed towers
         arena.removeDeadTowers();
+    }
 
-        // Check for King Tower destruction
+    private void checkWinConditions() {
         if (!isGameOver) {
             boolean playerKingAlive = arena.isPlayerKingAlive();
             boolean botKingAlive = arena.isBotKingAlive();
@@ -207,6 +221,104 @@ public class GameState {
                 playerWon = true;
             }
         }
+    }
+
+    // Generalize combat logic for any structure (Building or Tower)
+    private void processStructureCombat(ICombatant structure, double deltaTime) {
+        if (!structure.isAlive())
+            return;
+
+        // Find nearest valid target
+        Troop best = null;
+        double bestDist = Double.MAX_VALUE;
+        GridPosition center = structure.getCenterPosition();
+        if (center == null)
+            return;
+
+        double range = structure.getRange();
+
+        for (Troop t : activeTroops) {
+            if (!t.isAlive())
+                continue;
+            // Friendly fire check
+            if (t.isPlayerSide() == structure.isPlayerSide())
+                continue;
+
+            // Check targeting rules (Ground/Air) via ICombatant
+            if (!structure.canTarget(t))
+                continue;
+
+            double dist = center.getEuclideanDistanceTo(t.getPosition());
+            if (dist <= range && dist < bestDist) {
+                bestDist = dist;
+                best = t;
+            }
+        }
+
+        // Handle Attack and Cooldown
+        double cd = structure.getAttackCooldown() - deltaTime;
+        if (best != null) {
+            if (cd <= 0) {
+                if (structure.isAreaEffect()) {
+                    // Area effect (splash around target)
+                    // Use a default small splash radius (e.g., 1 tile) or define in ICombatant if
+                    // variable
+                    combatService.applyAreaDamage(this, best.getPosition(), 1.0, structure.getDamage(),
+                            structure.getTargetType(), structure.isPlayerSide());
+                } else {
+                    // Single target
+                    combatService.applyDamage(structure, best);
+                }
+                structure.setAttackCooldown(Math.max(0.1, structure.getHitSpeed()));
+            } else {
+                structure.setAttackCooldown(cd);
+            }
+        } else {
+            // No target, cooldown just ticks down
+            structure.setAttackCooldown(Math.max(0.0, cd));
+        }
+    }
+
+    private void updateBuildingsCombat(double deltaTime) {
+        for (Building b : activeBuildings) {
+            processStructureCombat(b, deltaTime);
+        }
+
+        // Remove dead troops post building attacks
+        activeTroops.removeIf(t -> !t.isAlive());
+
+        // Trigger death explosion for area-effect buildings (e.g., Bomb Tower)
+        // Check for buildings that died this frame?
+        // Logic in original code checked activeBuildings for dead ones before cleanup.
+        // We moved cleanup to cleanupEntities(), which runs AFTER handleCombat.
+        // So dead buildings are still in activeBuildings list here but isAlive() is
+        // false.
+        // We need to iterate and check dead ones for death damage.
+        for (Building b : activeBuildings) {
+            if (!b.isAlive() && b.isAreaEffect()) { // Assuming death damage is tied to isAreaEffect like Bomb Tower
+                // The original code did this. We should replicate or improve.
+                // We need to ensure we don't trigger this multiple times.
+                // The original code removed them right after.
+                // Here cleanup is later.
+                // Problem: If we don't remove them, we might trigger death damage multiple
+                // times if update() runs twice before cleanup?
+                // No, cleanupEntities runs in same frame.
+                GridPosition center = b.getCenterPosition();
+                if (center != null) {
+                    combatService.applyAreaDamage(this, center, 1.0, b.getDamage(), b.getTargetType(),
+                            b.isPlayerSide());
+                }
+            }
+        }
+    }
+
+    private void updateTowersCombat(double deltaTime) {
+        java.util.Set<Tower> towers = arena.getAllTowers();
+        for (Tower t : towers) {
+            processStructureCombat(t, deltaTime);
+        }
+        // Remove any dead troops after tower attacks
+        activeTroops.removeIf(t -> !t.isAlive());
     }
 
     public boolean isDoubleElixir() {
@@ -257,13 +369,71 @@ public class GameState {
         return damage;
     }
 
+    /*
+     * public boolean placeCard(boolean isPlayer, int handIndex, int x, int y) {
+     * // 1. Basic Validation (Player Specific)
+     * if (x < 0 || x >= Arena.WIDTH || y < 0 || y >= Arena.HEIGHT) {
+     * return false;
+     * }
+     * 
+     * // Validate side (Player can only deploy on bottom half), unless it's a spell
+     * boolean isSpell = false;
+     * Card pendingCard = null;
+     * if (isPlayer) {
+     * pendingCard = playerHand.getCard(handIndex);
+     * if (pendingCard != null && pendingCard.getType() == CardType.SPELL) {
+     * isSpell = true;
+     * }
+     * }
+     * 
+     * // Validate terrain (Grass or Bridge only) - unless it's a spell
+     * if (!isSpell && !arena.getCell(x, y).canPlaceUnit()) {
+     * return false;
+     * }
+     * 
+     * if (isPlayer && !isSpell && y < Arena.HEIGHT / 2) {
+     * return false;
+     * }
+     * 
+     * if (isPlayer) {
+     * Card card = pendingCard != null ? pendingCard :
+     * playerHand.getCard(handIndex);
+     * if (card == null)
+     * return false;
+     * 
+     * // 2. Cost Calculation (Challenge Logic)
+     * int cost = card.getCost();
+     * if (activeChallenge == ChallengeType.SPELL_BARRAGE && card.getType() ==
+     * CardType.SPELL) {
+     * cost = Math.max(1, cost - 1);
+     * }
+     * 
+     * // 3. Elixir Check & Spend
+     * if (playerElixir.spend(cost)) {
+     * // 4. Play Card & Spawn
+     * playerHand.playCard(handIndex);
+     * boolean success = spawnUnit(true, card, x, y);
+     * 
+     * // Track Elixir Spent (Quest) - Moved here to ensure it only triggers on
+     * // successful spend
+     * if (success) {
+     * com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+     * .updateProgress(com.kuroyale.model.QuestType.SPEND_ELIXIR, cost);
+     * }
+     * return success;
+     * }
+     * }
+     * return false;
+     * }
+     */
+
     public boolean placeCard(boolean isPlayer, int handIndex, int x, int y) {
-        // Validate position
+        // 1. Basic Validation (Player Specific)
         if (x < 0 || x >= Arena.WIDTH || y < 0 || y >= Arena.HEIGHT) {
             return false;
         }
 
-        // Check if card is a spell (can be placed anywhere)
+        // Validate side (Player can only deploy on bottom half), unless it's a spell
         boolean isSpell = false;
         Card pendingCard = null;
         if (isPlayer) {
@@ -278,70 +448,47 @@ public class GameState {
             return false;
         }
 
-        // Validate side (Player can only deploy on bottom half) - unless it's a spell
-        if (!isSpell && isPlayer && y < Arena.HEIGHT / 2) {
+        if (isPlayer && !isSpell && y < Arena.HEIGHT / 2) {
             return false;
         }
 
         if (isPlayer) {
             Card card = pendingCard != null ? pendingCard : playerHand.getCard(handIndex);
+            if (card == null)
+                return false;
 
-            // CHALLENGE MODIFIER: Spell Barrage (Spells cost 1 less)
-            int cost = 0;
-            if (card != null) {
-                cost = card.getCost();
-                if (activeChallenge == ChallengeType.SPELL_BARRAGE && card.getType() == CardType.SPELL) {
-                    cost = Math.max(1, cost - 1);
-                }
+            // 2. Cost Calculation (Challenge Logic)
+            int cost = card.getCost();
+            if (activeChallenge == ChallengeType.SPELL_BARRAGE && card.getType() == CardType.SPELL) {
+                cost = Math.max(1, cost - 1);
             }
 
-            if (card != null && playerElixir.spend(cost)) {
-                playerHand.playCard(handIndex);
-                placedCards.add(new PlacedCard(card, x, y, isPlayer));
-                if (card.getType() == CardType.TROOP) {
-                    int count = Math.max(1, card.getCount());
-                    for (int i = 0; i < count; i++) {
-                        GridPosition spawn = GridPosition.tryCreate(x, y);
-                        if (spawn != null) {
-                            Troop troop = new Troop(card, spawn, isPlayer);
-                            activeTroops.add(troop);
-                        }
-                    }
-                } else if (card.getType() == CardType.BUILDING) {
-                    // Building footprint from card metadata
-                    int bw = Math.max(1, card.getFootprintWidthTiles());
-                    int bh = Math.max(1, card.getFootprintHeightTiles());
-                    // Prevent exceeding bounds and enforce margin: (building size - 1)
-                    int mx = Math.max(0, bw - 1);
-                    int my = Math.max(0, bh - 1);
-                    if (x < mx || y < my || (x + bw) > (Arena.WIDTH - mx) || (y + bh) > (Arena.HEIGHT - my)) {
-                        return false; // invalid placement; do not accept
-                    }
-                    // Validate all cells in footprint are placeable (not water/tower/occupied)
-                    for (int dx = 0; dx < bw; dx++) {
-                        for (int dy = 0; dy < bh; dy++) {
-                            GridCell c = arena.getCell(x + dx, y + dy);
-                            if (c == null || c.isOccupied() || !c.isWalkable()) {
-                                return false; // invalid footprint region
-                            }
-                        }
-                    }
-                    GridPosition topLeft = GridPosition.tryCreate(x, y);
-                    if (topLeft != null) {
-                        Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
-                                card.getLifetime());
-                        building.configureCombatFromCard(card);
-                        occupyFootprint(building);
-                        activeBuildings.add(building);
-                    }
-                } else if (card.getType() == CardType.SPELL) {
-                    // Apply spell immediately at target position
-                    applySpellEffect(isPlayer, card, x, y);
+            // --- CRITICAL FIX: TRANSACTIONAL LOGIC ---
+
+            // Adım A: İksir yetiyor mu KONTROL ET (Ama harcama!)
+            // Not: ElixirManager'da 'getCurrentElixir()' metodu olduğunu varsayıyorum.
+            if (playerElixir.getCurrentElixir() >= cost) {
+
+                // Adım B: Birimi koymayı DENE (Bina çakışması vb. burada kontrol edilir)
+                boolean success = spawnUnit(true, card, x, y);
+
+                // Adım C: Sadece başarılıysa HARCA ve KARTI SİL
+                if (success) {
+                    playerElixir.spend(cost); // Şimdi düşüyoruz
+                    playerHand.playCard(handIndex); // Kartı elden çıkarıyoruz
+
+                    // Quest Updates (Sadece başarılı işlemde tetiklenir)
+                    com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                            .updateProgress(com.kuroyale.model.QuestType.SPEND_ELIXIR, cost);
                 }
-                return true;
+
+                return success;
+            } else {
+                // Yetersiz iksir
+                return false;
             }
-        } else {
         }
+
         return false;
     }
 
@@ -359,19 +506,199 @@ public class GameState {
 
     // Overload for direct card placement (used by Bot)
     public void placeCard(boolean isPlayer, Card card, int x, int y) {
-        if (isPlayer) {
-            // Track Elixir Spent
-            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                    .updateProgress(com.kuroyale.model.QuestType.SPEND_ELIXIR, card.getCost());
+        // Delegating strictly to spawnUnit.
+        // Note: Bot elixir is already spent in BotLogic.
+        spawnUnit(isPlayer, card, x, y);
+    }
 
-            // Track Card Types
+    /**
+     * Unified logic for spawning units (Troops, Buildings, Spells).
+     * Handles physical creation, specialized validation (building footprint), and
+     * Quest/Achievement tracking.
+     * 
+     * @return true if spawn was successful (e.g. building footprint valid), false
+     *         otherwise.
+     * 
+     *         private boolean spawnUnit(boolean isPlayer, Card card, int x, int y)
+     *         {
+     *         if (card == null)
+     *         return false;
+     * 
+     *         // 1. Specific Validation & Creation
+     *         if (card.getType() == CardType.BUILDING) {
+     *         // Validate Footprint
+     *         int bw = Math.max(1, card.getFootprintWidthTiles());
+     *         int bh = Math.max(1, card.getFootprintHeightTiles());
+     *         // Prevent exceeding bounds and enforce margin
+     *         int mx = Math.max(0, bw - 1);
+     *         int my = Math.max(0, bh - 1);
+     * 
+     *         if (x < mx || y < my || (x + bw) > (Arena.WIDTH - mx) || (y + bh) >
+     *         (Arena.HEIGHT - my)) {
+     *         return false;
+     *         }
+     * 
+     *         // Validate all cells in footprint
+     *         for (int dx = 0; dx < bw; dx++) {
+     *         for (int dy = 0; dy < bh; dy++) {
+     *         GridCell c = arena.getCell(x + dx, y + dy);
+     *         if (c == null || c.isOccupied() || !c.isWalkable()) {
+     *         return false;
+     *         }
+     *         }
+     *         }
+     * 
+     *         // Create Building
+     *         GridPosition topLeft = GridPosition.tryCreate(x, y);
+     *         if (topLeft != null) {
+     *         Building building = new Building(topLeft, bw, bh, isPlayer,
+     *         card.getHp(), card.getImagePath(),
+     *         card.getLifetime());
+     *         building.configureCombatFromCard(card);
+     *         arena.occupyFootprint(building);
+     *         activeBuildings.add(building);
+     *         }
+     *         } else if (card.getType() == CardType.TROOP) {
+     *         int count = Math.max(1, card.getCount());
+     *         for (int i = 0; i < count; i++) {
+     *         GridPosition spawn = GridPosition.tryCreate(x, y);
+     *         if (spawn != null) {
+     *         Troop troop = new Troop(card, spawn, isPlayer);
+     *         activeTroops.add(troop);
+     *         }
+     *         }
+     *         } else if (card.getType() == CardType.SPELL) {
+     *         applySpellEffect(isPlayer, card, x, y);
+     *         }
+     * 
+     *         // 2. Add to Placed History
+     *         placedCards.add(new PlacedCard(card, x, y, isPlayer));
+     * 
+     *         // 3. Quests & Achievements (Player Only)
+     *         if (isPlayer) {
+     *         // Track specialized Quests
+     *         if (card.getType() == CardType.SPELL) {
+     *         com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+     *         .updateProgress(com.kuroyale.model.QuestType.PLAY_SPELL_CARDS, 1);
+     *         } else if (card.getType() == CardType.TROOP) {
+     *         com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+     *         .updateProgress(com.kuroyale.model.QuestType.DEPLOY_TROOP_CARDS, 1);
+     *         // Track Swarm Troops (Army Builder)
+     *         if (card.getCount() > 1) {
+     *         com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+     *         .updateProgress(com.kuroyale.model.AchievementType.ARMY_BUILDER,
+     *         card.getCount());
+     *         }
+     *         } else if (card.getType() == CardType.BUILDING) {
+     *         com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+     *         .updateProgress(com.kuroyale.model.QuestType.PLAY_BUILDING_CARDS, 1);
+     *         }
+     *         }
+     * 
+     *         return true;
+     *         }
+     */
+    /**
+     * Unified logic for spawning units (Troops, Buildings, Spells).
+     */
+
+    private boolean spawnUnit(boolean isPlayer, Card card, int x, int y) {
+        if (card == null)
+            return false;
+
+        // --- FIX 2: Askerlerin dağılması için ofset haritası (Spiral/Grid mantığı) ---
+        // {dx, dy} -> Merkez, Sağ, Sol, Aşağı, Yukarı, Sağ-Alt, Sol-Üst...
+        final int[][] OFFSETS = {
+                { 0, 0 }, { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 },
+                { 1, 1 }, { -1, -1 }, { 1, -1 }, { -1, 1 },
+                { 2, 0 }, { -2, 0 }, { 0, 2 }, { 0, -2 }, { 2, 2 }, { -2, -2 }
+        };
+
+        // 1. Specific Validation & Creation
+        if (card.getType() == CardType.BUILDING) {
+            // Validate Footprint
+            int bw = Math.max(1, card.getFootprintWidthTiles());
+            int bh = Math.max(1, card.getFootprintHeightTiles());
+
+            // --- FIX 1: Bina Sınır Kontrolü (Düzeltildi) ---
+            // Eski 'mx/my' kodları yerine basit sınır kontrolü:
+            // X veya Y sıfırdan küçükse VEYA (X + Genişlik) Arena'yı taşıyorsa HATA.
+            if (x < 0 || y < 0 || (x + bw) > Arena.WIDTH || (y + bh) > Arena.HEIGHT) {
+                return false;
+            }
+
+            // Validate all cells in footprint
+            for (int dx = 0; dx < bw; dx++) {
+                for (int dy = 0; dy < bh; dy++) {
+                    GridCell c = arena.getCell(x + dx, y + dy);
+                    // Bina sadece boş ve yürünebilir (çim) alana konabilir
+                    if (c == null || c.isOccupied() || !c.isWalkable()) {
+                        return false;
+                    }
+                }
+            }
+
+            // Create Building
+            GridPosition topLeft = GridPosition.tryCreate(x, y);
+            if (topLeft != null) {
+                Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
+                        card.getLifetime());
+                building.configureCombatFromCard(card);
+                arena.occupyFootprint(building);
+                activeBuildings.add(building);
+            }
+        } else if (card.getType() == CardType.TROOP) {
+            int count = Math.max(1, card.getCount());
+
+            for (int i = 0; i < count; i++) {
+                // --- FIX 2 UYGULAMASI ---
+                // Eğer çok fazla asker varsa (offset dizisinden fazla), fazlalıklar merkezde
+                // (0,0) doğsun.
+                int[] offset = (i < OFFSETS.length) ? OFFSETS[i] : OFFSETS[0];
+
+                int spawnX = x + offset[0];
+                int spawnY = y + offset[1];
+
+                // Hedef nokta harita içinde mi?
+                boolean isValidPos = (spawnX >= 0 && spawnX < Arena.WIDTH && spawnY >= 0 && spawnY < Arena.HEIGHT);
+
+                // Eğer harita içindeyse, orası yürünebilir mi (Nehir/Bina değil mi)?
+                if (isValidPos) {
+                    GridCell cell = arena.getCell(spawnX, spawnY);
+                    if (cell == null || !cell.isWalkable()) {
+                        isValidPos = false; // Nehir veya duvarsa oraya doğmasın
+                    }
+                }
+
+                // Eğer offset noktası geçersizse (örn: nehre denk geldi), askeri ana merkeze
+                // (x,y) koy.
+                if (!isValidPos) {
+                    spawnX = x;
+                    spawnY = y;
+                }
+
+                GridPosition spawn = GridPosition.tryCreate(spawnX, spawnY);
+                if (spawn != null) {
+                    Troop troop = new Troop(card, spawn, isPlayer);
+                    activeTroops.add(troop);
+                }
+            }
+        } else if (card.getType() == CardType.SPELL) {
+            applySpellEffect(isPlayer, card, x, y);
+        }
+
+        // 2. Add to Placed History
+        placedCards.add(new PlacedCard(card, x, y, isPlayer));
+
+        // 3. Quests & Achievements (Player Only)
+        if (isPlayer) {
+            // ... (Buradaki kodlar aynı kalacak, Quest logic) ...
             if (card.getType() == CardType.SPELL) {
                 com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
                         .updateProgress(com.kuroyale.model.QuestType.PLAY_SPELL_CARDS, 1);
             } else if (card.getType() == CardType.TROOP) {
                 com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
                         .updateProgress(com.kuroyale.model.QuestType.DEPLOY_TROOP_CARDS, 1);
-                // Track Swarm Troops (Army Builder)
                 if (card.getCount() > 1) {
                     com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
                             .updateProgress(com.kuroyale.model.AchievementType.ARMY_BUILDER, card.getCount());
@@ -382,41 +709,7 @@ public class GameState {
             }
         }
 
-        placedCards.add(new PlacedCard(card, x, y, isPlayer));
-        if (card.getType() == CardType.TROOP) {
-            int count = Math.max(1, card.getCount());
-            for (int i = 0; i < count; i++) {
-                GridPosition spawn = GridPosition.tryCreate(x, y);
-                if (spawn != null) {
-                    Troop troop = new Troop(card, spawn, isPlayer);
-                    activeTroops.add(troop);
-                }
-            }
-        } else if (card.getType() == CardType.BUILDING) {
-            int bw = Math.max(1, card.getFootprintWidthTiles());
-            int bh = Math.max(1, card.getFootprintHeightTiles());
-            if (x < 0 || y < 0 || (x + bw) >= Arena.WIDTH || (y + bh) >= Arena.HEIGHT) {
-                return; // ignore invalid bot placement
-            }
-            for (int dx = 0; dx < bw; dx++) {
-                for (int dy = 0; dy < bh; dy++) {
-                    GridCell c = arena.getCell(x + dx, y + dy);
-                    if (c == null || c.isOccupied() || !c.isWalkable()) {
-                        return; // invalid area
-                    }
-                }
-            }
-            GridPosition topLeft = GridPosition.tryCreate(x, y);
-            if (topLeft != null) {
-                Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
-                        card.getLifetime());
-                building.configureCombatFromCard(card);
-                occupyFootprint(building);
-                activeBuildings.add(building);
-            }
-        } else if (card.getType() == CardType.SPELL) {
-            applySpellEffect(isPlayer, card, x, y);
-        }
+        return true;
     }
 
     public Hand getPlayerHand() {
@@ -427,80 +720,15 @@ public class GameState {
     // buildings, and towers)
     private void applySpellEffect(boolean isPlayer, Card spell, int x, int y) {
         // Use card damage and range as radius in tiles
-        int radius = (int) Math.max(0, Math.round(spell.getRange()));
-        int damage = Math.max(0, spell.getDamage());
+        double radius = Math.max(0, spell.getRange());
+        double damage = Math.max(0, spell.getDamage());
         GridPosition center = GridPosition.tryCreate(x, y);
         if (center == null)
             return;
 
-        // Damage enemy troops
-        for (Troop t : new java.util.ArrayList<>(activeTroops)) {
-            if (!t.isAlive())
-                continue;
-            if (t.isPlayerSide() == isPlayer)
-                continue;
-            double dist = center.getEuclideanDistanceTo(t.getPosition());
-            if (dist <= radius) {
-                t.takeDamage(damage);
-            }
-        }
-        activeTroops.removeIf(t -> !t.isAlive());
-
-        // Damage enemy buildings
-        for (Building b : new java.util.ArrayList<>(activeBuildings)) {
-            if (!b.isAlive())
-                continue;
-            if (b.isPlayerSide() == isPlayer)
-                continue;
-            int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
-            int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
-            GridPosition bc = GridPosition.tryCreate(cx, cy);
-            double dist = bc != null ? center.getEuclideanDistanceTo(bc)
-                    : center.getEuclideanDistanceTo(b.getPosition());
-            if (dist <= radius) {
-                b.takeDamage(damage);
-                if (!b.isAlive()) {
-                    freeFootprint(b);
-                }
-            }
-        }
-        activeBuildings.removeIf(b -> !b.isAlive());
-
-        // Damage enemy towers
-        java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
-        for (GridCell cell : arena.getAllCells()) {
-            TileType tt = cell.getTileType();
-            boolean enemyTowerTile = isPlayer
-                    ? (tt == TileType.PRINCESS_TOWER_COMPUTER || tt == TileType.KING_TOWER_COMPUTER)
-                    : (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER);
-            if (!enemyTowerTile)
-                continue;
-            Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
-            if (tower == null || tower.getCurrentHealth() <= 0)
-                continue;
-            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
-        }
-        for (java.util.Map.Entry<Tower, java.util.List<GridCell>> e : groups.entrySet()) {
-            java.util.List<GridCell> cells = e.getValue();
-            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-            for (GridCell c : cells) {
-                int px = c.getPosition().getX();
-                int py = c.getPosition().getY();
-                minX = Math.min(minX, px);
-                minY = Math.min(minY, py);
-                maxX = Math.max(maxX, px);
-                maxY = Math.max(maxY, py);
-            }
-            int cx = (minX + maxX) / 2;
-            int cy = (minY + maxY) / 2;
-            GridPosition tc = GridPosition.tryCreate(cx, cy);
-            double dist = tc != null ? center.getEuclideanDistanceTo(tc) : 0.0;
-            if (dist <= radius) {
-                e.getKey().takeDamage(damage);
-            }
-        }
+        combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer);
         // Track effect for UI for 1 second
-        activeSpellEffects.add(new SpellEffect(GridPosition.tryCreate(x, y), radius, isPlayer, 1.0));
+        activeSpellEffects.add(new SpellEffect(GridPosition.tryCreate(x, y), (int) radius, isPlayer, 1.0));
     }
 
     /**
@@ -508,176 +736,38 @@ public class GameState {
      * Center is derived from the primary target to keep targeting logic unchanged.
      */
     public void applyAreaDamageFromTroop(Troop attacker, Troop primaryTarget) {
-        if (attacker == null || primaryTarget == null || !primaryTarget.isAlive())
+        if (attacker == null || primaryTarget == null)
             return;
         GridPosition center = primaryTarget.getPosition();
-        if (center == null)
-            return;
-        int radiusTiles = computeAoERadiusTiles(attacker);
-        if (radiusTiles <= 0)
-            return;
-        applyAreaDamageFromTroopInternal(attacker, center, radiusTiles);
+        applyAreaDamageFromTroopInternal(attacker, center);
     }
 
     public void applyAreaDamageFromTroop(Troop attacker, Building primaryTarget) {
-        if (attacker == null || primaryTarget == null || !primaryTarget.isAlive())
+        if (attacker == null || primaryTarget == null)
             return;
-        GridPosition center = buildingCenter(primaryTarget);
-        if (center == null)
-            return;
-        int radiusTiles = computeAoERadiusTiles(attacker);
-        if (radiusTiles <= 0)
-            return;
-        applyAreaDamageFromTroopInternal(attacker, center, radiusTiles);
+        GridPosition center = primaryTarget.getCenterPosition();
+        applyAreaDamageFromTroopInternal(attacker, center);
     }
 
     public void applyAreaDamageFromTroop(Troop attacker, Tower primaryTarget) {
-        if (attacker == null || primaryTarget == null || primaryTarget.getCurrentHealth() <= 0)
+        if (attacker == null || primaryTarget == null)
             return;
-        GridPosition center = towerCenter(primaryTarget);
-        if (center == null)
-            return;
-        int radiusTiles = computeAoERadiusTiles(attacker);
-        if (radiusTiles <= 0)
-            return;
-        applyAreaDamageFromTroopInternal(attacker, center, radiusTiles);
+        GridPosition center = primaryTarget.getCenterPosition();
+        applyAreaDamageFromTroopInternal(attacker, center);
     }
 
-    private int computeAoERadiusTiles(Troop attacker) {
-        // Fixed small splash radius for all area-effect troops
-        if (attacker == null)
-            return 0;
-        return 1;
-    }
-
-    private GridPosition buildingCenter(Building b) {
-        if (b == null || b.getPosition() == null)
-            return null;
-        int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
-        int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
-        return GridPosition.tryCreate(cx, cy);
-    }
-
-    private GridPosition towerCenter(Tower tower) {
-        if (tower == null)
-            return null;
-        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-        for (GridCell cell : arena.getAllCells()) {
-            Tower t = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
-            if (t != tower)
-                continue;
-            int px = cell.getPosition().getX();
-            int py = cell.getPosition().getY();
-            minX = Math.min(minX, px);
-            minY = Math.min(minY, py);
-            maxX = Math.max(maxX, px);
-            maxY = Math.max(maxY, py);
-        }
-        if (minX == Integer.MAX_VALUE)
-            return null;
-        int cx = (minX + maxX) / 2;
-        int cy = (minY + maxY) / 2;
-        return GridPosition.tryCreate(cx, cy);
-    }
-
-    /**
-     * Core AoE implementation shared by all troop-based area attacks.
-     * Respects TargetType for air/ground restrictions and can optionally show a
-     * short-lived visual ring.
-     */
-    private void applyAreaDamageFromTroopInternal(Troop attacker, GridPosition center, int radiusTiles) {
-        if (attacker == null || center == null || radiusTiles <= 0)
+    private void applyAreaDamageFromTroopInternal(Troop attacker, GridPosition center) {
+        if (attacker == null || center == null)
             return;
-
-        int damage = attacker.getCombatStats() != null ? attacker.getCombatStats().getDamage() : 0;
-        if (damage <= 0)
-            return;
-
+        // Fixed small splash for troops (e.g. 1.0) or use card property if exits
+        double radius = 1.0;
+        double damage = attacker.getCombatStats() != null ? attacker.getCombatStats().getDamage() : 0;
         TargetType targetType = attacker.getBaseCard() != null ? attacker.getBaseCard().getTarget() : TargetType.BOTH;
 
-        // Damage enemy troops, enforcing TargetType via TargetingService
-        for (Troop t : new java.util.ArrayList<>(activeTroops)) {
-            if (!t.isAlive())
-                continue;
-            if (t.isPlayerSide() == attacker.isPlayerSide())
-                continue;
-            if (!targetingService.isValidTarget(attacker, t))
-                continue;
-            int dx = Math.abs(t.getPosition().getX() - center.getX());
-            int dy = Math.abs(t.getPosition().getY() - center.getY());
-            // Plus-shaped small splash: center + 4 orthogonal neighbors
-            if (dx + dy <= radiusTiles) {
-                t.takeDamage(damage);
-            }
-        }
-        activeTroops.removeIf(t -> !t.isAlive());
-
-        // Damage enemy buildings if attacker can hit ground/structures
-        if (targetType != TargetType.AIR && targetType != TargetType.NONE && !activeBuildings.isEmpty()) {
-            for (Building b : new java.util.ArrayList<>(activeBuildings)) {
-                if (!b.isAlive())
-                    continue;
-                if (b.isPlayerSide() == attacker.isPlayerSide())
-                    continue;
-                GridPosition bc = buildingCenter(b);
-                if (bc == null)
-                    continue;
-                int dx = Math.abs(bc.getX() - center.getX());
-                int dy = Math.abs(bc.getY() - center.getY());
-                if (dx + dy <= radiusTiles) {
-                    b.takeDamage(damage);
-                    if (!b.isAlive()) {
-                        freeFootprint(b);
-                    }
-                }
-            }
-            activeBuildings.removeIf(b -> !b.isAlive());
-        }
-
-        // Damage enemy towers if attacker can hit ground/structures
-        if (targetType != TargetType.AIR && targetType != TargetType.NONE) {
-            java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
-            for (GridCell cell : arena.getAllCells()) {
-                TileType tt = cell.getTileType();
-                boolean enemyTowerTile = attacker.isPlayerSide()
-                        ? (tt == TileType.PRINCESS_TOWER_COMPUTER || tt == TileType.KING_TOWER_COMPUTER)
-                        : (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER);
-                if (!enemyTowerTile)
-                    continue;
-                Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
-                if (tower == null || tower.getCurrentHealth() <= 0)
-                    continue;
-                groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
-            }
-            for (java.util.Map.Entry<Tower, java.util.List<GridCell>> e : groups.entrySet()) {
-                Tower tower = e.getKey();
-                java.util.List<GridCell> cells = e.getValue();
-                int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE,
-                        maxY = Integer.MIN_VALUE;
-                for (GridCell c : cells) {
-                    int px = c.getPosition().getX();
-                    int py = c.getPosition().getY();
-                    minX = Math.min(minX, px);
-                    minY = Math.min(minY, py);
-                    maxX = Math.max(maxX, px);
-                    maxY = Math.max(maxY, py);
-                }
-                int cx = (minX + maxX) / 2;
-                int cy = (minY + maxY) / 2;
-                GridPosition tc = GridPosition.tryCreate(cx, cy);
-                if (tc == null)
-                    continue;
-                int dx = Math.abs(tc.getX() - center.getX());
-                int dy = Math.abs(tc.getY() - center.getY());
-                if (dx + dy <= radiusTiles) {
-                    tower.takeDamage(damage);
-                }
-            }
-        }
-
+        combatService.applyAreaDamage(this, center, radius, damage, targetType, attacker.isPlayerSide());
         // Short-lived visual ring for this AoE, rendered via
         // BattleArenaView.renderSpellEffects
-        activeSpellEffects.add(new SpellEffect(center, radiusTiles, attacker.isPlayerSide(), 0.3));
+        activeSpellEffects.add(new SpellEffect(center, (int) radius, attacker.isPlayerSide(), 0.3));
     }
 
     /**
@@ -685,99 +775,6 @@ public class GameState {
      * explosion.
      * Only damages enemy troops and respects the building's targeting rules.
      */
-    private void applyAreaDamageFromBuilding(Building attacker, GridPosition center, int radiusTiles) {
-        if (attacker == null || center == null || radiusTiles <= 0)
-            return;
-
-        int damage = attacker.getDamage();
-        if (damage <= 0)
-            return;
-
-        // Damage enemy troops respecting building target rules
-        for (Troop t : new java.util.ArrayList<>(activeTroops)) {
-            if (!t.isAlive())
-                continue;
-            if (t.isPlayerSide() == attacker.isPlayerSide())
-                continue;
-            if (!attacker.canTargetTroop(t))
-                continue;
-            int dx = Math.abs(t.getPosition().getX() - center.getX());
-            int dy = Math.abs(t.getPosition().getY() - center.getY());
-            // Plus-shaped small splash: center + 4 orthogonal neighbors
-            if (dx + dy <= radiusTiles) {
-                t.takeDamage(damage);
-            }
-        }
-        activeTroops.removeIf(t -> !t.isAlive());
-
-        // Optional: also damage nearby enemy buildings/towers if this building can hit
-        // ground/structures
-        TargetType bt = attacker.getTargetType();
-        if (bt != TargetType.AIR && bt != TargetType.NONE) {
-            // Buildings
-            for (Building b : new java.util.ArrayList<>(activeBuildings)) {
-                if (!b.isAlive())
-                    continue;
-                if (b.isPlayerSide() == attacker.isPlayerSide())
-                    continue;
-                GridPosition bc = buildingCenter(b);
-                if (bc == null)
-                    continue;
-                int dx = Math.abs(bc.getX() - center.getX());
-                int dy = Math.abs(bc.getY() - center.getY());
-                if (dx + dy <= radiusTiles) {
-                    b.takeDamage(damage);
-                    if (!b.isAlive()) {
-                        freeFootprint(b);
-                    }
-                }
-            }
-            activeBuildings.removeIf(b -> !b.isAlive());
-
-            // Towers
-            java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
-            for (GridCell cell : arena.getAllCells()) {
-                TileType tt = cell.getTileType();
-                boolean enemyTowerTile = attacker.isPlayerSide()
-                        ? (tt == TileType.PRINCESS_TOWER_COMPUTER || tt == TileType.KING_TOWER_COMPUTER)
-                        : (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER);
-                if (!enemyTowerTile)
-                    continue;
-                Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
-                if (tower == null || tower.getCurrentHealth() <= 0)
-                    continue;
-                groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
-            }
-            for (java.util.Map.Entry<Tower, java.util.List<GridCell>> e : groups.entrySet()) {
-                Tower tower = e.getKey();
-                java.util.List<GridCell> cells = e.getValue();
-                int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE,
-                        maxY = Integer.MIN_VALUE;
-                for (GridCell c : cells) {
-                    int px = c.getPosition().getX();
-                    int py = c.getPosition().getY();
-                    minX = Math.min(minX, px);
-                    minY = Math.min(minY, py);
-                    maxX = Math.max(maxX, px);
-                    maxY = Math.max(maxY, py);
-                }
-                int cx = (minX + maxX) / 2;
-                int cy = (minY + maxY) / 2;
-                GridPosition tc = GridPosition.tryCreate(cx, cy);
-                if (tc == null)
-                    continue;
-                int dx = Math.abs(tc.getX() - center.getX());
-                int dy = Math.abs(tc.getY() - center.getY());
-                if (dx + dy <= radiusTiles) {
-                    tower.takeDamage(damage);
-                }
-            }
-        }
-
-        // Short-lived visual ring for this AoE, rendered via
-        // BattleArenaView.renderSpellEffects
-        activeSpellEffects.add(new SpellEffect(center, radiusTiles, attacker.isPlayerSide(), 0.3));
-    }
 
     private void updateSpellEffects(double deltaTime) {
         if (activeSpellEffects.isEmpty())
@@ -806,116 +803,33 @@ public class GameState {
         }
     }
 
-    private void updateBuildingsCombat(double deltaTime) {
-        for (Building b : activeBuildings) {
-            if (!b.isAlive())
-                continue;
-            // Find nearest enemy troop within range respecting target type
-            Troop best = null;
-            double bestDist = Double.MAX_VALUE;
-            for (Troop t : activeTroops) {
-                if (!t.isAlive())
-                    continue;
-                if (t.isPlayerSide() == b.isPlayerSide())
-                    continue;
-                if (!b.canTargetTroop(t))
-                    continue;
-                // Measure from building center
-                int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
-                int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
-                GridPosition center = GridPosition.tryCreate(cx, cy);
-                double dist = center != null ? center.getEuclideanDistanceTo(t.getPosition())
-                        : b.getPosition().getEuclideanDistanceTo(t.getPosition());
-                if (dist <= b.getRangeTiles() && dist < bestDist) {
-                    bestDist = dist;
-                    best = t;
-                }
-            }
-            if (best != null) {
-                double cd = b.getAttackCooldown() - deltaTime;
-                if (cd <= 0) {
-                    if (b.isAreaEffect()) {
-                        // Small fixed-radius splash around the primary target troop
-                        GridPosition impactCenter = best.getPosition();
-                        if (impactCenter != null) {
-                            applyAreaDamageFromBuilding(b, impactCenter, 1);
-                        }
-                    } else {
-                        combatService.applyDamage(b, best);
-                    }
-                    b.setAttackCooldown(Math.max(0.1, b.getHitSpeedSeconds()));
-                } else {
-                    b.setAttackCooldown(cd);
-                }
-            } else {
-                // Cooldown still ticks down when idle
-                double cd = Math.max(0.0, b.getAttackCooldown() - deltaTime);
-                b.setAttackCooldown(cd);
-            }
-        }
-        // Remove dead troops post building attacks
-        activeTroops.removeIf(t -> !t.isAlive());
-
-        // Trigger death explosion for area-effect buildings (e.g., Bomb Tower)
-        if (!activeBuildings.isEmpty()) {
-            java.util.List<Building> deadAreaBuildings = new java.util.ArrayList<>();
-            for (Building b : activeBuildings) {
-                if (!b.isAlive() && b.isAreaEffect()) {
-                    deadAreaBuildings.add(b);
-                }
-            }
-            for (Building b : deadAreaBuildings) {
-                GridPosition center = buildingCenter(b);
-                if (center != null) {
-                    applyAreaDamageFromBuilding(b, center, 1);
-                }
-                // Footprint will be freed in the main update loop where inactive buildings are
-                // removed
-            }
-        }
-    }
+    // Trigger death explosion for area-effect buildings (e.g., Bomb Tower)
 
     /*
      * Checks for destroyed towers and updates scores accordingly.
      * Princess towers: +1 point to the attacker
      * King towers: Set attacker's score to 3 and end the game
      */
+    /*
+     * Checks for destroyed towers and updates scores accordingly.
+     * Princess towers: +1 point to the attacker
+     * King towers: Set attacker's score to 3 and end the game
+     */
     private void checkAndScoreDestroyedTowers() {
-        // Collect unique towers with inferred side and type
-        java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
-        for (GridCell cell : arena.getAllCells()) {
-            TileType tt = cell.getTileType();
-            boolean isTowerTile = tt == TileType.PRINCESS_TOWER_USER || tt == TileType.PRINCESS_TOWER_COMPUTER
-                    || tt == TileType.KING_TOWER_USER || tt == TileType.KING_TOWER_COMPUTER;
-            if (!isTowerTile)
-                continue;
-            Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
-            if (tower == null)
-                continue;
-            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
-        }
+        // Optimization: Iterate unique towers directly instead of scanning all grid
+        // cells (O(1) vs O(N))
+        java.util.Set<Tower> towers = arena.getAllTowers();
 
-        // Process each unique tower
-        for (java.util.Map.Entry<Tower, java.util.List<GridCell>> entry : groups.entrySet()) {
-            Tower tower = entry.getKey();
-
+        for (Tower tower : towers) {
             // Skip if already scored or still alive
-            if (scoredTowers.contains(tower) || tower.getCurrentHealth() > 0)
+            if (scoredTowers.contains(tower) || tower.isAlive())
                 continue;
-
-            // Determine ownership and type from cells
-            boolean isPlayerTower = false;
-            boolean isKingTower = false;
-            for (GridCell c : entry.getValue()) {
-                TileType tt = c.getTileType();
-                if (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER)
-                    isPlayerTower = true;
-                if (tt == TileType.KING_TOWER_USER || tt == TileType.KING_TOWER_COMPUTER)
-                    isKingTower = true;
-            }
 
             // Mark as scored to avoid double-counting
             scoredTowers.add(tower);
+
+            boolean isPlayerTower = tower.isPlayerSide();
+            boolean isKingTower = tower.getType() == Tower.TowerType.KING;
 
             // Update scores based on tower type and ownership
             if (isKingTower) {
@@ -958,78 +872,6 @@ public class GameState {
         }
     }
 
-    private void updateTowersCombat(double deltaTime) {
-        // Collect unique towers with inferred side and footprint size
-        java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
-        for (GridCell cell : arena.getAllCells()) {
-            TileType tt = cell.getTileType();
-            boolean isTowerTile = tt == TileType.PRINCESS_TOWER_USER || tt == TileType.PRINCESS_TOWER_COMPUTER
-                    || tt == TileType.KING_TOWER_USER || tt == TileType.KING_TOWER_COMPUTER;
-            if (!isTowerTile)
-                continue;
-            Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
-            if (tower == null)
-                continue;
-            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
-        }
-        for (java.util.Map.Entry<Tower, java.util.List<GridCell>> entry : groups.entrySet()) {
-            Tower tower = entry.getKey();
-            if (tower.getCurrentHealth() <= 0)
-                continue;
-            java.util.List<GridCell> cells = entry.getValue();
-            // Infer side and center from cells
-            boolean isPlayerTower = false; // default
-            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-            for (GridCell c : cells) {
-                TileType tt = c.getTileType();
-                if (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER)
-                    isPlayerTower = true;
-                int x = c.getPosition().getX();
-                int y = c.getPosition().getY();
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x);
-                maxY = Math.max(maxY, y);
-            }
-            int cx = (minX + maxX) / 2;
-            int cy = (minY + maxY) / 2;
-            GridPosition center = GridPosition.tryCreate(cx, cy);
-
-            // Find nearest enemy troop within tower range
-            Troop best = null;
-            double bestDist = Double.MAX_VALUE;
-            for (Troop t : activeTroops) {
-                if (!t.isAlive())
-                    continue;
-                if (t.isPlayerSide() == isPlayerTower)
-                    continue;
-                // Respect target type
-                if (tower.getTargetType() == TargetType.GROUND && t.isAirUnit())
-                    continue;
-                double dist = center != null ? center.getEuclideanDistanceTo(t.getPosition()) : 0.0;
-                if (dist <= Math.round(tower.getRange()) && dist < bestDist) {
-                    bestDist = dist;
-                    best = t;
-                }
-            }
-            // Attack using cooldown
-            double cd = tower.getAttackCooldown() - deltaTime;
-            if (best != null) {
-                if (cd <= 0) {
-                    combatService.applyDamage(tower, best);
-                    tower.setAttackCooldown(Math.max(0.1, tower.getHitSpeed()));
-                } else {
-                    tower.setAttackCooldown(cd);
-                }
-            } else {
-                // tick down
-                tower.setAttackCooldown(Math.max(0.0, cd));
-            }
-        }
-        // Remove any dead troops after tower attacks
-        activeTroops.removeIf(t -> !t.isAlive());
-    }
-
     public ElixirManager getPlayerElixir() {
         return playerElixir;
     }
@@ -1052,49 +894,6 @@ public class GameState {
 
     public List<SpellEffect> getActiveSpellEffects() {
         return activeSpellEffects;
-    }
-
-    private void occupyFootprint(Building b) {
-        for (int dx = 0; dx < b.getWidth(); dx++) {
-            for (int dy = 0; dy < b.getHeight(); dy++) {
-                int gx = b.getPosition().getX() + dx;
-                int gy = b.getPosition().getY() + dy;
-                GridPosition pos = GridPosition.tryCreate(gx, gy);
-                if (pos != null) {
-                    GridCell cell = arena.getCell(pos);
-                    if (cell != null) {
-                        // Mark as occupied to block placement and pathfinding
-                        try {
-                            cell.setOccupant(b);
-                        } catch (IllegalStateException e) {
-                            // ignore if invalid
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void freeFootprint(Building b) {
-        for (int dx = 0; dx < b.getWidth(); dx++) {
-            for (int dy = 0; dy < b.getHeight(); dy++) {
-                int gx = b.getPosition().getX() + dx;
-                int gy = b.getPosition().getY() + dy;
-                GridPosition pos = GridPosition.tryCreate(gx, gy);
-                if (pos != null) {
-                    GridCell cell = arena.getCell(pos);
-                    if (cell != null) {
-                        if (cell.isOccupied() && cell.getOccupant() == b) {
-                            try {
-                                cell.clearOccupant();
-                            } catch (IllegalStateException e) {
-                                // ignore if invalid; occupancy will be reset by tile type
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     // Inner class to track placed units

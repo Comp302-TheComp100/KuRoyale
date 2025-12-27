@@ -54,7 +54,8 @@ public class Arena {
         if (layout != null && layout.getPrincessTowerPositions() != null) {
             for (GridPosition p : layout.getPrincessTowerPositions()) {
                 // Place 3x3 tower for user
-                Tower tower = new Tower(Tower.TowerType.PRINCESS);
+                Tower tower = new Tower(Tower.TowerType.PRINCESS, true);
+                tower.setPosition(p); // Set position for ICombatant
                 for (int dx = 0; dx < 3; dx++) {
                     for (int dy = 0; dy < 3; dy++) {
                         if (isValidPosition(p.getX() + dx, p.getY() + dy)) {
@@ -68,7 +69,10 @@ public class Arena {
                 // be
                 // x' = x and y' = HEIGHT - 3 - y
                 int mirroredY = HEIGHT - 3 - p.getY();
-                Tower computerTower = new Tower(Tower.TowerType.PRINCESS);
+                Tower computerTower = new Tower(Tower.TowerType.PRINCESS, false);
+                GridPosition computerPos = new GridPosition(p.getX(), mirroredY);
+                computerTower.setPosition(computerPos); // Set position for ICombatant
+
                 for (int dx = 0; dx < 3; dx++) {
                     for (int dy = 0; dy < 3; dy++) {
                         if (isValidPosition(p.getX() + dx, mirroredY + dy)) {
@@ -85,7 +89,9 @@ public class Arena {
         if (layout != null && layout.getKingTowerPosition() != null) {
             GridPosition p = layout.getKingTowerPosition();
             // Place 4x4 tower for user
-            Tower tower = new Tower(Tower.TowerType.KING);
+            Tower tower = new Tower(Tower.TowerType.KING, true);
+            tower.setPosition(p);
+
             for (int dx = 0; dx < 4; dx++) {
                 for (int dy = 0; dy < 4; dy++) {
                     if (isValidPosition(p.getX() + dx, p.getY() + dy)) {
@@ -98,7 +104,10 @@ public class Arena {
 
             // Mirror for computer side (4x4)
             int mirroredY = HEIGHT - 4 - p.getY();
-            Tower computerTower = new Tower(Tower.TowerType.KING);
+            Tower computerTower = new Tower(Tower.TowerType.KING, false);
+            GridPosition computerPos = new GridPosition(p.getX(), mirroredY);
+            computerTower.setPosition(computerPos);
+
             for (int dx = 0; dx < 4; dx++) {
                 for (int dy = 0; dy < 4; dy++) {
                     if (isValidPosition(p.getX() + dx, mirroredY + dy)) {
@@ -354,5 +363,55 @@ public class Arena {
             }
         }
         return false;
+    }
+
+    // Occupies the footprint of a building on the grid
+    public void occupyFootprint(Building b) {
+        if (b == null)
+            return;
+
+        for (int dx = 0; dx < b.getWidth(); dx++) {
+            for (int dy = 0; dy < b.getHeight(); dy++) {
+                int gx = b.getPosition().getX() + dx;
+                int gy = b.getPosition().getY() + dy;
+                GridPosition pos = GridPosition.tryCreate(gx, gy);
+                if (pos != null) {
+                    GridCell cell = getCell(pos);
+                    if (cell != null) {
+                        try {
+                            cell.setOccupant(b);
+                        } catch (IllegalStateException e) {
+                            // ignore if invalid
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Frees the footprint of a building from the grid
+    public void freeFootprint(Building b) {
+        if (b == null)
+            return;
+
+        for (int dx = 0; dx < b.getWidth(); dx++) {
+            for (int dy = 0; dy < b.getHeight(); dy++) {
+                int gx = b.getPosition().getX() + dx;
+                int gy = b.getPosition().getY() + dy;
+                GridPosition pos = GridPosition.tryCreate(gx, gy);
+                if (pos != null) {
+                    GridCell cell = getCell(pos);
+                    if (cell != null) {
+                        if (cell.isOccupied() && cell.getOccupant() == b) {
+                            try {
+                                cell.clearOccupant();
+                            } catch (IllegalStateException e) {
+                                // ignore
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

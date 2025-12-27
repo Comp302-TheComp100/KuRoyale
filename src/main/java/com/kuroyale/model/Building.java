@@ -1,6 +1,6 @@
 package com.kuroyale.model;
 
-public class Building {
+public class Building implements ICombatant {
     private final GridPosition position; // top-left grid position
     private final int width;
     private final int height;
@@ -53,63 +53,101 @@ public class Building {
         this.targetType = card.getTarget();
         this.areaEffect = card.isAreaEffect();
     }
-    
+
     public String getCardName() {
         return cardName;
     }
+
     public void setCardName(String cardName) {
         this.cardName = cardName;
     }
+
+    @Override
     public GridPosition getPosition() {
         return position;
     }
+
+    @Override
+    public GridPosition getCenterPosition() {
+        if (position == null)
+            return null;
+        // Center = topLeft + (size-1)/2
+        int cx = position.getX() + (width > 0 ? (width - 1) / 2 : 0);
+        int cy = position.getY() + (height > 0 ? (height - 1) / 2 : 0);
+        return GridPosition.tryCreate(cx, cy);
+    }
+
     public int getWidth() {
         return width;
     }
+
     public int getHeight() {
         return height;
     }
+
     public boolean isPlayerSide() {
         return playerSide;
     }
+
     public double getMaxHealth() {
         return maxHealth;
     }
+
     public double getCurrentHealth() {
         return currentHealth;
     }
+
     public String getImagePath() {
         return imagePath;
     }
-    public int getDamage() {
+
+    public double getDamage() {
         return damage;
     }
+
+    // ICombatant getter for hit speed
+    public double getHitSpeed() {
+        return hitSpeedSeconds;
+    }
+
     public double getHitSpeedSeconds() {
         return hitSpeedSeconds;
     }
+
+    // ICombatant getter for range
+    public double getRange() {
+        return rangeTiles;
+    }
+
     public int getRangeTiles() {
         return rangeTiles;
     }
+
     public TargetType getTargetType() {
         return targetType;
     }
+
     public boolean isAreaEffect() {
         return areaEffect;
     }
+
     public double getAttackCooldown() {
         return attackCooldown;
     }
+
     public void setAttackCooldown(double cd) {
         this.attackCooldown = cd;
     }
+
     public int getLifetimeSeconds() {
         return lifetimeSeconds;
     }
+
     public double getRemainingLifetime() {
         return remainingLifetime;
     }
 
-    //Update building state (lifetime depreciation)
+    // Update building state (lifetime depreciation)
     public void update(double deltaTime) {
         if (lifetimeSeconds > 0) {
             remainingLifetime -= deltaTime;
@@ -137,9 +175,16 @@ public class Building {
     }
 
     public boolean canTargetTroop(Troop t) {
+        return canTarget(t);
+    }
+
+    @Override
+    public boolean canTarget(Troop t) {
         if (t == null || !t.isAlive())
             return false;
         if (this.targetType == TargetType.GROUND && t.isAirUnit())
+            return false;
+        if (this.targetType == TargetType.AIR && !t.isAirUnit())
             return false;
         return true;
     }
