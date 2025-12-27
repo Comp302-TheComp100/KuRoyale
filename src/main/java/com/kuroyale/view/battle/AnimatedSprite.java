@@ -201,17 +201,6 @@ public class AnimatedSprite extends ImageView {
 
     // Checks if the given card name has a supported animation.
     public static boolean isAnimated(String cardName) {
-        switch (cardName) {
-            case "Giant":
-            case "Archer":
-            case "Barbarian":
-            case "Valkyrie":
-            case "Wizard":
-            case "MiniPekka":
-            case "BabyDragon":
-                return true;
-            default:
-                return false;
-        }
+        return false;
     }
 }

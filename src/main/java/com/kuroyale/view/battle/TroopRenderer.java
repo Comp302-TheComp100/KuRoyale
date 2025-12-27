@@ -129,36 +129,6 @@ public class TroopRenderer {
         String cardName = troop.getBaseCard().getName();
         boolean needsCreation = (unitNode == null);
 
-        // Handle animation state changes
-        if (AnimatedSprite.isAnimated(cardName) && !needsCreation) {
-            String currentState = troop.getUnitState() == UnitState.ATTACKING ? "fight" : "walk";
-            boolean isRage = gameState.isDoubleElixir();
-            String stateKey = currentState + (isRage ? "-rage" : "");
-
-            String lastState = lastTroopState.get(troop);
-            if (!stateKey.equals(lastState)) {
-                if (unitNode instanceof AnimatedSprite) {
-                    try {
-                        String gifPath = AnimatedSprite.buildGifPath(cardName, currentState, troop.isPlayerSide(),
-                                isRage);
-                        double speedMult = troop.getMoveSpeed();
-                        if ("fight".equals(currentState)) {
-                            double hitSpeed = troop.getCombatStats().getHitSpeedSeconds();
-                            speedMult = 1.0 / Math.max(0.1, hitSpeed);
-                        }
-                        ((AnimatedSprite) unitNode).updateAnimation(gifPath, speedMult);
-                        lastTroopState.put(troop, stateKey);
-                    } catch (Exception e) {
-                        unitLayer.getChildren().remove(unitNode);
-                        needsCreation = true;
-                    }
-                } else {
-                    unitLayer.getChildren().remove(unitNode);
-                    needsCreation = true;
-                }
-            }
-        }
-
         if (needsCreation) {
             unitNode = createTroopVisual(troop, cardName, gameState);
             unitLayer.getChildren().add(unitNode);
@@ -173,26 +143,6 @@ public class TroopRenderer {
     }
 
     private Node createTroopVisual(Troop troop, String cardName, GameState gameState) {
-        if (AnimatedSprite.isAnimated(cardName)) {
-            try {
-                String state = troop.getUnitState() == UnitState.ATTACKING ? "fight" : "walk";
-                boolean isRage = gameState.isDoubleElixir();
-                String stateKey = state + (isRage ? "-rage" : "");
-                String gifPath = AnimatedSprite.buildGifPath(cardName, state, troop.isPlayerSide(), isRage);
-
-                double speedMult = troop.getMoveSpeed();
-                if ("fight".equals(state)) {
-                    double hitSpeed = troop.getCombatStats().getHitSpeedSeconds();
-                    speedMult = 1.0 / Math.max(0.1, hitSpeed);
-                }
-
-                AnimatedSprite sprite = new AnimatedSprite(gifPath, TILE_SIZE, speedMult);
-                lastTroopState.put(troop, stateKey);
-                return sprite;
-            } catch (Exception e) {
-                // fall through to static fallback
-            }
-        }
 
         try {
             String imgPath = troop.getBaseCard().getImagePath();
