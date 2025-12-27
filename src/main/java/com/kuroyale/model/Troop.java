@@ -5,16 +5,15 @@ import java.util.Deque;
 
 public class Troop {
     private final Card baseCard;
-    private GridPosition position;
-    private GridPosition targetPosition;
+    private Vector2 worldPosition; // Continuous position in world-space
+    private Vector2 targetWorldPosition; // Continuous target position
     private final boolean isPlayer;
     private final boolean isAirUnit;
     private final boolean buildingOnly;
     private double currentHealth;
-    private final double moveSpeed; // cells per second
-    private final double attackRange; // in cells approximate
-    private final Deque<GridPosition> path;
-    private double moveProgress; // accumulated fractional progress in cells
+    private final double moveSpeed; // tiles per second
+    private final double attackRange; // in tiles
+    private final Deque<Vector2> path; // Continuous waypoints
     // Combat
     private CombatStats combatStats;
     private double attackCooldown;
@@ -22,8 +21,8 @@ public class Troop {
 
     public Troop(Card card, GridPosition spawn, boolean isPlayer) {
         this.baseCard = card;
-        this.position = spawn;
-        this.targetPosition = null;
+        this.worldPosition = Vector2.fromGridPosition(spawn);
+        this.targetWorldPosition = null;
         this.isPlayer = isPlayer;
         this.isAirUnit = card.isAirUnit();
         this.buildingOnly = card.getTarget() == TargetType.BUILDINGS;
@@ -31,7 +30,6 @@ public class Troop {
         this.moveSpeed = mapSpeed(card.getSpeed());
         this.attackRange = card.getRange();
         this.path = new ArrayDeque<>();
-        this.moveProgress = 0.0;
         CombatStats.AttackType at = card.getRange() > 1.5 ? CombatStats.AttackType.RANGED
                 : CombatStats.AttackType.MELEE;
         this.combatStats = new CombatStats(card.getDamage(), card.getHitSpeed(), (int) Math.round(card.getRange()), at);
@@ -55,30 +53,47 @@ public class Troop {
         }
     }
 
-    public void setTargetPosition(GridPosition target) {
-        this.targetPosition = target;
+    public void setTargetWorldPosition(Vector2 target) {
+        this.targetWorldPosition = target;
     }
 
+    public Vector2 getTargetWorldPosition() {
+        return targetWorldPosition;
+    }
+
+    /**
+     * @deprecated Use setTargetWorldPosition instead
+     */
+    @Deprecated
+    public void setTargetPosition(GridPosition target) {
+        this.targetWorldPosition = Vector2.fromGridPosition(target);
+    }
+
+    /**
+     * @deprecated Use getTargetWorldPosition instead
+     */
+    @Deprecated
     public GridPosition getTargetPosition() {
-        return targetPosition;
+        return targetWorldPosition != null ? targetWorldPosition.toGridPosition() : null;
     }
 
     public void clearPath() {
         path.clear();
     }
 
-    public void setPath(Deque<GridPosition> newPath) {
+    public void setPath(Deque<Vector2> newPath) {
         path.clear();
         path.addAll(newPath);
     }
 
-    public Deque<GridPosition> getPath() {
+    public Deque<Vector2> getPath() {
         return path;
     }
 
     public boolean isAirUnit() {
         return isAirUnit;
     }
+
     public boolean isBuildingOnly() {
         return buildingOnly;
     }
@@ -87,11 +102,30 @@ public class Troop {
         return baseCard;
     }
 
-    public GridPosition getPosition() {
-        return position;
+    /**
+     * Returns the continuous world position.
+     */
+    public Vector2 getWorldPosition() {
+        return worldPosition;
     }
+
+    public void setWorldPosition(Vector2 pos) {
+        this.worldPosition = pos;
+    }
+
+    /**
+     * Returns the grid cell this troop is currently in.
+     */
+    public GridPosition getPosition() {
+        return worldPosition != null ? worldPosition.toGridPosition() : null;
+    }
+
+    /**
+     * @deprecated Use setWorldPosition instead
+     */
+    @Deprecated
     public void setPosition(GridPosition pos) {
-        this.position = pos;
+        this.worldPosition = Vector2.fromGridPosition(pos);
     }
 
     public boolean isPlayerSide() {
@@ -118,16 +152,7 @@ public class Troop {
         return attackRange;
     }
 
-    public void addMoveProgress(double delta) {
-        this.moveProgress += delta;
-    }
-    public double getMoveProgress() {
-        return this.moveProgress;
-    }
-
-    public void consumeMoveProgress(double amount) {
-        this.moveProgress = Math.max(0.0, this.moveProgress - amount);
-    }
+    // moveProgress removed - continuous movement no longer needs it
 
     // Combat getters/setters
     public CombatStats getCombatStats() {
@@ -137,6 +162,7 @@ public class Troop {
     public double getAttackCooldown() {
         return attackCooldown;
     }
+
     public void setAttackCooldown(double attackCooldown) {
         this.attackCooldown = attackCooldown;
     }
@@ -144,6 +170,7 @@ public class Troop {
     public UnitState getUnitState() {
         return unitState;
     }
+
     public void setUnitState(UnitState unitState) {
         this.unitState = unitState;
     }
@@ -154,6 +181,7 @@ public class Troop {
     public double getPathfindingCooldown() {
         return pathfindingCooldown;
     }
+
     public void setPathfindingCooldown(double val) {
         this.pathfindingCooldown = val;
     }
