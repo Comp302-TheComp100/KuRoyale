@@ -1,4 +1,4 @@
-package com.kuroyale.view;
+package com.kuroyale.view.battle;
 
 import com.kuroyale.model.ElixirManager;
 import javafx.geometry.Pos;
@@ -58,25 +58,34 @@ public class ElixirBar extends VBox {
         doubleElixirLabel.setVisible(active);
     }
 
+    private boolean lastDoubleElixirState = false;
+
     public void update() {
         double current = elixirManager.getCurrentElixir();
         double max = ElixirManager.MAX_ELIXIR;
+        boolean isDoubleElixir = elixirManager.isDoubleElixir();
 
-        // Update label
+        // Optimized: Only update text if value changed integer-wise (simplification for
+        // display)
+        // or just update label text always (cheap), but style is expensive.
+        // Let's update text always for smooth float changes, but style only on state
+        // change.
+
         elixirLabel.setText(String.format("%d / %d", (int) current, (int) max));
-
-        // Update bar
         progressBar.setProgress(current / max);
 
-        // Update speed indicator
-        if (elixirManager.isDoubleElixir()) {
-            doubleElixirLabel.setText("x2");
-            doubleElixirLabel.setStyle(
-                    "-fx-font-weight: bold; -fx-text-fill: #FF00FF; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
-        } else {
-            doubleElixirLabel.setText("x1");
-            doubleElixirLabel.setStyle(
-                    "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+        // Only update style if state changed
+        if (isDoubleElixir != lastDoubleElixirState) {
+            lastDoubleElixirState = isDoubleElixir;
+            if (isDoubleElixir) {
+                doubleElixirLabel.setText("x2");
+                doubleElixirLabel.setStyle(
+                        "-fx-font-weight: bold; -fx-text-fill: #FF00FF; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+            } else {
+                doubleElixirLabel.setText("x1");
+                doubleElixirLabel.setStyle(
+                        "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+            }
         }
     }
 }

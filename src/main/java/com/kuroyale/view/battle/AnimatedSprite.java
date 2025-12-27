@@ -1,4 +1,4 @@
-package com.kuroyale.view;
+package com.kuroyale.view.battle;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -33,7 +33,7 @@ public class AnimatedSprite extends ImageView {
         this(gifPath, size, 1.0);
     }
 
-    //Creates an animated sprite from a GIF path with speed control.
+    // Creates an animated sprite from a GIF path with speed control.
     public AnimatedSprite(String gifPath, double size, double speedMultiplier) {
         super();
         this.speedMultiplier = speedMultiplier;

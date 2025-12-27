@@ -41,4 +41,9 @@ public interface ICombatant {
     default boolean isAreaEffect() {
         return false;
     }
+
+    // Target tracking
+    void setTarget(Troop troop);
+
+    Troop getTarget();
 }

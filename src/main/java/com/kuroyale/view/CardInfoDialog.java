@@ -1,7 +1,6 @@
 package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
-import com.kuroyale.model.Rarity;
 import com.kuroyale.model.SpeedType;
 import com.kuroyale.model.User;
 import com.kuroyale.service.AuthenticationService;
@@ -83,17 +82,19 @@ public class CardInfoDialog extends StackPane {
                 "-fx-text-fill: white; -fx-font-size: 14px;";
         String hoverStyle = "-fx-background-color: " + StyleHelper.COLOR_YELLOW + "; " +
                 "-fx-text-fill: white; -fx-font-size: 14px;";
-        
+
         upgradeButton.setStyle(normalStyle);
         upgradeButton.setOnMouseEntered(e -> {
-            if (!upgradeButton.isDisabled()) upgradeButton.setStyle(hoverStyle);
+            if (!upgradeButton.isDisabled())
+                upgradeButton.setStyle(hoverStyle);
         });
         upgradeButton.setOnMouseExited(e -> {
-            if (!upgradeButton.isDisabled()) upgradeButton.setStyle(normalStyle);
+            if (!upgradeButton.isDisabled())
+                upgradeButton.setStyle(normalStyle);
         });
-        
+
         upgradeButton.setOnAction(e -> handleUpgrade());
-        
+
         // Update button state
         updateUpgradeButtonState(upgradeButton);
 
@@ -158,15 +159,19 @@ public class CardInfoDialog extends StackPane {
 
         // Type badge
         Label typeLabel = new Label(card.getType().toString());
-        typeLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
-                "', Arial; " + "-fx-text-fill: " + StyleHelper.COLOR_WHITE + "; " + "-fx-background-color: " + getTypeColor() +
-                "; " + "-fx-padding: 5 15 5 15; -fx-background-radius: 5;");
+        typeLabel.setStyle(
+                "-fx-font-size: 14px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
+                        "', Arial; " + "-fx-text-fill: " + StyleHelper.COLOR_WHITE + "; " + "-fx-background-color: "
+                        + getTypeColor() +
+                        "; " + "-fx-padding: 5 15 5 15; -fx-background-radius: 5;");
 
         // Rarity badge
         Label rarityLabel = new Label(card.getRarity().toString());
-        rarityLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
-                "', Arial; " + "-fx-text-fill: " + StyleHelper.COLOR_WHITE + "; " + "-fx-background-color: " + getRarityColor() +
-                "; " + "-fx-padding: 5 15 5 15; -fx-background-radius: 5;");
+        rarityLabel.setStyle(
+                "-fx-font-size: 14px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
+                        "', Arial; " + "-fx-text-fill: " + StyleHelper.COLOR_WHITE + "; " + "-fx-background-color: "
+                        + getRarityColor() +
+                        "; " + "-fx-padding: 5 15 5 15; -fx-background-radius: 5;");
 
         int level = card.getLevel();
         String stars = "";
@@ -174,8 +179,9 @@ public class CardInfoDialog extends StackPane {
             stars += "★";
         }
         Label levelLabel = new Label(stars);
-        levelLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
-                "', Arial; " + "-fx-text-fill: #fbbf24;");
+        levelLabel.setStyle(
+                "-fx-font-size: 24px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
+                        "', Arial; " + "-fx-text-fill: #fbbf24;");
 
         page.getChildren().addAll(imageView, nameLabel, costBox, typeLabel, rarityLabel, levelLabel);
         return page;
@@ -199,19 +205,37 @@ public class CardInfoDialog extends StackPane {
         addStat(statsBox, "Rarity", card.getRarity().toString());
         addStat(statsBox, "Level", String.valueOf(card.getLevel()));
 
-        if (card.getHp() > 0) {addStat(statsBox, "HP", String.valueOf(card.getHp()));}
-        if (card.getDamage() > 0) {addStat(statsBox, "DMG", String.valueOf(card.getDamage()));
-            if (card.getHitSpeed() > 0) {addStat(statsBox, "DPS", String.format("%.1f", card.getDPS()));}}
-        if (card.getHitSpeed() > 0) {addStat(statsBox, "Hit Speed", card.getHitSpeed() + "s");}
-        if (card.getRange() > 0) {addStat(statsBox, "Range", card.getRange() + " tiles");}
-        if (card.getSpeed() != SpeedType.NONE) {addStat(statsBox, "Speed", formatSpeed(card.getSpeed().toString()));}
+        if (card.getHp() > 0) {
+            addStat(statsBox, "HP", String.valueOf(card.getHp()));
+        }
+        if (card.getDamage() > 0) {
+            addStat(statsBox, "DMG", String.valueOf(card.getDamage()));
+            if (card.getHitSpeed() > 0) {
+                addStat(statsBox, "DPS", String.format("%.1f", card.getDPS()));
+            }
+        }
+        if (card.getHitSpeed() > 0) {
+            addStat(statsBox, "Hit Speed", card.getHitSpeed() + "s");
+        }
+        if (card.getRange() > 0) {
+            addStat(statsBox, "Range", card.getRange() + " tiles");
+        }
+        if (card.getSpeed() != SpeedType.NONE) {
+            addStat(statsBox, "Speed", formatSpeed(card.getSpeed().toString()));
+        }
         addStat(statsBox, "Target", card.getTarget().toString());
         if (card.getType() == com.kuroyale.model.CardType.TROOP) {
             addStat(statsBox, "Unit Type", card.isAirUnit() ? "Air" : "Ground");
         }
-        if (card.isAreaEffect()) {addStat(statsBox, "Area Effect", "Yes");}
-        if (card.getCount() > 1) {addStat(statsBox, "Count", card.getCount() + "x");}
-        if (card.getLifetime() > 0) {addStat(statsBox, "Lifetime", card.getLifetime() + "s");}
+        if (card.isAreaEffect()) {
+            addStat(statsBox, "Area Effect", "Yes");
+        }
+        if (card.getCount() > 1) {
+            addStat(statsBox, "Count", card.getCount() + "x");
+        }
+        if (card.getLifetime() > 0) {
+            addStat(statsBox, "Lifetime", card.getLifetime() + "s");
+        }
 
         // Description
         Label descLabel = new Label(card.getDescription());
@@ -355,59 +379,19 @@ public class CardInfoDialog extends StackPane {
         }
     }
 
-    private int calculateUpgradeCost() {
-        int currentLevel = card.getLevel();
-        Rarity rarity = card.getRarity();
-
-        if (currentLevel >= Card.MAX_LEVEL) {
-            return 0; // Already at max level
-        }
-
-        // Upgrade costs based on Feature.md
-        switch (rarity) {
-            case COMMON:
-                return currentLevel == 1 ? 200 : 500;
-            case RARE:
-                return currentLevel == 1 ? 400 : 1000;
-            case EPIC:
-                return currentLevel == 1 ? 800 : 2000;
-            case LEGENDARY:
-                return currentLevel == 1 ? 1500 : 4000;
-            default:
-                return 0;
-        }
-    }
-
-    @SuppressWarnings("unused")
-    private boolean canUpgrade() {
-        User currentUser = authService.getCurrentUser();
-        if (currentUser == null) {
-            return false;
-        }
-
-        // Check if card is at max level
-        if (card.getLevel() >= Card.MAX_LEVEL) {
-            return false;
-        }
-
-        // Check if player has enough gold
-        int upgradeCost = calculateUpgradeCost();
-        return currentUser.getGold() >= upgradeCost;
-    }
-
     private void updateUpgradeButtonState(Button upgradeButton) {
         User currentUser = authService.getCurrentUser();
-        
+
         if (currentUser == null) {
             upgradeButton.setDisable(true);
             return;
         }
 
         boolean atMaxLevel = card.getLevel() >= Card.MAX_LEVEL;
-        boolean hasEnoughGold = currentUser.getGold() >= calculateUpgradeCost();
+        boolean hasEnoughGold = currentUser.getGold() >= card.calculateUpgradeCost();
 
         upgradeButton.setDisable(atMaxLevel || !hasEnoughGold);
-        
+
         // Update button text to show reason if disabled
         if (atMaxLevel) {
             upgradeButton.setText("MAX LEVEL");
@@ -426,17 +410,16 @@ public class CardInfoDialog extends StackPane {
 
         // Open upgrade dialog
         UpgradeDialog upgradeDialog = new UpgradeDialog(
-            card,
-            currentUser,
-            () -> {
-                // On upgrade success, refresh this dialog
-                refreshDialog();
-            },
-            () -> {
-                // On cancel, just close the upgrade dialog
-                getChildren().remove(getChildren().size() - 1);
-            }
-        );
+                card,
+                currentUser,
+                () -> {
+                    // On upgrade success, refresh this dialog
+                    refreshDialog();
+                },
+                () -> {
+                    // On cancel, just close the upgrade dialog
+                    getChildren().remove(getChildren().size() - 1);
+                });
 
         getChildren().add(upgradeDialog);
     }

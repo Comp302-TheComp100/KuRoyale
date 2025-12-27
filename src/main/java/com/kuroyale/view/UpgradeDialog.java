@@ -1,10 +1,7 @@
 package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
-import com.kuroyale.model.Rarity;
 import com.kuroyale.model.User;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.StyleHelper;
 
 import javafx.geometry.Insets;
@@ -22,14 +19,12 @@ public class UpgradeDialog extends StackPane {
     private final Runnable onUpgradeSuccess;
     @SuppressWarnings("unused")
     private final Runnable onCancel;
-    private final AuthenticationService authService;
 
     public UpgradeDialog(Card card, User user, Runnable onUpgradeSuccess, Runnable onCancel) {
         this.card = card;
         this.user = user;
         this.onUpgradeSuccess = onUpgradeSuccess;
         this.onCancel = onCancel;
-        this.authService = ServiceFactory.getInstance().getAuthenticationService();
 
         // Full screen overlay
         getStyleClass().add("overlay-background");
@@ -75,7 +70,7 @@ public class UpgradeDialog extends StackPane {
         VBox nextStatsBox = createStatsBox("Next Level Stats", nextLevel);
 
         // Upgrade cost and gold balance
-        int upgradeCost = calculateUpgradeCost();
+        int upgradeCost = card.calculateUpgradeCost();
         int currentGold = user.getGold();
 
         HBox costBox = new HBox(10);
@@ -104,15 +99,17 @@ public class UpgradeDialog extends StackPane {
                 "-fx-text-fill: white; -fx-font-size: 14px;";
         String confirmHoverStyle = "-fx-background-color: " + StyleHelper.COLOR_YELLOW + "; " +
                 "-fx-text-fill: white; -fx-font-size: 14px;";
-        
+
         confirmButton.setStyle(confirmNormalStyle);
         confirmButton.setOnMouseEntered(e -> {
-            if (!confirmButton.isDisabled()) confirmButton.setStyle(confirmHoverStyle);
+            if (!confirmButton.isDisabled())
+                confirmButton.setStyle(confirmHoverStyle);
         });
         confirmButton.setOnMouseExited(e -> {
-            if (!confirmButton.isDisabled()) confirmButton.setStyle(confirmNormalStyle);
+            if (!confirmButton.isDisabled())
+                confirmButton.setStyle(confirmNormalStyle);
         });
-        
+
         confirmButton.setOnAction(e -> handleConfirm());
 
         // Disable confirm if insufficient gold
@@ -137,8 +134,7 @@ public class UpgradeDialog extends StackPane {
                 nextStatsBox,
                 costBox,
                 goldBox,
-                buttonsContainer
-        );
+                buttonsContainer);
 
         getChildren().add(mainContainer);
 
@@ -163,8 +159,8 @@ public class UpgradeDialog extends StackPane {
                 "-fx-text-fill: " + StyleHelper.COLOR_DARK + ";");
 
         // Calculate stats for this level
-        int hp = calculateStatForLevel(card.getBaseHp(), level);
-        int damage = calculateStatForLevel(card.getBaseDamage(), level);
+        int hp = Card.calculateStatForLevel(card.getBaseHp(), level);
+        int damage = Card.calculateStatForLevel(card.getBaseDamage(), level);
 
         if (hp > 0) {
             addStatRow(statsBox, "HP", String.valueOf(hp));
@@ -196,76 +192,18 @@ public class UpgradeDialog extends StackPane {
         container.getChildren().add(statRow);
     }
 
-    private int calculateStatForLevel(int baseStat, int level) {
-        if (baseStat <= 0) {
-            return 0;
-        }
-        double multiplier = 1.0 + (Math.max(1, level) - 1) * 0.10;
-        return (int) Math.round(baseStat * multiplier);
-    }
-
-    private int calculateUpgradeCost() {
-        int currentLevel = card.getLevel();
-        Rarity rarity = card.getRarity();
-
-        if (currentLevel >= Card.MAX_LEVEL) {
-            return 0;
-        }
-
-        // Upgrade costs based on Feature.md
-        switch (rarity) {
-            case COMMON:
-                return currentLevel == 1 ? 200 : 500;
-            case RARE:
-                return currentLevel == 1 ? 400 : 1000;
-            case EPIC:
-                return currentLevel == 1 ? 800 : 2000;
-            case LEGENDARY:
-                return currentLevel == 1 ? 1500 : 4000;
-            default:
-                return 0;
-        }
-    }
-
     private void handleConfirm() {
-        int upgradeCost = calculateUpgradeCost();
-        int currentGold = user.getGold();
-
-        // Verify sufficient gold
-        if (currentGold < upgradeCost) {
-            System.err.println("Insufficient gold for upgrade");
-            return;
-        }
-
-        // Verify not at max level
-        if (card.getLevel() >= Card.MAX_LEVEL) {
-            System.err.println("Card already at max level");
-            return;
-        }
-
+        com.kuroyale.controller.CardController controller = new com.kuroyale.controller.CardController();
         try {
-            // Deduct gold
-            user.setGold(currentGold - upgradeCost);
-
-            // Update card level in user's saved levels
-            int newLevel = card.getLevel() + 1;
-            user.setCardLevel(card.getName(), newLevel);
-
-            // Update the card instance level
-            card.setLevel(newLevel);
-
-            // Save user
-            authService.saveCurrentUser();
-
-            System.out.println("Successfully upgraded " + card.getName() + " to level " + newLevel);
+            controller.upgradeCard(card, user);
 
             // Call success callback
-            onUpgradeSuccess.run();
-
+            if (onUpgradeSuccess != null) {
+                onUpgradeSuccess.run();
+            }
         } catch (Exception e) {
-            System.err.println("Failed to upgrade card: " + e.getMessage());
+            System.err.println("Upgrade failed: " + e.getMessage());
             e.printStackTrace();
         }
     }
 }
-

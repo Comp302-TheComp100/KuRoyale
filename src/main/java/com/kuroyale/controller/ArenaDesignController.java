@@ -5,7 +5,7 @@ import com.kuroyale.model.ArenaDesignModel;
 import com.kuroyale.model.ArenaLayout;
 import com.kuroyale.util.GameConstants;
 import com.kuroyale.model.TileType;
-import com.kuroyale.view.ArenaRenderer;
+import com.kuroyale.view.battle.ArenaRenderer;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -77,10 +77,12 @@ public class ArenaDesignController {
     private void updatePaletteIcons() {
         try {
             if (draggablePrincessTower != null) {
-                draggablePrincessTower.setFill(new ImagePattern(renderer.getPrincessTowerUserImg()));
+                draggablePrincessTower
+                        .setFill(new ImagePattern(com.kuroyale.util.GameAssets.getInstance().getPrincessTowerUser()));
             }
             if (draggableKingTower != null) {
-                draggableKingTower.setFill(new ImagePattern(renderer.getKingTowerUserImg()));
+                draggableKingTower
+                        .setFill(new ImagePattern(com.kuroyale.util.GameAssets.getInstance().getKingTowerUser()));
             }
             if (draggableBridge != null) {
                 draggableBridge.setFill(javafx.scene.paint.Color.SADDLEBROWN);

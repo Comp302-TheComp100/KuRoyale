@@ -166,4 +166,15 @@ public class Tower implements ICombatant {
             return true;
         return false;
     }
+
+    // Target tracking for MVC
+    private Troop target;
+
+    public void setTarget(Troop target) {
+        this.target = target;
+    }
+
+    public Troop getTarget() {
+        return target;
+    }
 }
