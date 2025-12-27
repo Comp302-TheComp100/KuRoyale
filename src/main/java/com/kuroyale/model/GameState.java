@@ -255,6 +255,9 @@ public class GameState {
             }
         }
 
+        // Store target for View (MVC Fix)
+        structure.setTarget(best);
+
         // Handle Attack and Cooldown
         double cd = structure.getAttackCooldown() - deltaTime;
         if (best != null) {

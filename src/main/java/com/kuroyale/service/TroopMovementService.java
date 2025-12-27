@@ -53,19 +53,24 @@ public class TroopMovementService {
             }
             if (canAttack && targetTroop != null) {
                 troop.setUnitState(UnitState.ATTACKING);
+                troop.setCurrentTarget(targetTroop);
                 handleAttack(deltaTime, state, troop, targetTroop);
                 if (!targetTroop.isAlive()) {
                     targetTroop.setUnitState(UnitState.DESTROYED);
                     toRemove.add(targetTroop);
+                    troop.setCurrentTarget(null);
                 }
             } else if (canAttack && targetBuilding != null) {
                 troop.setUnitState(UnitState.ATTACKING);
+                troop.setCurrentTarget(targetBuilding);
                 handleAttack(deltaTime, state, troop, targetBuilding);
             } else if (canAttack && targetTower != null) {
                 troop.setUnitState(UnitState.ATTACKING);
+                troop.setCurrentTarget(targetTower);
                 handleAttack(deltaTime, state, troop, targetTower);
             } else {
                 troop.setUnitState(UnitState.MOVING);
+                troop.setCurrentTarget(null);
                 advanceAlongPath(deltaTime, troop, state);
             }
         }
@@ -189,19 +194,6 @@ public class TroopMovementService {
             return proposedPos.add(separation);
         }
         return proposedPos;
-    }
-
-    private boolean isTileFree(GridPosition position, Troop self, java.util.List<Troop> troops) {
-        for (Troop t : troops) {
-            if (t == self)
-                continue;
-            if (!t.isAlive())
-                continue;
-            if (t.getPosition().equals(position)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private Troop findEnemyTroopAt(GameState state, GridPosition pos, boolean isPlayer) {

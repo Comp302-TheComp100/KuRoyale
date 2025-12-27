@@ -6,7 +6,8 @@ public class TargetingService {
     private static final int BASE_DETECTION_RADIUS = 5; // tiles
 
     public GridPosition findNearestEnemyOrObjective(GameState state, Troop troop) {
-        GridPosition troopPos = troop.getPosition();
+        Vector2 troopWorldPos = troop.getWorldPosition();
+        GridPosition troopPos = troop.getPosition(); // Fallback for grid-based queries
         double bestDist = Double.MAX_VALUE;
         GridPosition bestPos = null;
 
@@ -27,13 +28,16 @@ public class TargetingService {
             // Ground troops cannot target air only enemies if target type is ground
             if (troop.getBaseCard().getTarget() == TargetType.GROUND && other.isAirUnit())
                 continue;
-            // Air only attackers cannot hit ground only if target type is air; handled by
-            // both
-            GridPosition pos = other.getPosition();
-            double dist = troopPos.getEuclideanDistanceTo(pos);
+
+            // Use Vector2 for accurate distance calculation
+            Vector2 otherWorldPos = other.getWorldPosition();
+            double dist = (troopWorldPos != null && otherWorldPos != null)
+                    ? troopWorldPos.distanceTo(otherWorldPos)
+                    : troopPos.getEuclideanDistanceTo(other.getPosition());
+
             if (dist <= detectionRadius && dist < bestDist) {
                 bestDist = dist;
-                bestPos = pos;
+                bestPos = other.getPosition(); // Still return GridPosition for pathfinding
             }
         }
 
@@ -152,9 +156,18 @@ public class TargetingService {
     }
 
     public boolean isInRange(Troop attacker, Troop target) {
-        GridPosition a = attacker.getPosition();
-        GridPosition b = target.getPosition();
-        double dist = a.getEuclideanDistanceTo(b);
+        // Use Vector2 for accurate distance calculation
+        Vector2 attackerPos = attacker.getWorldPosition();
+        Vector2 targetPos = target.getWorldPosition();
+
+        double dist;
+        if (attackerPos != null && targetPos != null) {
+            dist = attackerPos.distanceTo(targetPos);
+        } else {
+            // Fallback to grid-based calculation
+            dist = attacker.getPosition().getEuclideanDistanceTo(target.getPosition());
+        }
+
         double rangeTiles = attacker.getCombatStats() != null ? attacker.getCombatStats().getRangeTiles()
                 : attacker.getAttackRange();
         if (attacker.getCombatStats() != null

@@ -3,7 +3,7 @@ package com.kuroyale.model;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-public class Troop {
+public class Troop implements ICombatant {
     private final Card baseCard;
     private Vector2 worldPosition; // Continuous position in world-space
     private Vector2 targetWorldPosition; // Continuous target position
@@ -18,6 +18,15 @@ public class Troop {
     private CombatStats combatStats;
     private double attackCooldown;
     private UnitState unitState = UnitState.IDLE;
+    private ICombatant currentTarget; // The specific entity this unit is attacking
+
+    public void setCurrentTarget(ICombatant target) {
+        this.currentTarget = target;
+    }
+
+    public ICombatant getCurrentTarget() {
+        return currentTarget;
+    }
 
     public Troop(Card card, GridPosition spawn, boolean isPlayer) {
         this.baseCard = card;
@@ -175,6 +184,53 @@ public class Troop {
         this.unitState = unitState;
     }
 
+    // ICombatant Implementation
+
+    public GridPosition getCenterPosition() {
+        return getPosition(); // For 1x1 units, center is same as position
+    }
+
+    public int getWidth() {
+        return 1;
+    }
+
+    public int getHeight() {
+        return 1;
+    }
+
+    public double getRange() {
+        return attackRange;
+    }
+
+    public double getDamage() {
+        return combatStats != null ? combatStats.getDamage() : 0;
+    }
+
+    public double getHitSpeed() {
+        return combatStats != null ? combatStats.getHitSpeedSeconds() : 1.0;
+    }
+
+    public TargetType getTargetType() {
+        return baseCard != null ? baseCard.getTarget() : TargetType.GROUND;
+    }
+
+    public boolean canTarget(Troop t) {
+        if (t == null || !t.isAlive())
+            return false;
+        TargetType tt = getTargetType();
+        if (tt == TargetType.BUILDINGS)
+            return false; // Troops can't target troops if building-only
+        if (tt == TargetType.GROUND && t.isAirUnit())
+            return false;
+        if (tt == TargetType.AIR && !t.isAirUnit())
+            return false; // Usually implies AIR-ONLY? Or BOTH?
+        // Note: TargetType.AIR usually means targets AIR (and maybe GROUND?).
+        // In this game, usually TargetType is GROUND, AIR, BUILDINGS, or BOTH (implies
+        // all).
+        // Let's assume standard logic.
+        return true;
+    }
+
     // Pathfinding optimization
     private double pathfindingCooldown = 0.0;
 
@@ -184,5 +240,18 @@ public class Troop {
 
     public void setPathfindingCooldown(double val) {
         this.pathfindingCooldown = val;
+    }
+
+    @Override
+    public void setTarget(Troop troop) {
+        this.currentTarget = troop;
+    }
+
+    @Override
+    public Troop getTarget() {
+        if (currentTarget instanceof Troop) {
+            return (Troop) currentTarget;
+        }
+        return null;
     }
 }
