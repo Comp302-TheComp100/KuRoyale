@@ -5,7 +5,6 @@ import com.kuroyale.model.SavedGamesModel; // Import the new Model
 import com.kuroyale.util.SceneLoader; // Assuming SceneLoader is available
 import com.kuroyale.util.SoundEffectUtil;
 import javafx.fxml.FXML;
-import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 

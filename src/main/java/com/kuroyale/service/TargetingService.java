@@ -67,14 +67,6 @@ public class TargetingService {
         return findNearestEnemyTower(state.getArena(), troop);
     }
 
-    private GridPosition buildingCenter(Building b) {
-        if (b == null || b.getPosition() == null)
-            return null;
-        int cx = b.getPosition().getX() + Math.max(0, b.getWidth() - 1) / 2;
-        int cy = b.getPosition().getY() + Math.max(0, b.getHeight() - 1) / 2;
-        return GridPosition.tryCreate(cx, cy);
-    }
-
     // Find the nearest walkable, unoccupied perimeter tile adjacent to the building
     // footprint
     private GridPosition nearestPerimeterTile(Arena arena, Building b, GridPosition from) {

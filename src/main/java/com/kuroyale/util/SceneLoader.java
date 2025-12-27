@@ -6,20 +6,21 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.stage.Stage;
 
 //Utility class to centralize the logic for loading new JavaFX scenes.
 public class SceneLoader {
 
-    // Functional interface to allow the calling controller to initialize the newly loaded controller
+    // Functional interface to allow the calling controller to initialize the newly
+    // loaded controller
     @FunctionalInterface
     public interface ControllerInitializer {
         void initialize(Object controller);
     }
 
     // Loads a new FXML scene and switches the stage to display it.
-    public void load(Node sourceButton, String fxmlPath, String title, ControllerInitializer initializer) throws IOException {
+    public void load(Node sourceButton, String fxmlPath, String title, ControllerInitializer initializer)
+            throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
         Parent root = loader.load();
 

@@ -196,18 +196,6 @@ public class TroopMovementService {
         return proposedPos;
     }
 
-    private Troop findEnemyTroopAt(GameState state, GridPosition pos, boolean isPlayer) {
-        if (pos == null)
-            return null;
-        for (Troop t : state.getActiveTroops()) {
-            if (t.isPlayerSide() == isPlayer)
-                continue;
-            if (t.getPosition().equals(pos))
-                return t;
-        }
-        return null;
-    }
-
     private Troop findNearestEnemyTroopInRange(GameState state, Troop self) {
         Troop best = null;
         double bestDist = Double.MAX_VALUE;
