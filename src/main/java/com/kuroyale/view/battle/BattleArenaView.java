@@ -81,8 +81,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         // Bind unitLayer position to grid position to ensure perfect alignment
         unitLayer.layoutXProperty().bind(grid.layoutXProperty());
         unitLayer.layoutYProperty().bind(grid.layoutYProperty());
-        highlightLayer.layoutXProperty().bind(grid.layoutXProperty());
-        highlightLayer.layoutYProperty().bind(grid.layoutYProperty());
+        highlightLayer.layoutXProperty().bind(grid.layoutXProperty().add(TILE_SIZE / 2.0));
+        highlightLayer.layoutYProperty().bind(grid.layoutYProperty().add(TILE_SIZE / 2.0));
 
         // Handle clicks directly on the arena pane to get correct local coordinates
         arenaPane.setOnMouseClicked(e -> {
