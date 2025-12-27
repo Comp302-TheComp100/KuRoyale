@@ -46,12 +46,29 @@ public class Card {
     }
 
     // Getters
-    public String getName() {return name;}
-    public int getCost() {return cost;}
-    public CardType getType() {return type;}
-    public Rarity getRarity() {return rarity;}
-    public int getBaseHp() {return baseHp;}
-    public int getBaseDamage() {return baseDamage;}
+    public String getName() {
+        return name;
+    }
+
+    public int getCost() {
+        return cost;
+    }
+
+    public CardType getType() {
+        return type;
+    }
+
+    public Rarity getRarity() {
+        return rarity;
+    }
+
+    public int getBaseHp() {
+        return baseHp;
+    }
+
+    public int getBaseDamage() {
+        return baseDamage;
+    }
 
     public int getHp() {
         if (baseHp <= 0) {
@@ -67,14 +84,38 @@ public class Card {
         return (int) Math.round(baseDamage * multiplier);
     }
 
-    public double getHitSpeed() {return hitSpeed;}
-    public double getRange() {return range;}
-    public SpeedType getSpeed() {return speed;}
-    public TargetType getTarget() {return target;}
-    public boolean isAirUnit() {return airUnit;}
-    public boolean isAreaEffect() {return areaEffect;}
-    public String getDescription() {return description;}
-    public int getCount() {return count;}
+    public double getHitSpeed() {
+        return hitSpeed;
+    }
+
+    public double getRange() {
+        return range;
+    }
+
+    public SpeedType getSpeed() {
+        return speed;
+    }
+
+    public TargetType getTarget() {
+        return target;
+    }
+
+    public boolean isAirUnit() {
+        return airUnit;
+    }
+
+    public boolean isAreaEffect() {
+        return areaEffect;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
     public int getLifetime() {
         return lifetime;
     }
@@ -88,16 +129,27 @@ public class Card {
     }
 
     // Building footprint accessors (no-op for troops/spells)
-    public int getFootprintWidthTiles() { return footprintWidthTiles; }
-    public int getFootprintHeightTiles() { return footprintHeightTiles; }
-    public void setFootprintTiles(int width, int height) {
-        if (width > 0) this.footprintWidthTiles = width;
-        if (height > 0) this.footprintHeightTiles = height;
+    public int getFootprintWidthTiles() {
+        return footprintWidthTiles;
     }
 
-    public String getImagePath() {return "/images/cards/" + name.toLowerCase(java.util.Locale.ENGLISH).replace(" ", "_").replace(".", "") + ".png";}
+    public int getFootprintHeightTiles() {
+        return footprintHeightTiles;
+    }
 
-    //Calculates damage per second (DPS)
+    public void setFootprintTiles(int width, int height) {
+        if (width > 0)
+            this.footprintWidthTiles = width;
+        if (height > 0)
+            this.footprintHeightTiles = height;
+    }
+
+    public String getImagePath() {
+        return "/images/cards/" + name.toLowerCase(java.util.Locale.ENGLISH).replace(" ", "_").replace(".", "")
+                + ".png";
+    }
+
+    // Calculates damage per second (DPS)
     public double getDPS() {
         if (hitSpeed == 0)
             return 0;
@@ -105,7 +157,9 @@ public class Card {
     }
 
     @Override
-    public String toString() {return name + " (Cost: " + cost + ")";}
+    public String toString() {
+        return name + " (Cost: " + cost + ")";
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -116,6 +170,37 @@ public class Card {
         Card card = (Card) obj;
         return name.equals(card.name);
     }
+
     @Override
-    public int hashCode() {return name.hashCode();}
+    public int hashCode() {
+        return name.hashCode();
+    }
+
+    // Logic moved from Views
+    public int calculateUpgradeCost() {
+        if (level >= MAX_LEVEL) {
+            return 0;
+        }
+
+        switch (rarity) {
+            case COMMON:
+                return level == 1 ? 200 : 500;
+            case RARE:
+                return level == 1 ? 400 : 1000;
+            case EPIC:
+                return level == 1 ? 800 : 2000;
+            case LEGENDARY:
+                return level == 1 ? 1500 : 4000;
+            default:
+                return 0;
+        }
+    }
+
+    public static int calculateStatForLevel(int baseStat, int level) {
+        if (baseStat <= 0) {
+            return 0;
+        }
+        double multiplier = 1.0 + (Math.max(1, level) - 1) * 0.10;
+        return (int) Math.round(baseStat * multiplier);
+    }
 }
