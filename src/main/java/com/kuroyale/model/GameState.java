@@ -137,11 +137,10 @@ public class GameState {
                 gameTime = 0;
                 if (!isGameOver) {
                     isGameOver = true;
-                    // Timeout: Winner is determined by score (towers destroyed)
                     if (playerScore > botScore) {
                         playerWon = true;
                     } else {
-                        // Tie or Loss results in failure
+                        // For bot win or draw, playerWon remains false; draw is handled by consumers via scores
                         playerWon = false;
                     }
                 }

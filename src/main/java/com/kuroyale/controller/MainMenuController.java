@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.util.List;
 
 import com.kuroyale.model.MenuModel; // Import the new Model
+import com.kuroyale.model.User;
+import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.util.AudioManager;
 import com.kuroyale.util.SceneLoader; // Import the new utility
+import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.SoundEffectUtil;
 
 import javafx.fxml.FXML;
@@ -14,7 +17,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 
@@ -22,30 +25,26 @@ import javafx.scene.media.MediaPlayer;
  * Implements Model-View-Controller (MVC) - Controller component*/
 public class MainMenuController {
 
-    @FXML
-    private AnchorPane root;
-    @FXML
-    private Label titleLabel;
-    @FXML
-    private Button deckBuilderButton;
-    @FXML
-    private Button startMatchButton;
-    @FXML
-    private Button resumeGameButton;
-    @FXML
-    private Button arenaDesignButton;
-    @FXML
-    private Button challengesButton;
-    @FXML
-    private Button settingsButton;
+    @FXML private AnchorPane root;
+    @FXML private Label titleLabel;
+    @FXML private Button deckBuilderButton;
+    @FXML private Button startMatchButton;
+    @FXML private Button resumeGameButton;
+    @FXML private Button arenaDesignButton;
+    @FXML private Button challengesButton;
+    @FXML private Button settingsButton;
+    @FXML private HBox goldDisplay;
+    @FXML private Label goldLabel;
 
     private static MediaPlayer mainMenuMusicPlayer;
     private final MenuModel model = new MenuModel();
     private final SceneLoader sceneLoader = new SceneLoader();
+    private final AuthenticationService authService = ServiceFactory.getInstance().getAuthenticationService();
 
     @FXML
     private void initialize() {
         initializeStyles();
+        updateGoldDisplay();
         playMainMenuMusic();
     }
 
@@ -182,6 +181,15 @@ public class MainMenuController {
         alert.setHeaderText("An error occurred");
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void updateGoldDisplay() {
+        User currentUser = authService.getCurrentUser();
+        if (currentUser != null && goldLabel != null) {
+            goldLabel.setText(String.valueOf(currentUser.getGold()));
+        } else if (goldLabel != null) {
+            goldLabel.setText("0");
+        }
     }
 
     private void playMainMenuMusic() {

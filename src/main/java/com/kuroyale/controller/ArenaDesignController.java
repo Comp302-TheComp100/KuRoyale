@@ -18,7 +18,6 @@ public class ArenaDesignController {
     @FXML
     private TextField arenaNameField;
 
-    // TEAM_003: MVC pattern - use Model instead of direct service access
     private final ArenaDesignModel model = new ArenaDesignModel();
     private ArenaLayout currentLayout;
 
@@ -28,7 +27,6 @@ public class ArenaDesignController {
     private javafx.scene.image.Image kingTowerComputerImg;
 
     public ArenaDesignController() {
-        // TEAM_003: Model handles service dependencies
     }
 
     @FXML
@@ -69,7 +67,6 @@ public class ArenaDesignController {
             e.printStackTrace();
         }
 
-        // TEAM_003: Delegate to Model
         // Set current user in arena service so it can save to user's profile
         if (model.isLoggedIn()) {
             model.setCurrentUserInArenaService(model.getCurrentUser());
@@ -125,7 +122,6 @@ public class ArenaDesignController {
         arenaGrid.getColumnConstraints().clear();
         arenaGrid.getRowConstraints().clear();
 
-        // TEAM_003: Delegate to Model
         // Create a temporary Arena from the layout to get the full grid state
         com.kuroyale.model.Arena arena = model.createArena(currentLayout);
 
@@ -520,7 +516,6 @@ public class ArenaDesignController {
     @FXML
     public void handleSave() {
         if (currentLayout != null) {
-            // TEAM_003: Delegate validation to Model
             List<String> validationErrors = model.validateLayout(currentLayout);
             if (!validationErrors.isEmpty()) {
                 showAlert("Invalid Layout", validationErrors.get(0));
@@ -532,7 +527,6 @@ public class ArenaDesignController {
                 currentLayout.setName(name);
             }
             try {
-                // TEAM_003: Delegate to Model
                 model.saveArenaLayout(currentLayout);
 
                 javafx.scene.control.Alert alert = new javafx.scene.control.Alert(

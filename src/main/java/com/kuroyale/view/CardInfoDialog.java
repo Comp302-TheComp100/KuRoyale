@@ -1,7 +1,11 @@
 package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
+import com.kuroyale.model.Rarity;
 import com.kuroyale.model.SpeedType;
+import com.kuroyale.model.User;
+import com.kuroyale.service.AuthenticationService;
+import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.StyleHelper;
 
 import javafx.animation.TranslateTransition;
@@ -27,9 +31,20 @@ public class CardInfoDialog extends StackPane {
     private final VBox page2;
     private double startX;
     private final HBox pageIndicator;
+    private final AuthenticationService authService;
+    @SuppressWarnings("unused")
+    private final Runnable onClose;
+    private final Runnable onCardUpgraded;
 
     public CardInfoDialog(Card card, Runnable onClose) {
+        this(card, onClose, null);
+    }
+
+    public CardInfoDialog(Card card, Runnable onClose, Runnable onCardUpgraded) {
         this.card = card;
+        this.onClose = onClose;
+        this.onCardUpgraded = onCardUpgraded;
+        this.authService = ServiceFactory.getInstance().getAuthenticationService();
 
         // Full screen overlay
         getStyleClass().add("overlay-background");
@@ -55,14 +70,43 @@ public class CardInfoDialog extends StackPane {
         // Create page indicator
         pageIndicator = createPageIndicator();
 
-        // Close button - apply CSS class
+        // Create buttons container with Upgrade and Close buttons
+        HBox buttonsContainer = new HBox(10);
+        buttonsContainer.setAlignment(Pos.CENTER);
+
+        // Upgrade button
+        Button upgradeButton = new Button("UPGRADE");
+        upgradeButton.getStyleClass().add("overlay-button");
+        upgradeButton.setPrefWidth(180);
+        upgradeButton.setPrefHeight(40);
+        String normalStyle = "-fx-background-color: " + StyleHelper.COLOR_YELLOW_DARK + "; " +
+                "-fx-text-fill: white; -fx-font-size: 14px;";
+        String hoverStyle = "-fx-background-color: " + StyleHelper.COLOR_YELLOW + "; " +
+                "-fx-text-fill: white; -fx-font-size: 14px;";
+        
+        upgradeButton.setStyle(normalStyle);
+        upgradeButton.setOnMouseEntered(e -> {
+            if (!upgradeButton.isDisabled()) upgradeButton.setStyle(hoverStyle);
+        });
+        upgradeButton.setOnMouseExited(e -> {
+            if (!upgradeButton.isDisabled()) upgradeButton.setStyle(normalStyle);
+        });
+        
+        upgradeButton.setOnAction(e -> handleUpgrade());
+        
+        // Update button state
+        updateUpgradeButtonState(upgradeButton);
+
+        // Close button
         Button closeButton = new Button("CLOSE");
         closeButton.getStyleClass().add("overlay-button");
         closeButton.setPrefWidth(150);
         closeButton.setPrefHeight(40);
         closeButton.setOnAction(e -> onClose.run());
 
-        mainContainer.getChildren().addAll(contentPane, pageIndicator, closeButton);
+        buttonsContainer.getChildren().addAll(upgradeButton, closeButton);
+
+        mainContainer.getChildren().addAll(contentPane, pageIndicator, buttonsContainer);
         getChildren().add(mainContainer);
 
         // Setup swipe gesture
@@ -118,7 +162,22 @@ public class CardInfoDialog extends StackPane {
                 "', Arial; " + "-fx-text-fill: " + StyleHelper.COLOR_WHITE + "; " + "-fx-background-color: " + getTypeColor() +
                 "; " + "-fx-padding: 5 15 5 15; -fx-background-radius: 5;");
 
-        page.getChildren().addAll(imageView, nameLabel, costBox, typeLabel);
+        // Rarity badge
+        Label rarityLabel = new Label(card.getRarity().toString());
+        rarityLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
+                "', Arial; " + "-fx-text-fill: " + StyleHelper.COLOR_WHITE + "; " + "-fx-background-color: " + getRarityColor() +
+                "; " + "-fx-padding: 5 15 5 15; -fx-background-radius: 5;");
+
+        int level = card.getLevel();
+        String stars = "";
+        for (int i = 0; i < level; i++) {
+            stars += "★";
+        }
+        Label levelLabel = new Label(stars);
+        levelLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
+                "', Arial; " + "-fx-text-fill: #fbbf24;");
+
+        page.getChildren().addAll(imageView, nameLabel, costBox, typeLabel, rarityLabel, levelLabel);
         return page;
     }
 
@@ -137,6 +196,8 @@ public class CardInfoDialog extends StackPane {
         VBox statsBox = new VBox(5);
         addStat(statsBox, "Cost", card.getCost() + " elixir");
         addStat(statsBox, "Type", card.getType().toString());
+        addStat(statsBox, "Rarity", card.getRarity().toString());
+        addStat(statsBox, "Level", String.valueOf(card.getLevel()));
 
         if (card.getHp() > 0) {addStat(statsBox, "HP", String.valueOf(card.getHp()));}
         if (card.getDamage() > 0) {addStat(statsBox, "DMG", String.valueOf(card.getDamage()));
@@ -191,6 +252,21 @@ public class CardInfoDialog extends StackPane {
                 return StyleHelper.COLOR_PURPLE;
             default:
                 return StyleHelper.COLOR_SECONDARY;
+        }
+    }
+
+    private String getRarityColor() {
+        switch (card.getRarity()) {
+            case COMMON:
+                return "#9ca3af"; // Gray
+            case RARE:
+                return "#3b82f6"; // Blue
+            case EPIC:
+                return StyleHelper.COLOR_PURPLE; // Purple
+            case LEGENDARY:
+                return "#f59e0b"; // Orange/Gold
+            default:
+                return StyleHelper.COLOR_GRAY;
         }
     }
 
@@ -276,6 +352,117 @@ public class CardInfoDialog extends StackPane {
         } else {
             dot1.setStyle("-fx-fill: " + StyleHelper.COLOR_GRAY + ";"); // Inactive
             dot2.setStyle("-fx-fill: " + StyleHelper.COLOR_BLUE + ";"); // Active
+        }
+    }
+
+    private int calculateUpgradeCost() {
+        int currentLevel = card.getLevel();
+        Rarity rarity = card.getRarity();
+
+        if (currentLevel >= Card.MAX_LEVEL) {
+            return 0; // Already at max level
+        }
+
+        // Upgrade costs based on Feature.md
+        switch (rarity) {
+            case COMMON:
+                return currentLevel == 1 ? 200 : 500;
+            case RARE:
+                return currentLevel == 1 ? 400 : 1000;
+            case EPIC:
+                return currentLevel == 1 ? 800 : 2000;
+            case LEGENDARY:
+                return currentLevel == 1 ? 1500 : 4000;
+            default:
+                return 0;
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private boolean canUpgrade() {
+        User currentUser = authService.getCurrentUser();
+        if (currentUser == null) {
+            return false;
+        }
+
+        // Check if card is at max level
+        if (card.getLevel() >= Card.MAX_LEVEL) {
+            return false;
+        }
+
+        // Check if player has enough gold
+        int upgradeCost = calculateUpgradeCost();
+        return currentUser.getGold() >= upgradeCost;
+    }
+
+    private void updateUpgradeButtonState(Button upgradeButton) {
+        User currentUser = authService.getCurrentUser();
+        
+        if (currentUser == null) {
+            upgradeButton.setDisable(true);
+            return;
+        }
+
+        boolean atMaxLevel = card.getLevel() >= Card.MAX_LEVEL;
+        boolean hasEnoughGold = currentUser.getGold() >= calculateUpgradeCost();
+
+        upgradeButton.setDisable(atMaxLevel || !hasEnoughGold);
+        
+        // Update button text to show reason if disabled
+        if (atMaxLevel) {
+            upgradeButton.setText("MAX LEVEL");
+        } else if (!hasEnoughGold) {
+            upgradeButton.setText("UPGRADE");
+        } else {
+            upgradeButton.setText("UPGRADE");
+        }
+    }
+
+    private void handleUpgrade() {
+        User currentUser = authService.getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+
+        // Open upgrade dialog
+        UpgradeDialog upgradeDialog = new UpgradeDialog(
+            card,
+            currentUser,
+            () -> {
+                // On upgrade success, refresh this dialog
+                refreshDialog();
+            },
+            () -> {
+                // On cancel, just close the upgrade dialog
+                getChildren().remove(getChildren().size() - 1);
+            }
+        );
+
+        getChildren().add(upgradeDialog);
+    }
+
+    private void refreshDialog() {
+        // Remove upgrade dialog
+        if (getChildren().size() > 1) {
+            getChildren().remove(getChildren().size() - 1);
+        }
+
+        // Recreate pages with updated card info
+        contentPane.getChildren().clear();
+        VBox newPage1 = createPage1();
+        VBox newPage2 = createPage2();
+        contentPane.getChildren().addAll(newPage1, newPage2);
+        newPage2.setVisible(currentPage == 1);
+        newPage1.setVisible(currentPage == 0);
+
+        // Update upgrade button state
+        VBox mainContainer = (VBox) getChildren().get(0);
+        HBox buttonsContainer = (HBox) mainContainer.getChildren().get(2);
+        Button upgradeButton = (Button) buttonsContainer.getChildren().get(0);
+        updateUpgradeButtonState(upgradeButton);
+
+        if (onCardUpgraded != null) {
+            onCardUpgraded.run();
         }
     }
 }

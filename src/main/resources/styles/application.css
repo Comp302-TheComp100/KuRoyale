@@ -125,6 +125,14 @@
   -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 3, 0, 0, 1);
 }
 
+.gold-label {
+  -fx-font-size: 32px;
+  -fx-font-weight: bold;
+  -fx-font-family: "Clash", Arial;
+  -fx-text-fill: rgb(255, 200, 0);
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 5, 0, 0, 2);
+}
+
 /* ============================================
    BUTTONS
    ============================================ */

@@ -11,6 +11,7 @@ import com.kuroyale.view.*;
 import com.kuroyale.model.Card;
 import com.kuroyale.model.Deck;
 import com.kuroyale.model.DeckBuilderModel;
+import com.kuroyale.model.User;
 import com.kuroyale.util.ButtonFactory;
 import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.util.StyleHelper;
@@ -67,7 +68,6 @@ public class DeckBuilderController {
     @FXML private Label battleDeckTitle;
     @FXML private HBox averageElixirContainer;
 
-    // TEAM_003: MVC pattern - use Model instead of direct service access
     private final DeckBuilderModel model = new DeckBuilderModel();
 
     private Deck deck;
@@ -82,7 +82,6 @@ public class DeckBuilderController {
 
     @FXML
     private void initialize() {
-        // TEAM_003: Model handles service dependencies
         deck = new Deck();
         deckSlots = new ArrayList<>();
         cardContainerMap = new HashMap<>();
@@ -219,7 +218,6 @@ public class DeckBuilderController {
     }
 
     private void loadAllCards() {
-        // TEAM_003: Delegate to Model
         List<Card> allCards = model.getAllCards();
 
         // Store all cards for later reorganization
@@ -250,7 +248,6 @@ public class DeckBuilderController {
         // Clear the grid
         cardsGrid.getChildren().clear();
 
-        // TEAM_003: Delegate to Model
         // Get all cards in consistent order: Troops, Buildings, Spells
         List<Card> allCards = model.getAllCards();
         int column = 0;
@@ -481,9 +478,42 @@ public class DeckBuilderController {
     }
 
     private void showCardInfo(Card card) {
-        CardInfoDialog infoDialog = new CardInfoDialog(card, () -> {
-            rootPane.getChildren().remove(rootPane.getChildren().size() - 1);
-        });
+        CardInfoDialog infoDialog = new CardInfoDialog(
+            card,
+            () -> {
+                // On close
+                rootPane.getChildren().remove(rootPane.getChildren().size() - 1);
+            },
+                () -> {
+                String upgradedCardName = card.getName();
+                User currentUser = model.getCurrentUser();
+                
+                // Refresh deck slots
+                for (DeckSlotView slot : deckSlots) {
+                    if (!slot.isEmpty() && slot.getCard().getName().equals(upgradedCardName)) {
+                        slot.refreshCardDisplay();
+                    }
+                }
+                
+                // Refresh card views in bottom grid
+                // First, update the Card instance's level from User's saved levels
+                if (currentUser != null) {
+                    int savedLevel = currentUser.getCardLevel(upgradedCardName);
+                    for (Map.Entry<Card, VBox> entry : cardContainerMap.entrySet()) {
+                        Card mapCard = entry.getKey();
+                        if (mapCard.getName().equals(upgradedCardName)) {
+                            // Update the Card instance's level before refreshing
+                            mapCard.setLevel(savedLevel);
+                            VBox container = entry.getValue();
+                            if (container.getChildren().size() > 0 && container.getChildren().get(0) instanceof CardView) {
+                                CardView cardView = (CardView) container.getChildren().get(0);
+                                cardView.refreshLevelIndicator();
+                            }
+                        }
+                    }
+                }
+            }
+        );
 
         rootPane.getChildren().add(infoDialog);
     }
@@ -577,7 +607,6 @@ public class DeckBuilderController {
 
         // If we found the slot, perform the replacement
         if (targetSlot != null) {
-            // TEAM_003: Delegate to Model
             model.replaceCardInDeck(deck, oldCard, newCard);
 
             // Replace the card in the UI at the SAME position (UI concern)
@@ -645,7 +674,6 @@ public class DeckBuilderController {
     //Updates the average elixir cost display
     private void updateAverageElixirCost() {
         if (averageElixirValue != null) {
-            // TEAM_003: Delegate to Model
             double avgCost = model.getDeckAverageElixirCost(deck);
             averageElixirValue.setText(String.format(Locale.ENGLISH, "%.1f", avgCost));
         }
@@ -653,7 +681,6 @@ public class DeckBuilderController {
 
     //Loads the user's saved deck from their account with exact slot positions of cards
     private void loadUserDeck() {
-        // TEAM_003: Delegate to Model
         Map<Integer, Card> deckMap = model.loadUserDeckWithPositions();
 
         // Update UI with loaded cards
@@ -682,7 +709,6 @@ public class DeckBuilderController {
             }
         }
 
-        // TEAM_003: Delegate to Model
         try {
             model.saveDeckWithPositions(slotCards);
         } catch (IOException e) {

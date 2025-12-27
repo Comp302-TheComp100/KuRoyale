@@ -37,6 +37,31 @@ public class CardCatalog {
     //Finds a card by its name. Information Expert: CardCatalog knows all available cards
     public Card getCardByName(String name) {return cardsByName.get(name);}
 
+    public Card createCardWithLevel(String name, int level) {
+        Card base = cardsByName.get(name);
+        if (base == null) {
+            return null;
+        }
+        Card copy = new Card(
+                base.getName(),
+                base.getCost(),
+                base.getType(),
+                base.getRarity(),
+                base.getBaseHp(),
+                base.getBaseDamage(),
+                base.getHitSpeed(),
+                base.getRange(),
+                base.getSpeed(),
+                base.getTarget(),
+                base.isAirUnit(),
+                base.isAreaEffect(),
+                base.getDescription(),
+                base.getCount(),
+                base.getLifetime());
+        copy.setLevel(level);
+        return copy;
+    }
+
     //Checks if a card with the given name exists
     public boolean cardExists(String name) {return cardsByName.containsKey(name);}
 

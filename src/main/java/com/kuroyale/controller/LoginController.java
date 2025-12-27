@@ -15,7 +15,6 @@ import javafx.scene.media.MediaPlayer;
  * Implements Model-View-Controller (MVC) - Controller component
  * Logic is delegated to the LoginModel. Navigation is centralized in SceneLoader. */
 public class LoginController {
-    // TEAM_001: Use LoginView instead of FXML elements directly (Rule 5)
     private final LoginView loginView;
 
     // Instantiate the Model
@@ -26,7 +25,6 @@ public class LoginController {
     // MediaPlayer for start screen music
     private MediaPlayer startMusicPlayer;
 
-    // TEAM_001: Refactored to support direct instantiation without FXML (Rule 5)
     public LoginController(LoginView view) {
         this.loginView = view;
         setupHandlers();
@@ -34,19 +32,16 @@ public class LoginController {
     }
 
     private void setupHandlers() {
-        // TEAM_001: Set up event handlers directly
         loginView.getCreateAccountButton().setOnAction(e -> handleCreateAccount());
         loginView.getLoginButton().setOnAction(e -> handleLogin());
     }
 
-    // TEAM_001: Kept for structural consistency, but logic moved to constructor
     public void initialize() {
     }
 
     // Initialize styles after FXML is loaded (kept for compatibility with
     // Main.java)
     public void initializeStyles() {
-        // TEAM_002: Styles are now handled by LoginView constructor
         // This method is kept for backward compatibility but does nothing
         // LoginView applies all styles during construction
     }
@@ -54,7 +49,6 @@ public class LoginController {
     @FXML
     private void handleCreateAccount() {
         SoundEffectUtil.playButtonClick();
-        // TEAM_002: Use LoginView getters
         String username = loginView.getUsername();
         String password = loginView.getPassword();
 
@@ -88,7 +82,6 @@ public class LoginController {
     @FXML
     private void handleLogin() {
         SoundEffectUtil.playButtonClick();
-        // TEAM_002: Use LoginView getters
         String username = loginView.getUsername();
         String password = loginView.getPassword();
 
@@ -142,7 +135,6 @@ public class LoginController {
     // Navigates to the main menu
     private void navigateToMainMenu() {
         try {
-            // TEAM_002: Use LoginView button for navigation
             // Use the centralized SceneLoader utility
             sceneLoader.load(loginView.getLoginButton(), "/fxml/main-menu.fxml", "KU Royale", null);
         } catch (IOException e) {

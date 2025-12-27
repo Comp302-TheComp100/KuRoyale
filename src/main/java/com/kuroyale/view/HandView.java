@@ -103,11 +103,13 @@ public class HandView extends VBox {
             boolean affordable = card != null && elixirManager.canAfford(card.getCost());
             boolean selected = (i == selectedIndex);
 
+            String rarityBorder = getRarityBorderStyle(card);
+
             if (selected) {
-                view.setStyle("-fx-effect: dropshadow(three-pass-box, gold, 10, 0, 0, 0); -fx-translate-y: -10;");
+                view.setStyle(rarityBorder + "-fx-effect: dropshadow(three-pass-box, gold, 10, 0, 0, 0); -fx-translate-y: -10;");
                 view.setEffect(null);
             } else if (affordable) {
-                view.setStyle("");
+                view.setStyle(rarityBorder);
                 view.setEffect(null);
             } else {
                 // Dim unavailable cards
@@ -115,7 +117,7 @@ public class HandView extends VBox {
                 dim.setBrightness(-0.5);
                 dim.setSaturation(-0.5);
                 view.setEffect(dim);
-                view.setStyle("");
+                view.setStyle(rarityBorder);
             }
         }
     }
@@ -127,5 +129,34 @@ public class HandView extends VBox {
     public void clearSelection() {
         selectedIndex = -1;
         update();
+    }
+
+    private String getRarityBorderStyle(Card card) {
+        if (card == null) {
+            return "";
+        }
+        
+        String rarityColor;
+        switch (card.getRarity()) {
+            case COMMON:
+                rarityColor = "#9ca3af"; // Gray
+                break;
+            case RARE:
+                rarityColor = "#3b82f6"; // Blue
+                break;
+            case EPIC:
+                rarityColor = "#8b5cf6"; // Purple
+                break;
+            case LEGENDARY:
+                rarityColor = "#f59e0b"; // Orange/Gold
+                break;
+            default:
+                rarityColor = "#cbd5e1"; // Default gray
+        }
+        
+        return "-fx-border-color: " + rarityColor + "; " +
+               "-fx-border-width: 3; " +
+               "-fx-border-radius: 8; " +
+               "-fx-background-radius: 8; ";
     }
 }
