@@ -210,6 +210,25 @@ public class BattleController {
         com.kuroyale.util.ServiceFactory.getInstance().getChallengeService()
                 .recordAttempt(currentChallenge.getId(), playerWon, timeSeconds, damageTaken);
 
+        // Track Challenge Completion (Quest)
+        com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                .updateProgress(com.kuroyale.model.QuestType.COMPLETE_CHALLENGES, 1);
+
+        if (playerWon) {
+            // Track Win Quests
+            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                    .updateProgress(com.kuroyale.model.QuestType.WIN_MATCHES, 1);
+
+            // Track Achievements
+            com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                    .updateProgress(com.kuroyale.model.AchievementType.CHALLENGE_MASTER, 1);
+
+            if (stars == 3) {
+                com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                        .updateProgress(com.kuroyale.model.AchievementType.THREE_STAR_HERO, 1);
+            }
+        }
+
         // Show Popup
         overlayContainer.getChildren().clear();
         overlayContainer.setVisible(true);
@@ -319,6 +338,31 @@ public class BattleController {
         content.setMaxSize(400, 300);
 
         boolean playerWon = gameState.isPlayerWinner();
+
+        // Track Matches Played (Veteran Player Achievement)
+        com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                .updateProgress(com.kuroyale.model.AchievementType.VETERAN_PLAYER, 1);
+
+        if (playerWon) {
+            // Track Win Quests
+            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                    .updateProgress(com.kuroyale.model.QuestType.WIN_MATCHES, 1);
+            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                    .updateProgress(com.kuroyale.model.QuestType.WIN_PVP_MATCH, 1);
+
+            // Track Win Without Losing Tower
+            if (gameState.getBotScore() == 0) {
+                com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                        .updateProgress(com.kuroyale.model.QuestType.WIN_WITHOUT_LOSING_TOWER, 1);
+            }
+
+            // Track Win Achievements
+            com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                    .updateProgress(com.kuroyale.model.AchievementType.FIRST_BLOOD, 1);
+            com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                    .updateProgress(com.kuroyale.model.AchievementType.UNDEFEATED, 1);
+        }
+
         javafx.scene.control.Label title = new javafx.scene.control.Label(playerWon ? "VICTORY" : "DEFEAT");
         String titleColor = playerWon ? "#00ff00" : "#ff0000";
         title.setStyle("-fx-font-size: 36px; -fx-text-fill: " + titleColor + "; -fx-font-weight: bold;");

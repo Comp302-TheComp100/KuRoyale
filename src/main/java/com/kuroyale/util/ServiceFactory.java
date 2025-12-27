@@ -8,6 +8,8 @@ import com.kuroyale.service.DeckManagementService;
 import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.GameSaveService;
 import com.kuroyale.service.ChallengeService;
+import com.kuroyale.service.QuestService;
+import com.kuroyale.service.AchievementService;
 
 /*Service Factory for managing service instances and dependencies
  * Pure Fabrication - created to manage object creation and dependencies
@@ -24,6 +26,8 @@ public class ServiceFactory {
     private final ArenaService arenaService;
     private final GameSaveService gameSaveService;
     private ChallengeService challengeService; // Lazy initialized
+    private QuestService questService; // Lazy initialized
+    private AchievementService achievementService; // Lazy initialized
 
     /*
      * Private constructor to enforce singleton pattern
@@ -92,6 +96,22 @@ public class ServiceFactory {
             challengeService = new ChallengeService();
         }
         return challengeService;
+    }
+
+    // Gets the QuestService instance
+    public QuestService getQuestService() {
+        if (questService == null) {
+            questService = new QuestService();
+        }
+        return questService;
+    }
+
+    // Gets the AchievementService instance
+    public AchievementService getAchievementService() {
+        if (achievementService == null) {
+            achievementService = new AchievementService();
+        }
+        return achievementService;
     }
 
     // Resets the singleton instance

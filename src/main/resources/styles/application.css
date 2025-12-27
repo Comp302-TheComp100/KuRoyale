@@ -542,3 +542,47 @@
   -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.5), 5, 0, 0, 0);
 }
 
+/* ============================================
+   QUEST & ACHIEVEMENT STYLES
+   ============================================ */
+
+.quest-timer-label {
+  -fx-font-size: 16px;
+  -fx-font-family: "Clash", Arial;
+  -fx-text-fill: rgba(255, 255, 255, 0.7);
+}
+
+.quest-timer-value {
+  -fx-font-size: 20px;
+  -fx-font-weight: bold;
+  -fx-font-family: "Clash", Arial;
+  -fx-text-fill: #fbbf24;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 3, 0, 0, 1);
+}
+
+.achievement-scroll {
+  -fx-background-color: transparent;
+  -fx-background: transparent;
+}
+
+.achievement-scroll .viewport {
+  -fx-background-color: transparent;
+}
+
+.menu-button-small {
+  -fx-background-color: linear-gradient(to bottom, #6b7280 0%, #4b5563 100%);
+  -fx-text-fill: white;
+  -fx-font-size: 14px;
+  -fx-font-weight: bold;
+  -fx-font-family: "Clash", Arial;
+  -fx-background-radius: 8;
+  -fx-border-radius: 8;
+  -fx-border-color: #374151;
+  -fx-border-width: 2;
+  -fx-padding: 8 20 8 20;
+  -fx-cursor: hand;
+}
+
+.menu-button-small:hover {
+  -fx-background-color: linear-gradient(to bottom, #9ca3af 0%, #6b7280 100%);
+}
