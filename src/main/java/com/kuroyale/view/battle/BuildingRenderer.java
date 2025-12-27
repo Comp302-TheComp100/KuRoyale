@@ -1,4 +1,4 @@
-package com.kuroyale.view;
+package com.kuroyale.view.battle;
 
 import com.kuroyale.model.Building;
 import com.kuroyale.model.GameState;

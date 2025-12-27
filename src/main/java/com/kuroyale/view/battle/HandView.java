@@ -1,4 +1,6 @@
-package com.kuroyale.view;
+package com.kuroyale.view.battle;
+
+import com.kuroyale.view.CardView;
 
 import com.kuroyale.model.Card;
 import com.kuroyale.model.ElixirManager;
@@ -41,7 +43,8 @@ public class HandView extends VBox {
         for (int i = 0; i < Hand.HAND_SIZE; i++) {
             Card card = hand.getCard(i);
             CardView view = new CardView(card); // Assuming CardView exists and takes Card
-            // We might need to adjust CardView or create a wrapper if CardView is too complex
+            // We might need to adjust CardView or create a wrapper if CardView is too
+            // complex
 
             // Make it smaller for hand view
             view.setPrefWidth(60);
@@ -106,7 +109,8 @@ public class HandView extends VBox {
             String rarityBorder = getRarityBorderStyle(card);
 
             if (selected) {
-                view.setStyle(rarityBorder + "-fx-effect: dropshadow(three-pass-box, gold, 10, 0, 0, 0); -fx-translate-y: -10;");
+                view.setStyle(rarityBorder
+                        + "-fx-effect: dropshadow(three-pass-box, gold, 10, 0, 0, 0); -fx-translate-y: -10;");
                 view.setEffect(null);
             } else if (affordable) {
                 view.setStyle(rarityBorder);
@@ -135,7 +139,7 @@ public class HandView extends VBox {
         if (card == null) {
             return "";
         }
-        
+
         String rarityColor;
         switch (card.getRarity()) {
             case COMMON:
@@ -153,10 +157,10 @@ public class HandView extends VBox {
             default:
                 rarityColor = "#cbd5e1"; // Default gray
         }
-        
+
         return "-fx-border-color: " + rarityColor + "; " +
-               "-fx-border-width: 3; " +
-               "-fx-border-radius: 8; " +
-               "-fx-background-radius: 8; ";
+                "-fx-border-width: 3; " +
+                "-fx-border-radius: 8; " +
+                "-fx-background-radius: 8; ";
     }
 }

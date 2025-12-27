@@ -1,4 +1,4 @@
-package com.kuroyale.view;
+package com.kuroyale.view.battle;
 
 import com.kuroyale.model.Arena;
 import com.kuroyale.model.ArenaLayout;
@@ -178,9 +178,6 @@ public class TowerRenderer {
             }
         }
     }
-
-    // Removed unused safeCellIndexer fields and methods as we use constructor
-    // injection
 
     private void updateSingleTowerBar(Arena arena, int x, int y, int size) {
         Tower tower = arena.getTowerAt(x, y);

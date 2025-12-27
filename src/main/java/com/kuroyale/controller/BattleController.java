@@ -1,9 +1,9 @@
 package com.kuroyale.controller;
 
 import com.kuroyale.model.*;
-import com.kuroyale.view.BattleArenaView;
-import com.kuroyale.view.ElixirBar;
-import com.kuroyale.view.HandView;
+import com.kuroyale.view.battle.BattleArenaView;
+import com.kuroyale.view.battle.ElixirBar;
+import com.kuroyale.view.battle.HandView;
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.layout.HBox;
