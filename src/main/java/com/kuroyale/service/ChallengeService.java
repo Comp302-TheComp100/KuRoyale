@@ -22,26 +22,40 @@ import com.kuroyale.model.ChallengeFactory;
  */
 public class ChallengeService {
     private static final String DATA_DIR = System.getProperty("user.home") + File.separator + ".kuroyale";
-    private static final String SAVE_FILE = DATA_DIR + File.separator + "challenges.json";
+    private static final String SAVE_FILE_TEMPLATE = DATA_DIR + File.separator + "challenges_%s.json";
 
     private final ChallengeFactory challengeFactory;
     private List<Challenge> challenges;
+    private String currentUsername;
 
     public ChallengeService() {
         this.challengeFactory = new ChallengeFactory();
         ensureDataDirectoryExists();
         initializeChallenges();
+        // Removed initial loadProgress() as it requires username
     }
 
     /**
-     * Initializes challenges and loads saved progress.
+     * Loads challenge data for the specified user.
+     * 
+     * @param username The username to load data for.
+     */
+    public void loadForUser(String username) {
+        this.currentUsername = username;
+
+        // Reset to default state
+        initializeChallenges();
+
+        // Load user progress
+        loadProgress();
+    }
+
+    /**
+     * Initializes challenges.
      */
     private void initializeChallenges() {
         // Create fresh challenge instances
         this.challenges = challengeFactory.getAllChallenges();
-
-        // Load progress from file
-        loadProgress();
     }
 
     public List<Challenge> getAllChallenges() {
@@ -60,6 +74,9 @@ public class ChallengeService {
      * Updates stats and unlocks the next challenge if won.
      */
     public void recordAttempt(int challengeId, boolean won, int timeSeconds, int damageDealt) {
+        if (currentUsername == null)
+            return;
+
         Challenge challenge = getChallenge(challengeId);
         if (challenge != null) {
             challenge.recordAttempt(won, timeSeconds, damageDealt);
@@ -83,6 +100,9 @@ public class ChallengeService {
      * Saves challenge progress to simple JSON.
      */
     public void saveProgress() {
+        if (currentUsername == null)
+            return;
+
         ensureDataDirectoryExists();
 
         JSONArray jsonArray = new JSONArray();
@@ -97,7 +117,7 @@ public class ChallengeService {
             jsonArray.put(obj);
         }
 
-        try (FileWriter writer = new FileWriter(SAVE_FILE)) {
+        try (FileWriter writer = new FileWriter(String.format(SAVE_FILE_TEMPLATE, currentUsername))) {
             writer.write(jsonArray.toString(2));
         } catch (IOException e) {
             e.printStackTrace();
@@ -108,12 +128,16 @@ public class ChallengeService {
      * Loads progress from JSON and applies it to current challenge instances.
      */
     private void loadProgress() {
-        File file = new File(SAVE_FILE);
+        if (currentUsername == null)
+            return;
+
+        String filename = String.format(SAVE_FILE_TEMPLATE, currentUsername);
+        File file = new File(filename);
         if (!file.exists())
             return;
 
         try {
-            String content = new String(Files.readAllBytes(Paths.get(SAVE_FILE)));
+            String content = new String(Files.readAllBytes(Paths.get(filename)));
             if (content.trim().isEmpty())
                 return;
 

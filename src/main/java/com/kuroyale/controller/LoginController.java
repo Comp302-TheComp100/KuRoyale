@@ -68,6 +68,12 @@ public class LoginController {
             if (user != null) {
                 // Success
                 stopStartMusic();
+
+                // Load user-specific data into services
+                com.kuroyale.util.ServiceFactory.getInstance().getQuestService().loadForUser(user.getUsername());
+                com.kuroyale.util.ServiceFactory.getInstance().getAchievementService().loadForUser(user.getUsername());
+                com.kuroyale.util.ServiceFactory.getInstance().getChallengeService().loadForUser(user.getUsername());
+
                 navigateToMainMenu();
             } else {
                 // Failure (e.g., username exists)
@@ -101,6 +107,12 @@ public class LoginController {
             if (user != null) {
                 // Success
                 stopStartMusic();
+
+                // Load user-specific data into services
+                com.kuroyale.util.ServiceFactory.getInstance().getQuestService().loadForUser(user.getUsername());
+                com.kuroyale.util.ServiceFactory.getInstance().getAchievementService().loadForUser(user.getUsername());
+                com.kuroyale.util.ServiceFactory.getInstance().getChallengeService().loadForUser(user.getUsername());
+
                 navigateToMainMenu();
             } else {
                 // Failure (invalid credentials)

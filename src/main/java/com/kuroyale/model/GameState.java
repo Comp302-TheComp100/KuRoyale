@@ -359,6 +359,29 @@ public class GameState {
 
     // Overload for direct card placement (used by Bot)
     public void placeCard(boolean isPlayer, Card card, int x, int y) {
+        if (isPlayer) {
+            // Track Elixir Spent
+            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                    .updateProgress(com.kuroyale.model.QuestType.SPEND_ELIXIR, card.getCost());
+
+            // Track Card Types
+            if (card.getType() == CardType.SPELL) {
+                com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                        .updateProgress(com.kuroyale.model.QuestType.PLAY_SPELL_CARDS, 1);
+            } else if (card.getType() == CardType.TROOP) {
+                com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                        .updateProgress(com.kuroyale.model.QuestType.DEPLOY_TROOP_CARDS, 1);
+                // Track Swarm Troops (Army Builder)
+                if (card.getCount() > 1) {
+                    com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                            .updateProgress(com.kuroyale.model.AchievementType.ARMY_BUILDER, card.getCount());
+                }
+            } else if (card.getType() == CardType.BUILDING) {
+                com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                        .updateProgress(com.kuroyale.model.QuestType.PLAY_BUILDING_CARDS, 1);
+            }
+        }
+
         placedCards.add(new PlacedCard(card, x, y, isPlayer));
         if (card.getType() == CardType.TROOP) {
             int count = Math.max(1, card.getCount());
@@ -907,6 +930,14 @@ public class GameState {
                     playerScore = 3;
                     isGameOver = true;
                     playerWon = true;
+
+                    // Track King Tower destruction
+                    com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                            .updateProgress(com.kuroyale.model.QuestType.DESTROY_KING_TOWER, 1);
+                    com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                            .updateProgress(com.kuroyale.model.QuestType.DESTROY_CROWN_TOWERS, 1);
+                    com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                            .updateProgress(com.kuroyale.model.AchievementType.TOWER_HUNTER, 1);
                 }
             } else {
                 // Princess tower destroyed: +1 point to attacker
@@ -916,6 +947,12 @@ public class GameState {
                 } else {
                     // Bot's princess tower destroyed by player
                     playerScore++;
+
+                    // Track Princess Tower destruction
+                    com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                            .updateProgress(com.kuroyale.model.QuestType.DESTROY_CROWN_TOWERS, 1);
+                    com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                            .updateProgress(com.kuroyale.model.AchievementType.TOWER_HUNTER, 1);
                 }
             }
         }

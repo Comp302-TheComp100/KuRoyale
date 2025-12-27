@@ -60,6 +60,8 @@ public class MainMenuController {
         resumeGameButton.getStyleClass().add("menu-button");
         arenaDesignButton.getStyleClass().add("menu-button");
         challengesButton.getStyleClass().add("menu-button");
+        if (questsButton != null)
+            questsButton.getStyleClass().add("menu-button");
         settingsButton.getStyleClass().add("menu-button");
 
         // Add programmatic hover effects for scale transforms
@@ -68,6 +70,7 @@ public class MainMenuController {
         addMenuButtonHoverEffects(resumeGameButton);
         addMenuButtonHoverEffects(arenaDesignButton);
         addMenuButtonHoverEffects(challengesButton);
+        addMenuButtonHoverEffects(questsButton);
         addMenuButtonHoverEffects(settingsButton);
     }
 
@@ -159,6 +162,17 @@ public class MainMenuController {
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to load Challenges: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleQuests() {
+        SoundEffectUtil.playButtonClick();
+        try {
+            sceneLoader.load(questsButton, "/fxml/quest-achievements.fxml", "KU Royale - Quests", null);
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Quests: " + e.getMessage());
         }
     }
 

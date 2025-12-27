@@ -100,6 +100,20 @@
                     </ImageView>
                 </graphic>
             </Button>
+
+            <Button fx:id="questsButton"
+                    text="QUESTS" 
+                    onAction="#handleQuests"
+                    prefWidth="300"
+                    prefHeight="60">
+                <graphic>
+                    <ImageView fitHeight="45.0" fitWidth="45.0" pickOnBounds="true" preserveRatio="true">
+                        <image>
+                            <Image url="@../images/battle_icon.png"/>
+                        </image>
+                    </ImageView>
+                </graphic>
+            </Button>
         </VBox>
     </VBox>
 
