@@ -67,9 +67,10 @@
 }
 
 .main-background {
-    /* -fx-background-image: url("/images/arena_background.jpg"); */
-    /* Reverted to default or empty if no background image is desired */
-    -fx-background-color: #333; /* Fallback dark background */
+  /* -fx-background-image: url("/images/arena_background.jpg"); */
+  /* Reverted to default or empty if no background image is desired */
+  -fx-background-color: #333;
+  /* Fallback dark background */
 }
 
 .overlay-background {
@@ -138,11 +139,9 @@
    ============================================ */
 
 .menu-button {
-  -fx-background-color: linear-gradient(
-    to bottom,
-    -fx-primary-color 0%,
-    -fx-primary-pressed 100%
-  );
+  -fx-background-color: linear-gradient(to bottom,
+      -fx-primary-color 0%,
+      -fx-primary-pressed 100%);
   -fx-text-fill: white;
   -fx-font-size: 22px;
   -fx-font-weight: bold;
@@ -156,19 +155,15 @@
 }
 
 .menu-button:hover {
-  -fx-background-color: linear-gradient(
-    to bottom,
-    -fx-primary-hover 0%,
-    -fx-primary-color 100%
-  );
+  -fx-background-color: linear-gradient(to bottom,
+      -fx-primary-hover 0%,
+      -fx-primary-color 100%);
 }
 
 .menu-button:pressed {
-  -fx-background-color: linear-gradient(
-    to bottom,
-    -fx-primary-pressed 0%,
-    #c2410c 100%
-  );
+  -fx-background-color: linear-gradient(to bottom,
+      -fx-primary-pressed 0%,
+      #c2410c 100%);
 }
 
 .back-button {
@@ -187,11 +182,9 @@
 }
 
 .login-button {
-  -fx-background-color: linear-gradient(
-    to bottom,
-    -fx-brown-dark 0%,
-    -fx-brown-light 100%
-  );
+  -fx-background-color: linear-gradient(to bottom,
+      -fx-brown-dark 0%,
+      -fx-brown-light 100%);
   -fx-text-fill: white;
   -fx-font-size: 24px;
   -fx-font-weight: bold;
@@ -205,19 +198,15 @@
 }
 
 .login-button:hover {
-  -fx-background-color: linear-gradient(
-    to bottom,
-    -fx-brown-light 0%,
-    -fx-brown-lighter 100%
-  );
+  -fx-background-color: linear-gradient(to bottom,
+      -fx-brown-light 0%,
+      -fx-brown-lighter 100%);
 }
 
 .login-button:pressed {
-  -fx-background-color: linear-gradient(
-    to bottom,
-    -fx-brown-dark 0%,
-    -fx-brown-dark 100%
-  );
+  -fx-background-color: linear-gradient(to bottom,
+      -fx-brown-dark 0%,
+      -fx-brown-dark 100%);
 }
 
 .overlay-button {
@@ -542,3 +531,102 @@
   -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.5), 5, 0, 0, 0);
 }
 
+/* Challenge Game Over Popup */
+.challenge-popup {
+  -fx-background-color: #2a2a2a;
+  -fx-padding: 30;
+  -fx-background-radius: 20;
+  -fx-border-color: #ffd700;
+  -fx-border-width: 3;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.8), 20, 0, 0, 0);
+}
+
+.challenge-title {
+  -fx-font-size: 28px;
+  -fx-font-weight: bold;
+  -fx-font-family: 'Clash', Arial;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 2, 0, 0, 1);
+}
+
+.challenge-star {
+  -fx-font-size: 40px;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 10, 0, 0, 0);
+}
+
+.star-filled {
+  -fx-text-fill: #ffd700;
+}
+
+.star-empty {
+  -fx-text-fill: #555;
+}
+
+.challenge-text-generic {
+  -fx-font-size: 16px;
+  -fx-text-fill: white;
+  -fx-font-family: 'Clash', Arial;
+}
+
+.menu-button-gold {
+  -fx-font-size: 16px;
+  -fx-padding: 10 30;
+  -fx-background-color: #ffd700;
+  -fx-text-fill: black;
+  -fx-font-weight: bold;
+  -fx-background-radius: 8;
+  -fx-cursor: hand;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0, 0, 1);
+}
+
+/* Standard Game Over Popup */
+.game-over-popup {
+  -fx-background-color: #333;
+  -fx-padding: 40;
+  -fx-background-radius: 20;
+  -fx-border-color: white;
+  -fx-border-width: 2;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.8), 20, 0, 0, 0);
+}
+
+.game-over-title {
+  -fx-font-size: 36px;
+  -fx-font-weight: bold;
+  -fx-font-family: 'Clash', Arial;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 2, 0, 0, 1);
+}
+
+.game-over-score {
+  -fx-font-size: 24px;
+  -fx-text-fill: white;
+  -fx-font-family: 'Clash', Arial;
+}
+
+.victory-text {
+  -fx-text-fill: #00ff00;
+}
+
+.defeat-text {
+  -fx-text-fill: #ff0000;
+}
+
+.challenge-victory-text {
+  -fx-text-fill: #ffd700;
+}
+
+.challenge-defeat-text {
+  -fx-text-fill: #ff4444;
+}
+
+.menu-button-generic {
+  -fx-font-size: 18px;
+  -fx-padding: 10 30;
+  -fx-background-color: #555;
+  -fx-text-fill: white;
+  -fx-font-weight: bold;
+  -fx-background-radius: 8;
+  -fx-cursor: hand;
+}
+
+.menu-button-generic:hover {
+  -fx-background-color: #666;
+}

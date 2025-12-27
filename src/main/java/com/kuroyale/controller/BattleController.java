@@ -14,17 +14,42 @@ import javafx.scene.layout.VBox;
  * Manages the game loop, user input, and UI updates.*/
 public class BattleController {
 
+    @FXML
+    private StackPane arenaContainer;
+    @FXML
+    private HBox elixirContainer;
+    @FXML
+    private VBox handContainer;
+    @FXML
+    private VBox overlayContainer;
+    @FXML
+    private VBox pauseMenuContainer;
 
-    private static final int VICTORY_GOLD = 150;
-    private static final int DRAW_GOLD = 75;
-    private static final int DEFEAT_GOLD = 50;
+    @FXML
+    private VBox challengeGameOverRoot;
+    @FXML
+    private javafx.scene.control.Label challengeTitle;
+    @FXML
+    private HBox challengeStarBox;
+    @FXML
+    private javafx.scene.control.Label star1;
+    @FXML
+    private javafx.scene.control.Label star2;
+    @FXML
+    private javafx.scene.control.Label star3;
+    @FXML
+    private javafx.scene.control.Label challengeTimeLabel;
+    @FXML
+    private VBox challengeConditionsBox;
+    @FXML
+    private javafx.scene.control.Label challengeRewardLabel;
 
-    @FXML private StackPane arenaContainer;
-    @FXML private HBox elixirContainer;
-    @FXML private VBox handContainer;
-    @FXML private VBox overlayContainer;
-    @FXML private VBox pauseMenuContainer;
-
+    @FXML
+    private VBox gameOverRoot;
+    @FXML
+    private javafx.scene.control.Label gameOverTitle;
+    @FXML
+    private javafx.scene.control.Label gameOverScore;
 
     private GameState gameState;
     private BattleArenaView arenaView;
@@ -40,6 +65,9 @@ public class BattleController {
     // Challenge Mode Context
     private Challenge currentChallenge;
     private Deck challengePlayerDeck;
+
+    private boolean doubleElixirShown = false;
+    private boolean gameOverShown = false;
 
     // Sets a saved game to load from
     public void setLoadedSavedGame(SavedGameState savedGame) {
@@ -159,9 +187,6 @@ public class BattleController {
         gameLoop.start();
     }
 
-    private boolean doubleElixirShown = false;
-    private boolean gameOverShown = false;
-
     private void update(double deltaTime) {
         // Skip update if paused
         if (isPaused) {
@@ -207,56 +232,47 @@ public class BattleController {
         }
 
         // Record attempt
-        com.kuroyale.util.ServiceFactory.getInstance().getChallengeService()
-                .recordAttempt(currentChallenge.getId(), playerWon, timeSeconds, damageTaken);
+        model.recordChallengeAttempt(currentChallenge.getId(), playerWon, timeSeconds, damageTaken);
 
-        // Show Popup
-        overlayContainer.getChildren().clear();
-        overlayContainer.setVisible(true);
-
-        VBox content = new VBox(15);
-        content.setAlignment(javafx.geometry.Pos.CENTER);
-        content.setStyle(
-                "-fx-background-color: #2a2a2a; -fx-padding: 30; -fx-background-radius: 20; -fx-border-color: #ffd700; -fx-border-width: 3; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.8), 20, 0, 0, 0);");
-        content.setMaxSize(450, 400);
+        // Show Popup via FXML
+        overlayContainer.setVisible(false); // Ensure generic overlay is hidden
+        challengeGameOverRoot.setVisible(true);
 
         // Title
-        javafx.scene.control.Label title = new javafx.scene.control.Label(
-                playerWon ? "CHALLENGE COMPLETE!" : "CHALLENGE FAILED");
-        String titleColor = playerWon ? "#ffd700" : "#ff4444";
-        title.setStyle("-fx-font-size: 28px; -fx-text-fill: " + titleColor
-                + "; -fx-font-weight: bold; -fx-font-family: 'Clash', Arial;");
+        challengeTitle.setText(playerWon ? "CHALLENGE COMPLETE!" : "CHALLENGE FAILED");
+        // We can toggle style classes if needed, but text color is handled by generic
+        // class?
+        // No, current CSS has fixed color or we need to set it.
+        // The original code set color manually.
+        challengeTitle.getStyleClass().removeAll("challenge-victory-text", "challenge-defeat-text");
+        challengeTitle.getStyleClass().add(playerWon ? "challenge-victory-text" : "challenge-defeat-text");
 
         // Stars Display
-        HBox starBox = new HBox(5);
-        starBox.setAlignment(javafx.geometry.Pos.CENTER);
+        // Reset stars
+        star1.getStyleClass().removeAll("star-filled", "star-empty");
+        star2.getStyleClass().removeAll("star-filled", "star-empty");
+        star3.getStyleClass().removeAll("star-filled", "star-empty");
+
         if (playerWon) {
-            for (int i = 0; i < 3; i++) {
-                javafx.scene.control.Label star = new javafx.scene.control.Label("★");
-                String starFill = i < stars ? "#ffd700" : "#555";
-                star.setStyle("-fx-font-size: 40px; -fx-text-fill: " + starFill
-                        + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0, 0, 0);");
-                starBox.getChildren().add(star);
-            }
+            challengeStarBox.setVisible(true);
+            star1.getStyleClass().add(stars >= 1 ? "star-filled" : "star-empty");
+            star2.getStyleClass().add(stars >= 2 ? "star-filled" : "star-empty");
+            star3.getStyleClass().add(stars >= 3 ? "star-filled" : "star-empty");
+        } else {
+            challengeStarBox.setVisible(false);
         }
 
         // Stats Display
         String timeStr = String.format("%d:%02d", timeSeconds / 60, timeSeconds % 60);
-        javafx.scene.control.Label timeLabel = new javafx.scene.control.Label(
-                "Time: " + timeStr + "  Damage: " + damageTaken);
-        timeLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white; -fx-font-family: 'Clash', Arial;");
+        challengeTimeLabel.setText("Time: " + timeStr + "  Damage: " + damageTaken);
 
         // Star Conditions Feedback
-        VBox conditionsBox = new VBox(5);
-        conditionsBox.setAlignment(javafx.geometry.Pos.CENTER);
-        conditionsBox.setStyle("-fx-background-color: rgba(0,0,0,0.3); -fx-padding: 10; -fx-background-radius: 10;");
-
-        conditionsBox.getChildren().add(createConditionLabel("Win", true, playerWon));
+        challengeConditionsBox.getChildren().clear();
+        challengeConditionsBox.getChildren().add(createConditionLabel("Win", true, playerWon));
         if (playerWon) {
-            // Re-check conditions logic to display correctly what was met
             // 2 stars: time <= 2 star time
             boolean metTime2 = timeSeconds <= currentChallenge.getTwoStarTimeSeconds();
-            conditionsBox.getChildren()
+            challengeConditionsBox.getChildren()
                     .add(createConditionLabel(
                             "Under " + String.format("%d:%02d", currentChallenge.getTwoStarTimeSeconds() / 60,
                                     currentChallenge.getTwoStarTimeSeconds() % 60),
@@ -267,31 +283,23 @@ public class BattleController {
             boolean metTime3 = timeSeconds <= currentChallenge.getThreeStarTimeSeconds();
             String threeStarText = "Under " + String.format("%d:%02d", currentChallenge.getThreeStarTimeSeconds() / 60,
                     currentChallenge.getThreeStarTimeSeconds() % 60) + " OR No Damage";
-            conditionsBox.getChildren().add(createConditionLabel(threeStarText, metDamage || metTime3, true));
+            challengeConditionsBox.getChildren().add(createConditionLabel(threeStarText, metDamage || metTime3, true));
         }
 
-        javafx.scene.control.Label msg = new javafx.scene.control.Label(
-                playerWon ? "Reward: " + currentChallenge.getGoldReward() + " Gold\nNext challenge unlocked!"
-                        : "Don't give up! Try adjusting your deck.");
-        msg.setStyle("-fx-font-size: 16px; -fx-text-fill: white; -fx-text-alignment: center;");
-
-        javafx.scene.control.Button exitBtn = new javafx.scene.control.Button("RETURN TO CHALLENGES");
-        exitBtn.setStyle(
-                "-fx-font-size: 16px; -fx-padding: 10 30; -fx-background-color: #ffd700; -fx-text-fill: black; -fx-font-weight: bold; -fx-cursor: hand;");
-        exitBtn.setOnAction(e -> handleExitToChallenges());
-
-        content.getChildren().addAll(title, starBox, timeLabel, conditionsBox, msg, exitBtn);
-        overlayContainer.getChildren().add(content);
+        challengeRewardLabel.setText(playerWon
+                ? "Reward: " + currentChallenge.getGoldReward() + " Gold\nNext challenge unlocked!"
+                : "Don't give up! Try adjusting your deck.");
     }
 
     private javafx.scene.control.Label createConditionLabel(String text, boolean met, boolean showCheck) {
         String icon = showCheck ? (met ? "✅" : "❌") : "⚪";
-        String color = met ? "#4ade80" : "#9ca3af";
         javafx.scene.control.Label label = new javafx.scene.control.Label(icon + " " + text);
-        label.setStyle("-fx-font-size: 14px; -fx-text-fill: " + color + ";");
+        label.getStyleClass().add("condition-label");
+        label.getStyleClass().add(met ? "condition-met" : "condition-unmet");
         return label;
     }
 
+    @FXML
     private void handleExitToChallenges() {
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
@@ -309,31 +317,17 @@ public class BattleController {
 
     private void showGameOverPopup() {
         // Clear overlay and make it visible
-        overlayContainer.getChildren().clear();
-        overlayContainer.setVisible(true);
-
-        VBox content = new VBox(20);
-        content.setAlignment(javafx.geometry.Pos.CENTER);
-        content.setStyle(
-                "-fx-background-color: #333; -fx-padding: 40; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 2;");
-        content.setMaxSize(400, 300);
+        overlayContainer.setVisible(false);
+        gameOverRoot.setVisible(true);
 
         boolean playerWon = gameState.isPlayerWinner();
-        javafx.scene.control.Label title = new javafx.scene.control.Label(playerWon ? "VICTORY" : "DEFEAT");
-        String titleColor = playerWon ? "#00ff00" : "#ff0000";
-        title.setStyle("-fx-font-size: 36px; -fx-text-fill: " + titleColor + "; -fx-font-weight: bold;");
+        gameOverTitle.setText(playerWon ? "VICTORY" : "DEFEAT");
 
-        javafx.scene.control.Label score = new javafx.scene.control.Label(
-                String.format("Player: %d  -  Bot: %d", gameState.getPlayerScore(), gameState.getBotScore()));
-        score.setStyle("-fx-font-size: 24px; -fx-text-fill: white;");
+        gameOverTitle.getStyleClass().removeAll("victory-text", "defeat-text");
+        gameOverTitle.getStyleClass().add(playerWon ? "victory-text" : "defeat-text");
 
-        javafx.scene.control.Button exitBtn = new javafx.scene.control.Button("EXIT");
-        exitBtn.setStyle("-fx-font-size: 18px; -fx-padding: 10 30;");
-        exitBtn.setOnAction(e -> handleExit());
-
-        content.getChildren().addAll(title, score, exitBtn);
-
-        overlayContainer.getChildren().add(content);
+        gameOverScore
+                .setText(String.format("Player: %d  -  Bot: %d", gameState.getPlayerScore(), gameState.getBotScore()));
     }
 
     private void handleArenaClick(int tileX, int tileY) {
@@ -458,103 +452,8 @@ public class BattleController {
 
     // Initializes game state from a saved game
     private void initializeFromSavedGame(SavedGameState savedGame) {
-        // Create decks from saved card names
-        Deck playerDeck = model.createDeckFromNames(savedGame.getPlayerDeckCards());
-        Deck botDeck = model.createDeckFromNames(savedGame.getBotDeckCards());
-
-        // Load arena layout from saved game
-        ArenaLayout layout = savedGame.getArenaLayout();
-        currentArenaLayout = layout;
-        Arena arena = model.createArena(layout);
-
-        // Create game state
-        gameState = new GameState(playerDeck, botDeck, arena);
-
-        // Restore saved state (time, elixir, scores)
-        gameState.restoreFromSaved(
-                savedGame.getGameTime(),
-                savedGame.isDoubleElixir(),
-                savedGame.getPlayerScore(),
-                savedGame.getBotScore(),
-                savedGame.getPlayerElixir(),
-                savedGame.getBotElixir());
-
-        // Restore tower health
-        for (SavedGameState.SavedTower savedTower : savedGame.getTowers()) {
-            gameState.restoreTowerHealth(savedTower);
-        }
-
-        // Restore active troops
-        for (SavedGameState.SavedTroop savedTroop : savedGame.getActiveTroops()) {
-            Card card = model.getCardByName(savedTroop.getCardName());
-            if (card != null) {
-                GridPosition pos = GridPosition.tryCreate(savedTroop.getGridX(), savedTroop.getGridY());
-                if (pos != null) {
-                    Troop troop = new Troop(card, pos, savedTroop.isPlayerSide());
-                    // Set health to saved value
-                    double healthLoss = card.getHp() - savedTroop.getCurrentHealth();
-                    if (healthLoss > 0) {
-                        troop.takeDamage(healthLoss);
-                    }
-                    // Set state
-                    try {
-                        troop.setUnitState(UnitState.valueOf(savedTroop.getState()));
-                    } catch (IllegalArgumentException e) {
-                        troop.setUnitState(UnitState.IDLE);
-                    }
-                    gameState.getActiveTroops().add(troop);
-                } else {
-                }
-            } else {
-            }
-        }
-
-        // Restore active buildings
-        for (SavedGameState.SavedBuilding savedBuilding : savedGame.getActiveBuildings()) {
-            Card card = model.getCardByName(savedBuilding.getCardName());
-            if (card != null) {
-                GridPosition pos = GridPosition.tryCreate(savedBuilding.getGridX(), savedBuilding.getGridY());
-                if (pos != null) {
-                    Building building = new Building(
-                            pos,
-                            savedBuilding.getWidth(),
-                            savedBuilding.getHeight(),
-                            savedBuilding.isPlayerSide(),
-                            card.getHp(),
-                            card.getImagePath(),
-                            card.getLifetime());
-                    building.configureCombatFromCard(card);
-
-                    // Set health to saved value
-                    double healthLoss = card.getHp() - savedBuilding.getCurrentHealth();
-                    if (healthLoss > 0) {
-                        building.takeDamage(healthLoss);
-                    }
-
-                    // Occupy footprint
-                    for (int dx = 0; dx < building.getWidth(); dx++) {
-                        for (int dy = 0; dy < building.getHeight(); dy++) {
-                            int gx = pos.getX() + dx;
-                            int gy = pos.getY() + dy;
-                            GridPosition cellPos = GridPosition.tryCreate(gx, gy);
-                            if (cellPos != null) {
-                                GridCell cell = arena.getCell(cellPos);
-                                if (cell != null) {
-                                    try {
-                                        cell.setOccupant(building);
-                                    } catch (IllegalStateException e) {
-                                        // Ignore if invalid
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    gameState.getActiveBuildings().add(building);
-                } else {
-                }
-            } else {
-            }
-        }
+        gameState = model.loadGame(savedGame);
+        currentArenaLayout = savedGame.getArenaLayout();
     }
 
     @FXML
@@ -562,7 +461,7 @@ public class BattleController {
         if (gameLoop != null) {
             gameLoop.stop();
         }
-        
+
         try {
             awardGoldIfEligible();
         } catch (java.io.IOException e) {
@@ -581,7 +480,7 @@ public class BattleController {
             e.printStackTrace();
         }
     }
-    
+
     private void awardGoldIfEligible() throws java.io.IOException {
         if (gameState == null) {
             return;
@@ -590,29 +489,15 @@ public class BattleController {
         if (!gameState.isGameOver()) {
             return;
         }
-        
+
         User currentUser = model.getCurrentUser();
         if (currentUser == null) {
             return;
         }
-        
+
         int playerScore = gameState.getPlayerScore();
         int botScore = gameState.getBotScore();
-        
-        int bonus;
-        if (playerScore > botScore) {
-            bonus = VICTORY_GOLD;
-        } else if (playerScore == botScore) {
-            bonus = DRAW_GOLD;
-        } else {
-            bonus = DEFEAT_GOLD;
-        }
-        
-        if (bonus <= 0) {
-            return;
-        }
-        
-        currentUser.setGold(currentUser.getGold() + bonus);
-        model.saveCurrentUser();
+
+        model.processMatchResult(playerScore, botScore);
     }
 }

@@ -5,46 +5,53 @@ import java.util.List;
 import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.GameSaveService;
+import com.kuroyale.service.ChallengeService;
 import com.kuroyale.util.ServiceFactory;
 
 /*The Model component for the Battle screen.
  * Encapsulates business logic for game initialization, save/load operations.*/
 public class BattleModel {
-    
+
+    private static final int VICTORY_GOLD = 150;
+    private static final int DRAW_GOLD = 75;
+    private static final int DEFEAT_GOLD = 50;
+
     private final AuthenticationService authService;
     private final ArenaService arenaService;
     private final GameSaveService gameSaveService;
+    private final ChallengeService challengeService;
     private final com.kuroyale.service.CardCatalog cardCatalog;
-    
+
     public BattleModel() {
         ServiceFactory factory = ServiceFactory.getInstance();
         this.authService = factory.getAuthenticationService();
         this.arenaService = factory.getArenaService();
         this.gameSaveService = factory.getGameSaveService();
+        this.challengeService = factory.getChallengeService();
         this.cardCatalog = factory.getCardCatalog();
     }
-    
-    //Gets the current logged-in user
+
+    // Gets the current logged-in user
     public User getCurrentUser() {
         return authService.getCurrentUser();
     }
-    
-    //Sets the current user in arena service to load their saved layout
+
+    // Sets the current user in arena service to load their saved layout
     public void setCurrentUserInArenaService(User user) {
         arenaService.setCurrentUser(user);
     }
-    
-    //Loads the arena layout for the current user
+
+    // Loads the arena layout for the current user
     public ArenaLayout loadArenaLayout() {
         return arenaService.loadArenaLayout();
     }
-    
-    //Creates an arena from the given layout
+
+    // Creates an arena from the given layout
     public Arena createArena(ArenaLayout layout) {
         return arenaService.createArena(layout);
     }
-    
-    //Creates a deck from a list of card names
+
+    // Creates a deck from a list of card names
     public Deck createDeckFromNames(List<String> cardNames) {
         Deck deck = new Deck();
         if (cardNames != null) {
@@ -62,24 +69,140 @@ public class BattleModel {
         }
         return deck;
     }
-    
-    //Creates a bot deck (currently uses player's deck)
+
+    // Creates a bot deck (currently uses player's deck)
     public Deck createBotDeck(User playerUser) {
         return createDeckFromNames(playerUser.getDeck());
     }
-    
-    //Saves the current game state
+
+    // Restores a full game state from a saved game object
+    public GameState loadGame(SavedGameState savedGame) {
+        // Create decks from saved card names
+        Deck playerDeck = createDeckFromNames(savedGame.getPlayerDeckCards());
+        Deck botDeck = createDeckFromNames(savedGame.getBotDeckCards());
+
+        // Load arena layout from saved game
+        ArenaLayout layout = savedGame.getArenaLayout();
+        Arena arena = createArena(layout);
+
+        // Create game state
+        GameState gameState = new GameState(playerDeck, botDeck, arena);
+
+        // Restore saved state (time, elixir, scores)
+        gameState.restoreFromSaved(
+                savedGame.getGameTime(),
+                savedGame.isDoubleElixir(),
+                savedGame.getPlayerScore(),
+                savedGame.getBotScore(),
+                savedGame.getPlayerElixir(),
+                savedGame.getBotElixir());
+
+        // Restore tower health
+        for (SavedGameState.SavedTower savedTower : savedGame.getTowers()) {
+            gameState.restoreTowerHealth(savedTower);
+        }
+
+        // Restore active troops
+        for (SavedGameState.SavedTroop savedTroop : savedGame.getActiveTroops()) {
+            Card card = getCardByName(savedTroop.getCardName());
+            if (card != null) {
+                GridPosition pos = GridPosition.tryCreate(savedTroop.getGridX(), savedTroop.getGridY());
+                if (pos != null) {
+                    Troop troop = new Troop(card, pos, savedTroop.isPlayerSide());
+                    // Set health to saved value
+                    double healthLoss = card.getHp() - savedTroop.getCurrentHealth();
+                    if (healthLoss > 0) {
+                        troop.takeDamage(healthLoss);
+                    }
+                    // Set state
+                    try {
+                        troop.setUnitState(UnitState.valueOf(savedTroop.getState()));
+                    } catch (IllegalArgumentException e) {
+                        troop.setUnitState(UnitState.IDLE);
+                    }
+                    gameState.getActiveTroops().add(troop);
+                }
+            }
+        }
+
+        // Restore active buildings
+        for (SavedGameState.SavedBuilding savedBuilding : savedGame.getActiveBuildings()) {
+            Card card = getCardByName(savedBuilding.getCardName());
+            if (card != null) {
+                GridPosition pos = GridPosition.tryCreate(savedBuilding.getGridX(), savedBuilding.getGridY());
+                if (pos != null) {
+                    Building building = new Building(
+                            pos,
+                            savedBuilding.getWidth(),
+                            savedBuilding.getHeight(),
+                            savedBuilding.isPlayerSide(),
+                            card.getHp(),
+                            card.getImagePath(),
+                            card.getLifetime());
+                    building.configureCombatFromCard(card);
+
+                    // Set health to saved value
+                    double healthLoss = card.getHp() - savedBuilding.getCurrentHealth();
+                    if (healthLoss > 0) {
+                        building.takeDamage(healthLoss);
+                    }
+
+                    // Occupy footprint
+                    for (int dx = 0; dx < building.getWidth(); dx++) {
+                        for (int dy = 0; dy < building.getHeight(); dy++) {
+                            int gx = pos.getX() + dx;
+                            int gy = pos.getY() + dy;
+                            GridPosition cellPos = GridPosition.tryCreate(gx, gy);
+                            if (cellPos != null) {
+                                GridCell cell = arena.getCell(cellPos);
+                                if (cell != null) {
+                                    try {
+                                        cell.setOccupant(building);
+                                    } catch (IllegalStateException e) {
+                                        // Ignore if invalid
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    gameState.getActiveBuildings().add(building);
+                }
+            }
+        }
+
+        return gameState;
+    }
+
+    // Saves the current game state
     public SavedGameState saveGame(GameState gameState, User user, ArenaLayout layout) {
         return gameSaveService.saveGame(gameState, user, layout);
     }
-    
+
     public void saveCurrentUser() throws java.io.IOException {
         authService.saveCurrentUser();
     }
-    
-    //Gets a card by name from the catalog
+
+    public void processMatchResult(int playerScore, int botScore) throws java.io.IOException {
+        int bonus = 0;
+        if (playerScore > botScore) {
+            bonus = VICTORY_GOLD;
+        } else if (playerScore == botScore) {
+            bonus = DRAW_GOLD;
+        } else {
+            bonus = DEFEAT_GOLD;
+        }
+
+        if (bonus > 0) {
+            authService.awardGoldToCurrentUser(bonus);
+        }
+    }
+
+    public void recordChallengeAttempt(int challengeId, boolean won, int timeSeconds, int damageTaken) {
+        challengeService.recordAttempt(challengeId, won, timeSeconds, damageTaken);
+    }
+
+    // Gets a card by name from the catalog
     public Card getCardByName(String cardName) {
         return cardCatalog.getCardByName(cardName);
     }
 }
-

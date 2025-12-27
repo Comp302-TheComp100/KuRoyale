@@ -56,5 +56,33 @@
     <!-- Pause Menu Overlay -->
     <VBox fx:id="pauseMenuContainer" alignment="CENTER" visible="false" style="-fx-background-color: rgba(0,0,0,0.8);">
     </VBox>
+
+    <!-- Challenge Game Over Overlay -->
+    <VBox fx:id="challengeGameOverRoot" alignment="CENTER" visible="false" spacing="15" maxWidth="450" maxHeight="500" styleClass="challenge-popup">
+        <Label fx:id="challengeTitle" text="CHALLENGE COMPLETE!" styleClass="challenge-title"/>
+        
+        <HBox fx:id="challengeStarBox" alignment="CENTER" spacing="5">
+            <Label fx:id="star1" text="★" styleClass="challenge-star"/>
+            <Label fx:id="star2" text="★" styleClass="challenge-star"/>
+            <Label fx:id="star3" text="★" styleClass="challenge-star"/>
+        </HBox>
+        
+        <Label fx:id="challengeTimeLabel" text="Time: 2:45  Damage: 0" styleClass="challenge-text-generic"/>
+        
+        <VBox fx:id="challengeConditionsBox" alignment="CENTER" spacing="5" style="-fx-background-color: rgba(0,0,0,0.3); -fx-padding: 10; -fx-background-radius: 10;">
+            <!-- Conditions added dynamically -->
+        </VBox>
+        
+        <Label fx:id="challengeRewardLabel" text="Reward: 150 Gold" styleClass="challenge-text-generic" wrapText="true" textAlignment="CENTER"/>
+        
+        <Button text="RETURN TO CHALLENGES" onAction="#handleExitToChallenges" styleClass="menu-button-gold"/>
+    </VBox>
+    
+    <!-- Standard Game Over Overlay -->
+    <VBox fx:id="gameOverRoot" alignment="CENTER" visible="false" spacing="20" maxWidth="400" maxHeight="300" styleClass="game-over-popup">
+        <Label fx:id="gameOverTitle" text="VICTORY" styleClass="game-over-title"/>
+        <Label fx:id="gameOverScore" text="Player: 0 - Bot: 0" styleClass="game-over-score"/>
+        <Button text="EXIT" onAction="#handleExit" styleClass="menu-button-generic"/>
+    </VBox>
     
 </StackPane>

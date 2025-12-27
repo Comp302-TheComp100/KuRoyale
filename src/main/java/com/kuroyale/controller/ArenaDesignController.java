@@ -1,15 +1,31 @@
 package com.kuroyale.controller;
 
+import com.kuroyale.model.Arena;
 import com.kuroyale.model.ArenaDesignModel;
 import com.kuroyale.model.ArenaLayout;
-import com.kuroyale.model.GridPosition;
+import com.kuroyale.util.GameConstants;
+import com.kuroyale.model.TileType;
+import com.kuroyale.view.ArenaRenderer;
+
 import javafx.fxml.FXML;
-import java.util.List;
+import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
+import javafx.scene.paint.ImagePattern;
+import javafx.stage.Stage;
+import javafx.scene.Scene;
+import javafx.scene.Parent;
+import javafx.fxml.FXMLLoader;
+
+import java.io.IOException;
+import java.util.List;
 
 /* Controller for the Arena Design UI.
- * GRASP Pattern: Controller - Delegates business logic to ArenaService.*/
+ * Refactored to Orchestrate Model and View (Renderer).
+ */
 public class ArenaDesignController {
 
     @FXML
@@ -17,17 +33,6 @@ public class ArenaDesignController {
 
     @FXML
     private TextField arenaNameField;
-
-    private final ArenaDesignModel model = new ArenaDesignModel();
-    private ArenaLayout currentLayout;
-
-    private javafx.scene.image.Image princessTowerUserImg;
-    private javafx.scene.image.Image princessTowerComputerImg;
-    private javafx.scene.image.Image kingTowerUserImg;
-    private javafx.scene.image.Image kingTowerComputerImg;
-
-    public ArenaDesignController() {
-    }
 
     @FXML
     private javafx.scene.shape.Rectangle draggableBridge;
@@ -38,39 +43,26 @@ public class ArenaDesignController {
     @FXML
     private javafx.scene.shape.Rectangle draggableKingTower;
 
+    private final ArenaDesignModel model = new ArenaDesignModel();
+    private ArenaLayout currentLayout;
+    private ArenaRenderer renderer;
+
+    public ArenaDesignController() {
+    }
+
     @FXML
     public void initialize() {
-        // Load images
-        try {
-            princessTowerUserImg = new javafx.scene.image.Image(
-                    getClass().getResourceAsStream("/images/tower_archer_blue.png"));
-            princessTowerComputerImg = new javafx.scene.image.Image(
-                    getClass().getResourceAsStream("/images/tower_archer_red.png"));
-            kingTowerUserImg = new javafx.scene.image.Image(
-                    getClass().getResourceAsStream("/images/Clash_Royale_icon_King_Tower_Blue.png"));
-            kingTowerComputerImg = new javafx.scene.image.Image(
-                    getClass().getResourceAsStream("/images/Clash_Royale_icon_King_Tower_Red.png"));
+        // Initialize Renderer
+        renderer = new ArenaRenderer(arenaGrid);
 
-            // Update palette icons
-            if (draggablePrincessTower != null) {
-                draggablePrincessTower.setFill(new javafx.scene.paint.ImagePattern(princessTowerUserImg));
-            }
-            if (draggableKingTower != null) {
-                draggableKingTower.setFill(new javafx.scene.paint.ImagePattern(kingTowerUserImg));
-            }
-            // Bridge palette icon remains default or we can set it to color
-            if (draggableBridge != null) {
-                draggableBridge.setFill(javafx.scene.paint.Color.SADDLEBROWN);
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to load images: " + e.getMessage());
-            e.printStackTrace();
-        }
+        // Setup Palette Icons using images from renderer
+        updatePaletteIcons();
 
-        // Set current user in arena service so it can save to user's profile
+        // Set current user in arena service (auth logic)
         if (model.isLoggedIn()) {
             model.setCurrentUserInArenaService(model.getCurrentUser());
         }
+
         // Load the saved layout
         currentLayout = model.loadArenaLayout();
 
@@ -82,12 +74,27 @@ public class ArenaDesignController {
         renderArena();
     }
 
+    private void updatePaletteIcons() {
+        try {
+            if (draggablePrincessTower != null) {
+                draggablePrincessTower.setFill(new ImagePattern(renderer.getPrincessTowerUserImg()));
+            }
+            if (draggableKingTower != null) {
+                draggableKingTower.setFill(new ImagePattern(renderer.getKingTowerUserImg()));
+            }
+            if (draggableBridge != null) {
+                draggableBridge.setFill(javafx.scene.paint.Color.SADDLEBROWN);
+            }
+        } catch (Exception e) {
+            System.err.println("Error setting up palette: " + e.getMessage());
+        }
+    }
+
     private void setupDragSource() {
         if (draggableBridge != null) {
             draggableBridge.setOnDragDetected(event -> {
-                javafx.scene.input.Dragboard db = draggableBridge
-                        .startDragAndDrop(javafx.scene.input.TransferMode.COPY);
-                javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                Dragboard db = draggableBridge.startDragAndDrop(TransferMode.COPY);
+                ClipboardContent content = new ClipboardContent();
                 content.putString("BRIDGE");
                 db.setContent(content);
                 event.consume();
@@ -96,9 +103,8 @@ public class ArenaDesignController {
 
         if (draggablePrincessTower != null) {
             draggablePrincessTower.setOnDragDetected(event -> {
-                javafx.scene.input.Dragboard db = draggablePrincessTower
-                        .startDragAndDrop(javafx.scene.input.TransferMode.COPY);
-                javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                Dragboard db = draggablePrincessTower.startDragAndDrop(TransferMode.COPY);
+                ClipboardContent content = new ClipboardContent();
                 content.putString("PRINCESS_TOWER");
                 db.setContent(content);
                 event.consume();
@@ -107,9 +113,8 @@ public class ArenaDesignController {
 
         if (draggableKingTower != null) {
             draggableKingTower.setOnDragDetected(event -> {
-                javafx.scene.input.Dragboard db = draggableKingTower
-                        .startDragAndDrop(javafx.scene.input.TransferMode.COPY);
-                javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                Dragboard db = draggableKingTower.startDragAndDrop(TransferMode.COPY);
+                ClipboardContent content = new ClipboardContent();
                 content.putString("KING_TOWER");
                 db.setContent(content);
                 event.consume();
@@ -118,399 +123,175 @@ public class ArenaDesignController {
     }
 
     private void renderArena() {
-        arenaGrid.getChildren().clear();
-        arenaGrid.getColumnConstraints().clear();
-        arenaGrid.getRowConstraints().clear();
+        // Create a temporary Arena from the layout for Grid state
+        Arena arena = model.createArena(currentLayout);
 
-        // Create a temporary Arena from the layout to get the full grid state
-        com.kuroyale.model.Arena arena = model.createArena(currentLayout);
+        // Use View Helper to render
+        renderer.renderArena(arena, currentLayout, new ArenaRenderer.ArenaInteractionListener() {
+            @Override
+            public void onDragOver(javafx.scene.input.DragEvent event, int x, int y) {
+                if (event.getGestureSource() != null && event.getDragboard().hasString()) {
+                    String dragType = event.getDragboard().getString();
 
-        // Pass 1: Render Grid (Ground)
-        for (int x = 0; x < com.kuroyale.model.Arena.WIDTH; x++) {
-            for (int y = 0; y < com.kuroyale.model.Arena.HEIGHT; y++) {
-                com.kuroyale.model.GridCell cell = arena.getCell(x, y);
-                javafx.scene.shape.Rectangle rect = new javafx.scene.shape.Rectangle(18, 18);
-
-                // For towers, render underlying terrain (grass)
-                // Bridges are rendered as SADDLEBROWN tiles here
-                if (isTower(cell.getTileType())) {
-                    // Use checkered pattern for grass under towers
-                    if ((x + y) % 2 == 0) {
-                        rect.setFill(javafx.scene.paint.Color.rgb(124, 252, 0)); // LawnGreen
-                    } else {
-                        rect.setFill(javafx.scene.paint.Color.rgb(50, 205, 50)); // LimeGreen
+                    // Bridges: river area only
+                    if ("BRIDGE".equals(dragType)
+                            && (y == GameConstants.RIVER_ROW_1 || y == GameConstants.RIVER_ROW_2)) {
+                        event.acceptTransferModes(TransferMode.COPY);
                     }
-                } else {
-                    updateTileStyle(rect, cell.getTileType(), x, y);
+                    // Towers: user's bottom half only (y > 16)
+                    else if ("PRINCESS_TOWER".equals(dragType) && y > GameConstants.USER_SIDE_BOUNDARY_Y) {
+                        int startX = x - 1;
+                        int startY = y - 1;
+                        if (startX >= 0 && startY >= 0 &&
+                                startX + GameConstants.PRINCESS_TOWER_SIZE < Arena.WIDTH &&
+                                startY + GameConstants.PRINCESS_TOWER_SIZE < Arena.HEIGHT) {
+                            event.acceptTransferModes(TransferMode.COPY);
+                        }
+                    } else if ("KING_TOWER".equals(dragType) && y > GameConstants.USER_SIDE_BOUNDARY_Y) {
+                        int startX = x - 2;
+                        int startY = y - 2;
+                        if (startX >= 0 && startY >= 0 &&
+                                startX + GameConstants.KING_TOWER_SIZE < Arena.WIDTH &&
+                                startY + GameConstants.KING_TOWER_SIZE < Arena.HEIGHT) {
+                            event.acceptTransferModes(TransferMode.COPY);
+                        }
+                    }
                 }
-
-                // Remove borders for seamless appearance
-                rect.setStroke(javafx.scene.paint.Color.TRANSPARENT);
-                rect.setStrokeWidth(0.0);
-
-                // Add interaction
-                final int finalX = x;
-                final int finalY = y;
-
-                // Drag over logic
-                rect.setOnDragOver(event -> {
-                    if (event.getGestureSource() != rect && event.getDragboard().hasString()) {
-                        String dragType = event.getDragboard().getString();
-
-                        // Bridges: river area only (y=15 or y=16)
-                        if ("BRIDGE".equals(dragType) && (finalY == 15 || finalY == 16)) {
-                            event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
-                        }
-                        // Towers: user's bottom half only (y > 16)
-                        // Use drop cell as center of image (Princess 3x3, King 4x4)
-                        else if ("PRINCESS_TOWER".equals(dragType) && finalY > 16) {
-                            int startX = finalX - 1;
-                            int startY = finalY - 1;
-                            if (startX >= 0 && startY >= 0
-                                    && startX + 2 < com.kuroyale.model.Arena.WIDTH
-                                    && startY + 2 < com.kuroyale.model.Arena.HEIGHT) {
-                                event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
-                            }
-                        } else if ("KING_TOWER".equals(dragType) && finalY > 16) {
-                            int startX = finalX - 2;
-                            int startY = finalY - 2;
-                            if (startX >= 0 && startY >= 0
-                                    && startX + 3 < com.kuroyale.model.Arena.WIDTH
-                                    && startY + 3 < com.kuroyale.model.Arena.HEIGHT) {
-                                event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
-                            }
-                        }
-                    }
-                    event.consume();
-                });
-
-                // Drag dropped logic
-                rect.setOnDragDropped(event -> {
-                    javafx.scene.input.Dragboard db = event.getDragboard();
-                    boolean success = false;
-                    if (db.hasString()) {
-                        String dragType = db.getString();
-                        if ("BRIDGE".equals(dragType)) {
-                            handleBridgeDrop(finalX, finalY);
-                            success = true;
-                        } else if ("PRINCESS_TOWER".equals(dragType)) {
-                            handlePrincessTowerDrop(finalX, finalY);
-                            success = true;
-                        } else if ("KING_TOWER".equals(dragType)) {
-                            handleKingTowerDrop(finalX, finalY);
-                            success = true;
-                        }
-                    }
-                    event.setDropCompleted(success);
-                    event.consume();
-                });
-
-                // Click to remove for bridges (towers handled in Pass 2)
-                rect.setOnMouseClicked(e -> {
-                    com.kuroyale.model.TileType tileType = cell.getTileType();
-
-                    if (tileType == com.kuroyale.model.TileType.BRIDGE) {
-                        // Remove the 2x2 bridge
-                        int blockStart = finalX;
-                        while (blockStart > 0) {
-                            final int checkX = blockStart - 1;
-                            boolean isBridgeLeft = currentLayout.getBridgePositions().stream()
-                                    .anyMatch(p -> p.getX() == checkX && (p.getY() == 15 || p.getY() == 16));
-                            if (isBridgeLeft) {
-                                blockStart--;
-                            } else {
-                                break;
-                            }
-                        }
-
-                        int offset = finalX - blockStart;
-                        int bridgeStartX = blockStart + (offset / 2) * 2;
-
-                        currentLayout.getBridgePositions().removeIf(
-                                p -> (p.getX() == bridgeStartX || p.getX() == bridgeStartX + 1)
-                                        && (p.getY() == 15 || p.getY() == 16));
-                        renderArena();
-                    }
-                });
-
-                arenaGrid.add(rect, x, y);
+                event.consume();
             }
-        }
 
-        // Pass 2: Render Towers (Images)
-        renderStructureImages();
-    }
-
-    private boolean isTower(com.kuroyale.model.TileType type) {
-        return type == com.kuroyale.model.TileType.PRINCESS_TOWER_USER ||
-                type == com.kuroyale.model.TileType.PRINCESS_TOWER_COMPUTER ||
-                type == com.kuroyale.model.TileType.KING_TOWER_USER ||
-                type == com.kuroyale.model.TileType.KING_TOWER_COMPUTER;
-    }
-
-    private void renderStructureImages() {
-        // Bridges are rendered as tiles in Pass 1, no image overlay needed as per
-        // request
-        // Render User Princess Towers
-        for (GridPosition p : currentLayout.getPrincessTowerPositions()) {
-            addTowerImage(p.getX(), p.getY(), princessTowerUserImg, true, false);
-            // Mirror Computer Princess
-            addTowerImage(p.getX(), com.kuroyale.model.Arena.HEIGHT - 3 - p.getY(), princessTowerComputerImg, false,
-                    false);
-        }
-
-        // Render User King Tower
-        if (currentLayout.getKingTowerPosition() != null) {
-            GridPosition p = currentLayout.getKingTowerPosition();
-            addTowerImage(p.getX(), p.getY(), kingTowerUserImg, true, true);
-            // Mirror Computer King (4x4)
-            addTowerImage(p.getX(), com.kuroyale.model.Arena.HEIGHT - 4 - p.getY(), kingTowerComputerImg, false, true);
-        }
-    }
-
-    private void addTowerImage(int x, int y, javafx.scene.image.Image img, boolean isUser, boolean isKing) {
-        if (img == null)
-            return;
-
-        int size = isKing ? 4 : 3;
-        int pixelSize = size * 18;
-
-        javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView(img);
-        imageView.setFitWidth(pixelSize);
-        imageView.setFitHeight(pixelSize);
-
-        // Add click to remove for user towers
-        if (isUser) {
-            imageView.setOnMouseClicked(e -> {
-                if (isKing) {
-                    currentLayout.setKingTowerPosition(null);
-                } else {
-                    currentLayout.getPrincessTowerPositions().removeIf(
-                            p -> p.getX() == x && p.getY() == y);
+            @Override
+            public void onDragDropped(javafx.scene.input.DragEvent event, int x, int y) {
+                Dragboard db = event.getDragboard();
+                boolean success = false;
+                if (db.hasString()) {
+                    String dragType = db.getString();
+                    if ("BRIDGE".equals(dragType)) {
+                        success = handleBridgeDrop(x, y);
+                    } else if ("PRINCESS_TOWER".equals(dragType)) {
+                        success = handlePrincessTowerDrop(x, y);
+                    } else if ("KING_TOWER".equals(dragType)) {
+                        success = handleKingTowerDrop(x, y);
+                    }
                 }
-                renderArena();
-            });
-        }
+                event.setDropCompleted(success);
+                event.consume();
+            }
 
-        arenaGrid.add(imageView, x, y, size, size);
-
-        // Add Health Bar and Determine max health based on tower type
-        double maxHealth = 1400; // Default Princess
-        if (isKing) {
-            maxHealth = 2400;
-        }
-        // In design mode, current health is always max
-        addHealthBar(x, y, maxHealth, maxHealth, size);
-    }
-
-    private void addHealthBar(int x, int y, double currentHealth, double maxHealth, int colSpan) {
-        // Health bar dimensions
-        double width = 40;
-        if (colSpan == 4)
-            width = 50; // Wider for King Tower
-        double height = 12; // Height for text visibility
-
-        // Background (Dark Blue)
-        javafx.scene.shape.Rectangle bg = new javafx.scene.shape.Rectangle(width, height);
-        bg.setFill(javafx.scene.paint.Color.DARKBLUE);
-        bg.setStroke(javafx.scene.paint.Color.BLACK);
-        bg.setStrokeWidth(0.5);
-
-        // Foreground (Royal Blue)
-        double healthPercentage = currentHealth / maxHealth;
-        javafx.scene.shape.Rectangle fg = new javafx.scene.shape.Rectangle(width * healthPercentage, height);
-        fg.setFill(javafx.scene.paint.Color.ROYALBLUE);
-
-        // Health Text: "1400"
-        javafx.scene.text.Text healthText = new javafx.scene.text.Text(String.format("%.0f", currentHealth));
-        // Font like Clash Royale
-        healthText.setFont(javafx.scene.text.Font.font("Arial Black", javafx.scene.text.FontWeight.BOLD, 10));
-        healthText.setFill(javafx.scene.paint.Color.WHITE);
-        healthText.setStroke(javafx.scene.paint.Color.BLACK);
-        healthText.setStrokeWidth(0.5); // Thicker stroke for CR look
-
-        javafx.scene.layout.StackPane healthBarContainer = new javafx.scene.layout.StackPane();
-        // Align foreground to left
-        javafx.scene.layout.StackPane.setAlignment(fg, javafx.geometry.Pos.CENTER_LEFT);
-
-        healthBarContainer.getChildren().addAll(bg, fg, healthText);
-        healthBarContainer.setAlignment(javafx.geometry.Pos.CENTER);
-        healthBarContainer.setTranslateY(-10);
-
-        // Add to grid, spanning colSpan cols, 1 row
-        arenaGrid.add(healthBarContainer, x, y, colSpan, 1);
-    }
-
-    private void updateTileStyle(javafx.scene.shape.Rectangle rect, com.kuroyale.model.TileType type, int x, int y) {
-        switch (type) {
-            case GRASS:
-                // Checkered pattern matching battle arena
-                if ((x + y) % 2 == 0) {
-                    rect.setFill(javafx.scene.paint.Color.rgb(124, 252, 0)); // LawnGreen
-                } else {
-                    rect.setFill(javafx.scene.paint.Color.rgb(50, 205, 50)); // LimeGreen
+            @Override
+            public void onTileClicked(int x, int y, TileType type) {
+                if (type == TileType.BRIDGE) {
+                    handleBridgeRemoval(x, y);
                 }
-                break;
-            case WATER:
-                rect.setFill(javafx.scene.paint.Color.LIGHTBLUE);
-                break;
-            case BRIDGE:
-                rect.setFill(javafx.scene.paint.Color.SADDLEBROWN);
-                break;
-            case ROAD:
-                rect.setFill(javafx.scene.paint.Color.SANDYBROWN);
-                break;
-            case PRINCESS_TOWER_USER:
-                rect.setFill(javafx.scene.paint.Color.HOTPINK);
-                break;
-            case PRINCESS_TOWER_COMPUTER:
-                rect.setFill(javafx.scene.paint.Color.DEEPPINK);
-                break;
-            case KING_TOWER_USER:
-                rect.setFill(javafx.scene.paint.Color.GOLD);
-                break;
-            case KING_TOWER_COMPUTER:
-                rect.setFill(javafx.scene.paint.Color.ORANGE);
-                break;
-        }
+            }
+
+            @Override
+            public void onTowerClicked(int x, int y, boolean isKing) {
+                handleTowerRemoval(x, y, isKing);
+            }
+        });
     }
 
-    private void handleBridgeDrop(int x, int y) {
-        // Check max bridges (3 bridges * 4 tiles = 12 tiles)
-        if (currentLayout.getBridgePositions().size() >= 12) {
-            showAlert("Limit Reached", "You can only place a maximum of 3 bridges.");
-            return;
+    private boolean handleBridgeDrop(int x, int y) {
+        StringBuilder errorMsg = new StringBuilder();
+        if (!model.canPlaceBridge(currentLayout, x, y, errorMsg)) {
+            if (errorMsg.length() > 0)
+                showAlert("Cannot Place Bridge", errorMsg.toString());
+            return false;
         }
 
-        // Logic to place a 2x2 bridge starting at (x, y) or adjusting to fit
-        // River is y=15, 16.
-        int startY = 15;
-
-        // Align X. If X is last column, shift left.
+        // Apply Logic
         int startX = x;
-        if (startX >= com.kuroyale.model.Arena.WIDTH - 1) {
-            startX = com.kuroyale.model.Arena.WIDTH - 2;
+        if (startX >= Arena.WIDTH - 1) {
+            startX = Arena.WIDTH - 2;
         }
+        int startY = GameConstants.RIVER_ROW_1; // Force Y to river
 
-        // Check if space is already occupied
-        boolean occupied = false;
-        for (int dx = 0; dx < 2; dx++) {
-            for (int dy = 0; dy < 2; dy++) {
-                final int tx = startX + dx;
-                final int ty = startY + dy;
-                if (currentLayout.getBridgePositions().stream().anyMatch(p -> p.getX() == tx && p.getY() == ty)) {
-                    occupied = true;
-                    break;
-                }
-            }
-        }
-
-        if (occupied) {
-            // overlap
-            return;
-        }
-
-        // Place 2x2 bridge
-        for (int dx = 0; dx < 2; dx++) {
+        for (int dx = 0; dx < GameConstants.BRIDGE_WIDTH; dx++) {
             for (int dy = 0; dy < 2; dy++) {
                 currentLayout.addBridgePosition(startX + dx, startY + dy);
             }
         }
         renderArena();
+        return true;
     }
 
-    private void handlePrincessTowerDrop(int x, int y) {
-        // Check max 2 Princess towers
-        if (currentLayout.getPrincessTowerPositions().size() >= 2) {
-            showAlert("Limit Reached", "You can only place a maximum of 2 Princess towers.");
-            return;
+    private boolean handlePrincessTowerDrop(int x, int y) {
+        StringBuilder errorMsg = new StringBuilder();
+        if (!model.canPlacePrincessTower(currentLayout, x, y, errorMsg)) {
+            if (errorMsg.length() > 0)
+                showAlert("Cannot Place Tower", errorMsg.toString()); // Optional to suppress if just drag fail
+            return false;
         }
 
-        // Only allow placement in user's bottom half (y > 16)
-        if (y <= 16) {
-            return;
-        }
-
-        // Treat drop cell as center -> top-left start for 3x3
         int startX = x - 1;
         int startY = y - 1;
-        // Check bounds for 3x3 tower using startX/startY
-        if (startX < 0 || startY < 0 || startX + 2 >= com.kuroyale.model.Arena.WIDTH
-                || startY + 2 >= com.kuroyale.model.Arena.HEIGHT) {
-            return;
-        }
-
-        // Check if position is already occupied by a tower (3x3 overlap check)
-        // We check if any cell in the new 3x3 area overlaps with any existing tower's
-        // 3x3 area
-        boolean occupied = false;
-
-        // Check against existing Princess towers
-        for (GridPosition p : currentLayout.getPrincessTowerPositions()) {
-            if (isOverlap(startX, startY, 3, 3, p.getX(), p.getY(), 3, 3)) {
-                occupied = true;
-                break;
-            }
-        }
-        // Check against King tower (4x4)
-        if (!occupied && currentLayout.getKingTowerPosition() != null) {
-            GridPosition k = currentLayout.getKingTowerPosition();
-            if (isOverlap(startX, startY, 3, 3, k.getX(), k.getY(), 4, 4)) {
-                occupied = true;
-            }
-        }
-        if (occupied) {
-            return;
-        }
-
-        // Place Princess tower using computed top-left
         currentLayout.addPrincessTowerPosition(startX, startY);
         renderArena();
+        return true;
     }
 
-    private void handleKingTowerDrop(int x, int y) {
-        // Check if King tower already placed
-        if (currentLayout.getKingTowerPosition() != null) {
-            showAlert("Limit Reached", "You can only place 1 King tower.");
-            return;
+    private boolean handleKingTowerDrop(int x, int y) {
+        StringBuilder errorMsg = new StringBuilder();
+        if (!model.canPlaceKingTower(currentLayout, x, y, errorMsg)) {
+            if (errorMsg.length() > 0)
+                showAlert("Cannot Place Tower", errorMsg.toString());
+            return false;
         }
 
-        // Only allow placement in user's bottom half (y > 16)
-        if (y <= 16) {
-            return;
-        }
-
-        // Treat drop cell as center. top-left start for 4x4
         int startX = x - 2;
         int startY = y - 2;
-        // Check bounds for 4x4 tower using startX/startY
-        if (startX < 0 || startY < 0 || startX + 3 >= com.kuroyale.model.Arena.WIDTH
-                || startY + 3 >= com.kuroyale.model.Arena.HEIGHT) {
-            return;
-        }
+        currentLayout.setKingTowerPosition(startX, startY);
+        renderArena();
+        return true;
+    }
 
-        // Check if position is already occupied by a Princess tower
-        // Princess is 3x3, King is 4x4
-        boolean occupied = false;
-        for (GridPosition p : currentLayout.getPrincessTowerPositions()) {
-            if (isOverlap(startX, startY, 4, 4, p.getX(), p.getY(), 3, 3)) {
-                occupied = true;
+    private void handleBridgeRemoval(int x, int y) {
+        // Logic to remove the 2x2 bridge
+        // We need to find the top-left of the bridge block this tile belongs to
+        // Bridges are always at y=15,16.
+        int blockStart = x;
+
+        // Search left for the start of this bridge block
+        while (blockStart > 0) {
+            final int checkX = blockStart - 1;
+            boolean isBridgeLeft = currentLayout.getBridgePositions().stream()
+                    .anyMatch(p -> p.getX() == checkX
+                            && (p.getY() == GameConstants.RIVER_ROW_1 || p.getY() == GameConstants.RIVER_ROW_2));
+            if (isBridgeLeft) {
+                blockStart--;
+            } else {
                 break;
             }
         }
 
-        if (occupied) {
-            return;
-        }
+        // NOTE: The bridge removal logic in original controller was slightly complex
+        // due to fused bridges.
+        // Assuming bridges are 2x2 blocks aligned. If they merge, clicking one tile
+        // removes its 2x2 origin block?
+        // Original logic:
+        /*
+         * int offset = finalX - blockStart;
+         * int bridgeStartX = blockStart + (offset / 2) * 2;
+         */
+        // Let's try to replicate:
+        int offset = x - blockStart;
+        int bridgeStartX = blockStart + (offset / 2) * 2;
 
-        // Place King tower using computed top-left
-        currentLayout.setKingTowerPosition(startX, startY);
+        currentLayout.getBridgePositions().removeIf(
+                p -> (p.getX() == bridgeStartX || p.getX() == bridgeStartX + 1)
+                        && (p.getY() == GameConstants.RIVER_ROW_1 || p.getY() == GameConstants.RIVER_ROW_2));
         renderArena();
     }
 
-    // Helper to check if two rectangles overlap
-    private boolean isOverlap(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2) {
-        return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+    private void handleTowerRemoval(int x, int y, boolean isKing) {
+        if (isKing) {
+            currentLayout.setKingTowerPosition(null);
+        } else {
+            currentLayout.getPrincessTowerPositions().removeIf(
+                    p -> p.getX() == x && p.getY() == y);
+        }
+        renderArena();
     }
 
     @FXML
@@ -528,47 +309,39 @@ public class ArenaDesignController {
             }
             try {
                 model.saveArenaLayout(currentLayout);
-
-                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                        javafx.scene.control.Alert.AlertType.INFORMATION);
-                alert.setTitle("Success");
-                alert.setHeaderText(null);
-                alert.setContentText("Arena layout saved successfully!");
-                alert.showAndWait();
-            } catch (java.io.IOException e) {
-                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                        javafx.scene.control.Alert.AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setHeaderText(null);
-                alert.setContentText("Failed to save arena layout: " + e.getMessage());
-                alert.showAndWait();
+                showAlert("Success", "Arena layout saved successfully!");
+            } catch (IOException e) {
+                showAlert("Error", "Failed to save arena layout: " + e.getMessage());
                 e.printStackTrace();
             }
         }
     }
 
+    @FXML
+    public void handleBack() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) arenaNameField.getScene().getWindow();
+            Scene scene = new Scene(root, 1280, 720);
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setTitle("KU Royale - Main Menu");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void showAlert(String title, String content) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.WARNING);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        if (title.contains("Error") || title.contains("Invalid") || title.contains("Limit")
+                || title.contains("Cannot")) {
+            alert.setAlertType(Alert.AlertType.WARNING);
+        }
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
-    }
-
-    @FXML
-    public void handleBack() {
-        try {
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
-            javafx.scene.Parent root = loader.load();
-
-            javafx.stage.Stage stage = (javafx.stage.Stage) arenaNameField.getScene().getWindow();
-            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Main Menu");
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
-        }
     }
 }
