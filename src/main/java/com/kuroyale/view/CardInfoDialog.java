@@ -1,7 +1,6 @@
 package com.kuroyale.view;
 
 import com.kuroyale.model.Card;
-import com.kuroyale.model.Rarity;
 import com.kuroyale.model.SpeedType;
 import com.kuroyale.model.User;
 import com.kuroyale.service.AuthenticationService;
@@ -378,21 +377,6 @@ public class CardInfoDialog extends StackPane {
             dot1.setStyle("-fx-fill: " + StyleHelper.COLOR_GRAY + ";"); // Inactive
             dot2.setStyle("-fx-fill: " + StyleHelper.COLOR_BLUE + ";"); // Active
         }
-    }
-
-    private boolean canUpgrade() {
-        User currentUser = authService.getCurrentUser();
-        if (currentUser == null) {
-            return false;
-        }
-
-        // Check if card is at max level
-        if (card.getLevel() >= Card.MAX_LEVEL) {
-            return false;
-        }
-
-        // Check if player has enough gold
-        return currentUser.getGold() >= card.calculateUpgradeCost();
     }
 
     private void updateUpgradeButtonState(Button upgradeButton) {

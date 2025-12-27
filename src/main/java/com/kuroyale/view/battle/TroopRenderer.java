@@ -34,6 +34,9 @@ public class TroopRenderer {
     private final Map<Troop, Point2D> lastTroopPositions = new HashMap<>();
     private final Map<Troop, String> lastTroopState = new HashMap<>();
 
+    // Reusable set to avoid per-frame allocation
+    private final Set<Troop> currentTroops = new HashSet<>();
+
     public TroopRenderer(Pane unitLayer, BiFunction<Integer, Integer, Node> gridCellProvider) {
         this.unitLayer = unitLayer;
         this.gridCellProvider = gridCellProvider;
@@ -41,7 +44,10 @@ public class TroopRenderer {
 
     public void render(GameState gameState) {
         List<Troop> troops = gameState.getActiveTroops();
-        Set<Troop> currentTroops = new HashSet<>(troops);
+
+        // Reuse the set instead of creating a new one every frame
+        currentTroops.clear();
+        currentTroops.addAll(troops);
 
         // Cleanup dead troops
         cleanupDeadTroops(currentTroops);

@@ -22,11 +22,6 @@ public class ArenaRenderer {
 
     private final GridPane arenaGrid;
 
-    private Image princessTowerUserImg;
-    private Image princessTowerComputerImg;
-    private Image kingTowerUserImg;
-    private Image kingTowerComputerImg;
-
     public interface ArenaInteractionListener {
         void onDragOver(javafx.scene.input.DragEvent event, int x, int y);
 
@@ -39,29 +34,6 @@ public class ArenaRenderer {
 
     public ArenaRenderer(GridPane arenaGrid) {
         this.arenaGrid = arenaGrid;
-        loadImages();
-    }
-
-    private void loadImages() {
-        try {
-            princessTowerUserImg = new Image(getClass().getResourceAsStream("/images/tower_archer_blue.png"));
-            princessTowerComputerImg = new Image(getClass().getResourceAsStream("/images/tower_archer_red.png"));
-            kingTowerUserImg = new Image(
-                    getClass().getResourceAsStream("/images/Clash_Royale_icon_King_Tower_Blue.png"));
-            kingTowerComputerImg = new Image(
-                    getClass().getResourceAsStream("/images/Clash_Royale_icon_King_Tower_Red.png"));
-        } catch (Exception e) {
-            System.err.println("Failed to load images: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    public Image getPrincessTowerUserImg() {
-        return princessTowerUserImg;
-    }
-
-    public Image getKingTowerUserImg() {
-        return kingTowerUserImg;
     }
 
     public void renderArena(Arena arena, ArenaLayout layout, ArenaInteractionListener listener) {
@@ -113,18 +85,22 @@ public class ArenaRenderer {
     private void renderStructureImages(ArenaLayout layout, ArenaInteractionListener listener) {
         // Render User Princess Towers
         for (GridPosition p : layout.getPrincessTowerPositions()) {
-            addTowerImage(p.getX(), p.getY(), princessTowerUserImg, true, false, listener);
+            addTowerImage(p.getX(), p.getY(), com.kuroyale.util.GameAssets.getInstance().getPrincessTowerUser(), true,
+                    false, listener);
             // Mirror Computer Princess
-            addTowerImage(p.getX(), Arena.HEIGHT - 3 - p.getY(), princessTowerComputerImg, false,
+            addTowerImage(p.getX(), Arena.HEIGHT - 3 - p.getY(),
+                    com.kuroyale.util.GameAssets.getInstance().getPrincessTowerComputer(), false,
                     false, null);
         }
 
         // Render User King Tower
         if (layout.getKingTowerPosition() != null) {
             GridPosition p = layout.getKingTowerPosition();
-            addTowerImage(p.getX(), p.getY(), kingTowerUserImg, true, true, listener);
+            addTowerImage(p.getX(), p.getY(), com.kuroyale.util.GameAssets.getInstance().getKingTowerUser(), true, true,
+                    listener);
             // Mirror Computer King (4x4)
-            addTowerImage(p.getX(), Arena.HEIGHT - 4 - p.getY(), kingTowerComputerImg, false, true, null);
+            addTowerImage(p.getX(), Arena.HEIGHT - 4 - p.getY(),
+                    com.kuroyale.util.GameAssets.getInstance().getKingTowerComputer(), false, true, null);
         }
     }
 

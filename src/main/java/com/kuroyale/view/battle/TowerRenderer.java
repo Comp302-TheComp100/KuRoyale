@@ -25,11 +25,6 @@ public class TowerRenderer {
     private final Map<String, Text> towerHpTexts = new HashMap<>();
     private final Map<GridPosition, Node> activeTowerVisuals = new HashMap<>();
 
-    private Image princessTowerUserImg;
-    private Image princessTowerComputerImg;
-    private Image kingTowerUserImg;
-    private Image kingTowerComputerImg;
-
     public interface CellIndexer {
         void index(int x, int y, Node node);
     }
@@ -40,39 +35,26 @@ public class TowerRenderer {
         this.grid = grid;
         this.TILE_SIZE = tileSize;
         this.cellIndexer = cellIndexer;
-        loadImages();
-    }
-
-    private void loadImages() {
-        try {
-            princessTowerUserImg = new Image(getClass().getResourceAsStream("/images/tower_archer_blue.png"));
-            princessTowerComputerImg = new Image(getClass().getResourceAsStream("/images/tower_archer_red.png"));
-            kingTowerUserImg = new Image(
-                    getClass().getResourceAsStream("/images/Clash_Royale_icon_King_Tower_Blue.png"));
-            kingTowerComputerImg = new Image(
-                    getClass().getResourceAsStream("/images/Clash_Royale_icon_King_Tower_Red.png"));
-        } catch (Exception e) {
-            System.err.println("Failed to load tower images: " + e.getMessage());
-        }
     }
 
     public void renderTowers(Arena arena) {
         if (arena.getLayout() != null) {
             ArenaLayout layout = arena.getLayout();
+            com.kuroyale.util.GameAssets assets = com.kuroyale.util.GameAssets.getInstance();
 
             // Princess Towers
             if (layout.getPrincessTowerPositions() != null) {
                 for (GridPosition p : layout.getPrincessTowerPositions()) {
-                    renderTowerAt(arena, p.getX(), p.getY(), princessTowerUserImg, 3);
-                    renderTowerAt(arena, p.getX(), Arena.HEIGHT - 3 - p.getY(), princessTowerComputerImg, 3);
+                    renderTowerAt(arena, p.getX(), p.getY(), assets.getPrincessTowerUser(), 3);
+                    renderTowerAt(arena, p.getX(), Arena.HEIGHT - 3 - p.getY(), assets.getPrincessTowerComputer(), 3);
                 }
             }
 
             // King Tower
             if (layout.getKingTowerPosition() != null) {
                 GridPosition p = layout.getKingTowerPosition();
-                renderTowerAt(arena, p.getX(), p.getY(), kingTowerUserImg, 4);
-                renderTowerAt(arena, p.getX(), Arena.HEIGHT - 4 - p.getY(), kingTowerComputerImg, 4);
+                renderTowerAt(arena, p.getX(), p.getY(), assets.getKingTowerUser(), 4);
+                renderTowerAt(arena, p.getX(), Arena.HEIGHT - 4 - p.getY(), assets.getKingTowerComputer(), 4);
             }
         }
     }

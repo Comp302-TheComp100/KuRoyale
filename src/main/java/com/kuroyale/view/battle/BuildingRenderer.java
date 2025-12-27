@@ -19,9 +19,20 @@ import java.util.Map;
 import java.util.Set;
 
 public class BuildingRenderer {
+
+    private static class BuildingVisual {
+        final StackPane root;
+        final Rectangle hpForeground;
+
+        BuildingVisual(StackPane root, Rectangle hpForeground) {
+            this.root = root;
+            this.hpForeground = hpForeground;
+        }
+    }
+
     private final Pane unitLayer;
     private final int TILE_SIZE;
-    private final Map<Building, Node> activeBuildingVisuals = new HashMap<>();
+    private final Map<Building, BuildingVisual> activeBuildingVisuals = new HashMap<>();
     private final java.util.function.BiFunction<Integer, Integer, Node> gridCellProvider;
 
     public BuildingRenderer(Pane unitLayer, int tileSize,
@@ -36,12 +47,12 @@ public class BuildingRenderer {
         Set<Building> currentBuildings = new HashSet<>(buildings);
 
         // Cleanup visuals for destroyed buildings
-        Iterator<Map.Entry<Building, Node>> buildingIt = activeBuildingVisuals.entrySet().iterator();
+        Iterator<Map.Entry<Building, BuildingVisual>> buildingIt = activeBuildingVisuals.entrySet().iterator();
         while (buildingIt.hasNext()) {
-            Map.Entry<Building, Node> entry = buildingIt.next();
+            Map.Entry<Building, BuildingVisual> entry = buildingIt.next();
             Building b = entry.getKey();
             if (!currentBuildings.contains(b) || !b.isAlive()) {
-                unitLayer.getChildren().remove(entry.getValue());
+                unitLayer.getChildren().remove(entry.getValue().root);
                 buildingIt.remove();
             }
         }
@@ -53,12 +64,12 @@ public class BuildingRenderer {
     }
 
     private void renderBuilding(Building b) {
-        Node buildingNode = activeBuildingVisuals.get(b);
+        BuildingVisual visual = activeBuildingVisuals.get(b);
         int w = Math.max(1, b.getWidth());
 
-        if (buildingNode == null) {
+        if (visual == null) {
             // Create new visual
-            StackPane buildingStack = createBuildingVisual(b);
+            visual = createBuildingVisual(b);
 
             // Position
             int x = b.getPosition().getX();
@@ -67,20 +78,19 @@ public class BuildingRenderer {
 
             if (topLeftCell != null) {
                 javafx.geometry.Bounds bnds = topLeftCell.getBoundsInParent();
-                buildingStack.setLayoutX(bnds.getMinX());
-                buildingStack.setLayoutY(bnds.getMinY());
+                visual.root.setLayoutX(bnds.getMinX());
+                visual.root.setLayoutY(bnds.getMinY());
             }
 
-            unitLayer.getChildren().add(buildingStack);
-            activeBuildingVisuals.put(b, buildingStack);
-            buildingNode = buildingStack;
+            unitLayer.getChildren().add(visual.root);
+            activeBuildingVisuals.put(b, visual);
         } else {
             // Update existing health bar
-            updateBuildingHealthBar(b, buildingNode, w * TILE_SIZE);
+            updateBuildingHealthBar(b, visual, w * TILE_SIZE);
         }
     }
 
-    private StackPane createBuildingVisual(Building b) {
+    private BuildingVisual createBuildingVisual(Building b) {
         int w = Math.max(1, b.getWidth());
         int h = Math.max(1, b.getHeight());
 
@@ -106,9 +116,9 @@ public class BuildingRenderer {
         }
 
         // Add Health Bar
-        buildingStack.getChildren().add(createHealthBar(b, w));
+        Rectangle hpFg = createHealthBar(b, w, buildingStack);
 
-        return buildingStack;
+        return new BuildingVisual(buildingStack, hpFg);
     }
 
     private Rectangle createFallbackRect(Building b, int w, int h) {
@@ -119,7 +129,7 @@ public class BuildingRenderer {
         return fallback;
     }
 
-    private StackPane createHealthBar(Building b, int wPixelsTiles) {
+    private Rectangle createHealthBar(Building b, int wPixelsTiles, StackPane container) {
         double maxHp = b.getMaxHealth();
         double curHp = Math.max(0, b.getCurrentHealth());
         double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
@@ -131,28 +141,26 @@ public class BuildingRenderer {
         bg.setFill(Color.DARKBLUE);
         bg.setStroke(Color.BLACK);
         bg.setStrokeWidth(0.5);
-        bg.setId("buildingHpBg_" + b.hashCode());
 
         Rectangle fg = new Rectangle(hbWidth * pct, hbHeight);
         fg.setFill(b.isPlayerSide() ? Color.ROYALBLUE : Color.CRIMSON);
-        fg.setId("buildingHpFg_" + b.hashCode());
 
         StackPane hbPane = new StackPane(bg, fg);
         hbPane.setAlignment(Pos.CENTER_LEFT);
         StackPane.setAlignment(hbPane, Pos.TOP_CENTER);
         StackPane.setMargin(hbPane, new javafx.geometry.Insets(2, 0, 0, 0));
-        return hbPane;
+
+        container.getChildren().add(hbPane);
+
+        return fg;
     }
 
-    private void updateBuildingHealthBar(Building b, Node buildingNode, double totalWidthPixels) {
+    private void updateBuildingHealthBar(Building b, BuildingVisual visual, double totalWidthPixels) {
         double maxHp = b.getMaxHealth();
         double curHp = Math.max(0, b.getCurrentHealth());
         double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
         double hbWidth = Math.max(40, totalWidthPixels - 6);
 
-        Node fgNode = buildingNode.lookup("#buildingHpFg_" + b.hashCode());
-        if (fgNode instanceof Rectangle) {
-            ((Rectangle) fgNode).setWidth(hbWidth * pct);
-        }
+        visual.hpForeground.setWidth(hbWidth * pct);
     }
 }

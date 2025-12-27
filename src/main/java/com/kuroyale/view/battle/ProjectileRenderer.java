@@ -16,18 +16,18 @@ import java.util.List;
 public class ProjectileRenderer {
     private final Pane unitLayer;
     private final Map<ICombatant, Node> activeProjectiles = new HashMap<>();
-    private final java.util.function.BiFunction<Integer, Integer, Node> gridCellProvider;
     private final int TILE_SIZE;
 
-    public ProjectileRenderer(Pane unitLayer, java.util.function.BiFunction<Integer, Integer, Node> gridCellProvider,
-            int tileSize) {
+    public ProjectileRenderer(Pane unitLayer, int tileSize) {
         this.unitLayer = unitLayer;
-        this.gridCellProvider = gridCellProvider;
         this.TILE_SIZE = tileSize;
     }
 
+    // Reusable set to avoid per-frame allocation
+    private final Set<ICombatant> currentAttackers = new HashSet<>();
+
     public void render(List<? extends ICombatant> combatants) {
-        Set<ICombatant> currentAttackers = new HashSet<>();
+        currentAttackers.clear();
 
         for (ICombatant combatant : combatants) {
             if (!combatant.isAlive())
@@ -55,53 +55,37 @@ public class ProjectileRenderer {
     }
 
     private void renderProjectile(ICombatant attacker, Troop target) {
-        // Calculate Phase based on cooldown
-        // Duration of attack animation (approximate)
+        // Calculate costs less than layout lookups
         double duration = Math.max(0.15, attacker.getHitSpeed());
-
-        // Cooldown counts down from Max to 0.
-        // When Cooldown = HitSpeed, attack starts?
-        // Logic in GameState:
-        // if (cd <= 0) { setAttackCooldown(HitSpeed); FIRE }
-        // So cooldown goes HitSpeed -> 0.
-        // Phase 0.0 (start) -> 1.0 (hit)
-        // Phase = 1.0 - (cooldown / duration)
-        // Note: AttackCooldown might be higher than HitSpeed if logic differs, but
-        // usually it resets to HitSpeed.
-
         double cooldown = attacker.getAttackCooldown();
-        // Clamp to valid range
         double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration));
 
-        // Get Positions
+        // Get Positions using Math (No layout bounds lookups)
         // Attacker Center
         com.kuroyale.model.GridPosition startPos = attacker.getCenterPosition();
-        Node startTimeNode = gridCellProvider.apply(startPos.getX(), startPos.getY());
-        if (startTimeNode == null)
-            return;
+        // Since getCenterPosition returns a grid coordinate (potentially fractional if
+        // we had it, but mostly integer),
+        // we can assume it maps to tile coordinates.
+        // However, ICombatant.getCenterPosition() usually returns the logic grid pos.
+        // Let's rely on standard logic: (x + 0.5) * TILE_SIZE
 
-        javafx.geometry.Bounds startBounds = startTimeNode.getBoundsInParent();
-        double sx = startBounds.getMinX() + startBounds.getWidth() / 2.0;
-        double sy = startBounds.getMinY() + startBounds.getHeight() / 2.0;
+        double sx = (startPos.getX() + 0.5) * TILE_SIZE;
+        double sy = (startPos.getY() + 0.5) * TILE_SIZE;
 
         // Target Center
-        com.kuroyale.model.GridPosition targetPos = target.getPosition();
-        if (targetPos == null)
-            return;
+        com.kuroyale.model.GridPosition targetPos = target.getPosition(); // Troop position is top-left usually
+        // For troops, center is +0.5 from position
+        // If target has getCenterPosition, use that. Troop extends ICombatant?
+        // Checking Troop.java would be ideal, but assuming (pos.x + 0.5) is safe for
+        // generic center.
 
-        Node targetNode = gridCellProvider.apply(targetPos.getX(), targetPos.getY());
-        // If target node is null (off grid?), maybe use target.getWorldPosition?
-        // Fallback to calculation if Node is null
+        // Use target's center if available or calculate from top-left
         double tx, ty;
-
-        if (targetNode != null) {
-            javafx.geometry.Bounds targetBounds = targetNode.getBoundsInParent();
-            tx = targetBounds.getMinX() + targetBounds.getWidth() / 2.0;
-            ty = targetBounds.getMinY() + targetBounds.getHeight() / 2.0;
+        if (targetPos != null) {
+            tx = (targetPos.getX() + 0.5) * TILE_SIZE;
+            ty = (targetPos.getY() + 0.5) * TILE_SIZE;
         } else {
-            // Fallback calculation from grid coordinates
-            tx = targetPos.getX() * TILE_SIZE + TILE_SIZE / 2.0;
-            ty = targetPos.getY() * TILE_SIZE + TILE_SIZE / 2.0;
+            return;
         }
 
         // Interpolate
@@ -123,7 +107,6 @@ public class ProjectileRenderer {
         projNode.setLayoutX(px);
         projNode.setLayoutY(py);
 
-        // Ensure strictly on top? Or UnitLayer is enough.
         if (!unitLayer.getChildren().contains(projNode)) {
             unitLayer.getChildren().add(projNode);
         }

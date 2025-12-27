@@ -8,6 +8,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 
 import javafx.scene.shape.Rectangle;
 
@@ -15,6 +17,7 @@ import javafx.scene.shape.Rectangle;
 public class BattleArenaView extends javafx.scene.layout.BorderPane {
     private final GridPane grid;
     private final Pane unitLayer;
+    private final Canvas highlightLayer;
     private final Pane arenaPane;
     private final GameState gameState;
     private final javafx.scene.control.Label timerLabel;
@@ -67,13 +70,19 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         // placement
         unitLayer.setMouseTransparent(true);
 
-        this.arenaPane = new Pane(grid, unitLayer);
+        // Highlight Layer
+        this.highlightLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        this.highlightLayer.setMouseTransparent(true);
+
+        this.arenaPane = new Pane(grid, highlightLayer, unitLayer);
         // Set preferred size to match grid size
         arenaPane.setPrefSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
 
         // Bind unitLayer position to grid position to ensure perfect alignment
         unitLayer.layoutXProperty().bind(grid.layoutXProperty());
         unitLayer.layoutYProperty().bind(grid.layoutYProperty());
+        highlightLayer.layoutXProperty().bind(grid.layoutXProperty());
+        highlightLayer.layoutYProperty().bind(grid.layoutYProperty());
 
         // Handle clicks directly on the arena pane to get correct local coordinates
         arenaPane.setOnMouseClicked(e -> {
@@ -108,7 +117,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
 
         // Initialize renderers
         this.troopRenderer = new TroopRenderer(unitLayer, this::getGridCell);
-        this.projectileRenderer = new ProjectileRenderer(unitLayer, this::getGridCell, TILE_SIZE);
+        this.projectileRenderer = new ProjectileRenderer(unitLayer, TILE_SIZE);
         this.towerRenderer = new TowerRenderer(grid, TILE_SIZE, this::indexCellNode); // requires CellIndexer or
                                                                                       // compatible lambda
         this.buildingRenderer = new BuildingRenderer(unitLayer, TILE_SIZE, this::getGridCell);
@@ -182,8 +191,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     private TowerRenderer towerRenderer;
     private BuildingRenderer buildingRenderer;
 
-    // === PERFORMANCE OPTIMIZATION FIELDS ===
-
     // Last-value tracking for observer pattern (only update UI when changed)
     private int lastDisplayedSeconds = -1;
     private int lastPlayerScore = -1;
@@ -256,11 +263,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         int tileX = (int) Math.floor(gridX / TILE_SIZE);
         int tileY = (int) Math.floor(gridY / TILE_SIZE);
 
-        // Debug output (disabled)
-        // System.out.printf("Mouse(%.1f,%.1f) GridOffset(%.1f,%.1f) GridPos(%.1f,%.1f)
-        // Tile(%d,%d)%n",
-        // mouseX, mouseY, gridOffsetX, gridOffsetY, gridX, gridY, tileX, tileY);
-
         // Ensure coordinates are within valid bounds
         if (tileX >= 0 && tileX < Arena.WIDTH && tileY >= 0 && tileY < Arena.HEIGHT) {
             return new int[] { tileX, tileY };
@@ -282,55 +284,29 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     }
 
     public void highlightValidCells(boolean show, boolean isSpell) {
-        Arena arena = gameState.getArena();
-        for (javafx.scene.Node node : grid.getChildren()) {
-            Rectangle rect = null;
+        GraphicsContext gc = highlightLayer.getGraphicsContext2D();
+        gc.clearRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
 
-            if (node instanceof Rectangle) {
-                rect = (Rectangle) node;
-            } else if (node instanceof StackPane) {
-                // Towers are StackPanes - skip them
-                continue;
-            }
+        if (!show)
+            return;
 
-            if (rect != null) {
-                Integer x = GridPane.getColumnIndex(node);
-                Integer y = GridPane.getRowIndex(node);
+        // Use semi-transparent yellow/gold for simple highlight
+        gc.setFill(Color.rgb(255, 215, 0, 0.3));
 
-                // Handle null indices
-                if (x == null || y == null)
-                    continue;
-
-                if (show) {
-                    boolean shouldHighlight = false;
-
-                    if (isSpell) {
-                        // Spells can be placed anywhere
-                        shouldHighlight = true;
-                    } else {
-                        // Standard units: Player side (bottom half) AND walkable (Grass)
-                        boolean isPlayerSide = y >= Arena.HEIGHT / 2;
-                        GridCell cell = arena.getCell(x, y);
-                        boolean isWalkable = cell.getTileType() == TileType.GRASS;
-
-                        if (isPlayerSide && isWalkable) {
-                            shouldHighlight = true;
-                        }
+        if (isSpell) {
+            // Spells can be placed anywhere - highlight full arena
+            gc.fillRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
+        } else {
+            // Standard units: Player side (bottom half) AND walkable (Grass)
+            Arena arena = gameState.getArena();
+            for (int x = 0; x < Arena.WIDTH; x++) {
+                // Iterating only bottom half (Player Side)
+                for (int y = Arena.HEIGHT / 2; y < Arena.HEIGHT; y++) {
+                    GridCell cell = arena.getCell(x, y);
+                    // Check logic matches original: GRASS check
+                    if (cell.getTileType() == TileType.GRASS) {
+                        gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     }
-
-                    if (shouldHighlight) {
-                        // Use glow effect for visibility on colored tiles
-                        javafx.scene.effect.DropShadow glow = new javafx.scene.effect.DropShadow();
-                        glow.setColor(Color.YELLOW);
-                        glow.setRadius(8);
-                        glow.setSpread(0.6);
-                        rect.setEffect(glow);
-                    } else {
-                        rect.setEffect(null);
-                    }
-                } else {
-                    // Reset - remove effects
-                    rect.setEffect(null);
                 }
             }
         }
@@ -439,12 +415,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
             com.kuroyale.model.GridPosition c = se.center;
             if (c == null)
                 continue;
-            javafx.scene.Node centerCell = getGridCell(c.getX(), c.getY());
-            if (centerCell == null)
-                continue;
-            javafx.geometry.Bounds cb = centerCell.getBoundsInParent();
-            double cx = cb.getMinX() + cb.getWidth() / 2.0;
-            double cy = cb.getMinY() + cb.getHeight() / 2.0;
+            double cx = c.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
+            double cy = c.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
             double rPixels = se.radiusTiles * TILE_SIZE;
             javafx.scene.shape.Circle aoe = new javafx.scene.shape.Circle(cx, cy, rPixels);
             aoe.setFill(se.isPlayerSide ? javafx.scene.paint.Color.color(0.2, 0.6, 1.0, 0.18)

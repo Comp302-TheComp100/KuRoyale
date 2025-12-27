@@ -106,22 +106,31 @@ public class HandView extends VBox {
             boolean affordable = card != null && elixirManager.canAfford(card.getCost());
             boolean selected = (i == selectedIndex);
 
-            String rarityBorder = getRarityBorderStyle(card);
+            // Check if state changed before applying heavy styles
+            // We store the last state in the node's userData to avoid a separate map
+            String currentStateSig = affordable + ":" + selected;
+            Object lastStateObj = view.getUserData();
 
-            if (selected) {
-                view.setStyle(rarityBorder
-                        + "-fx-effect: dropshadow(three-pass-box, gold, 10, 0, 0, 0); -fx-translate-y: -10;");
-                view.setEffect(null);
-            } else if (affordable) {
-                view.setStyle(rarityBorder);
-                view.setEffect(null);
-            } else {
-                // Dim unavailable cards
-                ColorAdjust dim = new ColorAdjust();
-                dim.setBrightness(-0.5);
-                dim.setSaturation(-0.5);
-                view.setEffect(dim);
-                view.setStyle(rarityBorder);
+            if (!currentStateSig.equals(lastStateObj)) {
+                view.setUserData(currentStateSig);
+
+                String rarityBorder = getRarityBorderStyle(card);
+
+                if (selected) {
+                    view.setStyle(rarityBorder
+                            + "-fx-effect: dropshadow(three-pass-box, gold, 10, 0, 0, 0); -fx-translate-y: -10;");
+                    view.setEffect(null);
+                } else if (affordable) {
+                    view.setStyle(rarityBorder);
+                    view.setEffect(null);
+                } else {
+                    // Dim unavailable cards
+                    ColorAdjust dim = new ColorAdjust();
+                    dim.setBrightness(-0.5);
+                    dim.setSaturation(-0.5);
+                    view.setEffect(dim);
+                    view.setStyle(rarityBorder);
+                }
             }
         }
     }
