@@ -1,7 +1,7 @@
 package com.kuroyale.view;
 
-import com.kuroyale.model.Card;
-import com.kuroyale.model.CardType;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.enums.CardType;
 
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;

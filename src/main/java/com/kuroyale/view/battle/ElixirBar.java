@@ -1,6 +1,6 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.ElixirManager;
+import com.kuroyale.model.logic.ElixirManager;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;

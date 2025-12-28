@@ -1,27 +1,29 @@
 package com.kuroyale.controller;
 
 import java.io.IOException;
-import com.kuroyale.model.SettingsModel;
+import com.kuroyale.model.logic.SettingsModel;
 import com.kuroyale.util.SoundEffectUtil;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
 
 public class SettingsController {
 
-    @FXML private StackPane root;
-    @FXML private Slider musicSlider;
-    @FXML private Slider sfxSlider;
-    @FXML private CheckBox buttonSoundsCheckBox;
-    @FXML private Button backButton;
+    @FXML
+    private StackPane root;
+    @FXML
+    private Slider musicSlider;
+    @FXML
+    private Slider sfxSlider;
+    @FXML
+    private CheckBox buttonSoundsCheckBox;
+    @FXML
+    private Button backButton;
 
     private final SettingsModel model = new SettingsModel();
+    private final com.kuroyale.util.SceneLoader sceneLoader = new com.kuroyale.util.SceneLoader();
 
     @FXML
     private void initialize() {
@@ -63,13 +65,7 @@ public class SettingsController {
     private void handleBack() {
         SoundEffectUtil.playButtonClick();
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
-            Parent root = loader.load();
-
-            Stage stage = (Stage) backButton.getScene().getWindow();
-            Scene scene = new Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
+            sceneLoader.load(backButton, "/fxml/main-menu.fxml", "KU Royale", null);
         } catch (IOException e) {
             e.printStackTrace();
         }

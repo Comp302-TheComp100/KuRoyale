@@ -3,8 +3,8 @@ package com.kuroyale.controller;
 import java.io.IOException;
 import java.util.List;
 
-import com.kuroyale.model.MenuModel; // Import the new Model
-import com.kuroyale.model.User;
+import com.kuroyale.model.logic.MenuModel; // Import the new Model
+import com.kuroyale.model.entities.User;
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.util.AudioManager;
 import com.kuroyale.util.SceneLoader; // Import the new utility

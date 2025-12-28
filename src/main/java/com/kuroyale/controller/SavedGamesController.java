@@ -1,7 +1,7 @@
 package com.kuroyale.controller;
 
-import com.kuroyale.model.SavedGameState;
-import com.kuroyale.model.SavedGamesModel; // Import the new Model
+import com.kuroyale.model.dto.SavedGameState;
+import com.kuroyale.model.logic.SavedGamesModel; // Import the new Model
 import com.kuroyale.util.SceneLoader; // Assuming SceneLoader is available
 import com.kuroyale.util.SoundEffectUtil;
 import javafx.fxml.FXML;

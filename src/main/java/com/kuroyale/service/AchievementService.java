@@ -11,8 +11,8 @@ import java.util.Map;
 
 import org.json.JSONObject;
 
-import com.kuroyale.model.Achievement;
-import com.kuroyale.model.AchievementType;
+import com.kuroyale.model.entities.Achievement;
+import com.kuroyale.model.enums.AchievementType;
 
 /**
  * Service for managing permanent achievements.

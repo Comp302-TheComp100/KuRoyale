@@ -1,10 +1,10 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.GameState;
-import com.kuroyale.model.Troop;
-import com.kuroyale.model.GridPosition;
-import com.kuroyale.model.UnitState;
-import com.kuroyale.model.CombatStats;
+import com.kuroyale.model.logic.GameState;
+import com.kuroyale.model.entities.Troop;
+import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.enums.UnitState;
+import com.kuroyale.model.entities.CombatStats;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -107,7 +107,7 @@ public class TroopRenderer {
     }
 
     private void renderTroop(Troop troop, GameState gameState) {
-        com.kuroyale.model.Vector2 worldPos = troop.getWorldPosition();
+        com.kuroyale.model.entities.Vector2 worldPos = troop.getWorldPosition();
         if (worldPos == null)
             return;
 
@@ -183,7 +183,7 @@ public class TroopRenderer {
                 troop.getCombatStats() != null &&
                 troop.getCombatStats().getAttackType() == CombatStats.AttackType.RANGED) {
 
-            com.kuroyale.model.ICombatant target = troop.getCurrentTarget();
+            com.kuroyale.model.entities.ICombatant target = troop.getCurrentTarget();
             if (target != null && target.isAlive()) {
                 GridPosition targetPos = target.getCenterPosition();
                 Node targetNode = targetPos != null ? gridCellProvider.apply(targetPos.getX(), targetPos.getY()) : null;

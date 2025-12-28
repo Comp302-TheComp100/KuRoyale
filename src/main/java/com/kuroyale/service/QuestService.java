@@ -17,8 +17,8 @@ import java.util.UUID;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.kuroyale.model.Quest;
-import com.kuroyale.model.QuestType;
+import com.kuroyale.model.entities.Quest;
+import com.kuroyale.model.enums.QuestType;
 
 /**
  * Service for managing daily quests.

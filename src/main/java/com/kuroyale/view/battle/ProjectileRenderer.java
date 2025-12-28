@@ -1,7 +1,7 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.ICombatant;
-import com.kuroyale.model.Troop;
+import com.kuroyale.model.entities.ICombatant;
+import com.kuroyale.model.entities.Troop;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -62,7 +62,7 @@ public class ProjectileRenderer {
 
         // Get Positions using Math (No layout bounds lookups)
         // Attacker Center
-        com.kuroyale.model.GridPosition startPos = attacker.getCenterPosition();
+        com.kuroyale.model.entities.GridPosition startPos = attacker.getCenterPosition();
         // Since getCenterPosition returns a grid coordinate (potentially fractional if
         // we had it, but mostly integer),
         // we can assume it maps to tile coordinates.
@@ -73,7 +73,7 @@ public class ProjectileRenderer {
         double sy = (startPos.getY() + 0.5) * TILE_SIZE;
 
         // Target Center
-        com.kuroyale.model.GridPosition targetPos = target.getPosition(); // Troop position is top-left usually
+        com.kuroyale.model.entities.GridPosition targetPos = target.getPosition(); // Troop position is top-left usually
         // For troops, center is +0.5 from position
         // If target has getCenterPosition, use that. Troop extends ICombatant?
         // Checking Troop.java would be ideal, but assuming (pos.x + 0.5) is safe for

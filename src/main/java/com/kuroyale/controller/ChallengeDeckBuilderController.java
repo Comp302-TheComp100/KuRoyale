@@ -10,10 +10,10 @@ import java.util.Map;
 import java.util.Set;
 
 import com.kuroyale.view.*;
-import com.kuroyale.model.Card;
-import com.kuroyale.model.Challenge;
-import com.kuroyale.model.Deck;
-import com.kuroyale.model.DeckBuilderModel;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Challenge;
+import com.kuroyale.model.entities.Deck;
+import com.kuroyale.model.logic.DeckBuilderModel;
 import com.kuroyale.util.ButtonFactory;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.SoundEffectUtil;
