@@ -8,33 +8,10 @@ import com.kuroyale.model.entities.ICombatant;
 public class CombatService {
 
     // Core single-target damage methods
-    public void applyDamage(Troop attacker, Troop target) {
+    public void applyDamage(ICombatant attacker, ICombatant target) {
         if (attacker == null || target == null)
             return;
-        int dmg = attacker.getCombatStats().getDamage();
-        target.takeDamage(dmg);
-    }
-
-    public void applyDamage(ICombatant attacker, Troop target) {
-        if (attacker == null || target == null)
-            return;
-        // Use double damage from interface but Troop expects different handling?
-        // Troop.takeDamage takes double? Check Troop.java.
-        // Based on previous tool output, Troop.takeDamage(int) was called.
-        // Let's assume we cast to int for now if Troop takes int, or change Troop to
-        // take double.
-        // The error "Type mismatch: cannot convert from double to int" suggests
-        // attacker.getDamage() is double.
-        // We will cast to int for legacy support or update Troop later.
-        // Casting to int is safer for now.
-        int dmg = (int) Math.round(attacker.getDamage());
-        target.takeDamage(dmg);
-    }
-
-    public void applyDamage(Troop attacker, ICombatant target) {
-        if (attacker == null || target == null)
-            return;
-        int dmg = attacker.getCombatStats().getDamage();
+        double dmg = attacker.getDamage();
         target.takeDamage(dmg);
     }
 
@@ -140,7 +117,8 @@ public class CombatService {
         // effectively mutating state. Is this side effect desired in Service?
         // Yes, CombatService mutates state (HP).)
         gameState.getActiveSpellEffects().add(
-                new com.kuroyale.model.logic.GameState.SpellEffect(center, (int) Math.round(radiusTiles), isPlayerSource,
+                new com.kuroyale.model.logic.GameState.SpellEffect(center, (int) Math.round(radiusTiles),
+                        isPlayerSource,
                         0.3));
     }
 }

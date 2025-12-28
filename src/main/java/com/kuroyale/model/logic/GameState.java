@@ -501,21 +501,7 @@ public class GameState {
      * Apply circular area damage originating from a troop attack.
      * Center is derived from the primary target to keep targeting logic unchanged.
      */
-    public void applyAreaDamageFromTroop(Troop attacker, Troop primaryTarget) {
-        if (attacker == null || primaryTarget == null)
-            return;
-        GridPosition center = primaryTarget.getPosition();
-        applyAreaDamageFromTroopInternal(attacker, center);
-    }
-
-    public void applyAreaDamageFromTroop(Troop attacker, Building primaryTarget) {
-        if (attacker == null || primaryTarget == null)
-            return;
-        GridPosition center = primaryTarget.getCenterPosition();
-        applyAreaDamageFromTroopInternal(attacker, center);
-    }
-
-    public void applyAreaDamageFromTroop(Troop attacker, Tower primaryTarget) {
+    public void applyAreaDamageFromTroop(Troop attacker, ICombatant primaryTarget) {
         if (attacker == null || primaryTarget == null)
             return;
         GridPosition center = primaryTarget.getCenterPosition();

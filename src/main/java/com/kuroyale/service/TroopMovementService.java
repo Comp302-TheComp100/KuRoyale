@@ -53,23 +53,19 @@ public class TroopMovementService {
                 targetTower = findNearestEnemyTowerInRange(state, troop);
                 canAttack = targetTower != null;
             }
-            if (canAttack && targetTroop != null) {
+            ICombatant primaryTarget = targetTroop != null ? targetTroop
+                    : (targetBuilding != null ? targetBuilding : targetTower);
+
+            if (primaryTarget != null) {
                 troop.setUnitState(UnitState.ATTACKING);
-                troop.setCurrentTarget(targetTroop);
-                handleAttack(deltaTime, state, troop, targetTroop);
-                if (!targetTroop.isAlive()) {
+                troop.setCurrentTarget(primaryTarget);
+                handleAttack(deltaTime, state, troop, primaryTarget);
+
+                if (targetTroop != null && !targetTroop.isAlive()) {
                     targetTroop.setUnitState(UnitState.DESTROYED);
                     toRemove.add(targetTroop);
                     troop.setCurrentTarget(null);
                 }
-            } else if (canAttack && targetBuilding != null) {
-                troop.setUnitState(UnitState.ATTACKING);
-                troop.setCurrentTarget(targetBuilding);
-                handleAttack(deltaTime, state, troop, targetBuilding);
-            } else if (canAttack && targetTower != null) {
-                troop.setUnitState(UnitState.ATTACKING);
-                troop.setCurrentTarget(targetTower);
-                handleAttack(deltaTime, state, troop, targetTower);
             } else {
                 troop.setUnitState(UnitState.MOVING);
                 troop.setCurrentTarget(null);
@@ -217,35 +213,7 @@ public class TroopMovementService {
         return best;
     }
 
-    private void handleAttack(double deltaTime, GameState state, Troop attacker, Troop target) {
-        double cd = attacker.getAttackCooldown() - deltaTime;
-        if (cd <= 0) {
-            if (attacker.getBaseCard() != null && attacker.getBaseCard().isAreaEffect()) {
-                state.applyAreaDamageFromTroop(attacker, target);
-            } else {
-                combatService.applyDamage(attacker, target);
-            }
-            attacker.setAttackCooldown(attacker.getCombatStats().getHitSpeedSeconds());
-        } else {
-            attacker.setAttackCooldown(cd);
-        }
-    }
-
-    private void handleAttack(double deltaTime, GameState state, Troop attacker, Building target) {
-        double cd = attacker.getAttackCooldown() - deltaTime;
-        if (cd <= 0) {
-            if (attacker.getBaseCard() != null && attacker.getBaseCard().isAreaEffect()) {
-                state.applyAreaDamageFromTroop(attacker, target);
-            } else {
-                combatService.applyDamage(attacker, target);
-            }
-            attacker.setAttackCooldown(attacker.getCombatStats().getHitSpeedSeconds());
-        } else {
-            attacker.setAttackCooldown(cd);
-        }
-    }
-
-    private void handleAttack(double deltaTime, GameState state, Troop attacker, Tower target) {
+    private void handleAttack(double deltaTime, GameState state, Troop attacker, ICombatant target) {
         double cd = attacker.getAttackCooldown() - deltaTime;
         if (cd <= 0) {
             if (attacker.getBaseCard() != null && attacker.getBaseCard().isAreaEffect()) {
