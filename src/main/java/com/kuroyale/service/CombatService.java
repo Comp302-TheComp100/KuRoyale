@@ -1,40 +1,17 @@
 package com.kuroyale.service;
 
-import com.kuroyale.model.Building;
-import com.kuroyale.model.Troop;
-import com.kuroyale.model.Tower;
-import com.kuroyale.model.ICombatant;
+import com.kuroyale.model.entities.Building;
+import com.kuroyale.model.entities.Troop;
+import com.kuroyale.model.entities.Tower;
+import com.kuroyale.model.entities.ICombatant;
 
 public class CombatService {
 
     // Core single-target damage methods
-    public void applyDamage(Troop attacker, Troop target) {
+    public void applyDamage(ICombatant attacker, ICombatant target) {
         if (attacker == null || target == null)
             return;
-        int dmg = attacker.getCombatStats().getDamage();
-        target.takeDamage(dmg);
-    }
-
-    public void applyDamage(ICombatant attacker, Troop target) {
-        if (attacker == null || target == null)
-            return;
-        // Use double damage from interface but Troop expects different handling?
-        // Troop.takeDamage takes double? Check Troop.java.
-        // Based on previous tool output, Troop.takeDamage(int) was called.
-        // Let's assume we cast to int for now if Troop takes int, or change Troop to
-        // take double.
-        // The error "Type mismatch: cannot convert from double to int" suggests
-        // attacker.getDamage() is double.
-        // We will cast to int for legacy support or update Troop later.
-        // Casting to int is safer for now.
-        int dmg = (int) Math.round(attacker.getDamage());
-        target.takeDamage(dmg);
-    }
-
-    public void applyDamage(Troop attacker, ICombatant target) {
-        if (attacker == null || target == null)
-            return;
-        int dmg = attacker.getCombatStats().getDamage();
+        double dmg = attacker.getDamage();
         target.takeDamage(dmg);
     }
 
@@ -50,11 +27,11 @@ public class CombatService {
      * @param isPlayerSource True if the damage comes from the player (hurts
      *                       enemies), False otherwise.
      */
-    public void applyAreaDamage(com.kuroyale.model.GameState gameState,
-            com.kuroyale.model.GridPosition center,
+    public void applyAreaDamage(com.kuroyale.model.logic.GameState gameState,
+            com.kuroyale.model.entities.GridPosition center,
             double radiusTiles,
             double damage,
-            com.kuroyale.model.TargetType targetType,
+            com.kuroyale.model.enums.TargetType targetType,
             boolean isPlayerSource) {
 
         if (gameState == null || center == null || radiusTiles <= 0 || damage <= 0)
@@ -70,11 +47,11 @@ public class CombatService {
                 continue;
 
             // Validate Target Type
-            if (targetType == com.kuroyale.model.TargetType.GROUND && t.isAirUnit())
+            if (targetType == com.kuroyale.model.enums.TargetType.GROUND && t.isAirUnit())
                 continue;
-            if (targetType == com.kuroyale.model.TargetType.AIR && !t.isAirUnit())
+            if (targetType == com.kuroyale.model.enums.TargetType.AIR && !t.isAirUnit())
                 continue;
-            if (targetType == com.kuroyale.model.TargetType.NONE)
+            if (targetType == com.kuroyale.model.enums.TargetType.NONE)
                 continue;
 
             // Distance Check
@@ -87,8 +64,8 @@ public class CombatService {
         // Damage enemy buildings and towers (Ground only for now usually, or allow
         // TargetType check)
         // Buildings/Towers are typically GROUND targets.
-        boolean canHitGround = (targetType != com.kuroyale.model.TargetType.AIR
-                && targetType != com.kuroyale.model.TargetType.NONE);
+        boolean canHitGround = (targetType != com.kuroyale.model.enums.TargetType.AIR
+                && targetType != com.kuroyale.model.enums.TargetType.NONE);
 
         if (canHitGround) {
             // Check Buildings
@@ -100,7 +77,7 @@ public class CombatService {
                     continue;
 
                 // Use center position for fair range calculation
-                com.kuroyale.model.GridPosition bCenter = b.getCenterPosition();
+                com.kuroyale.model.entities.GridPosition bCenter = b.getCenterPosition();
                 if (bCenter == null)
                     continue;
 
@@ -125,7 +102,7 @@ public class CombatService {
                 if (t.isPlayerSide() == isPlayerSource)
                     continue; // Friendly fire check
 
-                com.kuroyale.model.GridPosition tCenter = t.getCenterPosition();
+                com.kuroyale.model.entities.GridPosition tCenter = t.getCenterPosition();
                 if (tCenter == null)
                     continue;
 
@@ -140,7 +117,8 @@ public class CombatService {
         // effectively mutating state. Is this side effect desired in Service?
         // Yes, CombatService mutates state (HP).)
         gameState.getActiveSpellEffects().add(
-                new com.kuroyale.model.GameState.SpellEffect(center, (int) Math.round(radiusTiles), isPlayerSource,
+                new com.kuroyale.model.logic.GameState.SpellEffect(center, (int) Math.round(radiusTiles),
+                        isPlayerSource,
                         0.3));
     }
 }

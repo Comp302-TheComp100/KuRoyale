@@ -2,7 +2,7 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
-import com.kuroyale.model.Login;
+import com.kuroyale.model.logic.Login;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.view.LoginView;
@@ -63,7 +63,7 @@ public class LoginController {
 
         try {
             // Delegate registration logic to the Model
-            com.kuroyale.model.User user = model.registerUser(username, password);
+            com.kuroyale.model.entities.User user = model.registerUser(username, password);
 
             if (user != null) {
                 // Success
@@ -102,7 +102,7 @@ public class LoginController {
 
         try {
             // Delegate authentication logic to the Model
-            com.kuroyale.model.User user = model.authenticateUser(username, password);
+            com.kuroyale.model.entities.User user = model.authenticateUser(username, password);
 
             if (user != null) {
                 // Success

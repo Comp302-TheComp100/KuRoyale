@@ -1,9 +1,9 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.Arena;
-import com.kuroyale.model.GameState;
-import com.kuroyale.model.GridCell;
-import com.kuroyale.model.TileType;
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.logic.GameState;
+import com.kuroyale.model.entities.GridCell;
+import com.kuroyale.model.enums.TileType;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -183,7 +183,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         towerRenderer.renderTowers(gameState.getArena());
     }
 
-    private final java.util.Map<com.kuroyale.model.GameState.SpellEffect, javafx.scene.Node> activeSpellVisuals = new java.util.HashMap<>();
+    private final java.util.Map<com.kuroyale.model.logic.GameState.SpellEffect, javafx.scene.Node> activeSpellVisuals = new java.util.HashMap<>();
 
     // Extracted renderers
     private TroopRenderer troopRenderer;
@@ -236,7 +236,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         buildingRenderer.render(gameState);
 
         // Render projectiles for all combatants
-        java.util.List<com.kuroyale.model.ICombatant> combatants = new java.util.ArrayList<>();
+        java.util.List<com.kuroyale.model.entities.ICombatant> combatants = new java.util.ArrayList<>();
         combatants.addAll(gameState.getArena().getAllTowers());
         combatants.addAll(gameState.getActiveBuildings());
         projectileRenderer.render(combatants);
@@ -386,17 +386,17 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     }
 
     private void renderSpellEffects() {
-        java.util.List<com.kuroyale.model.GameState.SpellEffect> effects = gameState.getActiveSpellEffects();
-        java.util.Set<com.kuroyale.model.GameState.SpellEffect> currentEffects = new java.util.HashSet<>();
+        java.util.List<com.kuroyale.model.logic.GameState.SpellEffect> effects = gameState.getActiveSpellEffects();
+        java.util.Set<com.kuroyale.model.logic.GameState.SpellEffect> currentEffects = new java.util.HashSet<>();
         if (effects != null) {
             currentEffects.addAll(effects);
         }
 
         // Cleanup expired spell visuals
-        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.GameState.SpellEffect, javafx.scene.Node>> spellIt = activeSpellVisuals
+        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.logic.GameState.SpellEffect, javafx.scene.Node>> spellIt = activeSpellVisuals
                 .entrySet().iterator();
         while (spellIt.hasNext()) {
-            java.util.Map.Entry<com.kuroyale.model.GameState.SpellEffect, javafx.scene.Node> entry = spellIt.next();
+            java.util.Map.Entry<com.kuroyale.model.logic.GameState.SpellEffect, javafx.scene.Node> entry = spellIt.next();
             if (!currentEffects.contains(entry.getKey())) {
                 // Spell effect expired, remove visual
                 unitLayer.getChildren().remove(entry.getValue());
@@ -407,12 +407,12 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         // Create visuals for new spell effects
         if (effects == null || effects.isEmpty())
             return;
-        for (com.kuroyale.model.GameState.SpellEffect se : effects) {
+        for (com.kuroyale.model.logic.GameState.SpellEffect se : effects) {
             // Skip if we already have a visual for this effect
             if (activeSpellVisuals.containsKey(se))
                 continue;
 
-            com.kuroyale.model.GridPosition c = se.center;
+            com.kuroyale.model.entities.GridPosition c = se.center;
             if (c == null)
                 continue;
             double cx = c.getX() * TILE_SIZE + (TILE_SIZE / 2.0);

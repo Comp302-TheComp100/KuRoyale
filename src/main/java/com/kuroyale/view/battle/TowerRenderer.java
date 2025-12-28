@@ -1,9 +1,9 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.Arena;
-import com.kuroyale.model.ArenaLayout;
-import com.kuroyale.model.GridPosition;
-import com.kuroyale.model.Tower;
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.entities.Tower;
 import javafx.scene.Node;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;

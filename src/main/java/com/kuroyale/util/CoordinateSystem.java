@@ -1,7 +1,7 @@
 package com.kuroyale.util;
 
-import com.kuroyale.model.Arena;
-import com.kuroyale.model.GridPosition;
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.entities.GridPosition;
 
 /*Utility class for the Arena Coordinate System.
  * Provides methods for coordinate validation, conversion, and deployment logic.

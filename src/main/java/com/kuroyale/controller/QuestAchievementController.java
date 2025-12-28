@@ -3,8 +3,8 @@ package com.kuroyale.controller;
 import java.io.IOException;
 import java.util.List;
 
-import com.kuroyale.model.Achievement;
-import com.kuroyale.model.Quest;
+import com.kuroyale.model.entities.Achievement;
+import com.kuroyale.model.entities.Quest;
 import com.kuroyale.service.AchievementService;
 import com.kuroyale.service.QuestService;
 import com.kuroyale.util.SceneLoader;
@@ -84,73 +84,10 @@ public class QuestAchievementController {
         }
     }
 
-    /**
-     * Adds a quest card to the display.
-     */
     private void addQuestCard(String description, String progress, int reward, boolean completed, boolean claimed,
             String questId) {
-        VBox card = new VBox(10);
-        card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        card.setMaxWidth(600);
-        card.setStyle(
-                "-fx-background-color: " + (completed ? "rgba(16, 185, 129, 0.3)" : "rgba(0, 0, 0, 0.4)") + ";" +
-                        "-fx-background-radius: 15;" +
-                        "-fx-padding: 20;" +
-                        "-fx-border-color: " + (completed ? "#10b981" : "#fbbf24") + ";" +
-                        "-fx-border-radius: 15;" +
-                        "-fx-border-width: 2;");
-
-        // Quest description
-        Label descLabel = new Label(description);
-        descLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;");
-
-        // Progress section
-        javafx.scene.layout.HBox progressBox = new javafx.scene.layout.HBox(15);
-        progressBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-
-        javafx.scene.control.ProgressBar progressBar = new javafx.scene.control.ProgressBar();
-        progressBar.setPrefWidth(300);
-        progressBar.setPrefHeight(20);
-
-        // Parse progress
-        String[] parts = progress.split("/");
-        double progressValue = Double.parseDouble(parts[0]) / Double.parseDouble(parts[1]);
-        progressBar.setProgress(progressValue);
-        progressBar.setStyle("-fx-accent: " + (completed ? "#10b981" : "#fbbf24") + ";");
-
-        Label progressLabel = new Label(progress);
-        progressLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(255,255,255,0.8);");
-
-        progressBox.getChildren().addAll(progressBar, progressLabel);
-
-        // Reward section
-        javafx.scene.layout.HBox rewardBox = new javafx.scene.layout.HBox(10);
-        rewardBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-
-        Label rewardLabel = new Label("🪙 " + reward + " Gold");
-        rewardLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #fbbf24; -fx-font-weight: bold;");
-
-        if (completed && !claimed) {
-            Button claimButton = new Button("CLAIM");
-            claimButton.setStyle(
-                    "-fx-background-color: linear-gradient(to bottom, #10b981, #059669);" +
-                            "-fx-text-fill: white;" +
-                            "-fx-font-weight: bold;" +
-                            "-fx-padding: 8 20;" +
-                            "-fx-background-radius: 8;" +
-                            "-fx-cursor: hand;");
-            claimButton.setOnAction(e -> handleClaimQuest(questId));
-            addButtonHoverEffects(claimButton);
-            rewardBox.getChildren().addAll(rewardLabel, claimButton);
-        } else if (claimed) {
-            Label claimedLabel = new Label("CLAIMED");
-            claimedLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #10b981; -fx-font-weight: bold;");
-            rewardBox.getChildren().addAll(rewardLabel, claimedLabel);
-        } else {
-            rewardBox.getChildren().add(rewardLabel);
-        }
-
-        card.getChildren().addAll(descLabel, progressBox, rewardBox);
+        com.kuroyale.view.QuestCardView card = new com.kuroyale.view.QuestCardView(
+                description, progress, reward, completed, claimed, () -> handleClaimQuest(questId));
         questCardsContainer.getChildren().add(card);
     }
 
@@ -161,7 +98,7 @@ public class QuestAchievementController {
         SoundEffectUtil.playButtonClick();
         int reward = questService.claimReward(questId);
         if (reward > 0) {
-            com.kuroyale.model.User currentUser = authService.getCurrentUser();
+            com.kuroyale.model.entities.User currentUser = authService.getCurrentUser();
             if (currentUser != null) {
                 currentUser.setGold(currentUser.getGold() + reward);
                 try {
@@ -197,92 +134,21 @@ public class QuestAchievementController {
         }
     }
 
-    /**
-     * Adds an achievement card to the display.
-     */
     private void addAchievementCard(String name, String description, int progress, int target, int reward,
-            boolean unlocked, boolean claimed, com.kuroyale.model.AchievementType type) {
-        javafx.scene.layout.HBox card = new javafx.scene.layout.HBox(20);
-        card.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        card.setMaxWidth(700);
-
-        String bgColor = claimed ? "rgba(16, 185, 129, 0.3)"
-                : unlocked ? "rgba(251, 191, 36, 0.3)" : "rgba(0, 0, 0, 0.3)";
-        String borderColor = claimed ? "#10b981" : unlocked ? "#fbbf24" : "#64748b";
-
-        card.setStyle(
-                "-fx-background-color: " + bgColor + ";" +
-                        "-fx-background-radius: 15;" +
-                        "-fx-padding: 15;" +
-                        "-fx-border-color: " + borderColor + ";" +
-                        "-fx-border-radius: 15;" +
-                        "-fx-border-width: 2;");
-
-        // Icon/Status
-        Label iconLabel = new Label(claimed ? "✅" : unlocked ? "🏆" : "🔒");
-        iconLabel.setStyle("-fx-font-size: 32px;");
-
-        // Details
-        VBox details = new VBox(5);
-        details.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        javafx.scene.layout.HBox.setHgrow(details, javafx.scene.layout.Priority.ALWAYS);
-
-        Label nameLabel = new Label(name);
-        nameLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;");
-
-        Label descLabel = new Label(description);
-        descLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(255,255,255,0.7);");
-
-        if (!claimed && unlocked) {
-            Label progressLabel = new Label(progress + "/" + target);
-            progressLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #fbbf24;");
-            details.getChildren().addAll(nameLabel, descLabel, progressLabel);
-        } else {
-            details.getChildren().addAll(nameLabel, descLabel);
-        }
-
-        // Reward
-        VBox rewardBox = new VBox(5);
-        rewardBox.setAlignment(javafx.geometry.Pos.CENTER);
-
-        if (reward > 0) {
-            Label rewardLabel = new Label("🪙 " + reward);
-            rewardLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #fbbf24; -fx-font-weight: bold;");
-            rewardBox.getChildren().add(rewardLabel);
-
-            if (unlocked && !claimed) {
-                Button claimBtn = new Button("CLAIM");
-                claimBtn.setStyle(
-                        "-fx-background-color: #10b981;" +
-                                "-fx-text-fill: white;" +
-                                "-fx-font-size: 12px;" +
-                                "-fx-padding: 5 15;" +
-                                "-fx-background-radius: 5;" +
-                                "-fx-cursor: hand;");
-                claimBtn.setOnAction(e -> handleClaimAchievement(type));
-                addButtonHoverEffects(claimBtn);
-                rewardBox.getChildren().add(claimBtn);
-            }
-        }
-
-        if (claimed) {
-            Label claimedLabel = new Label("CLAIMED");
-            claimedLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #10b981; -fx-font-weight: bold;");
-            rewardBox.getChildren().add(claimedLabel);
-        }
-
-        card.getChildren().addAll(iconLabel, details, rewardBox);
+            boolean unlocked, boolean claimed, com.kuroyale.model.enums.AchievementType type) {
+        com.kuroyale.view.AchievementCardView card = new com.kuroyale.view.AchievementCardView(
+                name, description, progress, target, reward, unlocked, claimed, () -> handleClaimAchievement(type));
         achievementsContainer.getChildren().add(card);
     }
 
     /**
      * Handles claiming an achievement reward.
      */
-    private void handleClaimAchievement(com.kuroyale.model.AchievementType type) {
+    private void handleClaimAchievement(com.kuroyale.model.enums.AchievementType type) {
         SoundEffectUtil.playButtonClick();
         int reward = achievementService.claimReward(type);
         if (reward > 0) {
-            com.kuroyale.model.User currentUser = authService.getCurrentUser();
+            com.kuroyale.model.entities.User currentUser = authService.getCurrentUser();
             if (currentUser != null) {
                 currentUser.setGold(currentUser.getGold() + reward);
                 try {

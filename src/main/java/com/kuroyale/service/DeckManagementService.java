@@ -6,9 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.kuroyale.model.Card;
-import com.kuroyale.model.Deck;
-import com.kuroyale.model.User;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Deck;
+import com.kuroyale.model.entities.User;
 import com.kuroyale.repository.UserRepository;
 
 /*Service for managing deck operations

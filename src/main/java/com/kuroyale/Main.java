@@ -1,6 +1,5 @@
 package com.kuroyale;
 
-import com.kuroyale.controller.LoginController;
 import com.kuroyale.util.ServiceFactory;
 
 import javafx.application.Application;
@@ -29,7 +28,7 @@ public class Main extends Application {
             primaryStage.getIcons().add(icon);
 
             com.kuroyale.view.LoginView loginView = new com.kuroyale.view.LoginView();
-            LoginController controller = new LoginController(loginView);
+            new com.kuroyale.controller.LoginController(loginView);
             Parent root = loginView;
 
             // Create scene (1280x720 HD resolution)

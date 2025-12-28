@@ -3,7 +3,7 @@ package com.kuroyale.service;
 import java.io.IOException;
 import java.util.Set;
 
-import com.kuroyale.model.User;
+import com.kuroyale.model.entities.User;
 import com.kuroyale.repository.UserRepository;
 import com.kuroyale.util.PasswordUtil;
 import com.kuroyale.util.ValidationUtil;

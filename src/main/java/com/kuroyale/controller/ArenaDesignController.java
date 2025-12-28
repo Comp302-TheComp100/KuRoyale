@@ -1,11 +1,12 @@
 package com.kuroyale.controller;
 
-import com.kuroyale.model.Arena;
-import com.kuroyale.model.ArenaDesignModel;
-import com.kuroyale.model.ArenaLayout;
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.logic.ArenaDesignModel;
+import com.kuroyale.model.entities.ArenaLayout;
 import com.kuroyale.util.GameConstants;
-import com.kuroyale.model.TileType;
+import com.kuroyale.model.enums.TileType;
 import com.kuroyale.view.battle.ArenaRenderer;
+import com.kuroyale.util.SceneLoader;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -15,10 +16,6 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.ImagePattern;
-import javafx.stage.Stage;
-import javafx.scene.Scene;
-import javafx.scene.Parent;
-import javafx.fxml.FXMLLoader;
 
 import java.io.IOException;
 import java.util.List;
@@ -46,6 +43,7 @@ public class ArenaDesignController {
     private final ArenaDesignModel model = new ArenaDesignModel();
     private ArenaLayout currentLayout;
     private ArenaRenderer renderer;
+    private final SceneLoader sceneLoader = new SceneLoader();
 
     public ArenaDesignController() {
     }
@@ -89,6 +87,7 @@ public class ArenaDesignController {
             }
         } catch (Exception e) {
             System.err.println("Error setting up palette: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -202,18 +201,7 @@ public class ArenaDesignController {
             return false;
         }
 
-        // Apply Logic
-        int startX = x;
-        if (startX >= Arena.WIDTH - 1) {
-            startX = Arena.WIDTH - 2;
-        }
-        int startY = GameConstants.RIVER_ROW_1; // Force Y to river
-
-        for (int dx = 0; dx < GameConstants.BRIDGE_WIDTH; dx++) {
-            for (int dy = 0; dy < 2; dy++) {
-                currentLayout.addBridgePosition(startX + dx, startY + dy);
-            }
-        }
+        model.placeBridge(currentLayout, x);
         renderArena();
         return true;
     }
@@ -226,9 +214,7 @@ public class ArenaDesignController {
             return false;
         }
 
-        int startX = x - 1;
-        int startY = y - 1;
-        currentLayout.addPrincessTowerPosition(startX, startY);
+        model.placePrincessTower(currentLayout, x, y);
         renderArena();
         return true;
     }
@@ -241,57 +227,21 @@ public class ArenaDesignController {
             return false;
         }
 
-        int startX = x - 2;
-        int startY = y - 2;
-        currentLayout.setKingTowerPosition(startX, startY);
+        model.placeKingTower(currentLayout, x, y);
         renderArena();
         return true;
     }
 
     private void handleBridgeRemoval(int x, int y) {
-        // Logic to remove the 2x2 bridge
-        // We need to find the top-left of the bridge block this tile belongs to
-        // Bridges are always at y=15,16.
-        int blockStart = x;
-
-        // Search left for the start of this bridge block
-        while (blockStart > 0) {
-            final int checkX = blockStart - 1;
-            boolean isBridgeLeft = currentLayout.getBridgePositions().stream()
-                    .anyMatch(p -> p.getX() == checkX
-                            && (p.getY() == GameConstants.RIVER_ROW_1 || p.getY() == GameConstants.RIVER_ROW_2));
-            if (isBridgeLeft) {
-                blockStart--;
-            } else {
-                break;
-            }
-        }
-
-        // NOTE: The bridge removal logic in original controller was slightly complex
-        // due to fused bridges.
-        // Assuming bridges are 2x2 blocks aligned. If they merge, clicking one tile
-        // removes its 2x2 origin block?
-        // Original logic:
-        /*
-         * int offset = finalX - blockStart;
-         * int bridgeStartX = blockStart + (offset / 2) * 2;
-         */
-        // Let's try to replicate:
-        int offset = x - blockStart;
-        int bridgeStartX = blockStart + (offset / 2) * 2;
-
-        currentLayout.getBridgePositions().removeIf(
-                p -> (p.getX() == bridgeStartX || p.getX() == bridgeStartX + 1)
-                        && (p.getY() == GameConstants.RIVER_ROW_1 || p.getY() == GameConstants.RIVER_ROW_2));
+        model.removeBridge(currentLayout, x);
         renderArena();
     }
 
     private void handleTowerRemoval(int x, int y, boolean isKing) {
         if (isKing) {
-            currentLayout.setKingTowerPosition(null);
+            model.removeKingTower(currentLayout);
         } else {
-            currentLayout.getPrincessTowerPositions().removeIf(
-                    p -> p.getX() == x && p.getY() == y);
+            model.removePrincessTower(currentLayout, x, y);
         }
         renderArena();
     }
@@ -299,15 +249,15 @@ public class ArenaDesignController {
     @FXML
     public void handleSave() {
         if (currentLayout != null) {
+            String name = arenaNameField.getText();
+            if (name != null && !name.isEmpty()) {
+                currentLayout.setName(name);
+            }
+
             List<String> validationErrors = model.validateLayout(currentLayout);
             if (!validationErrors.isEmpty()) {
                 showAlert("Invalid Layout", validationErrors.get(0));
                 return;
-            }
-
-            String name = arenaNameField.getText();
-            if (name != null && !name.isEmpty()) {
-                currentLayout.setName(name);
             }
             try {
                 model.saveArenaLayout(currentLayout);
@@ -322,14 +272,7 @@ public class ArenaDesignController {
     @FXML
     public void handleBack() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
-            Parent root = loader.load();
-
-            Stage stage = (Stage) arenaNameField.getScene().getWindow();
-            Scene scene = new Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Main Menu");
+            sceneLoader.load(arenaNameField, "/fxml/main-menu.fxml", "KU Royale - Main Menu", null);
         } catch (IOException e) {
             e.printStackTrace();
         }

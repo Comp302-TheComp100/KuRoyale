@@ -12,8 +12,8 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.kuroyale.model.Challenge;
-import com.kuroyale.model.ChallengeFactory;
+import com.kuroyale.model.entities.Challenge;
+import com.kuroyale.model.entities.ChallengeFactory;
 
 /**
  * Service for managing challenge progression and state.

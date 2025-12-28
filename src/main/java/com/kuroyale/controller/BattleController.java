@@ -1,9 +1,13 @@
 package com.kuroyale.controller;
 
-import com.kuroyale.model.*;
+import com.kuroyale.model.entities.*;
+import com.kuroyale.model.enums.*;
+import com.kuroyale.model.logic.*;
+import com.kuroyale.model.dto.*;
 import com.kuroyale.view.battle.BattleArenaView;
 import com.kuroyale.view.battle.ElixirBar;
 import com.kuroyale.view.battle.HandView;
+import com.kuroyale.util.SceneLoader;
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.layout.HBox;
@@ -61,6 +65,7 @@ public class BattleController {
     private SavedGameState loadedSavedGame = null;
 
     private final BattleModel model = new BattleModel();
+    private final SceneLoader sceneLoader = new SceneLoader();
 
     // Challenge Mode Context
     private Challenge currentChallenge;
@@ -236,20 +241,20 @@ public class BattleController {
 
         // Track Challenge Completion (Quest)
         com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                .updateProgress(com.kuroyale.model.QuestType.COMPLETE_CHALLENGES, 1);
+                .updateProgress(com.kuroyale.model.enums.QuestType.COMPLETE_CHALLENGES, 1);
 
         if (playerWon) {
             // Track Win Quests
             com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                    .updateProgress(com.kuroyale.model.QuestType.WIN_MATCHES, 1);
+                    .updateProgress(com.kuroyale.model.enums.QuestType.WIN_MATCHES, 1);
 
             // Track Achievements
             com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
-                    .updateProgress(com.kuroyale.model.AchievementType.CHALLENGE_MASTER, 1);
+                    .updateProgress(com.kuroyale.model.enums.AchievementType.CHALLENGE_MASTER, 1);
 
             if (stars == 3) {
                 com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
-                        .updateProgress(com.kuroyale.model.AchievementType.THREE_STAR_HERO, 1);
+                        .updateProgress(com.kuroyale.model.enums.AchievementType.THREE_STAR_HERO, 1);
             }
         }
 
@@ -321,14 +326,7 @@ public class BattleController {
     @FXML
     private void handleExitToChallenges() {
         try {
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
-                    getClass().getResource("/fxml/challenge-selection.fxml"));
-            javafx.scene.Parent root = loader.load();
-            javafx.stage.Stage stage = (javafx.stage.Stage) arenaContainer.getScene().getWindow();
-            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Challenges");
+            sceneLoader.load(arenaContainer, "/fxml/challenge-selection.fxml", "KU Royale - Challenges", null);
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
@@ -342,26 +340,26 @@ public class BattleController {
         boolean playerWon = gameState.isPlayerWinner();
         // Track Matches Played (Veteran Player Achievement)
         com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
-                .updateProgress(com.kuroyale.model.AchievementType.VETERAN_PLAYER, 1);
+                .updateProgress(com.kuroyale.model.enums.AchievementType.VETERAN_PLAYER, 1);
 
         if (playerWon) {
             // Track Win Quests
             com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                    .updateProgress(com.kuroyale.model.QuestType.WIN_MATCHES, 1);
+                    .updateProgress(com.kuroyale.model.enums.QuestType.WIN_MATCHES, 1);
             com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                    .updateProgress(com.kuroyale.model.QuestType.WIN_PVP_MATCH, 1);
+                    .updateProgress(com.kuroyale.model.enums.QuestType.WIN_PVP_MATCH, 1);
 
             // Track Win Without Losing Tower
             if (gameState.getBotScore() == 0) {
                 com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                        .updateProgress(com.kuroyale.model.QuestType.WIN_WITHOUT_LOSING_TOWER, 1);
+                        .updateProgress(com.kuroyale.model.enums.QuestType.WIN_WITHOUT_LOSING_TOWER, 1);
             }
 
             // Track Win Achievements
             com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
-                    .updateProgress(com.kuroyale.model.AchievementType.FIRST_BLOOD, 1);
+                    .updateProgress(com.kuroyale.model.enums.AchievementType.FIRST_BLOOD, 1);
             com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
-                    .updateProgress(com.kuroyale.model.AchievementType.UNDEFEATED, 1);
+                    .updateProgress(com.kuroyale.model.enums.AchievementType.UNDEFEATED, 1);
         }
 
         gameOverTitle.setText(playerWon ? "VICTORY" : "DEFEAT");
@@ -406,66 +404,60 @@ public class BattleController {
     }
 
     private void handleSaveAndExit() {
-        // Save the game
-        User currentUser = model.getCurrentUser();
-        if (currentUser != null && currentArenaLayout != null) {
-            SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout);
-            if (savedGame != null) {
-                showSaveConfirmation();
-            } else {
-                System.err.println("Failed to save game");
-            }
+        if (saveGame()) {
+            showSaveConfirmation();
         }
-
         handleExit();
     }
 
     private void handleSaveAndResume() {
-        // Save the game
+        if (saveGame()) {
+            showSaveConfirmationBrief();
+        }
+        handleResume();
+    }
+
+    private boolean saveGame() {
         User currentUser = model.getCurrentUser();
         if (currentUser != null && currentArenaLayout != null) {
             SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout);
             if (savedGame != null) {
-                showSaveConfirmationBrief();
+                return true;
             } else {
                 System.err.println("Failed to save game");
             }
         }
-
-        handleResume();
+        return false;
     }
 
     private void showPauseMenu() {
         pauseMenuContainer.getChildren().clear();
         pauseMenuContainer.setVisible(true);
 
-        VBox content = new VBox(30);
-        content.setAlignment(javafx.geometry.Pos.CENTER);
-        content.setStyle(
-                "-fx-background-color: #2a2a2a; -fx-padding: 50; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 3;");
-        content.setMaxSize(500, 400);
+        com.kuroyale.view.battle.PauseMenuView menu = new com.kuroyale.view.battle.PauseMenuView(
+                new com.kuroyale.view.battle.PauseMenuView.PauseMenuListener() {
+                    @Override
+                    public void onResume() {
+                        handleResume();
+                    }
 
-        javafx.scene.control.Label title = new javafx.scene.control.Label("PAUSED");
-        title.setStyle("-fx-font-size: 42px; -fx-text-fill: white; -fx-font-weight: bold;");
+                    @Override
+                    public void onSaveAndResume() {
+                        handleSaveAndResume();
+                    }
 
-        javafx.scene.control.Button resumeBtn = new javafx.scene.control.Button("RESUME");
-        resumeBtn.setStyle("-fx-font-size: 20px; -fx-padding: 15 50; -fx-min-width: 300;");
-        resumeBtn.setOnAction(e -> handleResume());
+                    @Override
+                    public void onSaveAndExit() {
+                        handleSaveAndExit();
+                    }
 
-        javafx.scene.control.Button saveResumeBtn = new javafx.scene.control.Button("SAVE & RESUME");
-        saveResumeBtn.setStyle("-fx-font-size: 20px; -fx-padding: 15 50; -fx-min-width: 300;");
-        saveResumeBtn.setOnAction(e -> handleSaveAndResume());
+                    @Override
+                    public void onExitWithoutSaving() {
+                        handleExit();
+                    }
+                });
 
-        javafx.scene.control.Button saveExitBtn = new javafx.scene.control.Button("SAVE & EXIT");
-        saveExitBtn.setStyle("-fx-font-size: 20px; -fx-padding: 15 50; -fx-min-width: 300;");
-        saveExitBtn.setOnAction(e -> handleSaveAndExit());
-
-        javafx.scene.control.Button exitBtn = new javafx.scene.control.Button("EXIT WITHOUT SAVING");
-        exitBtn.setStyle("-fx-font-size: 18px; -fx-padding: 10 30; -fx-min-width: 300;");
-        exitBtn.setOnAction(e -> handleExit());
-
-        content.getChildren().addAll(title, resumeBtn, saveResumeBtn, saveExitBtn, exitBtn);
-        pauseMenuContainer.getChildren().add(content);
+        pauseMenuContainer.getChildren().add(menu);
     }
 
     private void showSaveConfirmation() {
@@ -512,13 +504,7 @@ public class BattleController {
         }
 
         try {
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/main-menu.fxml"));
-            javafx.scene.Parent root = loader.load();
-            javafx.stage.Stage stage = (javafx.stage.Stage) arenaContainer.getScene().getWindow();
-            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1280, 720);
-            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("KU Royale - Main Menu");
+            sceneLoader.load(arenaContainer, "/fxml/main-menu.fxml", "KU Royale - Main Menu", null);
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }

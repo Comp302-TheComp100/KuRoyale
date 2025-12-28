@@ -2,9 +2,9 @@ package com.kuroyale.view.battle;
 
 import com.kuroyale.view.CardView;
 
-import com.kuroyale.model.Card;
-import com.kuroyale.model.ElixirManager;
-import com.kuroyale.model.Hand;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.logic.ElixirManager;
+import com.kuroyale.model.entities.Hand;
 import javafx.geometry.Pos;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.layout.VBox;

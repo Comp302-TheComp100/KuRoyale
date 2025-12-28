@@ -1,7 +1,7 @@
 package com.kuroyale.view;
 
-import com.kuroyale.model.Card;
-import com.kuroyale.model.CardType;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.enums.CardType;
 
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
@@ -15,13 +15,12 @@ import javafx.scene.text.Font;
 public class DeckSlotView extends StackPane {
     private static final PseudoClass FILLED_PSEUDO_CLASS = PseudoClass.getPseudoClass("filled");
     private static final PseudoClass HIGHLIGHT_PSEUDO_CLASS = PseudoClass.getPseudoClass("highlight");
-    
+
     private Card card;
     private final VBox content;
     private final Label placeholderLabel;
     private final VBox cardContent;
     private StackPane highlightOverlay;
-    private boolean isHighlighted = false;
 
     public DeckSlotView() {
         // Set size
@@ -72,7 +71,7 @@ public class DeckSlotView extends StackPane {
         });
     }
 
-    //Sets the card for this slot
+    // Sets the card for this slot
     public void setCard(Card newCard) {
         this.card = newCard;
 
@@ -123,7 +122,8 @@ public class DeckSlotView extends StackPane {
             String color = getPlaceholderColor(card.getType());
             placeholder.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 8;");
 
-            Label placeholderLabel = new Label(card.getName().substring(0, Math.min(3, card.getName().length())).toUpperCase(java.util.Locale.ENGLISH));
+            Label placeholderLabel = new Label(card.getName().substring(0, Math.min(3, card.getName().length()))
+                    .toUpperCase(java.util.Locale.ENGLISH));
             placeholderLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
             placeholder.getChildren().add(placeholderLabel);
             content.getChildren().add(placeholder);
@@ -174,7 +174,8 @@ public class DeckSlotView extends StackPane {
 
         StackPane imageContainer = new StackPane();
         imageContainer.setStyle("-fx-background-color: transparent;");
-        // Add children in order: cardImage (bottom), highlightOverlay (middle), costPane (top), levelLabel (top)
+        // Add children in order: cardImage (bottom), highlightOverlay (middle),
+        // costPane (top), levelLabel (top)
         imageContainer.getChildren().addAll(cardImage, highlightOverlay, costPane, levelLabel);
 
         // Position cost at top left
@@ -187,11 +188,15 @@ public class DeckSlotView extends StackPane {
         content.getChildren().add(imageContainer);
     }
 
-    //Gets the current card in this slot
-    public Card getCard() {return card;}
+    // Gets the current card in this slot
+    public Card getCard() {
+        return card;
+    }
 
-    //Checks if the slot is empty
-    public boolean isEmpty() {return card == null;}
+    // Checks if the slot is empty
+    public boolean isEmpty() {
+        return card == null;
+    }
 
     public void refreshCardDisplay() {
         if (!isEmpty()) {
@@ -199,7 +204,7 @@ public class DeckSlotView extends StackPane {
         }
     }
 
-    //Clears the slot
+    // Clears the slot
     public void clear() {
         card = null;
         pseudoClassStateChanged(FILLED_PSEUDO_CLASS, false);
@@ -210,10 +215,9 @@ public class DeckSlotView extends StackPane {
         content.getChildren().addAll(placeholderLabel, cardContent);
     }
 
-    //Highlights the slot for replace mode
+    // Highlights the slot for replace mode
     public void highlightForReplace() {
         if (!isEmpty()) {
-            isHighlighted = true;
             pseudoClassStateChanged(HIGHLIGHT_PSEUDO_CLASS, true);
             if (!getStyleClass().contains("highlight")) {
                 getStyleClass().add("highlight");
@@ -225,9 +229,8 @@ public class DeckSlotView extends StackPane {
         }
     }
 
-    //Removes highlight from the slot
+    // Removes highlight from the slot
     public void removeHighlight() {
-        isHighlighted = false;
         pseudoClassStateChanged(HIGHLIGHT_PSEUDO_CLASS, false);
         getStyleClass().remove("highlight");
         // Hide the overlay
@@ -236,7 +239,7 @@ public class DeckSlotView extends StackPane {
         }
     }
 
-    //Gets the placeholder color based on card type
+    // Gets the placeholder color based on card type
     private String getPlaceholderColor(CardType type) {
         switch (type) {
             case TROOP:
@@ -256,7 +259,7 @@ public class DeckSlotView extends StackPane {
         for (int i = 0; i < level; i++) {
             stars += "★";
         }
-        
+
         Label levelLabel = new Label(stars);
         levelLabel.setStyle("-fx-font-size: 14px; " +
                 "-fx-font-weight: bold; " +
@@ -264,7 +267,7 @@ public class DeckSlotView extends StackPane {
                 "-fx-background-color: rgba(0, 0, 0, 0.6); " +
                 "-fx-padding: 1 3 1 3; " +
                 "-fx-background-radius: 3;");
-        
+
         return levelLabel;
     }
 

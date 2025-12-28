@@ -1,8 +1,8 @@
 package com.kuroyale.service;
 
-import com.kuroyale.model.Arena;
-import com.kuroyale.model.GridPosition;
-import com.kuroyale.model.Troop;
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.entities.Troop;
 import java.util.Deque;
 
 public interface PathfindingStrategy {

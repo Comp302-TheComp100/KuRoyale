@@ -13,10 +13,10 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.kuroyale.model.ArenaLayout;
-import com.kuroyale.model.Card;
-import com.kuroyale.model.GridPosition;
-import com.kuroyale.model.User;
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.entities.User;
 
 /*JSON-based implementation of UserRepository
  * Handles persistence of User objects to JSON file

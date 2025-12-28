@@ -1,11 +1,11 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.Arena;
-import com.kuroyale.model.ArenaLayout;
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.entities.ArenaLayout;
 import com.kuroyale.util.GameConstants;
-import com.kuroyale.model.GridCell;
-import com.kuroyale.model.GridPosition;
-import com.kuroyale.model.TileType;
+import com.kuroyale.model.entities.GridCell;
+import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.enums.TileType;
 
 import javafx.geometry.Pos;
 import javafx.scene.image.Image;

@@ -1,7 +1,7 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.Building;
-import com.kuroyale.model.GameState;
+import com.kuroyale.model.entities.Building;
+import com.kuroyale.model.logic.GameState;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.image.Image;

@@ -1,5 +1,9 @@
 package com.kuroyale.service;
 
+import com.kuroyale.event.GameEventBus;
+import com.kuroyale.event.GameEventListener;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Tower;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,14 +15,14 @@ import java.util.Map;
 
 import org.json.JSONObject;
 
-import com.kuroyale.model.Achievement;
-import com.kuroyale.model.AchievementType;
+import com.kuroyale.model.entities.Achievement;
+import com.kuroyale.model.enums.AchievementType;
 
 /**
  * Service for managing permanent achievements.
  * Handles achievement tracking, unlocking, and persistence.
  */
-public class AchievementService {
+public class AchievementService implements GameEventListener {
 
     private static final String ACHIEVEMENT_FILE_TEMPLATE = "achievements_%s.json";
 
@@ -32,6 +36,9 @@ public class AchievementService {
         this.achievements = new EnumMap<>(AchievementType.class);
         initializeAchievements();
         // Removed initial loadAchievements() as it requires username
+
+        // Register to game events
+        GameEventBus.getInstance().subscribe(this);
     }
 
     /**
@@ -193,5 +200,23 @@ public class AchievementService {
         } catch (IOException e) {
             System.err.println("Failed to save achievements: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void onCardPlayed(boolean isPlayer, Card card) {
+        if (!isPlayer)
+            return;
+
+        if (card.getType() == com.kuroyale.model.enums.CardType.TROOP && card.getCount() > 1) {
+            updateProgress(AchievementType.ARMY_BUILDER, card.getCount());
+        }
+    }
+
+    @Override
+    public void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
+        if (isPlayerTower)
+            return; // Only track enemy towers destroyed
+
+        updateProgress(AchievementType.TOWER_HUNTER, 1);
     }
 }

@@ -1,23 +1,26 @@
 package com.kuroyale.service;
 
-import com.kuroyale.model.*;
+import com.kuroyale.model.entities.*;
 import java.util.*;
 
 public class GroundPathfindingStrategy implements PathfindingStrategy {
     @Override
     public Deque<GridPosition> computePath(Arena arena, Troop troop, GridPosition destination) {
         Deque<GridPosition> path = new ArrayDeque<>();
-        if (arena == null || troop == null || destination == null) return path;
+        if (arena == null || troop == null || destination == null)
+            return path;
 
         // If destination is not walkable, pick nearest walkable cell
         GridCell destCell = arena.getCell(destination);
         if (destCell == null || !destCell.isWalkable()) {
             destination = findNearestWalkable(arena, destination);
-            if (destination == null) return path; // No valid reachable target
+            if (destination == null)
+                return path; // No valid reachable target
         }
 
         GridPosition start = troop.getPosition();
-        if (start == null || start.equals(destination)) return path;
+        if (start == null || start.equals(destination))
+            return path;
 
         // A* search
         Map<GridPosition, GridPosition> cameFrom = new HashMap<>();
@@ -38,16 +41,21 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
             if (current.equals(destination)) {
                 // reconstruct path
                 GridPosition cur = current;
-                while (cur != null) { path.addFirst(cur); cur = cameFrom.get(cur); }
+                while (cur != null) {
+                    path.addFirst(cur);
+                    cur = cameFrom.get(cur);
+                }
                 return path;
             }
 
             closedSet.add(current);
 
             for (GridPosition neighbor : arena.getAdjacentPositions(current)) { // 4-dir for ground
-                if (closedSet.contains(neighbor)) continue;
+                if (closedSet.contains(neighbor))
+                    continue;
                 GridCell cell = arena.getCell(neighbor);
-                if (cell == null || !cell.isWalkable() || cell.isOccupied()) continue;
+                if (cell == null || !cell.isWalkable() || cell.isOccupied())
+                    continue;
 
                 int tentativeG = gScore.getOrDefault(current, Integer.MAX_VALUE - 1) + 1; // cost 1 per move
 
@@ -78,9 +86,13 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
         while (!q.isEmpty()) {
             GridPosition p = q.poll();
             GridCell c = arena.getCell(p);
-            if (c != null && c.isWalkable()) return p;
+            if (c != null && c.isWalkable())
+                return p;
             for (GridPosition n : arena.getAdjacentPositionsWithDiagonals(p)) {
-                if (!seen.contains(n)) { seen.add(n); q.add(n); }
+                if (!seen.contains(n)) {
+                    seen.add(n);
+                    q.add(n);
+                }
             }
         }
         return null;
@@ -88,7 +100,8 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
 
     // heuristic distance suitable for 4-directional grid movement
     private int heuristic(GridPosition a, GridPosition b) {
-        if (a == null || b == null) return Integer.MAX_VALUE / 4;
+        if (a == null || b == null)
+            return Integer.MAX_VALUE / 4;
         return Math.abs(a.getX() - b.getX()) + Math.abs(a.getY() - b.getY());
     }
 }

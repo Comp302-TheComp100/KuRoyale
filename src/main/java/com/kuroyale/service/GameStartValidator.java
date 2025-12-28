@@ -1,7 +1,7 @@
 package com.kuroyale.service;
 
-import com.kuroyale.model.ArenaLayout;
-import com.kuroyale.model.User;
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.entities.User;
 
 import java.util.ArrayList;
 import java.util.List;

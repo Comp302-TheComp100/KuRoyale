@@ -1,5 +1,10 @@
 package com.kuroyale.service;
 
+import com.kuroyale.event.GameEventBus;
+import com.kuroyale.event.GameEventListener;
+import com.kuroyale.model.enums.CardType;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Tower;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,14 +22,14 @@ import java.util.UUID;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.kuroyale.model.Quest;
-import com.kuroyale.model.QuestType;
+import com.kuroyale.model.entities.Quest;
+import com.kuroyale.model.enums.QuestType;
 
 /**
  * Service for managing daily quests.
  * Handles quest generation, progress tracking, and persistence.
  */
-public class QuestService {
+public class QuestService implements GameEventListener {
 
     private static final String QUEST_FILE_TEMPLATE = "quests_%s.json";
     private static final int DAILY_QUEST_COUNT = 3;
@@ -39,6 +44,9 @@ public class QuestService {
         this.dataPath = Paths.get(userHome, ".kuroyale");
         this.dailyQuests = new ArrayList<>();
         // Removed initial loadQuests() call as it requires a username
+
+        // Register to game events
+        GameEventBus.getInstance().subscribe(this);
     }
 
     /**
@@ -209,6 +217,38 @@ public class QuestService {
             Files.writeString(dataPath.resolve(String.format(QUEST_FILE_TEMPLATE, currentUsername)), json.toString(2));
         } catch (IOException e) {
             System.err.println("Failed to save quests: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void onCardPlayed(boolean isPlayer, Card card) {
+        if (!isPlayer)
+            return;
+
+        if (card.getType() == CardType.SPELL) {
+            updateProgress(QuestType.PLAY_SPELL_CARDS, 1);
+        } else if (card.getType() == CardType.TROOP) {
+            updateProgress(QuestType.DEPLOY_TROOP_CARDS, 1);
+        } else if (card.getType() == CardType.BUILDING) {
+            updateProgress(QuestType.PLAY_BUILDING_CARDS, 1);
+        }
+    }
+
+    @Override
+    public void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
+        if (isPlayerTower)
+            return; // Only track enemy towers destroyed
+
+        updateProgress(QuestType.DESTROY_CROWN_TOWERS, 1);
+        if (tower.getType() == Tower.TowerType.KING) {
+            updateProgress(QuestType.DESTROY_KING_TOWER, 1);
+        }
+    }
+
+    @Override
+    public void onElixirSpent(boolean isPlayer, int amount) {
+        if (isPlayer) {
+            updateProgress(QuestType.SPEND_ELIXIR, amount);
         }
     }
 }
