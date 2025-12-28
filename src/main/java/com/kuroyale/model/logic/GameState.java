@@ -3,6 +3,7 @@ package com.kuroyale.model.logic;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.dto.*;
+import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,46 +77,13 @@ public class GameState {
 
     // Restores tower health from saved data
     public void restoreTowerHealth(SavedGameState.SavedTower savedTower) {
-        // Find the matching tower in the arena
-        java.util.Map<Tower, java.util.List<GridCell>> groups = new java.util.HashMap<>();
-        for (GridCell cell : arena.getAllCells()) {
-            TileType tt = cell.getTileType();
-            boolean isTowerTile = tt == TileType.PRINCESS_TOWER_USER ||
-                    tt == TileType.PRINCESS_TOWER_COMPUTER ||
-                    tt == TileType.KING_TOWER_USER ||
-                    tt == TileType.KING_TOWER_COMPUTER;
-            if (!isTowerTile)
-                continue;
+        // Find the matching tower in the arena efficiently
+        Tower.TowerType type = Tower.TowerType.valueOf(savedTower.getTowerType());
+        java.util.List<Tower> towers = arena.getTowersByType(type, savedTower.isPlayerSide());
 
-            Tower tower = arena.getTowerAt(cell.getPosition().getX(), cell.getPosition().getY());
-            if (tower == null)
-                continue;
-
-            groups.computeIfAbsent(tower, k -> new java.util.ArrayList<>()).add(cell);
-        }
-
-        // Match saved tower to actual tower by position and type
-        for (java.util.Map.Entry<Tower, java.util.List<GridCell>> entry : groups.entrySet()) {
-            Tower tower = entry.getKey();
-            java.util.List<GridCell> cells = entry.getValue();
-
-            if (cells.isEmpty())
-                continue;
-
-            // Get tower position (top-left)
-            int minX = cells.stream().mapToInt(c -> c.getPosition().getX()).min().orElse(0);
-            int minY = cells.stream().mapToInt(c -> c.getPosition().getY()).min().orElse(0);
-
-            // Check if player side matches
-            TileType firstTileType = cells.get(0).getTileType();
-            boolean isPlayerSide = firstTileType == TileType.PRINCESS_TOWER_USER
-                    || firstTileType == TileType.KING_TOWER_USER;
-
-            // Check if type and position match
-            if (tower.getType().name().equals(savedTower.getTowerType()) &&
-                    isPlayerSide == savedTower.isPlayerSide() &&
-                    minX == savedTower.getGridX() &&
-                    minY == savedTower.getGridY()) {
+        for (Tower tower : towers) {
+            GridPosition pos = tower.getPosition();
+            if (pos != null && pos.getX() == savedTower.getGridX() && pos.getY() == savedTower.getGridY()) {
                 tower.setCurrentHealth(savedTower.getCurrentHealth());
                 break;
             }
@@ -328,22 +296,12 @@ public class GameState {
 
     public int getPlayerDamageTaken() {
         int damage = 0;
-        java.util.Set<Tower> playerTowers = new java.util.HashSet<>();
-
-        for (int x = 0; x < Arena.WIDTH; x++) {
-            for (int y = 0; y < Arena.HEIGHT; y++) {
-                GridCell cell = arena.getCell(x, y);
-                TileType tt = cell.getTileType();
-                if (tt == TileType.PRINCESS_TOWER_USER || tt == TileType.KING_TOWER_USER) {
-                    Tower t = arena.getTowerAt(x, y);
-                    if (t != null)
-                        playerTowers.add(t);
-                }
+        // Optimization: Use getAllTowers() which is O(1-6) instead of scanning the grid
+        // O(N)
+        for (Tower t : arena.getAllTowers()) {
+            if (t.isPlayerSide()) {
+                damage += (int) (t.getMaxHealth() - t.getCurrentHealth());
             }
-        }
-
-        for (Tower t : playerTowers) {
-            damage += (t.getMaxHealth() - t.getCurrentHealth());
         }
         return damage;
     }
@@ -398,9 +356,8 @@ public class GameState {
                     playerElixir.spend(cost); // Şimdi düşüyoruz
                     playerHand.playCard(handIndex); // Kartı elden çıkarıyoruz
 
-                    // Quest Updates (Sadece başarılı işlemde tetiklenir)
-                    com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                            .updateProgress(com.kuroyale.model.enums.QuestType.SPEND_ELIXIR, cost);
+                    // Notify listeners that elixir was spent
+                    GameEventBus.getInstance().publishElixirSpent(true, cost);
                 }
 
                 return success;
@@ -427,127 +384,97 @@ public class GameState {
 
     // Overload for direct card placement (used by Bot)
     public void placeCard(boolean isPlayer, Card card, int x, int y) {
-        // Delegating strictly to spawnUnit.
-        // Note: Bot elixir is already spent in BotLogic.
         spawnUnit(isPlayer, card, x, y);
     }
-
-    /**
-     * Unified logic for spawning units (Troops, Buildings, Spells).
-     * Handles physical creation, specialized validation (building footprint), and
-     * Quest/Achievement tracking.
-     * 
-     * @return true if spawn was successful (e.g. building footprint valid), false
-     *         otherwise.
-     */
 
     private boolean spawnUnit(boolean isPlayer, Card card, int x, int y) {
         if (card == null)
             return false;
 
-        // --- FIX 2: Askerlerin dağılması için ofset haritası (Spiral/Grid mantığı) ---
-        // {dx, dy} -> Merkez, Sağ, Sol, Aşağı, Yukarı, Sağ-Alt, Sol-Üst...
+        boolean success = false;
+        if (card.getType() == CardType.BUILDING) {
+            success = spawnBuilding(isPlayer, card, x, y);
+        } else if (card.getType() == CardType.TROOP) {
+            success = spawnTroopGroup(isPlayer, card, x, y);
+        } else if (card.getType() == CardType.SPELL) {
+            applySpellEffect(isPlayer, card, x, y);
+            success = true;
+        }
+
+        if (success) {
+            // 2. Add to Placed History
+            placedCards.add(new PlacedCard(card, x, y, isPlayer));
+
+            // 3. Quests & Achievements (Player Only)
+            if (isPlayer) {
+                GameEventBus.getInstance().publishCardPlayed(true, card);
+            }
+        }
+
+        return success;
+    }
+
+    private boolean spawnBuilding(boolean isPlayer, Card card, int x, int y) {
+        int bw = Math.max(1, card.getFootprintWidthTiles());
+        int bh = Math.max(1, card.getFootprintHeightTiles());
+
+        if (x < 0 || y < 0 || (x + bw) > Arena.WIDTH || (y + bh) > Arena.HEIGHT) {
+            return false;
+        }
+
+        for (int dx = 0; dx < bw; dx++) {
+            for (int dy = 0; dy < bh; dy++) {
+                GridCell c = arena.getCell(x + dx, y + dy);
+                if (c == null || c.isOccupied() || !c.isWalkable()) {
+                    return false;
+                }
+            }
+        }
+
+        GridPosition topLeft = GridPosition.tryCreate(x, y);
+        if (topLeft != null) {
+            Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
+                    card.getLifetime());
+            building.configureCombatFromCard(card);
+            arena.occupyFootprint(building);
+            activeBuildings.add(building);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean spawnTroopGroup(boolean isPlayer, Card card, int x, int y) {
         final int[][] OFFSETS = {
                 { 0, 0 }, { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 },
                 { 1, 1 }, { -1, -1 }, { 1, -1 }, { -1, 1 },
                 { 2, 0 }, { -2, 0 }, { 0, 2 }, { 0, -2 }, { 2, 2 }, { -2, -2 }
         };
 
-        // 1. Specific Validation & Creation
-        if (card.getType() == CardType.BUILDING) {
-            // Validate Footprint
-            int bw = Math.max(1, card.getFootprintWidthTiles());
-            int bh = Math.max(1, card.getFootprintHeightTiles());
+        int count = Math.max(1, card.getCount());
+        for (int i = 0; i < count; i++) {
+            int[] offset = (i < OFFSETS.length) ? OFFSETS[i] : OFFSETS[0];
+            int spawnX = x + offset[0];
+            int spawnY = y + offset[1];
 
-            // --- FIX 1: Bina Sınır Kontrolü (Düzeltildi) ---
-            // Eski 'mx/my' kodları yerine basit sınır kontrolü:
-            // X veya Y sıfırdan küçükse VEYA (X + Genişlik) Arena'yı taşıyorsa HATA.
-            if (x < 0 || y < 0 || (x + bw) > Arena.WIDTH || (y + bh) > Arena.HEIGHT) {
-                return false;
-            }
-
-            // Validate all cells in footprint
-            for (int dx = 0; dx < bw; dx++) {
-                for (int dy = 0; dy < bh; dy++) {
-                    GridCell c = arena.getCell(x + dx, y + dy);
-                    // Bina sadece boş ve yürünebilir (çim) alana konabilir
-                    if (c == null || c.isOccupied() || !c.isWalkable()) {
-                        return false;
-                    }
+            boolean isValidPos = (spawnX >= 0 && spawnX < Arena.WIDTH && spawnY >= 0 && spawnY < Arena.HEIGHT);
+            if (isValidPos) {
+                GridCell cell = arena.getCell(spawnX, spawnY);
+                if (cell == null || !cell.isWalkable()) {
+                    isValidPos = false;
                 }
             }
 
-            // Create Building
-            GridPosition topLeft = GridPosition.tryCreate(x, y);
-            if (topLeft != null) {
-                Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
-                        card.getLifetime());
-                building.configureCombatFromCard(card);
-                arena.occupyFootprint(building);
-                activeBuildings.add(building);
+            if (!isValidPos) {
+                spawnX = x;
+                spawnY = y;
             }
-        } else if (card.getType() == CardType.TROOP) {
-            int count = Math.max(1, card.getCount());
 
-            for (int i = 0; i < count; i++) {
-                // --- FIX 2 UYGULAMASI ---
-                // Eğer çok fazla asker varsa (offset dizisinden fazla), fazlalıklar merkezde
-                // (0,0) doğsun.
-                int[] offset = (i < OFFSETS.length) ? OFFSETS[i] : OFFSETS[0];
-
-                int spawnX = x + offset[0];
-                int spawnY = y + offset[1];
-
-                // Hedef nokta harita içinde mi?
-                boolean isValidPos = (spawnX >= 0 && spawnX < Arena.WIDTH && spawnY >= 0 && spawnY < Arena.HEIGHT);
-
-                // Eğer harita içindeyse, orası yürünebilir mi (Nehir/Bina değil mi)?
-                if (isValidPos) {
-                    GridCell cell = arena.getCell(spawnX, spawnY);
-                    if (cell == null || !cell.isWalkable()) {
-                        isValidPos = false; // Nehir veya duvarsa oraya doğmasın
-                    }
-                }
-
-                // Eğer offset noktası geçersizse (örn: nehre denk geldi), askeri ana merkeze
-                // (x,y) koy.
-                if (!isValidPos) {
-                    spawnX = x;
-                    spawnY = y;
-                }
-
-                GridPosition spawn = GridPosition.tryCreate(spawnX, spawnY);
-                if (spawn != null) {
-                    Troop troop = new Troop(card, spawn, isPlayer);
-                    activeTroops.add(troop);
-                }
-            }
-        } else if (card.getType() == CardType.SPELL) {
-            applySpellEffect(isPlayer, card, x, y);
-        }
-
-        // 2. Add to Placed History
-        placedCards.add(new PlacedCard(card, x, y, isPlayer));
-
-        // 3. Quests & Achievements (Player Only)
-        if (isPlayer) {
-            // ... (Buradaki kodlar aynı kalacak, Quest logic) ...
-            if (card.getType() == CardType.SPELL) {
-                com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                        .updateProgress(com.kuroyale.model.enums.QuestType.PLAY_SPELL_CARDS, 1);
-            } else if (card.getType() == CardType.TROOP) {
-                com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                        .updateProgress(com.kuroyale.model.enums.QuestType.DEPLOY_TROOP_CARDS, 1);
-                if (card.getCount() > 1) {
-                    com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
-                            .updateProgress(com.kuroyale.model.enums.AchievementType.ARMY_BUILDER, card.getCount());
-                }
-            } else if (card.getType() == CardType.BUILDING) {
-                com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                        .updateProgress(com.kuroyale.model.enums.QuestType.PLAY_BUILDING_CARDS, 1);
+            GridPosition spawn = GridPosition.tryCreate(spawnX, spawnY);
+            if (spawn != null) {
+                Troop troop = new Troop(card, spawn, isPlayer);
+                activeTroops.add(troop);
             }
         }
-
         return true;
     }
 
@@ -683,14 +610,6 @@ public class GameState {
                     playerScore = 3;
                     isGameOver = true;
                     playerWon = true;
-
-                    // Track King Tower destruction
-                    com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                            .updateProgress(com.kuroyale.model.enums.QuestType.DESTROY_KING_TOWER, 1);
-                    com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                            .updateProgress(com.kuroyale.model.enums.QuestType.DESTROY_CROWN_TOWERS, 1);
-                    com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
-                            .updateProgress(com.kuroyale.model.enums.AchievementType.TOWER_HUNTER, 1);
                 }
             } else {
                 // Princess tower destroyed: +1 point to attacker
@@ -700,14 +619,11 @@ public class GameState {
                 } else {
                     // Bot's princess tower destroyed by player
                     playerScore++;
-
-                    // Track Princess Tower destruction
-                    com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
-                            .updateProgress(com.kuroyale.model.enums.QuestType.DESTROY_CROWN_TOWERS, 1);
-                    com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
-                            .updateProgress(com.kuroyale.model.enums.AchievementType.TOWER_HUNTER, 1);
                 }
             }
+
+            // Notify listeners about tower destruction
+            GameEventBus.getInstance().publishTowerDestroyed(isPlayerTower, tower);
         }
     }
 

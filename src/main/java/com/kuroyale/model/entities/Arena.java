@@ -298,6 +298,16 @@ public class Arena {
         return new java.util.HashSet<>(towerMap.values());
     }
 
+    /**
+     * Retrieves towers filtered by type and side.
+     */
+    public List<Tower> getTowersByType(Tower.TowerType type, boolean isPlayerSide) {
+        return towerMap.values().stream()
+                .distinct()
+                .filter(t -> t.getType() == type && t.isPlayerSide() == isPlayerSide)
+                .collect(Collectors.toList());
+    }
+
     // Removes a tower from the arena.Clears the tower from the map and resets the
     // tiles to GRASS
     public void removeTower(Tower tower) {
@@ -341,30 +351,14 @@ public class Arena {
 
     // Checks if the player's King Tower is alive.
     public boolean isPlayerKingAlive() {
-        for (java.util.Map.Entry<GridPosition, Tower> entry : towerMap.entrySet()) {
-            if (entry.getValue().getType() == Tower.TowerType.KING) {
-                // Check if this tower is on a user tile
-                GridCell cell = getCell(entry.getKey());
-                if (cell != null && cell.getTileType() == TileType.KING_TOWER_USER) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return getAllTowers().stream()
+                .anyMatch(t -> t.getType() == Tower.TowerType.KING && t.isPlayerSide() && t.isAlive());
     }
 
     // Checks if the bot's King Tower is alive.
     public boolean isBotKingAlive() {
-        for (java.util.Map.Entry<GridPosition, Tower> entry : towerMap.entrySet()) {
-            if (entry.getValue().getType() == Tower.TowerType.KING) {
-                // Check if this tower is on a computer tile
-                GridCell cell = getCell(entry.getKey());
-                if (cell != null && cell.getTileType() == TileType.KING_TOWER_COMPUTER) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return getAllTowers().stream()
+                .anyMatch(t -> t.getType() == Tower.TowerType.KING && !t.isPlayerSide() && t.isAlive());
     }
 
     // Occupies the footprint of a building on the grid
