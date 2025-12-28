@@ -74,6 +74,25 @@ public class BattleModel {
         return deck;
     }
 
+    // Creates a list of cards from a list of card names (for restoring hand/draw pile)
+    private List<Card> createCardsFromNames(List<String> cardNames) {
+        List<Card> cards = new java.util.ArrayList<>();
+        if (cardNames != null) {
+            User currentUser = authService.getCurrentUser();
+            for (String name : cardNames) {
+                int level = 1;
+                if (currentUser != null) {
+                    level = currentUser.getCardLevel(name);
+                }
+                Card card = cardCatalog.createCardWithLevel(name, level);
+                if (card != null) {
+                    cards.add(card);
+                }
+            }
+        }
+        return cards;
+    }
+
     // Creates a bot deck (currently uses player's deck)
     public Deck createBotDeck(User playerUser) {
         return createDeckFromNames(playerUser.getDeck());
@@ -100,6 +119,11 @@ public class BattleModel {
                 savedGame.getBotScore(),
                 savedGame.getPlayerElixir(),
                 savedGame.getBotElixir());
+
+        // Restore player's hand and draw pile from saved data
+        List<Card> restoredHandCards = createCardsFromNames(savedGame.getPlayerHandCards());
+        List<Card> restoredDrawPileCards = createCardsFromNames(savedGame.getPlayerDrawPileCards());
+        gameState.restorePlayerHand(restoredHandCards, restoredDrawPileCards);
 
         // Restore tower health
         for (SavedGameState.SavedTower savedTower : savedGame.getTowers()) {
