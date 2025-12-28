@@ -45,7 +45,7 @@ public interface ICombatant {
     }
 
     // Target tracking
-    void setTarget(Troop troop);
+    void setTarget(ICombatant target);
 
-    Troop getTarget();
+    ICombatant getTarget();
 }

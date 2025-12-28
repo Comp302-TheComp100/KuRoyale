@@ -183,7 +183,7 @@ public class TroopRenderer {
                 troop.getCombatStats() != null &&
                 troop.getCombatStats().getAttackType() == CombatStats.AttackType.RANGED) {
 
-            com.kuroyale.model.entities.ICombatant target = troop.getCurrentTarget();
+            com.kuroyale.model.entities.ICombatant target = troop.getTarget();
             if (target != null && target.isAlive()) {
                 GridPosition targetPos = target.getCenterPosition();
                 Node targetNode = targetPos != null ? gridCellProvider.apply(targetPos.getX(), targetPos.getY()) : null;

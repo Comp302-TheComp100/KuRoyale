@@ -22,14 +22,6 @@ public class Troop implements ICombatant {
     private UnitState unitState = UnitState.IDLE;
     private ICombatant currentTarget; // The specific entity this unit is attacking
 
-    public void setCurrentTarget(ICombatant target) {
-        this.currentTarget = target;
-    }
-
-    public ICombatant getCurrentTarget() {
-        return currentTarget;
-    }
-
     public Troop(Card card, GridPosition spawn, boolean isPlayer) {
         this.baseCard = card;
         this.worldPosition = Vector2.fromGridPosition(spawn);
@@ -245,15 +237,12 @@ public class Troop implements ICombatant {
     }
 
     @Override
-    public void setTarget(Troop troop) {
-        this.currentTarget = troop;
+    public void setTarget(ICombatant target) {
+        this.currentTarget = target;
     }
 
     @Override
-    public Troop getTarget() {
-        if (currentTarget instanceof Troop) {
-            return (Troop) currentTarget;
-        }
-        return null;
+    public ICombatant getTarget() {
+        return currentTarget;
     }
 }

@@ -193,13 +193,13 @@ public class Building implements ICombatant {
     }
 
     // Target tracking for MVC
-    private Troop target;
+    private ICombatant target;
 
-    public void setTarget(Troop target) {
+    public void setTarget(ICombatant target) {
         this.target = target;
     }
 
-    public Troop getTarget() {
+    public ICombatant getTarget() {
         return target;
     }
 }

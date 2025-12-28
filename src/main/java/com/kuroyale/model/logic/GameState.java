@@ -150,22 +150,15 @@ public class GameState {
     }
 
     private void handleCombat(double deltaTime) {
-        updateBuildingsCombat(deltaTime);
-        updateTowersCombat(deltaTime);
+        combatService.update(deltaTime, this);
+
+        // Remove dead troops post combat
+        activeTroops.removeIf(t -> !t.isAlive());
     }
 
     private void cleanupEntities() {
-        // Cleanup destroyed buildings and free their occupied tiles
-        if (!activeBuildings.isEmpty()) {
-            java.util.Iterator<Building> it = activeBuildings.iterator();
-            while (it.hasNext()) {
-                Building b = it.next();
-                if (!b.isAlive()) {
-                    arena.freeFootprint(b);
-                    it.remove();
-                }
-            }
-        }
+        // Cleanup destroyed buildings from the list
+        activeBuildings.removeIf(b -> !b.isAlive());
 
         // Check for destroyed towers and update scores (must be before
         // removeDeadTowers)
@@ -190,93 +183,6 @@ public class GameState {
                 playerWon = true;
             }
         }
-    }
-
-    // Generalize combat logic for any structure (Building or Tower)
-    private void processStructureCombat(ICombatant structure, double deltaTime) {
-        if (!structure.isAlive())
-            return;
-
-        // Find nearest valid target
-        Troop best = null;
-        double bestDist = Double.MAX_VALUE;
-        GridPosition center = structure.getCenterPosition();
-        if (center == null)
-            return;
-
-        double range = structure.getRange();
-
-        for (Troop t : activeTroops) {
-            if (!t.isAlive())
-                continue;
-            // Friendly fire check
-            if (t.isPlayerSide() == structure.isPlayerSide())
-                continue;
-
-            // Check targeting rules (Ground/Air) via ICombatant
-            if (!structure.canTarget(t))
-                continue;
-
-            double dist = center.getEuclideanDistanceTo(t.getPosition());
-            if (dist <= range && dist < bestDist) {
-                bestDist = dist;
-                best = t;
-            }
-        }
-
-        // Store target for View (MVC Fix)
-        structure.setTarget(best);
-
-        // Handle Attack and Cooldown
-        double cd = structure.getAttackCooldown() - deltaTime;
-        if (best != null) {
-            if (cd <= 0) {
-                if (structure.isAreaEffect()) {
-                    // Area effect (splash around target)
-                    // Use a default small splash radius (e.g., 1 tile) or define in ICombatant if
-                    // variable
-                    combatService.applyAreaDamage(this, best.getPosition(), 1.0, structure.getDamage(),
-                            structure.getTargetType(), structure.isPlayerSide());
-                } else {
-                    // Single target
-                    combatService.applyDamage(structure, best);
-                }
-                structure.setAttackCooldown(Math.max(0.1, structure.getHitSpeed()));
-            } else {
-                structure.setAttackCooldown(cd);
-            }
-        } else {
-            // No target, cooldown just ticks down
-            structure.setAttackCooldown(Math.max(0.0, cd));
-        }
-    }
-
-    private void updateBuildingsCombat(double deltaTime) {
-        for (Building b : activeBuildings) {
-            processStructureCombat(b, deltaTime);
-        }
-
-        // Remove dead troops post building attacks
-        activeTroops.removeIf(t -> !t.isAlive());
-
-        for (Building b : activeBuildings) {
-            if (!b.isAlive() && b.isAreaEffect()) { // Assuming death damage is tied to isAreaEffect like Bomb Tower
-                GridPosition center = b.getCenterPosition();
-                if (center != null) {
-                    combatService.applyAreaDamage(this, center, 1.0, b.getDamage(), b.getTargetType(),
-                            b.isPlayerSide());
-                }
-            }
-        }
-    }
-
-    private void updateTowersCombat(double deltaTime) {
-        java.util.Set<Tower> towers = arena.getAllTowers();
-        for (Tower t : towers) {
-            processStructureCombat(t, deltaTime);
-        }
-        // Remove any dead troops after tower attacks
-        activeTroops.removeIf(t -> !t.isAlive());
     }
 
     public boolean isDoubleElixir() {

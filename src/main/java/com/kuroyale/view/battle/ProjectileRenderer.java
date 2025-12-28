@@ -1,7 +1,6 @@
 package com.kuroyale.view.battle;
 
 import com.kuroyale.model.entities.ICombatant;
-import com.kuroyale.model.entities.Troop;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -33,7 +32,7 @@ public class ProjectileRenderer {
             if (!combatant.isAlive())
                 continue;
 
-            Troop target = combatant.getTarget();
+            ICombatant target = combatant.getTarget();
             if (target != null && target.isAlive()) {
                 currentAttackers.add(combatant);
                 renderProjectile(combatant, target);
@@ -54,7 +53,7 @@ public class ProjectileRenderer {
         });
     }
 
-    private void renderProjectile(ICombatant attacker, Troop target) {
+    private void renderProjectile(ICombatant attacker, ICombatant target) {
         // Calculate costs less than layout lookups
         double duration = Math.max(0.15, attacker.getHitSpeed());
         double cooldown = attacker.getAttackCooldown();
@@ -73,11 +72,9 @@ public class ProjectileRenderer {
         double sy = (startPos.getY() + 0.5) * TILE_SIZE;
 
         // Target Center
-        com.kuroyale.model.entities.GridPosition targetPos = target.getPosition(); // Troop position is top-left usually
-        // For troops, center is +0.5 from position
-        // If target has getCenterPosition, use that. Troop extends ICombatant?
-        // Checking Troop.java would be ideal, but assuming (pos.x + 0.5) is safe for
-        // generic center.
+        com.kuroyale.model.entities.GridPosition targetPos = target.getCenterPosition();
+        // For structures, getCenterPosition gives center of footprint.
+        // For troops, it should also give center.
 
         // Use target's center if available or calculate from top-left
         double tx, ty;
