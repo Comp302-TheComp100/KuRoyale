@@ -174,8 +174,7 @@ public class DeckSlotView extends StackPane {
 
         StackPane imageContainer = new StackPane();
         imageContainer.setStyle("-fx-background-color: transparent;");
-        // Add children in order: cardImage (bottom), highlightOverlay (middle),
-        // costPane (top), levelLabel (top)
+        // Add children in order: cardImage (bottom), highlightOverlay (middle), costPane (top), levelLabel (top)
         imageContainer.getChildren().addAll(cardImage, highlightOverlay, costPane, levelLabel);
 
         // Position cost at top left

@@ -12,9 +12,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
-/**
- * Custom View component for a Challenge Card in the selection ladder.
- */
+// Custom View component for a Challenge Card in the selection ladder.
 public class ChallengeCardView extends VBox {
 
     public interface ChallengeStartListener {

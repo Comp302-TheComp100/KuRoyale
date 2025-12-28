@@ -8,14 +8,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-/**
- * Custom View component for a Saved Game Entry.
- */
+// Custom View component for a Saved Game Entry.
 public class SavedGameEntryView extends HBox {
 
     public interface SavedGameListener {
         void onLoad();
-
         void onDelete();
     }
 
