@@ -113,12 +113,7 @@ public class CombatService {
             }
         }
 
-        // Add visual effect (this creates a dependency on GameState to add effect,
-        // effectively mutating state. Is this side effect desired in Service?
-        // Yes, CombatService mutates state (HP).)
-        gameState.getActiveSpellEffects().add(
-                new com.kuroyale.model.logic.GameState.SpellEffect(center, (int) Math.round(radiusTiles),
-                        isPlayerSource,
-                        0.3));
+        // Broadcast visual effect via Event Bus
+        com.kuroyale.event.GameEventBus.getInstance().publishAreaEffect(isPlayerSource, center, radiusTiles, 0.3);
     }
 }

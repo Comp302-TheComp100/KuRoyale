@@ -20,7 +20,6 @@ public class GameState {
     private final List<PlacedCard> placedCards;
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
-    private final List<SpellEffect> activeSpellEffects;
     private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
     private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
 
@@ -50,7 +49,6 @@ public class GameState {
         this.placedCards = new ArrayList<>();
         this.activeTroops = new ArrayList<>();
         this.activeBuildings = new ArrayList<>();
-        this.activeSpellEffects = new ArrayList<>();
     }
 
     public void setActiveChallenge(ChallengeType activeChallenge) {
@@ -154,7 +152,6 @@ public class GameState {
     private void handleCombat(double deltaTime) {
         updateBuildingsCombat(deltaTime);
         updateTowersCombat(deltaTime);
-        updateSpellEffects(deltaTime);
     }
 
     private void cleanupEntities() {
@@ -493,8 +490,6 @@ public class GameState {
             return;
 
         combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer);
-        // Track effect for UI for 1 second
-        activeSpellEffects.add(new SpellEffect(GridPosition.tryCreate(x, y), (int) radius, isPlayer, 1.0));
     }
 
     /**
@@ -517,42 +512,6 @@ public class GameState {
         TargetType targetType = attacker.getBaseCard() != null ? attacker.getBaseCard().getTarget() : TargetType.BOTH;
 
         combatService.applyAreaDamage(this, center, radius, damage, targetType, attacker.isPlayerSide());
-        // Short-lived visual ring for this AoE, rendered via
-        // BattleArenaView.renderSpellEffects
-        activeSpellEffects.add(new SpellEffect(center, (int) radius, attacker.isPlayerSide(), 0.3));
-    }
-
-    /**
-     * Apply circular area damage originating from a building attack or death
-     * explosion.
-     * Only damages enemy troops and respects the building's targeting rules.
-     */
-
-    private void updateSpellEffects(double deltaTime) {
-        if (activeSpellEffects.isEmpty())
-            return;
-        java.util.Iterator<SpellEffect> it = activeSpellEffects.iterator();
-        while (it.hasNext()) {
-            SpellEffect se = it.next();
-            se.timeRemaining -= deltaTime;
-            if (se.timeRemaining <= 0) {
-                it.remove();
-            }
-        }
-    }
-
-    public static class SpellEffect {
-        public final GridPosition center;
-        public final int radiusTiles;
-        public final boolean isPlayerSide;
-        public double timeRemaining;
-
-        public SpellEffect(GridPosition center, int radiusTiles, boolean isPlayerSide, double timeSeconds) {
-            this.center = center;
-            this.radiusTiles = radiusTiles;
-            this.isPlayerSide = isPlayerSide;
-            this.timeRemaining = timeSeconds;
-        }
     }
 
     // Trigger death explosion for area-effect buildings (e.g., Bomb Tower)
@@ -631,10 +590,6 @@ public class GameState {
 
     public List<Building> getActiveBuildings() {
         return activeBuildings;
-    }
-
-    public List<SpellEffect> getActiveSpellEffects() {
-        return activeSpellEffects;
     }
 
     // Inner class to track placed units

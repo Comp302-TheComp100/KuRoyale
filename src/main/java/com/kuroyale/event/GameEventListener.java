@@ -17,4 +17,8 @@ public interface GameEventListener {
 
     default void onElixirSpent(boolean isPlayer, int amount) {
     }
+
+    default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center, double radius,
+            double duration) {
+    }
 }

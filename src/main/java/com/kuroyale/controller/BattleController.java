@@ -202,7 +202,7 @@ public class BattleController {
         gameState.update(deltaTime);
         elixirBar.update();
         handView.update();
-        arenaView.update();
+        arenaView.update(deltaTime);
 
         // Check for Double Elixir
         if (gameState.isDoubleElixir() && !doubleElixirShown) {
