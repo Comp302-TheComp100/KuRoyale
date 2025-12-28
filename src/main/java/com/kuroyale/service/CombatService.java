@@ -11,7 +11,7 @@ public class CombatService {
     public void applyDamage(ICombatant attacker, ICombatant target) {
         if (attacker == null || target == null)
             return;
-        double dmg = attacker.getDamage();
+        int dmg = attacker.getDamage();
         target.takeDamage(dmg);
     }
 
@@ -37,6 +37,8 @@ public class CombatService {
         if (gameState == null || center == null || radiusTiles <= 0 || damage <= 0)
             return;
 
+        int intDamage = (int) Math.round(damage);
+
         // Damage enemy troops
         java.util.List<Troop> troops = new java.util.ArrayList<>(gameState.getActiveTroops());
         for (Troop t : troops) {
@@ -57,7 +59,7 @@ public class CombatService {
             // Distance Check
             double dist = center.getEuclideanDistanceTo(t.getPosition());
             if (dist <= radiusTiles) {
-                t.takeDamage((int) Math.round(damage));
+                t.takeDamage(intDamage);
             }
         }
 
@@ -83,7 +85,7 @@ public class CombatService {
 
                 double dist = center.getEuclideanDistanceTo(bCenter);
                 if (dist <= radiusTiles) {
-                    b.takeDamage(damage);
+                    b.takeDamage(intDamage);
                     if (!b.isAlive()) {
                         gameState.getArena().freeFootprint(b);
                     }
@@ -108,7 +110,7 @@ public class CombatService {
 
                 double dist = center.getEuclideanDistanceTo(tCenter);
                 if (dist <= radiusTiles) {
-                    t.takeDamage(damage);
+                    t.takeDamage(intDamage);
                 }
             }
         }

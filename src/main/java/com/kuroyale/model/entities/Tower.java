@@ -5,9 +5,9 @@ import com.kuroyale.model.enums.*;
 public class Tower implements ICombatant {
     private final TowerType type;
     private final boolean playerSide; // Now explicitly tracked
-    private double maxHealth;
-    private double currentHealth;
-    private double damage;
+    private int maxHealth;
+    private int currentHealth;
+    private int damage;
     private double hitSpeed;
     private double range;
     private TargetType targetType;
@@ -41,7 +41,7 @@ public class Tower implements ICombatant {
     }
 
     @Override
-    public void takeDamage(double amount) {
+    public void takeDamage(int amount) {
         this.currentHealth -= amount;
         if (this.currentHealth < 0) {
             this.currentHealth = 0;
@@ -53,8 +53,8 @@ public class Tower implements ICombatant {
         return currentHealth > 0;
     }
 
-    public void setCurrentHealth(double health) {
-        this.currentHealth = Math.max(0, Math.min(health, maxHealth));
+    public void setCurrentHealth(int health) {
+        this.currentHealth = Math.max(0, Math.min(health, (int) maxHealth));
     }
 
     // Getters implementation for ICombatant
@@ -117,18 +117,18 @@ public class Tower implements ICombatant {
     }
 
     public double getHealthPercentage() {
-        return currentHealth / maxHealth;
+        return (double) currentHealth / maxHealth;
     }
 
-    public double getMaxHealth() {
+    public int getMaxHealth() {
         return maxHealth;
     }
 
-    public double getCurrentHealth() {
+    public int getCurrentHealth() {
         return currentHealth;
     }
 
-    public double getDamage() {
+    public int getDamage() {
         return damage;
     }
 

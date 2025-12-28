@@ -24,7 +24,7 @@ public interface ICombatant {
     // Combat Stats
     double getRange();
 
-    double getDamage();
+    int getDamage();
 
     double getHitSpeed(); // Seconds per hit
 
@@ -37,7 +37,7 @@ public interface ICombatant {
 
     boolean canTarget(Troop troop);
 
-    void takeDamage(double amount);
+    void takeDamage(int amount);
 
     // Optional capabilities
     default boolean isAreaEffect() {

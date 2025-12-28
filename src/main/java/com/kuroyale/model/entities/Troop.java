@@ -12,7 +12,7 @@ public class Troop implements ICombatant {
     private final boolean isPlayer;
     private final boolean isAirUnit;
     private final boolean buildingOnly;
-    private double currentHealth;
+    private int currentHealth;
     private final double moveSpeed; // tiles per second
     private final double attackRange; // in tiles
     private final Deque<Vector2> path; // Continuous waypoints
@@ -143,11 +143,11 @@ public class Troop implements ICombatant {
         return isPlayer;
     }
 
-    public double getCurrentHealth() {
+    public int getCurrentHealth() {
         return currentHealth;
     }
 
-    public void takeDamage(double amount) {
+    public void takeDamage(int amount) {
         currentHealth = Math.max(0, currentHealth - amount);
     }
 
@@ -204,7 +204,7 @@ public class Troop implements ICombatant {
         return attackRange;
     }
 
-    public double getDamage() {
+    public int getDamage() {
         return combatStats != null ? combatStats.getDamage() : 0;
     }
 

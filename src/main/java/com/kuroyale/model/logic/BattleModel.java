@@ -114,7 +114,7 @@ public class BattleModel {
                 if (pos != null) {
                     Troop troop = new Troop(card, pos, savedTroop.isPlayerSide());
                     // Set health to saved value
-                    double healthLoss = card.getHp() - savedTroop.getCurrentHealth();
+                    int healthLoss = card.getHp() - savedTroop.getCurrentHealth();
                     if (healthLoss > 0) {
                         troop.takeDamage(healthLoss);
                     }
@@ -146,7 +146,7 @@ public class BattleModel {
                     building.configureCombatFromCard(card);
 
                     // Set health to saved value
-                    double healthLoss = card.getHp() - savedBuilding.getCurrentHealth();
+                    int healthLoss = card.getHp() - savedBuilding.getCurrentHealth();
                     if (healthLoss > 0) {
                         building.takeDamage(healthLoss);
                     }

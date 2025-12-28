@@ -7,8 +7,8 @@ public class Building implements ICombatant {
     private final int width;
     private final int height;
     private final boolean playerSide; // owner
-    private double maxHealth;
-    private double currentHealth;
+    private int maxHealth;
+    private int currentHealth;
     private final String imagePath; // optional image path from card
     private String cardName; // Store the card name for save/load functionality
     // Lifetime tracking for depreciation
@@ -22,12 +22,12 @@ public class Building implements ICombatant {
     private double attackCooldown;
     private boolean areaEffect = false;
 
-    public Building(GridPosition position, int width, int height, boolean playerSide, double maxHealth,
+    public Building(GridPosition position, int width, int height, boolean playerSide, int maxHealth,
             String imagePath) {
         this(position, width, height, playerSide, maxHealth, imagePath, 0);
     }
 
-    public Building(GridPosition position, int width, int height, boolean playerSide, double maxHealth,
+    public Building(GridPosition position, int width, int height, boolean playerSide, int maxHealth,
             String imagePath, int lifetimeSeconds) {
         this.position = position;
         this.width = width;
@@ -91,11 +91,11 @@ public class Building implements ICombatant {
         return playerSide;
     }
 
-    public double getMaxHealth() {
+    public int getMaxHealth() {
         return maxHealth;
     }
 
-    public double getCurrentHealth() {
+    public int getCurrentHealth() {
         return currentHealth;
     }
 
@@ -103,7 +103,7 @@ public class Building implements ICombatant {
         return imagePath;
     }
 
-    public double getDamage() {
+    public int getDamage() {
         return damage;
     }
 
@@ -154,12 +154,13 @@ public class Building implements ICombatant {
         if (lifetimeSeconds > 0) {
             remainingLifetime -= deltaTime;
 
-            // Calculate decay amount per second: maxHealth / lifetimeSeconds
-            double decayPerSecond = maxHealth / lifetimeSeconds;
+            // Apply decay (using floating point for precision during calculation, but
+            // applying as int)
+            double decayPerSecond = (double) maxHealth / lifetimeSeconds;
             double decayAmount = decayPerSecond * deltaTime;
 
-            // Apply decay
-            currentHealth = Math.max(0, currentHealth - decayAmount);
+            // Apply decay - subtract then clamp
+            currentHealth = (int) Math.max(0, Math.ceil(currentHealth - decayAmount));
 
             if (remainingLifetime <= 0) {
                 // Building expired, ensure health is 0
@@ -168,7 +169,7 @@ public class Building implements ICombatant {
         }
     }
 
-    public void takeDamage(double amount) {
+    public void takeDamage(int amount) {
         currentHealth = Math.max(0, currentHealth - amount);
     }
 
