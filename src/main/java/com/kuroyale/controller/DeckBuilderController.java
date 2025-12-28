@@ -56,26 +56,16 @@ public class DeckBuilderController {
     private static final int SLOT_CONTAINER_HEIGHT = 280;
     private static final int RECESSED_RECT_OFFSET_Y = 20; // Deck slots are 20px lower than brown background
 
-    @FXML
-    private AnchorPane deckSlotsBackground;
-    @FXML
-    private AnchorPane deckSlotsContainer;
-    @FXML
-    private AnchorPane cardsGridBackground;
-    @FXML
-    private GridPane cardsGrid;
-    @FXML
-    private ScrollPane cardsScrollPane;
-    @FXML
-    private StackPane rootPane;
-    @FXML
-    private Button backButton;
-    @FXML
-    private Label averageElixirValue;
-    @FXML
-    private Label battleDeckTitle;
-    @FXML
-    private HBox averageElixirContainer;
+    @FXML private AnchorPane deckSlotsBackground;
+    @FXML private AnchorPane deckSlotsContainer;
+    @FXML private AnchorPane cardsGridBackground;
+    @FXML private GridPane cardsGrid;
+    @FXML private ScrollPane cardsScrollPane;
+    @FXML private StackPane rootPane;
+    @FXML private Button backButton;
+    @FXML private Label averageElixirValue;
+    @FXML private Label battleDeckTitle;
+    @FXML private HBox averageElixirContainer;
 
     private final DeckBuilderModel model = new DeckBuilderModel();
     private final SceneLoader sceneLoader = new SceneLoader();
@@ -251,11 +241,9 @@ public class DeckBuilderController {
         reorganizeCardGrid();
     }
 
-    /*
-     * Reorganizes the bottom card grid so visible cards fill rows of 4
+    /* Reorganizes the bottom card grid so visible cards fill rows of 4
      * Cards are always shown in the same consistent order
-     * Only cards NOT in the deck are displayed
-     */
+     * Only cards NOT in the deck are displayed*/
     private void reorganizeCardGrid() {
         // Clear the grid
         cardsGrid.getChildren().clear();
@@ -698,8 +686,7 @@ public class DeckBuilderController {
         }
     }
 
-    // Loads the user's saved deck from their account with exact slot positions of
-    // cards
+    // Loads the user's saved deck from their account with exact slot positions of cards
     private void loadUserDeck() {
         Map<Integer, Card> deckMap = model.loadUserDeckWithPositions();
 

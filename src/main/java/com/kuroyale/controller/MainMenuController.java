@@ -25,28 +25,17 @@ import javafx.scene.media.MediaPlayer;
  * Implements Model-View-Controller (MVC) - Controller component*/
 public class MainMenuController {
 
-    @FXML
-    private AnchorPane root;
-    @FXML
-    private Label titleLabel;
-    @FXML
-    private Button deckBuilderButton;
-    @FXML
-    private Button startMatchButton;
-    @FXML
-    private Button resumeGameButton;
-    @FXML
-    private Button arenaDesignButton;
-    @FXML
-    private Button challengesButton;
-    @FXML
-    private Button settingsButton;
-    @FXML
-    private Button questsButton;
-    @FXML
-    private HBox goldDisplay;
-    @FXML
-    private Label goldLabel;
+    @FXML private AnchorPane root;
+    @FXML private Label titleLabel;
+    @FXML private Button deckBuilderButton;
+    @FXML private Button startMatchButton;
+    @FXML private Button resumeGameButton;
+    @FXML private Button arenaDesignButton;
+    @FXML private Button challengesButton;
+    @FXML private Button settingsButton;
+    @FXML private Button questsButton;
+    @FXML private HBox goldDisplay;
+    @FXML private Label goldLabel;
 
     private static MediaPlayer mainMenuMusicPlayer;
     private final MenuModel model = new MenuModel();
@@ -192,8 +181,6 @@ public class MainMenuController {
     private void handleSettings() {
         SoundEffectUtil.playButtonClick();
         try {
-            // Note: Settings title is usually set in its own controller/FMXL,
-            // but we pass a title here for consistency
             sceneLoader.load(settingsButton, "/fxml/settings.fxml", "KU Royale - Settings", null);
         } catch (IOException e) {
             e.printStackTrace();

@@ -21,24 +21,14 @@ import java.io.IOException;
 import java.util.List;
 
 /* Controller for the Arena Design UI.
- * Refactored to Orchestrate Model and View (Renderer).
- */
+ * Refactored to Orchestrate Model and View (Renderer).*/
 public class ArenaDesignController {
 
-    @FXML
-    private GridPane arenaGrid;
-
-    @FXML
-    private TextField arenaNameField;
-
-    @FXML
-    private javafx.scene.shape.Rectangle draggableBridge;
-
-    @FXML
-    private javafx.scene.shape.Rectangle draggablePrincessTower;
-
-    @FXML
-    private javafx.scene.shape.Rectangle draggableKingTower;
+    @FXML private GridPane arenaGrid;
+    @FXML private TextField arenaNameField;
+    @FXML private javafx.scene.shape.Rectangle draggableBridge;
+    @FXML private javafx.scene.shape.Rectangle draggablePrincessTower;
+    @FXML private javafx.scene.shape.Rectangle draggableKingTower;
 
     private final ArenaDesignModel model = new ArenaDesignModel();
     private ArenaLayout currentLayout;

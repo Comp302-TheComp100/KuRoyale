@@ -25,16 +25,11 @@ import javafx.scene.shape.Line;
  */
 public class ChallengeSelectionController {
 
-    @FXML
-    private AnchorPane root;
-    @FXML
-    private Label titleLabel;
-    @FXML
-    private ScrollPane challengeScrollPane;
-    @FXML
-    private VBox challengeLadderContainer;
-    @FXML
-    private Button backButton;
+    @FXML private AnchorPane root;
+    @FXML private Label titleLabel;
+    @FXML private ScrollPane challengeScrollPane;
+    @FXML private VBox challengeLadderContainer;
+    @FXML private Button backButton;
 
     private final SceneLoader sceneLoader = new SceneLoader();
     private List<Challenge> challenges;
@@ -93,9 +88,7 @@ public class ChallengeSelectionController {
         return container;
     }
 
-    /**
-     * Handles starting a challenge - shows detail dialog.
-     */
+    //Handles starting a challenge - shows detail dialog.
     private void handleStartChallenge(Challenge challenge) {
         SoundEffectUtil.playButtonClick();
 

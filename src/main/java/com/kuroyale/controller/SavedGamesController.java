@@ -14,26 +14,19 @@ import java.util.List;
 // Controller for the Saved Games screen. Implements MVC pattern.
 public class SavedGamesController {
 
-    @FXML
-    private AnchorPane root;
-    @FXML
-    private Label infoLabel;
-    @FXML
-    private ScrollPane savedGamesScrollPane;
-    @FXML
-    private VBox savedGamesContainer;
+    @FXML private AnchorPane root;
+    @FXML private Label infoLabel;
+    @FXML private ScrollPane savedGamesScrollPane;
+    @FXML private VBox savedGamesContainer;
 
     // 1. MVC: Instantiate the Model
     private final SavedGamesModel model = new SavedGamesModel();
     // 2. Scene Management: Instantiate the SceneLoader
     private final SceneLoader sceneLoader = new SceneLoader();
 
-    // Dependencies (Service classes removed from fields, now used only by the
-    // Model)
+    // Dependencies (Service classes removed from fields, now used only by the Model)
 
     public SavedGamesController() {
-        // Dependencies are now handled within the Model, simplifying the Controller
-        // constructor.
     }
 
     @FXML
@@ -45,7 +38,7 @@ public class SavedGamesController {
         loadSavedGames();
     }
 
-    // --- Data Loading (Delegated to Model) ---
+    //  Data Loading (Delegated to Model)
 
     private void loadSavedGames() {
         savedGamesContainer.getChildren().clear();
@@ -67,7 +60,7 @@ public class SavedGamesController {
         }
     }
 
-    // --- UI Construction (View/Controller concern) ---
+    //  UI Construction (View/Controller concern)
 
     private javafx.scene.layout.HBox createSavedGameEntry(SavedGameState savedGame) {
         return new com.kuroyale.view.SavedGameEntryView(savedGame,
@@ -84,7 +77,7 @@ public class SavedGamesController {
                 });
     }
 
-    // --- Action Handlers (Controller logic) ---
+    //  Action Handlers (Controller logic)
 
     private void handleLoadGame(SavedGameState savedGame) {
         SoundEffectUtil.playButtonClick();
@@ -140,7 +133,7 @@ public class SavedGamesController {
         }
     }
 
-    // --- Utility Methods (Controller/View concern) ---
+    // Utility Methods (Controller/View concern)
 
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);

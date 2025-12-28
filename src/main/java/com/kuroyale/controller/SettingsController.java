@@ -11,16 +11,11 @@ import javafx.scene.layout.StackPane;
 
 public class SettingsController {
 
-    @FXML
-    private StackPane root;
-    @FXML
-    private Slider musicSlider;
-    @FXML
-    private Slider sfxSlider;
-    @FXML
-    private CheckBox buttonSoundsCheckBox;
-    @FXML
-    private Button backButton;
+    @FXML private StackPane root;
+    @FXML private Slider musicSlider;
+    @FXML private Slider sfxSlider;
+    @FXML private CheckBox buttonSoundsCheckBox;
+    @FXML private Button backButton;
 
     private final SettingsModel model = new SettingsModel();
     private final com.kuroyale.util.SceneLoader sceneLoader = new com.kuroyale.util.SceneLoader();

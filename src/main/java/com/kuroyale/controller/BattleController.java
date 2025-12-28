@@ -18,42 +18,25 @@ import javafx.scene.layout.VBox;
  * Manages the game loop, user input, and UI updates.*/
 public class BattleController {
 
-    @FXML
-    private StackPane arenaContainer;
-    @FXML
-    private HBox elixirContainer;
-    @FXML
-    private VBox handContainer;
-    @FXML
-    private VBox overlayContainer;
-    @FXML
-    private VBox pauseMenuContainer;
+    @FXML private StackPane arenaContainer;
+    @FXML private HBox elixirContainer;
+    @FXML private VBox handContainer;
+    @FXML private VBox overlayContainer;
+    @FXML private VBox pauseMenuContainer;
 
-    @FXML
-    private VBox challengeGameOverRoot;
-    @FXML
-    private javafx.scene.control.Label challengeTitle;
-    @FXML
-    private HBox challengeStarBox;
-    @FXML
-    private javafx.scene.control.Label star1;
-    @FXML
-    private javafx.scene.control.Label star2;
-    @FXML
-    private javafx.scene.control.Label star3;
-    @FXML
-    private javafx.scene.control.Label challengeTimeLabel;
-    @FXML
-    private VBox challengeConditionsBox;
-    @FXML
-    private javafx.scene.control.Label challengeRewardLabel;
+    @FXML private VBox challengeGameOverRoot;
+    @FXML private javafx.scene.control.Label challengeTitle;
+    @FXML private HBox challengeStarBox;
+    @FXML private javafx.scene.control.Label star1;
+    @FXML private javafx.scene.control.Label star2;
+    @FXML private javafx.scene.control.Label star3;
+    @FXML private javafx.scene.control.Label challengeTimeLabel;
+    @FXML private VBox challengeConditionsBox;
+    @FXML private javafx.scene.control.Label challengeRewardLabel;
 
-    @FXML
-    private VBox gameOverRoot;
-    @FXML
-    private javafx.scene.control.Label gameOverTitle;
-    @FXML
-    private javafx.scene.control.Label gameOverScore;
+    @FXML private VBox gameOverRoot;
+    @FXML private javafx.scene.control.Label gameOverTitle;
+    @FXML private javafx.scene.control.Label gameOverScore;
 
     private GameState gameState;
     private BattleArenaView arenaView;
@@ -79,9 +62,7 @@ public class BattleController {
         this.loadedSavedGame = savedGame;
     }
 
-    /**
-     * Starts a challenge match with specific rules and deck.
-     */
+    // Starts a challenge match with specific rules and deck.
     public void startChallengeGame(Challenge challenge, Deck playerDeck) {
         this.currentChallenge = challenge;
         this.challengePlayerDeck = playerDeck;
@@ -93,15 +74,11 @@ public class BattleController {
         // The actual initialization happens in startGame() which is called after setup
     }
 
-    /*
-     * Starts the game. Must be called AFTER setLoadedSavedGame() if loading a saved
-     * game
-     */
+    // Starts the game. Must be called AFTER setLoadedSavedGame() if loading a saved game
     public void startGame() {
         // Initialize game state
         User currentUser = model.getCurrentUser();
-        // Allow starting challenge even if user logic is tricky, but we usually need
-        // currentUser for other things
+        // Allow starting challenge even if user logic is tricky, but we usually need currentUser for other things
         if (currentUser == null && currentChallenge == null) {
             handleExit();
             return;
@@ -264,9 +241,7 @@ public class BattleController {
 
         // Title
         challengeTitle.setText(playerWon ? "CHALLENGE COMPLETE!" : "CHALLENGE FAILED");
-        // We can toggle style classes if needed, but text color is handled by generic
-        // class?
-        // No, current CSS has fixed color or we need to set it.
+
         // The original code set color manually.
         challengeTitle.getStyleClass().removeAll("challenge-victory-text", "challenge-defeat-text");
         challengeTitle.getStyleClass().add(playerWon ? "challenge-victory-text" : "challenge-defeat-text");
