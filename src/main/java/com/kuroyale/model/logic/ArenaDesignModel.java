@@ -79,8 +79,7 @@ public class ArenaDesignModel {
         return errors;
     }
 
-    /* Logic Methods moved from Controller */
-
+    // Logic Methods moved from Controller
     public boolean canPlaceBridge(ArenaLayout layout, int x, int y, StringBuilder errorMsg) {
         // Check max bridges
         if (layout.getBridgePositions().size() >= GameConstants.MAX_BRIDGE_TILES) {

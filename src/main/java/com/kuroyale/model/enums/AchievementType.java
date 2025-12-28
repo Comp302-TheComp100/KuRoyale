@@ -1,9 +1,7 @@
 package com.kuroyale.model.enums;
 
-/**
- * Enum defining all permanent achievements.
- * Each achievement has a target value, gold reward, name, and description.
- */
+/* Enum defining all permanent achievements.
+ * Each achievement has a target value, gold reward, name, and description.*/
 public enum AchievementType {
     FIRST_BLOOD(1, 500, "First Blood", "Win your first match"),
     TOWER_HUNTER(50, 750, "Tower Hunter", "Destroy 50 Crown Towers total"),

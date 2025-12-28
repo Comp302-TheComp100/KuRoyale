@@ -20,8 +20,7 @@ public class MenuModel {
         this.gameValidator = new GameStartValidator();
     }
 
-    // Checks if a user is logged in and if their current game state (e.g., deck) is
-    // valid to start a match.
+    // Checks if a user is logged in and if their current game state (e.g., deck) is valid to start a match.
     public List<String> validateAndPrepareMatchStart() {
         User currentUser = authService.getCurrentUser();
 

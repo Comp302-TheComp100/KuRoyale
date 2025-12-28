@@ -5,13 +5,9 @@ import com.kuroyale.model.entities.ICombatant;
 
 import java.util.*;
 
-/**
- * A spatial partitioning grid (Bin-Lattice) to optimize spatial queries.
- * The arena is divided into larger buckets (cells). Entities are stored in
- * these buckets based on their position.
- * This allows for O(1) mostly for adding/removing and O(k) for querying nearby
- * entities rather than O(N).
- */
+/*A spatial partitioning grid (Bin-Lattice) to optimize spatial queries.
+ * The arena is divided into larger buckets (cells). Entities are stored in these buckets based on their position.
+ * This allows for O(1) mostly for adding/removing and O(k) for querying nearby entities rather than O(N). */
 public class SpatialGrid {
     private static final int BUCKET_SIZE = 4; // Each bucket covers 4x4 tiles
     private final int width;
@@ -20,11 +16,7 @@ public class SpatialGrid {
     private final int rows;
 
     // Grid of buckets. Each bucket is a generic collection of ICombatant.
-    // Using Set to prevent duplicates if an entity spans multiple buckets (though
-    // initially we'll map by center or top-left)
-    // To handle large units explicitly, we might map them to multiple buckets, but
-    // for now let's map by center point
-    // consistent with current distance logic.
+    // Using Set to prevent duplicates if an entity spans multiple buckets
     private final List<Set<ICombatant>> buckets;
 
     // Keep track of entity bucket indices to allow fast removal/updates
@@ -46,9 +38,7 @@ public class SpatialGrid {
         this.entityBucketMap = new HashMap<>();
     }
 
-    /**
-     * Adds an entity to the spatial grid based on its center position.
-     */
+    // Adds an entity to the spatial grid based on its center position
     public void add(ICombatant entity) {
         if (entity == null || entity.getPosition() == null)
             return;
@@ -60,9 +50,7 @@ public class SpatialGrid {
         }
     }
 
-    /**
-     * Removes an entity from the grid.
-     */
+    //Removes an entity from the grid.
     public void remove(ICombatant entity) {
         if (entity == null)
             return;
@@ -73,10 +61,8 @@ public class SpatialGrid {
         }
     }
 
-    /**
-     * Updates an entity's position in the grid.
-     * Should be called whenever an entity moves significantly (changes buckets).
-     */
+    /* Updates an entity's position in the grid.
+     * Should be called whenever an entity moves significantly (changes buckets).*/
     public void update(ICombatant entity) {
         if (entity == null || entity.getPosition() == null)
             return;
@@ -85,7 +71,7 @@ public class SpatialGrid {
         Integer oldBucketIndex = entityBucketMap.get(entity);
 
         if (oldBucketIndex != null && oldBucketIndex == newBucketIndex) {
-            return; // Still in same bucket, no change needed
+            return;
         }
 
         // Remove from old bucket
@@ -103,10 +89,7 @@ public class SpatialGrid {
         }
     }
 
-    /**
-     * Retrieves all entities in the buckets overlapping the query radius around the
-     * center.
-     */
+    // Retrieves all entities in the buckets overlapping the query radius around the center.
     public List<ICombatant> getNearby(GridPosition center, double radius) {
         List<ICombatant> results = new ArrayList<>();
         if (center == null)
