@@ -93,10 +93,6 @@ public class Troop implements ICombatant {
         return path;
     }
 
-    public boolean isAirUnit() {
-        return isAirUnit;
-    }
-
     public boolean isBuildingOnly() {
         return buildingOnly;
     }
@@ -131,8 +127,14 @@ public class Troop implements ICombatant {
         this.worldPosition = Vector2.fromGridPosition(pos);
     }
 
+    @Override
     public boolean isPlayerSide() {
         return isPlayer;
+    }
+
+    @Override
+    public boolean isAirUnit() {
+        return isAirUnit;
     }
 
     public int getCurrentHealth() {
@@ -208,20 +210,23 @@ public class Troop implements ICombatant {
         return baseCard != null ? baseCard.getTarget() : TargetType.GROUND;
     }
 
-    public boolean canTarget(Troop t) {
-        if (t == null || !t.isAlive())
+    @Override
+    public boolean canTarget(ICombatant target) {
+        if (target == null || !target.isAlive())
             return false;
         TargetType tt = getTargetType();
-        if (tt == TargetType.BUILDINGS)
-            return false; // Troops can't target troops if building-only
-        if (tt == TargetType.GROUND && t.isAirUnit())
+
+        // Specific logic: if building only, only target Buildings or Towers
+        if (tt == TargetType.BUILDINGS) {
+            return target instanceof Building || target instanceof Tower;
+        }
+
+        // Standard Target Checks
+        if (tt == TargetType.GROUND && target.isAirUnit())
             return false;
-        if (tt == TargetType.AIR && !t.isAirUnit())
-            return false; // Usually implies AIR-ONLY? Or BOTH?
-        // Note: TargetType.AIR usually means targets AIR (and maybe GROUND?).
-        // In this game, usually TargetType is GROUND, AIR, BUILDINGS, or BOTH (implies
-        // all).
-        // Let's assume standard logic.
+        if (tt == TargetType.AIR && !target.isAirUnit())
+            return false;
+
         return true;
     }
 

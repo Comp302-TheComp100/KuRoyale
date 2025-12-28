@@ -141,10 +141,8 @@ public class CombatService {
             for (Building b : state.getActiveBuildings()) {
                 if (!b.isAlive() || b.isPlayerSide() == attacker.isPlayerSide())
                     continue;
-                // Note: Troop's canTarget(Troop) doesn't cover buildings, but normally they hit
-                // buildings
-                // unless they have specific logic. Building-only units are handled by
-                // canTarget(Troop) returning false for troops.
+                if (!attacker.canTarget(b))
+                    continue;
 
                 double dist = getDistanceToTarget(attacker, b);
                 if (dist <= range && dist < bestDist) {
@@ -156,6 +154,8 @@ public class CombatService {
             // Towers
             for (Tower t : state.getArena().getAllTowers()) {
                 if (!t.isAlive() || t.isPlayerSide() == attacker.isPlayerSide())
+                    continue;
+                if (!attacker.canTarget(t))
                     continue;
 
                 double dist = getDistanceToTarget(attacker, t);

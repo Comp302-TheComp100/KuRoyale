@@ -12,6 +12,8 @@ public interface ICombatant {
 
     boolean isAlive();
 
+    boolean isAirUnit();
+
     // Position & Geometry
     GridPosition getPosition(); // Top-left position
 
@@ -35,7 +37,7 @@ public interface ICombatant {
     // Targeting & Damage
     TargetType getTargetType();
 
-    boolean canTarget(Troop troop);
+    boolean canTarget(ICombatant target);
 
     void takeDamage(int amount);
 

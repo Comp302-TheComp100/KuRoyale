@@ -64,6 +64,11 @@ public class Tower implements ICombatant {
     }
 
     @Override
+    public boolean isAirUnit() {
+        return false;
+    }
+
+    @Override
     public GridPosition getPosition() {
         // Tower itself doesn't store its position in the Model currently,
         // it acts as a Flyweight or is stored in the Map<GridPosition, Tower>.
@@ -157,14 +162,14 @@ public class Tower implements ICombatant {
     }
 
     @Override
-    public boolean canTarget(Troop troop) {
-        if (troop == null || !troop.isAlive())
+    public boolean canTarget(ICombatant target) {
+        if (target == null || !target.isAlive())
             return false;
         if (targetType == TargetType.BOTH)
             return true;
-        if (targetType == TargetType.GROUND && !troop.isAirUnit())
+        if (targetType == TargetType.GROUND && !target.isAirUnit())
             return true;
-        if (targetType == TargetType.AIR && troop.isAirUnit())
+        if (targetType == TargetType.AIR && target.isAirUnit())
             return true;
         return false;
     }

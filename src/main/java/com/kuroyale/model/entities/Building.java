@@ -182,12 +182,19 @@ public class Building implements ICombatant {
     }
 
     @Override
-    public boolean canTarget(Troop t) {
-        if (t == null || !t.isAlive())
+    public boolean isAirUnit() {
+        return false;
+    }
+
+    @Override
+    public boolean canTarget(ICombatant target) {
+        if (target == null || !target.isAlive())
             return false;
-        if (this.targetType == TargetType.GROUND && t.isAirUnit())
+        if (this.targetType == TargetType.BOTH)
+            return true;
+        if (this.targetType == TargetType.GROUND && target.isAirUnit())
             return false;
-        if (this.targetType == TargetType.AIR && !t.isAirUnit())
+        if (this.targetType == TargetType.AIR && !target.isAirUnit())
             return false;
         return true;
     }
