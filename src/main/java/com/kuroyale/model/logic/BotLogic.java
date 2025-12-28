@@ -1,8 +1,6 @@
 package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
 
 import java.util.Random;
 
@@ -21,7 +19,7 @@ public class BotLogic {
         this.timeSinceLastMove = 0;
     }
 
-    //Updates bot state and decides on moves
+    // Updates bot state and decides on moves
     public Move update(double deltaTime, GameState gameState) {
         timeSinceLastMove += deltaTime;
 
@@ -65,8 +63,13 @@ public class BotLogic {
         return null;
     }
 
-    public ElixirManager getElixirManager() {return elixirManager;}
-    public Hand getHand() {return hand;}
+    public ElixirManager getElixirManager() {
+        return elixirManager;
+    }
+
+    public Hand getHand() {
+        return hand;
+    }
 
     public static class Move {
         public final Card card;

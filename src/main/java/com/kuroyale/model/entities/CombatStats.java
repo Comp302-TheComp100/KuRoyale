@@ -1,9 +1,5 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
-
 public class CombatStats {
     private final int damage;
     private final double hitSpeedSeconds;
@@ -22,8 +18,19 @@ public class CombatStats {
         this.attackType = attackType;
     }
 
-    public int getDamage() { return damage; }
-    public double getHitSpeedSeconds() { return hitSpeedSeconds; }
-    public int getRangeTiles() { return rangeTiles; }
-    public AttackType getAttackType() { return attackType; }
+    public int getDamage() {
+        return damage;
+    }
+
+    public double getHitSpeedSeconds() {
+        return hitSpeedSeconds;
+    }
+
+    public int getRangeTiles() {
+        return rangeTiles;
+    }
+
+    public AttackType getAttackType() {
+        return attackType;
+    }
 }

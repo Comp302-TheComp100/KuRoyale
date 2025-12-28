@@ -1,9 +1,5 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
-
 import java.io.Serializable;
 import java.util.Objects;
 

@@ -1,9 +1,5 @@
 package com.kuroyale.model.enums;
 
-import com.kuroyale.model.entities.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
-
 /**
  * Enum defining all permanent achievements.
  * Each achievement has a target value, gold reward, name, and description.

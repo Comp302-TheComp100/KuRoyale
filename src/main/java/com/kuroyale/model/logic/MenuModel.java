@@ -1,9 +1,6 @@
 package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
-
 import java.util.List;
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.GameStartValidator;
@@ -23,7 +20,8 @@ public class MenuModel {
         this.gameValidator = new GameStartValidator();
     }
 
-    //Checks if a user is logged in and if their current game state (e.g., deck) is valid to start a match.
+    // Checks if a user is logged in and if their current game state (e.g., deck) is
+    // valid to start a match.
     public List<String> validateAndPrepareMatchStart() {
         User currentUser = authService.getCurrentUser();
 

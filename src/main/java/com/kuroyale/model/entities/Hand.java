@@ -1,9 +1,5 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -29,10 +25,14 @@ public class Hand {
         Collections.shuffle(allCards);
 
         // Fill hand
-        for (int i = 0; i < Math.min(HAND_SIZE, allCards.size()); i++) {currentHand.add(allCards.get(i));}
+        for (int i = 0; i < Math.min(HAND_SIZE, allCards.size()); i++) {
+            currentHand.add(allCards.get(i));
+        }
 
         // Fill draw pile with remaining
-        for (int i = HAND_SIZE; i < allCards.size(); i++) {drawPile.offer(allCards.get(i));}
+        for (int i = HAND_SIZE; i < allCards.size(); i++) {
+            drawPile.offer(allCards.get(i));
+        }
 
         // Set next card
         updateNextCard();
@@ -58,9 +58,13 @@ public class Hand {
         return playedCard;
     }
 
-    private void updateNextCard() {nextCard = drawPile.peek();}
+    private void updateNextCard() {
+        nextCard = drawPile.peek();
+    }
 
-    public List<Card> getCards() {return new ArrayList<>(currentHand);}
+    public List<Card> getCards() {
+        return new ArrayList<>(currentHand);
+    }
 
     public Card getCard(int index) {
         if (index >= 0 && index < currentHand.size()) {
@@ -69,5 +73,7 @@ public class Hand {
         return null;
     }
 
-    public Card getNextCard() {return nextCard;}
+    public Card getNextCard() {
+        return nextCard;
+    }
 }

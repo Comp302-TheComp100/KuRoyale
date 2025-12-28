@@ -1,8 +1,6 @@
 package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
 
 import java.io.IOException;
 import com.kuroyale.service.AuthenticationService;
@@ -40,7 +38,7 @@ public class Login {
         return user;
     }
 
-    //Validates input fields and returns a specific error message.
+    // Validates input fields and returns a specific error message.
     public String validateCredentials(String username, String password) {
         if (username.isEmpty() || password.isEmpty()) {
             return "Please enter both username and password";

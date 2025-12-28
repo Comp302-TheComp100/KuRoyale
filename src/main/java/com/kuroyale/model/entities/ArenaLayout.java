@@ -1,9 +1,5 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +23,7 @@ public class ArenaLayout implements Serializable {
     public String getName() {
         return name;
     }
+
     public void setName(String name) {
         this.name = name;
     }
@@ -34,7 +31,10 @@ public class ArenaLayout implements Serializable {
     public List<GridPosition> getBridgePositions() {
         return bridgePositions;
     }
-    public void setBridgePositions(List<GridPosition> bridgePositions) {this.bridgePositions = bridgePositions;}
+
+    public void setBridgePositions(List<GridPosition> bridgePositions) {
+        this.bridgePositions = bridgePositions;
+    }
 
     public void addBridgePosition(int x, int y) {
         this.bridgePositions.add(new GridPosition(x, y));
@@ -43,7 +43,11 @@ public class ArenaLayout implements Serializable {
     public List<GridPosition> getPrincessTowerPositions() {
         return princessTowerPositions;
     }
-    public void setPrincessTowerPositions(List<GridPosition> princessTowerPositions) {this.princessTowerPositions = princessTowerPositions;}
+
+    public void setPrincessTowerPositions(List<GridPosition> princessTowerPositions) {
+        this.princessTowerPositions = princessTowerPositions;
+    }
+
     public void addPrincessTowerPosition(int x, int y) {
         this.princessTowerPositions.add(new GridPosition(x, y));
     }
@@ -51,9 +55,11 @@ public class ArenaLayout implements Serializable {
     public GridPosition getKingTowerPosition() {
         return kingTowerPosition;
     }
+
     public void setKingTowerPosition(GridPosition kingTowerPosition) {
         this.kingTowerPosition = kingTowerPosition;
     }
+
     public void setKingTowerPosition(int x, int y) {
         this.kingTowerPosition = new GridPosition(x, y);
     }

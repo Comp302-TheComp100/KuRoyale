@@ -1,9 +1,5 @@
 package com.kuroyale.model.enums;
 
-import com.kuroyale.model.entities.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
-
 /**
  * Enum defining all possible daily quest types.
  * Each quest has a target value, gold reward, and description template.

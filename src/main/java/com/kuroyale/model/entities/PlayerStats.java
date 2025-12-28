@@ -1,9 +1,5 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
-
 /**
  * Tracks lifetime player statistics for achievements and quests.
  * Persisted to disk to maintain progress across sessions.

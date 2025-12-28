@@ -3,7 +3,6 @@ package com.kuroyale.service;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
-import com.kuroyale.model.dto.*;
 
 public class TargetingService {
     private static final int BASE_DETECTION_RADIUS = 5; // tiles

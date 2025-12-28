@@ -1,9 +1,5 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +34,7 @@ public class User {
     public String getUsername() {
         return username;
     }
+
     public void setUsername(String username) {
         this.username = username;
     }
@@ -45,6 +42,7 @@ public class User {
     public String getPasswordHash() {
         return passwordHash;
     }
+
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
     }
@@ -52,6 +50,7 @@ public class User {
     public List<String> getDeck() {
         return deck;
     }
+
     public void setDeck(List<String> deck) {
         this.deck = deck != null ? deck : new ArrayList<>();
     }
@@ -59,6 +58,7 @@ public class User {
     public int getGold() {
         return gold;
     }
+
     public void setGold(int gold) {
         this.gold = Math.max(0, gold);
     }
@@ -79,7 +79,7 @@ public class User {
         }
     }
 
-    //Gets the saved level for a specific card (defaults to 1)
+    // Gets the saved level for a specific card (defaults to 1)
     public int getCardLevel(String cardName) {
         if (cardName == null) {
             return 1;
@@ -88,7 +88,7 @@ public class User {
         return level != null ? level : 1;
     }
 
-    //Sets the saved level for a specific card
+    // Sets the saved level for a specific card
     public void setCardLevel(String cardName, int level) {
         if (cardName == null || cardName.isEmpty()) {
             return;
@@ -98,27 +98,29 @@ public class User {
     }
 
     // Information Expert: User knows its own password and can validate it
-    //Validates a plain text password against this user's stored hash
+    // Validates a plain text password against this user's stored hash
     public boolean validatePassword(String password) {
         return PasswordUtil.verifyPassword(password, this.passwordHash);
     }
 
     // Information Expert: User knows if it has a deck
-    //Checks if the user has a deck configured
+    // Checks if the user has a deck configured
     public boolean hasDeck() {
         return deck != null && !deck.isEmpty() && deck.stream().anyMatch(card -> card != null && !card.isEmpty());
     }
 
     // Information Expert: User manages its own deck
-    //Updates the user's deck with new card names
+    // Updates the user's deck with new card names
     public void updateDeck(List<String> cardNames) {
         this.deck = cardNames != null ? new ArrayList<>(cardNames) : new ArrayList<>();
     }
 
-    //Clears all cards from the user's deck
-    public void clearDeck() {this.deck.clear();}
+    // Clears all cards from the user's deck
+    public void clearDeck() {
+        this.deck.clear();
+    }
 
-    //Gets the number of cards in the user's deck
+    // Gets the number of cards in the user's deck
     public int getDeckSize() {
         if (deck == null) {
             return 0;
@@ -126,12 +128,18 @@ public class User {
         return (int) deck.stream().filter(card -> card != null && !card.isEmpty()).count();
     }
 
-    //Gets the user's custom arena layout
-    public ArenaLayout getArenaLayout() {return arenaLayout;}
+    // Gets the user's custom arena layout
+    public ArenaLayout getArenaLayout() {
+        return arenaLayout;
+    }
 
-    //Sets the user's custom arena layout
-    public void setArenaLayout(ArenaLayout arenaLayout) {this.arenaLayout = arenaLayout;}
+    // Sets the user's custom arena layout
+    public void setArenaLayout(ArenaLayout arenaLayout) {
+        this.arenaLayout = arenaLayout;
+    }
 
-    //Checks if the user has a custom arena layout
-    public boolean hasArenaLayout() {return arenaLayout != null;}
+    // Checks if the user has a custom arena layout
+    public boolean hasArenaLayout() {
+        return arenaLayout != null;
+    }
 }

@@ -1,8 +1,6 @@
 package com.kuroyale.model.entities;
 
 import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
 
 /**
  * Common interface for all structures that can attack or be attacked.

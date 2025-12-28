@@ -1,9 +1,5 @@
 package com.kuroyale.model.enums;
 
-import com.kuroyale.model.entities.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
-
 /**
  * Enum defining the 5 challenge types in Challenge Mode.
  * Each challenge has unique rules and victory conditions.

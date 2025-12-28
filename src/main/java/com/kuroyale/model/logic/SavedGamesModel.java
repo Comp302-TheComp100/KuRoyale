@@ -1,7 +1,6 @@
 package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
-import com.kuroyale.model.enums.*;
 import com.kuroyale.model.dto.*;
 
 import com.kuroyale.service.AuthenticationService;
@@ -22,7 +21,7 @@ public class SavedGamesModel {
         this.authService = factory.getAuthenticationService();
     }
 
-    //Loads saved games, filtered by the current logged-in user if available.
+    // Loads saved games, filtered by the current logged-in user if available.
     public List<SavedGameState> loadSavedGamesForDisplay() {
         User currentUser = authService.getCurrentUser();
 
@@ -33,7 +32,7 @@ public class SavedGamesModel {
         }
     }
 
-    //Attempts to delete a saved game by its ID.
+    // Attempts to delete a saved game by its ID.
     public boolean deleteGame(String saveId) {
         return gameSaveService.deleteSavedGame(saveId);
     }

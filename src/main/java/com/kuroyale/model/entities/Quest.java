@@ -1,8 +1,6 @@
 package com.kuroyale.model.entities;
 
 import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
-import com.kuroyale.model.logic.*;
 
 /**
  * Represents a daily quest instance.
