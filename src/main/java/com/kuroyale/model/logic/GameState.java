@@ -73,6 +73,17 @@ public class GameState {
         }
     }
 
+    /**
+     * Restores the player's hand and draw pile from saved card data.
+     * This ensures the exact same cards appear in hand after loading a saved game.
+     * 
+     * @param handCards List of Card objects representing the saved hand
+     * @param drawPileCards List of Card objects representing the saved draw pile
+     */
+    public void restorePlayerHand(List<Card> handCards, List<Card> drawPileCards) {
+        playerHand.restoreFromSaved(handCards, drawPileCards);
+    }
+
     // Restores tower health from saved data
     public void restoreTowerHealth(SavedGameState.SavedTower savedTower) {
         // Find the matching tower in the arena efficiently
