@@ -250,4 +250,9 @@ public class Troop implements ICombatant {
     public ICombatant getTarget() {
         return currentTarget;
     }
+
+    @Override
+    public boolean isAreaEffect() {
+        return baseCard != null && baseCard.isAreaEffect();
+    }
 }
