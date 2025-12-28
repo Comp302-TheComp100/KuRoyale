@@ -14,7 +14,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.shape.Rectangle;
 
 // Renders the battle arena and placed units.
-public class BattleArenaView extends javafx.scene.layout.BorderPane {
+public class BattleArenaView extends javafx.scene.layout.BorderPane implements com.kuroyale.event.GameEventListener {
     private final GridPane grid;
     private final Pane unitLayer;
     private final Canvas highlightLayer;
@@ -122,6 +122,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
                                                                                       // compatible lambda
         this.buildingRenderer = new BuildingRenderer(unitLayer, TILE_SIZE, this::getGridCell);
 
+        com.kuroyale.event.GameEventBus.getInstance().subscribe(this);
+
         renderArena();
     }
 
@@ -183,7 +185,17 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         towerRenderer.renderTowers(gameState.getArena());
     }
 
-    private final java.util.Map<com.kuroyale.model.logic.GameState.SpellEffect, javafx.scene.Node> activeSpellVisuals = new java.util.HashMap<>();
+    private final java.util.List<ActiveSpellVisual> activeSpellVisuals = new java.util.ArrayList<>();
+
+    private static class ActiveSpellVisual {
+        final javafx.scene.Node node;
+        double timeRemaining;
+
+        ActiveSpellVisual(javafx.scene.Node node, double timeRemaining) {
+            this.node = node;
+            this.timeRemaining = timeRemaining;
+        }
+    }
 
     // Extracted renderers
     private TroopRenderer troopRenderer;
@@ -197,7 +209,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
     private int lastBotScore = -1;
     private boolean lastDoubleElixir = false;
 
-    public void update() {
+    public void update(double deltaTime) {
         // === OBSERVER PATTERN: Only update UI when values change ===
 
         // Update Timer (only when second changes)
@@ -242,7 +254,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         projectileRenderer.render(combatants);
 
         // Spell Effects
-        renderSpellEffects();
+        updateSpellEffects(deltaTime);
     }
 
     /*
@@ -385,46 +397,32 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane {
         return TILE_SIZE;
     }
 
-    private void renderSpellEffects() {
-        java.util.List<com.kuroyale.model.logic.GameState.SpellEffect> effects = gameState.getActiveSpellEffects();
-        java.util.Set<com.kuroyale.model.logic.GameState.SpellEffect> currentEffects = new java.util.HashSet<>();
-        if (effects != null) {
-            currentEffects.addAll(effects);
-        }
-
-        // Cleanup expired spell visuals
-        java.util.Iterator<java.util.Map.Entry<com.kuroyale.model.logic.GameState.SpellEffect, javafx.scene.Node>> spellIt = activeSpellVisuals
-                .entrySet().iterator();
-        while (spellIt.hasNext()) {
-            java.util.Map.Entry<com.kuroyale.model.logic.GameState.SpellEffect, javafx.scene.Node> entry = spellIt.next();
-            if (!currentEffects.contains(entry.getKey())) {
-                // Spell effect expired, remove visual
-                unitLayer.getChildren().remove(entry.getValue());
-                spellIt.remove();
-            }
-        }
-
-        // Create visuals for new spell effects
-        if (effects == null || effects.isEmpty())
-            return;
-        for (com.kuroyale.model.logic.GameState.SpellEffect se : effects) {
-            // Skip if we already have a visual for this effect
-            if (activeSpellVisuals.containsKey(se))
-                continue;
-
-            com.kuroyale.model.entities.GridPosition c = se.center;
-            if (c == null)
-                continue;
-            double cx = c.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
-            double cy = c.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
-            double rPixels = se.radiusTiles * TILE_SIZE;
+    @Override
+    public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center, double radius,
+            double duration) {
+        javafx.application.Platform.runLater(() -> {
+            double cx = center.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
+            double cy = center.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
+            double rPixels = radius * TILE_SIZE;
             javafx.scene.shape.Circle aoe = new javafx.scene.shape.Circle(cx, cy, rPixels);
-            aoe.setFill(se.isPlayerSide ? javafx.scene.paint.Color.color(0.2, 0.6, 1.0, 0.18)
+            aoe.setFill(isPlayerSource ? javafx.scene.paint.Color.color(0.2, 0.6, 1.0, 0.18)
                     : javafx.scene.paint.Color.color(1.0, 0.3, 0.2, 0.18));
             aoe.setStroke(javafx.scene.paint.Color.color(1, 1, 1, 0.6));
             aoe.setStrokeWidth(1.2);
             unitLayer.getChildren().add(aoe);
-            activeSpellVisuals.put(se, aoe);
+            activeSpellVisuals.add(new ActiveSpellVisual(aoe, duration));
+        });
+    }
+
+    private void updateSpellEffects(double deltaTime) {
+        java.util.Iterator<ActiveSpellVisual> it = activeSpellVisuals.iterator();
+        while (it.hasNext()) {
+            ActiveSpellVisual visual = it.next();
+            visual.timeRemaining -= deltaTime;
+            if (visual.timeRemaining <= 0) {
+                unitLayer.getChildren().remove(visual.node);
+                it.remove();
+            }
         }
     }
 }

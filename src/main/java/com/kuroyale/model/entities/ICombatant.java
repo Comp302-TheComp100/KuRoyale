@@ -12,6 +12,8 @@ public interface ICombatant {
 
     boolean isAlive();
 
+    boolean isAirUnit();
+
     // Position & Geometry
     GridPosition getPosition(); // Top-left position
 
@@ -24,7 +26,7 @@ public interface ICombatant {
     // Combat Stats
     double getRange();
 
-    double getDamage();
+    int getDamage();
 
     double getHitSpeed(); // Seconds per hit
 
@@ -35,9 +37,9 @@ public interface ICombatant {
     // Targeting & Damage
     TargetType getTargetType();
 
-    boolean canTarget(Troop troop);
+    boolean canTarget(ICombatant target);
 
-    void takeDamage(double amount);
+    void takeDamage(int amount);
 
     // Optional capabilities
     default boolean isAreaEffect() {
@@ -45,7 +47,7 @@ public interface ICombatant {
     }
 
     // Target tracking
-    void setTarget(Troop troop);
+    void setTarget(ICombatant target);
 
-    Troop getTarget();
+    ICombatant getTarget();
 }

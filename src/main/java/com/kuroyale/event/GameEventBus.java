@@ -47,4 +47,9 @@ public class GameEventBus {
     public void publishElixirSpent(boolean isPlayer, int amount) {
         new ArrayList<>(listeners).forEach(l -> l.onElixirSpent(isPlayer, amount));
     }
+
+    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
+            double radius, double duration) {
+        new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration));
+    }
 }

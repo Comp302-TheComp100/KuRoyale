@@ -20,7 +20,6 @@ public class GameState {
     private final List<PlacedCard> placedCards;
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
-    private final List<SpellEffect> activeSpellEffects;
     private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
     private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
 
@@ -50,7 +49,6 @@ public class GameState {
         this.placedCards = new ArrayList<>();
         this.activeTroops = new ArrayList<>();
         this.activeBuildings = new ArrayList<>();
-        this.activeSpellEffects = new ArrayList<>();
     }
 
     public void setActiveChallenge(ChallengeType activeChallenge) {
@@ -152,21 +150,20 @@ public class GameState {
     }
 
     private void handleCombat(double deltaTime) {
-        updateBuildingsCombat(deltaTime);
-        updateTowersCombat(deltaTime);
-        updateSpellEffects(deltaTime);
+        combatService.update(deltaTime, this);
+
+        // Remove dead troops post combat
+        activeTroops.removeIf(t -> !t.isAlive());
     }
 
     private void cleanupEntities() {
-        // Cleanup destroyed buildings and free their occupied tiles
-        if (!activeBuildings.isEmpty()) {
-            java.util.Iterator<Building> it = activeBuildings.iterator();
-            while (it.hasNext()) {
-                Building b = it.next();
-                if (!b.isAlive()) {
-                    arena.freeFootprint(b);
-                    it.remove();
-                }
+        // Cleanup destroyed buildings from the list
+        java.util.Iterator<Building> it = activeBuildings.iterator();
+        while (it.hasNext()) {
+            Building b = it.next();
+            if (!b.isAlive()) {
+                arena.getSpatialGrid().remove(b);
+                it.remove();
             }
         }
 
@@ -177,7 +174,7 @@ public class GameState {
         }
 
         // Cleanup destroyed towers
-        arena.removeDeadTowers();
+        arena.removeDeadTowers(); // Towers handle their own removal? No we need to check Arena.
     }
 
     private void checkWinConditions() {
@@ -193,93 +190,6 @@ public class GameState {
                 playerWon = true;
             }
         }
-    }
-
-    // Generalize combat logic for any structure (Building or Tower)
-    private void processStructureCombat(ICombatant structure, double deltaTime) {
-        if (!structure.isAlive())
-            return;
-
-        // Find nearest valid target
-        Troop best = null;
-        double bestDist = Double.MAX_VALUE;
-        GridPosition center = structure.getCenterPosition();
-        if (center == null)
-            return;
-
-        double range = structure.getRange();
-
-        for (Troop t : activeTroops) {
-            if (!t.isAlive())
-                continue;
-            // Friendly fire check
-            if (t.isPlayerSide() == structure.isPlayerSide())
-                continue;
-
-            // Check targeting rules (Ground/Air) via ICombatant
-            if (!structure.canTarget(t))
-                continue;
-
-            double dist = center.getEuclideanDistanceTo(t.getPosition());
-            if (dist <= range && dist < bestDist) {
-                bestDist = dist;
-                best = t;
-            }
-        }
-
-        // Store target for View (MVC Fix)
-        structure.setTarget(best);
-
-        // Handle Attack and Cooldown
-        double cd = structure.getAttackCooldown() - deltaTime;
-        if (best != null) {
-            if (cd <= 0) {
-                if (structure.isAreaEffect()) {
-                    // Area effect (splash around target)
-                    // Use a default small splash radius (e.g., 1 tile) or define in ICombatant if
-                    // variable
-                    combatService.applyAreaDamage(this, best.getPosition(), 1.0, structure.getDamage(),
-                            structure.getTargetType(), structure.isPlayerSide());
-                } else {
-                    // Single target
-                    combatService.applyDamage(structure, best);
-                }
-                structure.setAttackCooldown(Math.max(0.1, structure.getHitSpeed()));
-            } else {
-                structure.setAttackCooldown(cd);
-            }
-        } else {
-            // No target, cooldown just ticks down
-            structure.setAttackCooldown(Math.max(0.0, cd));
-        }
-    }
-
-    private void updateBuildingsCombat(double deltaTime) {
-        for (Building b : activeBuildings) {
-            processStructureCombat(b, deltaTime);
-        }
-
-        // Remove dead troops post building attacks
-        activeTroops.removeIf(t -> !t.isAlive());
-
-        for (Building b : activeBuildings) {
-            if (!b.isAlive() && b.isAreaEffect()) { // Assuming death damage is tied to isAreaEffect like Bomb Tower
-                GridPosition center = b.getCenterPosition();
-                if (center != null) {
-                    combatService.applyAreaDamage(this, center, 1.0, b.getDamage(), b.getTargetType(),
-                            b.isPlayerSide());
-                }
-            }
-        }
-    }
-
-    private void updateTowersCombat(double deltaTime) {
-        java.util.Set<Tower> towers = arena.getAllTowers();
-        for (Tower t : towers) {
-            processStructureCombat(t, deltaTime);
-        }
-        // Remove any dead troops after tower attacks
-        activeTroops.removeIf(t -> !t.isAlive());
     }
 
     public boolean isDoubleElixir() {
@@ -438,6 +348,7 @@ public class GameState {
             building.configureCombatFromCard(card);
             arena.occupyFootprint(building);
             activeBuildings.add(building);
+            arena.getSpatialGrid().add(building);
             return true;
         }
         return false;
@@ -473,6 +384,7 @@ public class GameState {
             if (spawn != null) {
                 Troop troop = new Troop(card, spawn, isPlayer);
                 activeTroops.add(troop);
+                arena.getSpatialGrid().add(troop);
             }
         }
         return true;
@@ -493,8 +405,6 @@ public class GameState {
             return;
 
         combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer);
-        // Track effect for UI for 1 second
-        activeSpellEffects.add(new SpellEffect(GridPosition.tryCreate(x, y), (int) radius, isPlayer, 1.0));
     }
 
     /**
@@ -517,42 +427,6 @@ public class GameState {
         TargetType targetType = attacker.getBaseCard() != null ? attacker.getBaseCard().getTarget() : TargetType.BOTH;
 
         combatService.applyAreaDamage(this, center, radius, damage, targetType, attacker.isPlayerSide());
-        // Short-lived visual ring for this AoE, rendered via
-        // BattleArenaView.renderSpellEffects
-        activeSpellEffects.add(new SpellEffect(center, (int) radius, attacker.isPlayerSide(), 0.3));
-    }
-
-    /**
-     * Apply circular area damage originating from a building attack or death
-     * explosion.
-     * Only damages enemy troops and respects the building's targeting rules.
-     */
-
-    private void updateSpellEffects(double deltaTime) {
-        if (activeSpellEffects.isEmpty())
-            return;
-        java.util.Iterator<SpellEffect> it = activeSpellEffects.iterator();
-        while (it.hasNext()) {
-            SpellEffect se = it.next();
-            se.timeRemaining -= deltaTime;
-            if (se.timeRemaining <= 0) {
-                it.remove();
-            }
-        }
-    }
-
-    public static class SpellEffect {
-        public final GridPosition center;
-        public final int radiusTiles;
-        public final boolean isPlayerSide;
-        public double timeRemaining;
-
-        public SpellEffect(GridPosition center, int radiusTiles, boolean isPlayerSide, double timeSeconds) {
-            this.center = center;
-            this.radiusTiles = radiusTiles;
-            this.isPlayerSide = isPlayerSide;
-            this.timeRemaining = timeSeconds;
-        }
     }
 
     // Trigger death explosion for area-effect buildings (e.g., Bomb Tower)
@@ -631,10 +505,6 @@ public class GameState {
 
     public List<Building> getActiveBuildings() {
         return activeBuildings;
-    }
-
-    public List<SpellEffect> getActiveSpellEffects() {
-        return activeSpellEffects;
     }
 
     // Inner class to track placed units

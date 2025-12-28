@@ -5,9 +5,9 @@ import com.kuroyale.model.enums.*;
 public class Tower implements ICombatant {
     private final TowerType type;
     private final boolean playerSide; // Now explicitly tracked
-    private double maxHealth;
-    private double currentHealth;
-    private double damage;
+    private int maxHealth;
+    private int currentHealth;
+    private int damage;
     private double hitSpeed;
     private double range;
     private TargetType targetType;
@@ -41,7 +41,7 @@ public class Tower implements ICombatant {
     }
 
     @Override
-    public void takeDamage(double amount) {
+    public void takeDamage(int amount) {
         this.currentHealth -= amount;
         if (this.currentHealth < 0) {
             this.currentHealth = 0;
@@ -53,14 +53,19 @@ public class Tower implements ICombatant {
         return currentHealth > 0;
     }
 
-    public void setCurrentHealth(double health) {
-        this.currentHealth = Math.max(0, Math.min(health, maxHealth));
+    public void setCurrentHealth(int health) {
+        this.currentHealth = Math.max(0, Math.min(health, (int) maxHealth));
     }
 
     // Getters implementation for ICombatant
     @Override
     public boolean isPlayerSide() {
         return playerSide;
+    }
+
+    @Override
+    public boolean isAirUnit() {
+        return false;
     }
 
     @Override
@@ -117,18 +122,18 @@ public class Tower implements ICombatant {
     }
 
     public double getHealthPercentage() {
-        return currentHealth / maxHealth;
+        return (double) currentHealth / maxHealth;
     }
 
-    public double getMaxHealth() {
+    public int getMaxHealth() {
         return maxHealth;
     }
 
-    public double getCurrentHealth() {
+    public int getCurrentHealth() {
         return currentHealth;
     }
 
-    public double getDamage() {
+    public int getDamage() {
         return damage;
     }
 
@@ -157,26 +162,28 @@ public class Tower implements ICombatant {
     }
 
     @Override
-    public boolean canTarget(Troop troop) {
-        if (troop == null || !troop.isAlive())
+    public boolean canTarget(ICombatant target) {
+        if (target == null || !target.isAlive())
             return false;
         if (targetType == TargetType.BOTH)
             return true;
-        if (targetType == TargetType.GROUND && !troop.isAirUnit())
+        if (targetType == TargetType.GROUND && !target.isAirUnit())
             return true;
-        if (targetType == TargetType.AIR && troop.isAirUnit())
+        if (targetType == TargetType.AIR && target.isAirUnit())
             return true;
         return false;
     }
 
     // Target tracking for MVC
-    private Troop target;
+    private ICombatant target;
 
-    public void setTarget(Troop target) {
+    @Override
+    public void setTarget(ICombatant target) {
         this.target = target;
     }
 
-    public Troop getTarget() {
+    @Override
+    public ICombatant getTarget() {
         return target;
     }
 }

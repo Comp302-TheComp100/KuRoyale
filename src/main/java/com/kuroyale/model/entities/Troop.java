@@ -12,7 +12,7 @@ public class Troop implements ICombatant {
     private final boolean isPlayer;
     private final boolean isAirUnit;
     private final boolean buildingOnly;
-    private double currentHealth;
+    private int currentHealth;
     private final double moveSpeed; // tiles per second
     private final double attackRange; // in tiles
     private final Deque<Vector2> path; // Continuous waypoints
@@ -21,14 +21,6 @@ public class Troop implements ICombatant {
     private double attackCooldown;
     private UnitState unitState = UnitState.IDLE;
     private ICombatant currentTarget; // The specific entity this unit is attacking
-
-    public void setCurrentTarget(ICombatant target) {
-        this.currentTarget = target;
-    }
-
-    public ICombatant getCurrentTarget() {
-        return currentTarget;
-    }
 
     public Troop(Card card, GridPosition spawn, boolean isPlayer) {
         this.baseCard = card;
@@ -101,10 +93,6 @@ public class Troop implements ICombatant {
         return path;
     }
 
-    public boolean isAirUnit() {
-        return isAirUnit;
-    }
-
     public boolean isBuildingOnly() {
         return buildingOnly;
     }
@@ -139,15 +127,21 @@ public class Troop implements ICombatant {
         this.worldPosition = Vector2.fromGridPosition(pos);
     }
 
+    @Override
     public boolean isPlayerSide() {
         return isPlayer;
     }
 
-    public double getCurrentHealth() {
+    @Override
+    public boolean isAirUnit() {
+        return isAirUnit;
+    }
+
+    public int getCurrentHealth() {
         return currentHealth;
     }
 
-    public void takeDamage(double amount) {
+    public void takeDamage(int amount) {
         currentHealth = Math.max(0, currentHealth - amount);
     }
 
@@ -204,7 +198,7 @@ public class Troop implements ICombatant {
         return attackRange;
     }
 
-    public double getDamage() {
+    public int getDamage() {
         return combatStats != null ? combatStats.getDamage() : 0;
     }
 
@@ -216,20 +210,23 @@ public class Troop implements ICombatant {
         return baseCard != null ? baseCard.getTarget() : TargetType.GROUND;
     }
 
-    public boolean canTarget(Troop t) {
-        if (t == null || !t.isAlive())
+    @Override
+    public boolean canTarget(ICombatant target) {
+        if (target == null || !target.isAlive())
             return false;
         TargetType tt = getTargetType();
-        if (tt == TargetType.BUILDINGS)
-            return false; // Troops can't target troops if building-only
-        if (tt == TargetType.GROUND && t.isAirUnit())
+
+        // Specific logic: if building only, only target Buildings or Towers
+        if (tt == TargetType.BUILDINGS) {
+            return target instanceof Building || target instanceof Tower;
+        }
+
+        // Standard Target Checks
+        if (tt == TargetType.GROUND && target.isAirUnit())
             return false;
-        if (tt == TargetType.AIR && !t.isAirUnit())
-            return false; // Usually implies AIR-ONLY? Or BOTH?
-        // Note: TargetType.AIR usually means targets AIR (and maybe GROUND?).
-        // In this game, usually TargetType is GROUND, AIR, BUILDINGS, or BOTH (implies
-        // all).
-        // Let's assume standard logic.
+        if (tt == TargetType.AIR && !target.isAirUnit())
+            return false;
+
         return true;
     }
 
@@ -245,15 +242,17 @@ public class Troop implements ICombatant {
     }
 
     @Override
-    public void setTarget(Troop troop) {
-        this.currentTarget = troop;
+    public void setTarget(ICombatant target) {
+        this.currentTarget = target;
     }
 
     @Override
-    public Troop getTarget() {
-        if (currentTarget instanceof Troop) {
-            return (Troop) currentTarget;
-        }
-        return null;
+    public ICombatant getTarget() {
+        return currentTarget;
+    }
+
+    @Override
+    public boolean isAreaEffect() {
+        return baseCard != null && baseCard.isAreaEffect();
     }
 }
