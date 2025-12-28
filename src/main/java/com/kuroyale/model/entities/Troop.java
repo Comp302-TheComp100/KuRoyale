@@ -64,21 +64,14 @@ public class Troop implements ICombatant {
         return targetWorldPosition;
     }
 
-    /**
-     * @deprecated Use setTargetWorldPosition instead
-     */
+
     @Deprecated
     public void setTargetPosition(GridPosition target) {
         this.targetWorldPosition = Vector2.fromGridPosition(target);
     }
 
-    /**
-     * @deprecated Use getTargetWorldPosition instead
-     */
     @Deprecated
-    public GridPosition getTargetPosition() {
-        return targetWorldPosition != null ? targetWorldPosition.toGridPosition() : null;
-    }
+    public GridPosition getTargetPosition() {return targetWorldPosition != null ? targetWorldPosition.toGridPosition() : null;}
 
     public void clearPath() {
         path.clear();
@@ -101,9 +94,6 @@ public class Troop implements ICombatant {
         return baseCard;
     }
 
-    /**
-     * Returns the continuous world position.
-     */
     public Vector2 getWorldPosition() {
         return worldPosition;
     }
@@ -112,16 +102,11 @@ public class Troop implements ICombatant {
         this.worldPosition = pos;
     }
 
-    /**
-     * Returns the grid cell this troop is currently in.
-     */
     public GridPosition getPosition() {
         return worldPosition != null ? worldPosition.toGridPosition() : null;
     }
 
-    /**
-     * @deprecated Use setWorldPosition instead
-     */
+
     @Deprecated
     public void setPosition(GridPosition pos) {
         this.worldPosition = Vector2.fromGridPosition(pos);
@@ -157,9 +142,7 @@ public class Troop implements ICombatant {
         return attackRange;
     }
 
-    // moveProgress removed - continuous movement no longer needs it
 
-    // Combat getters/setters
     public CombatStats getCombatStats() {
         return combatStats;
     }

@@ -27,11 +27,9 @@ public class Arena {
         initializeGrid();
     }
 
-    /*
-     * Initializes the grid with GridCell objects.
+    /*Initializes the grid with GridCell objects.
      * Sets up terrain (grass, water, bridges) based on layout.
-     * Places towers and mirrors user's layout for computer side.
-     */
+     * Places towers and mirrors user's layout for computer side.*/
     private void initializeGrid() {
         // Initialize all cells as grass by default
         for (int x = 0; x < WIDTH; x++) {
@@ -180,8 +178,7 @@ public class Arena {
         }
     }
 
-    // Gets all adjacent positions to the specified position (4-directional:
-    // up,down, left, right).
+    // Gets all adjacent positions to the specified position (4-directional: up,down, left, right).
     public List<GridPosition> getAdjacentPositions(GridPosition position) {
         List<GridPosition> adjacent = new ArrayList<>();
         if (position == null) {
@@ -299,14 +296,12 @@ public class Arena {
         return towerMap.get(grid[x][y].getPosition());
     }
 
-    /* Returns a set of all unique active towers on the board. */
+    // Returns a set of all unique active towers on the board.
     public java.util.Set<Tower> getAllTowers() {
         return new java.util.HashSet<>(towerMap.values());
     }
 
-    /**
-     * Retrieves towers filtered by type and side.
-     */
+    // Retrieves towers filtered by type and side.
     public List<Tower> getTowersByType(Tower.TowerType type, boolean isPlayerSide) {
         return towerMap.values().stream()
                 .distinct()
@@ -314,8 +309,7 @@ public class Arena {
                 .collect(Collectors.toList());
     }
 
-    // Removes a tower from the arena.Clears the tower from the map and resets the
-    // tiles to GRASS
+    // Removes a tower from the arena.Clears the tower from the map and resets the tiles to GRASS
     public void removeTower(Tower tower) {
         if (tower == null)
             return;
@@ -335,8 +329,6 @@ public class Arena {
             GridCell cell = getCell(pos);
             if (cell != null) {
                 cell.setTileType(TileType.GRASS);
-                // Also ensure no occupant is left if it was the tower itself (though tower is
-                // not an occupant in the GridCell, it's a TileType)
             }
         }
     }

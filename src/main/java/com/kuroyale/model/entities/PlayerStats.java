@@ -1,9 +1,7 @@
 package com.kuroyale.model.entities;
 
-/**
- * Tracks lifetime player statistics for achievements and quests.
- * Persisted to disk to maintain progress across sessions.
- */
+/*Tracks lifetime player statistics for achievements and quests.
+ * Persisted to disk to maintain progress across sessions.*/
 public class PlayerStats {
     // Match stats
     private int totalMatches;

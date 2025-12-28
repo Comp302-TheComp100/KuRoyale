@@ -2,10 +2,8 @@ package com.kuroyale.model.entities;
 
 import com.kuroyale.model.enums.*;
 
-/**
- * Represents a daily quest instance.
- * Tracks progress toward a specific quest goal.
- */
+/*Represents a daily quest instance.
+ * Tracks progress toward a specific quest goal.*/
 public class Quest {
     private final String id;
     private final QuestType type;

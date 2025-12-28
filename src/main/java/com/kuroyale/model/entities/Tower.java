@@ -70,17 +70,6 @@ public class Tower implements ICombatant {
 
     @Override
     public GridPosition getPosition() {
-        // Tower itself doesn't store its position in the Model currently,
-        // it acts as a Flyweight or is stored in the Map<GridPosition, Tower>.
-        // However, the interface requires getPosition().
-        // Refactoring Note: usage of getPosition() for Tower in previous code
-        // relied on iterating the map or was null.
-        // We need the position to be stored in the Tower or passed in.
-        // Since Tower instances are unique per location (created in initializeGrid),
-        // we should probably assign the position at creation time to satisfy this
-        // interface
-        // without breaking the API.
-        // Let's add a position field.
         return this.position;
     }
 
@@ -103,9 +92,7 @@ public class Tower implements ICombatant {
         return GridPosition.tryCreate(cx, cy);
     }
 
-    // Actually, can't check Arena.java easily here inside the class without passing
-    // it.
-    // But we know from Arena.java lines 89 (4x4) and 58 (3x3).
+    // Actually, can't check Arena.java easily here inside the class without passing it.
     public int getWidthTiles() { // Renamed helper for clarity
         return type == TowerType.KING ? 4 : 3;
     }

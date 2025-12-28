@@ -75,8 +75,7 @@ public class Deck {
     }
 
     // Information Expert: Deck can provide its card names
-    // Returns a list of card names in the deck. Empty strings are used for
-    // positions that should remain empty
+    // Returns a list of card names in the deck. Empty strings are used for positions that should remain empty
     public List<String> getCardNames() {
         return cards.stream()
                 .map(Card::getName)

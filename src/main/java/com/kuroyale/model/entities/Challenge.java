@@ -10,9 +10,8 @@ import java.util.List;
  * validation rules.
  * 
  * Design Pattern: Strategy Pattern
- * - validateDeck() method is the strategy that varies per challenge type
- * - Each concrete challenge provides its own validation logic
- */
+ * validateDeck() method is the strategy that varies per challenge type
+ * Each concrete challenge provides its own validation logic*/
 public abstract class Challenge {
     private final int id;
     private final ChallengeType type;
@@ -42,32 +41,18 @@ public abstract class Challenge {
         this.completions = 0;
     }
 
-    /**
-     * Strategy Pattern: Validates if the given deck meets the challenge
-     * requirements.
-     * Each concrete challenge implements its own validation logic.
-     * 
-     * @param deck List of cards in the player's deck
-     * @return List of validation error messages (empty if valid)
-     */
+    /*Strategy Pattern: Validates if the given deck meets the challenge requirements.
+     * Each concrete challenge implements its own validation logic.  */
     public abstract List<String> validateDeck(List<Card> deck);
 
-    /**
-     * Gets the list of allowed cards for this challenge (for UI display).
+    /*Gets the list of allowed cards for this challenge (for UI display).
      * Default implementation returns null (all cards allowed).
-     * Subclasses override to restrict card selection.
-     */
+     * Subclasses override to restrict card selection.*/
     public List<String> getAllowedCardNames() {
         return null;
     }
 
-    /**
-     * Calculates stars earned based on completion time and damage taken.
-     * 
-     * @param completionTimeSeconds Time taken to complete the challenge
-     * @param damageTaken           Total damage taken during the challenge
-     * @return Number of stars earned (1-3)
-     */
+    //Calculates stars earned based on completion time and damage taken.
     public int calculateStars(int completionTimeSeconds, int damageTaken) {
         if (damageTaken == 0 || completionTimeSeconds <= threeStarTimeSeconds) {
             return 3;
@@ -77,9 +62,7 @@ public abstract class Challenge {
         return 1;
     }
 
-    /**
-     * Records a challenge attempt result.
-     */
+    // Records a challenge attempt result.
     public void recordAttempt(boolean won, int completionTimeSeconds, int damageTaken) {
         attempts++;
         if (won) {
