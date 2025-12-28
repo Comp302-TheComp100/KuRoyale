@@ -15,9 +15,7 @@ public class CombatService {
         target.takeDamage(dmg);
     }
 
-    /**
-     * Orchestrates combat for all entities in the game state.
-     */
+    // Orchestrates combat for all entities in the game state.
     public void update(double deltaTime, com.kuroyale.model.logic.GameState state) {
         if (state == null)
             return;
@@ -213,18 +211,7 @@ public class CombatService {
         return best;
     }
 
-    /**
-     * Centralized Area Damage logic.
-     * 
-     * @param gameState      Reference to game state to access active entities.
-     * @param center         Center point of the damage (e.g. projectile impact or
-     *                       unit center).
-     * @param radiusTiles    Radius in tiles.
-     * @param damage         Amount of damage to deal.
-     * @param targetType     Restrictions on what can be hit (AIR, GROUND, BOTH).
-     * @param isPlayerSource True if the damage comes from the player (hurts
-     *                       enemies), False otherwise.
-     */
+    // Centralized Area Damage logic.
     public void applyAreaDamage(com.kuroyale.model.logic.GameState gameState,
             com.kuroyale.model.entities.GridPosition center,
             double radiusTiles,
@@ -257,11 +244,8 @@ public class CombatService {
             // Distance Check - PRECISE
             double dist;
             if (t.getWorldPosition() != null) {
-                // Convert integer center to center of tile (approx) to be fair, or use grid
-                // distance logic
-                // Area Damage center is usually a tile center (x.5, y.5) if coming from spell,
-                // or unit center if coming from unit.
-                // let's stick to simple Euclidean for consistency with previous working version
+                // Convert integer center to center of tile (approx) to be fair, or use grid distance logic
+                // Area Damage center is usually a tile center (x.5, y.5) if coming from spell, or unit center if coming from unit.
                 dist = center.getEuclideanDistanceTo(t.getPosition());
             } else {
                 dist = center.getEuclideanDistanceTo(t.getPosition());

@@ -83,9 +83,7 @@ public class TroopMovementService {
         return currentPos.distanceTo(nearest) < currentPos.distanceTo(currentTarget);
     }
 
-    /**
-     * Converts a GridPosition path to Vector2 waypoints (centered on tiles).
-     */
+    // Converts a GridPosition path to Vector2 waypoints (centered on tiles).
     private Deque<Vector2> convertPathToVector2(Deque<GridPosition> gridPath) {
         Deque<Vector2> worldPath = new ArrayDeque<>();
         for (GridPosition gp : gridPath) {
@@ -146,9 +144,7 @@ public class TroopMovementService {
         }
     }
 
-    /**
-     * Simple separation steering to prevent troops from overlapping.
-     */
+    // Simple separation steering to prevent troops from overlapping.
     private Vector2 applySeparation(Vector2 proposedPos, Troop self, List<Troop> troops) {
         Vector2 separation = Vector2.ZERO;
         int count = 0;
