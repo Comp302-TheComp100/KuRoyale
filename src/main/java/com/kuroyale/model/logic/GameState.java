@@ -158,7 +158,14 @@ public class GameState {
 
     private void cleanupEntities() {
         // Cleanup destroyed buildings from the list
-        activeBuildings.removeIf(b -> !b.isAlive());
+        java.util.Iterator<Building> it = activeBuildings.iterator();
+        while (it.hasNext()) {
+            Building b = it.next();
+            if (!b.isAlive()) {
+                arena.getSpatialGrid().remove(b);
+                it.remove();
+            }
+        }
 
         // Check for destroyed towers and update scores (must be before
         // removeDeadTowers)
@@ -167,7 +174,7 @@ public class GameState {
         }
 
         // Cleanup destroyed towers
-        arena.removeDeadTowers();
+        arena.removeDeadTowers(); // Towers handle their own removal? No we need to check Arena.
     }
 
     private void checkWinConditions() {
@@ -341,6 +348,7 @@ public class GameState {
             building.configureCombatFromCard(card);
             arena.occupyFootprint(building);
             activeBuildings.add(building);
+            arena.getSpatialGrid().add(building);
             return true;
         }
         return false;
@@ -376,6 +384,7 @@ public class GameState {
             if (spawn != null) {
                 Troop troop = new Troop(card, spawn, isPlayer);
                 activeTroops.add(troop);
+                arena.getSpatialGrid().add(troop);
             }
         }
         return true;

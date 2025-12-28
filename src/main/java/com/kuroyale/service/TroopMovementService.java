@@ -139,6 +139,11 @@ public class TroopMovementService {
         newPos = applySeparation(newPos, troop, state.getActiveTroops());
 
         troop.setWorldPosition(newPos);
+
+        // Update SpatialGrid
+        if (state != null && state.getArena() != null && state.getArena().getSpatialGrid() != null) {
+            state.getArena().getSpatialGrid().update(troop);
+        }
     }
 
     /**

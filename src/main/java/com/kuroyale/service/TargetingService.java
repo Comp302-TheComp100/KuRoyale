@@ -3,6 +3,7 @@ package com.kuroyale.service;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
+import java.util.ArrayList;
 
 public class TargetingService {
     private static final int BASE_DETECTION_RADIUS = 5; // tiles
@@ -20,46 +21,54 @@ public class TargetingService {
             detectionRadius = (int) Math.floor(cardRange + 2);
         }
 
-        // Consider active enemy troops within detection radius
-        for (Troop other : state.getActiveTroops()) {
-            if (other.isPlayerSide() == troop.isPlayerSide())
-                continue;
-            // Building only troops ignore enemy troops
-            if (troop.isBuildingOnly())
-                continue;
-            // Ground troops cannot target air only enemies if target type is ground
-            if (troop.getBaseCard().getTarget() == TargetType.GROUND && other.isAirUnit())
-                continue;
+        // Optimize with SpatialGrid for detection radius query
+        com.kuroyale.model.logic.SpatialGrid grid = state.getArena().getSpatialGrid();
+        java.util.List<ICombatant> candidates;
 
-            // Use Vector2 for accurate distance calculation
-            Vector2 otherWorldPos = other.getWorldPosition();
-            double dist = (troopWorldPos != null && otherWorldPos != null)
-                    ? troopWorldPos.distanceTo(otherWorldPos)
-                    : troopPos.getEuclideanDistanceTo(other.getPosition());
-
-            if (dist <= detectionRadius && dist < bestDist) {
-                bestDist = dist;
-                bestPos = other.getPosition(); // Still return GridPosition for pathfinding
-            }
+        if (grid != null) {
+            candidates = grid.getNearby(troopPos, detectionRadius);
+        } else {
+            // Fallback (shouldn't happen)
+            candidates = new ArrayList<>();
+            candidates.addAll(state.getActiveTroops());
+            candidates.addAll(state.getActiveBuildings());
         }
 
-        // Consider active enemy buildings
-        for (Building b : state.getActiveBuildings()) {
-            if (!b.isAlive())
+        for (ICombatant candidate : candidates) {
+            // Filter invalid targets
+            if (!candidate.isAlive())
                 continue;
-            if (b.isPlayerSide() == troop.isPlayerSide())
+            if (candidate.isPlayerSide() == troop.isPlayerSide())
                 continue;
-            if (troop.isBuildingOnly()) {
-                // building-only troops prioritize buildings
-            }
-            // Use nearest perimeter tile around the building footprint as target
-            GridPosition perimeter = nearestPerimeterTile(state.getArena(), b, troopPos);
-            if (perimeter == null)
-                continue;
-            double dist = troopPos.getEuclideanDistanceTo(perimeter);
-            if (dist < bestDist) {
-                bestDist = dist;
-                bestPos = perimeter;
+
+            if (candidate instanceof Troop other) {
+                // Troop checks
+                if (troop.isBuildingOnly())
+                    continue;
+                if (troop.getBaseCard().getTarget() == TargetType.GROUND && other.isAirUnit())
+                    continue;
+
+                Vector2 otherWorldPos = other.getWorldPosition();
+                double dist = (troopWorldPos != null && otherWorldPos != null)
+                        ? troopWorldPos.distanceTo(otherWorldPos)
+                        : troopPos.getEuclideanDistanceTo(other.getPosition());
+
+                if (dist <= detectionRadius && dist < bestDist) {
+                    bestDist = dist;
+                    bestPos = other.getPosition();
+                }
+            } else if (candidate instanceof Building b) {
+                // Building checks
+                // Use nearest perimeter tile around the building footprint as target
+                GridPosition perimeter = nearestPerimeterTile(state.getArena(), b, troopPos);
+                if (perimeter == null)
+                    continue;
+
+                double dist = troopPos.getEuclideanDistanceTo(perimeter);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestPos = perimeter;
+                }
             }
         }
 

@@ -17,11 +17,13 @@ public class Arena {
     private final GridCell[][] grid;
     private final ArenaLayout layout;
     private final java.util.Map<GridPosition, Tower> towerMap;
+    private final com.kuroyale.model.logic.SpatialGrid spatialGrid;
 
     public Arena(ArenaLayout layout) {
         this.layout = layout;
         this.grid = new GridCell[WIDTH][HEIGHT];
         this.towerMap = new java.util.HashMap<>();
+        this.spatialGrid = new com.kuroyale.model.logic.SpatialGrid(WIDTH, HEIGHT);
         initializeGrid();
     }
 
@@ -67,6 +69,7 @@ public class Arena {
                         }
                     }
                 }
+                spatialGrid.add(tower);
                 // Mirroring logic for computer side: The top-left of the mirrored tower should
                 // be
                 // x' = x and y' = HEIGHT - 3 - y
@@ -84,6 +87,7 @@ public class Arena {
                         }
                     }
                 }
+                spatialGrid.add(computerTower);
             }
         }
 
@@ -103,6 +107,7 @@ public class Arena {
                     }
                 }
             }
+            spatialGrid.add(tower);
 
             // Mirror for computer side (4x4)
             int mirroredY = HEIGHT - 4 - p.getY();
@@ -119,6 +124,7 @@ public class Arena {
                     }
                 }
             }
+            spatialGrid.add(computerTower);
         }
     }
 
@@ -321,6 +327,7 @@ public class Arena {
                 positionsToRemove.add(entry.getKey());
             }
         }
+        spatialGrid.remove(tower);
 
         // Remove from map and reset grid cells
         for (GridPosition pos : positionsToRemove) {
@@ -409,5 +416,9 @@ public class Arena {
                 }
             }
         }
+    }
+
+    public com.kuroyale.model.logic.SpatialGrid getSpatialGrid() {
+        return spatialGrid;
     }
 }
