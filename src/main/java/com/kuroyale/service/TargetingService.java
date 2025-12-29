@@ -98,8 +98,8 @@ public class TargetingService {
         int h = Math.max(1, combatant.getHeight());
         GridPosition best = null;
         double bestDist = Double.MAX_VALUE;
-        // Check tiles around footprint borders (one tile outward)
-        for (int dx = -1; dx <= w; dx++) {
+        // Check tiles around footprint borders (faces only, no corners)
+        for (int dx = 0; dx < w; dx++) {
             // top perimeter
             GridPosition p1 = GridPosition.tryCreate(x0 + dx, y0 - 1);
             best = pickIfBetter(arena, from, best, p1, bestDist);
