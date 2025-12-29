@@ -72,15 +72,14 @@ public class ProjectileRenderer {
         double sy = (startPos.getY() + 0.5) * TILE_SIZE;
 
         // Target Center
-        com.kuroyale.model.entities.GridPosition targetPos = target.getCenterPosition();
-        // For structures, getCenterPosition gives center of footprint.
-        // For troops, it should also give center.
+        // Target Center - Precise calculation
+        com.kuroyale.model.entities.GridPosition targetGridPos = target.getPosition();
 
         // Use target's center if available or calculate from top-left
         double tx, ty;
-        if (targetPos != null) {
-            tx = (targetPos.getX() + 0.5) * TILE_SIZE;
-            ty = (targetPos.getY() + 0.5) * TILE_SIZE;
+        if (targetGridPos != null) {
+            tx = (targetGridPos.getX() + target.getWidth() / 2.0) * TILE_SIZE;
+            ty = (targetGridPos.getY() + target.getHeight() / 2.0) * TILE_SIZE;
         } else {
             return;
         }

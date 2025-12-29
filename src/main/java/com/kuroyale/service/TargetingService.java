@@ -214,7 +214,7 @@ public class TargetingService {
                 continue;
 
             // Find the closest tile within the tower's footprint
-            GridPosition closestTile = closestFootprintTile(tower, troopPos);
+            GridPosition closestTile = nearestPerimeterTile(arena, tower, troopPos);
             if (closestTile == null)
                 continue;
 
@@ -225,23 +225,6 @@ public class TargetingService {
             }
         }
         return bestPos;
-    }
-
-    private GridPosition closestFootprintTile(ICombatant combatant, GridPosition from) {
-        GridPosition pos = combatant.getPosition();
-        if (pos == null)
-            return null;
-
-        int x0 = pos.getX();
-        int y0 = pos.getY();
-        int w = combatant.getWidth();
-        int h = combatant.getHeight();
-
-        // Clamp 'from' coordinates to footprint bounds
-        int closestX = Math.max(x0, Math.min(from.getX(), x0 + w - 1));
-        int closestY = Math.max(y0, Math.min(from.getY(), y0 + h - 1));
-
-        return GridPosition.tryCreate(closestX, closestY);
     }
 
     public boolean isValidTarget(Troop attacker, Troop candidate) {

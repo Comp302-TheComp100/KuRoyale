@@ -298,13 +298,11 @@ public class TroopRenderer {
 
             com.kuroyale.model.entities.ICombatant target = troop.getTarget();
             if (target != null && target.isAlive()) {
-                GridPosition targetPos = target.getCenterPosition();
-                Node targetNode = targetPos != null ? gridCellProvider.apply(targetPos.getX(), targetPos.getY()) : null;
-
-                if (targetNode != null) {
-                    Bounds tb = targetNode.getBoundsInParent();
-                    double tx = tb.getMinX() + tb.getWidth() / 2.0;
-                    double ty = tb.getMinY() + tb.getHeight() / 2.0;
+                GridPosition targetPos = target.getPosition(); // Use top-left anchor
+                if (targetPos != null) {
+                    // Calculate precise center based on tile coordinates and size
+                    double tx = (targetPos.getX() + target.getWidth() / 2.0) * TILE_SIZE;
+                    double ty = (targetPos.getY() + target.getHeight() / 2.0) * TILE_SIZE;
 
                     double duration = Math.max(0.15, troop.getCombatStats().getHitSpeedSeconds());
                     double cooldown = troop.getAttackCooldown();

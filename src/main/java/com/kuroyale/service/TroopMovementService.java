@@ -14,15 +14,22 @@ public class TroopMovementService {
         Arena arena = state.getArena();
         java.util.List<Troop> toRemove = new java.util.ArrayList<>();
         for (Troop troop : troops) {
-            if (!troop.isAlive())
+            if (!troop.isAlive()) {
+                toRemove.add(troop);
                 continue;
+            }
 
             // Update pathfinding cooldown
             troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
 
-            // Only check for retargeting if cooldown is ready or no target
-            if (troop.getTargetWorldPosition() == null
-                    || (troop.getPathfindingCooldown() <= 0 && shouldRetarget(state, troop))) {
+            // Force retarget if current target is dead or null (sync with CombatService)
+            ICombatant currentTarget = troop.getTarget();
+            boolean hasNoTarget = (troop.getTargetWorldPosition() == null);
+            boolean targetIsDead = (currentTarget != null && !currentTarget.isAlive());
+            boolean cooldownReady = (troop.getPathfindingCooldown() <= 0);
+
+            // Only check for retargeting if forced or cooldown is ready
+            if (hasNoTarget || targetIsDead || (cooldownReady && shouldRetarget(state, troop))) {
                 GridPosition newTargetGrid = targetingService.findNearestEnemyOrObjective(state, troop);
 
                 // If target hasn't changed significantly, don't recompute path
@@ -39,14 +46,12 @@ public class TroopMovementService {
                 // Reset cooldown (randomize slightly to distribute load)
                 troop.setPathfindingCooldown(0.25 + Math.random() * 0.1);
             }
-            // If in ATTACKING state, don't move
-            if (troop.getUnitState() == UnitState.ATTACKING) {
-                continue;
+            // Apply movement and/or separation
+            // Note: Even attacking units need separation to avoid stacking
+            if (troop.getUnitState() != UnitState.ATTACKING) {
+                troop.setUnitState(UnitState.MOVING);
             }
-
-            // Otherwise, move along path
-            troop.setUnitState(UnitState.MOVING);
-            advanceAlongPath(deltaTime, troop, state);
+            updateTroopPosition(deltaTime, troop, state);
         }
         // Cleanup: remove destroyed troops and notify others to retarget/move
         if (!toRemove.isEmpty()) {
@@ -54,14 +59,25 @@ public class TroopMovementService {
             for (Troop t : troops) {
                 if (!t.isAlive())
                     continue;
-                // If their target was removed, clear and allow retarget
-                for (Troop dead : toRemove) {
-                    Vector2 targetPos = t.getTargetWorldPosition();
-                    Vector2 deadPos = dead.getWorldPosition();
-                    if (targetPos != null && deadPos != null && targetPos.distanceTo(deadPos) < 1.0) {
-                        t.setTargetWorldPosition(null);
-                        t.clearPath();
-                        t.setUnitState(UnitState.IDLE);
+
+                // If their target was removed, clear and allow retarget next frame
+                ICombatant target = t.getTarget();
+                if (target != null && !target.isAlive()) {
+                    t.setTarget(null);
+                    t.setTargetWorldPosition(null);
+                    t.clearPath();
+                    t.setUnitState(UnitState.IDLE);
+                } else {
+                    // Fallback for distance-based targeting if target entity isn't set
+                    for (Troop dead : toRemove) {
+                        Vector2 targetPos = t.getTargetWorldPosition();
+                        Vector2 deadPos = dead.getWorldPosition();
+                        if (targetPos != null && deadPos != null && targetPos.distanceTo(deadPos) < 1.0) {
+                            t.setTargetWorldPosition(null);
+                            t.clearPath();
+                            t.setUnitState(UnitState.IDLE);
+                            break;
+                        }
                     }
                 }
             }
@@ -187,50 +203,46 @@ public class TroopMovementService {
     }
 
     private static final double WAYPOINT_THRESHOLD = 0.1; // How close to waypoint before moving to next
-    private static final double SEPARATION_RADIUS = 0.4; // Minimum distance between troops
+    private static final double SEPARATION_RADIUS = 0.5;
 
-    private void advanceAlongPath(double deltaTime, Troop troop, GameState state) {
-        if (troop.getPath().isEmpty())
-            return;
-
+    private void updateTroopPosition(double deltaTime, Troop troop, GameState state) {
         Vector2 currentPos = troop.getWorldPosition();
-        Vector2 nextWaypoint = troop.getPath().peekFirst();
+        Vector2 movement = Vector2.ZERO;
 
-        // Calculate direction to next waypoint
-        Vector2 toWaypoint = nextWaypoint.subtract(currentPos);
-        double distanceToWaypoint = toWaypoint.length();
+        // Calculate path movement only if not attacking and path exists
+        if (troop.getUnitState() != UnitState.ATTACKING && !troop.getPath().isEmpty()) {
+            Vector2 nextWaypoint = troop.getPath().peekFirst();
+            Vector2 toWaypoint = nextWaypoint.subtract(currentPos);
+            double distanceToWaypoint = toWaypoint.length();
 
-        // Check if we've reached the waypoint
-        if (distanceToWaypoint < WAYPOINT_THRESHOLD) {
-            troop.getPath().pollFirst();
-            if (troop.getPath().isEmpty()) {
-                return;
+            // Check if we've reached the waypoint
+            if (distanceToWaypoint < WAYPOINT_THRESHOLD) {
+                troop.getPath().pollFirst();
+                if (!troop.getPath().isEmpty()) {
+                    nextWaypoint = troop.getPath().peekFirst();
+                    toWaypoint = nextWaypoint.subtract(currentPos);
+                    distanceToWaypoint = toWaypoint.length();
+                }
             }
-            nextWaypoint = troop.getPath().peekFirst();
-            toWaypoint = nextWaypoint.subtract(currentPos);
-            distanceToWaypoint = toWaypoint.length();
+
+            // Only move if we have a valid destination vector
+            if (distanceToWaypoint > 1e-6) {
+                // DON'T normalize if distance is tiny, but here we checked > 1e-6
+                Vector2 direction = toWaypoint.normalize();
+                double moveDistance = troop.getMoveSpeed() * deltaTime;
+                if (moveDistance > distanceToWaypoint) {
+                    moveDistance = distanceToWaypoint;
+                }
+                movement = direction.multiply(moveDistance);
+            }
         }
 
-        if (distanceToWaypoint < 1e-6) {
-            return; // Already at destination
-        }
+        Vector2 proposedPos = currentPos.add(movement);
 
-        // Normalize direction and calculate movement
-        Vector2 direction = toWaypoint.normalize();
-        double moveDistance = troop.getMoveSpeed() * deltaTime;
+        // Apply separation (Always applies, even if stationary/attacking)
+        Vector2 finalPos = applySeparation(proposedPos, troop, state.getActiveTroops());
 
-        // Don't overshoot the waypoint
-        if (moveDistance > distanceToWaypoint) {
-            moveDistance = distanceToWaypoint;
-        }
-
-        // Calculate new position
-        Vector2 newPos = currentPos.add(direction.multiply(moveDistance));
-
-        // Apply simple separation from other troops
-        newPos = applySeparation(newPos, troop, state.getActiveTroops());
-
-        troop.setWorldPosition(newPos);
+        troop.setWorldPosition(finalPos);
 
         // Update SpatialGrid
         if (state != null && state.getArena() != null && state.getArena().getSpatialGrid() != null) {
@@ -250,11 +262,21 @@ public class TroopMovementService {
             Vector2 otherPos = other.getWorldPosition();
             double dist = proposedPos.distanceTo(otherPos);
 
-            if (dist < SEPARATION_RADIUS && dist > 1e-6) {
-                // Push away from other troop
-                Vector2 away = proposedPos.subtract(otherPos).normalize();
+            if (dist < SEPARATION_RADIUS) {
+                Vector2 away;
+                if (dist < 1e-3) {
+                    // Exact overlap or very close: random push
+                    double angle = Math.random() * 2 * Math.PI;
+                    away = new Vector2(Math.cos(angle), Math.sin(angle));
+                } else {
+                    // Push away from other troop
+                    away = proposedPos.subtract(otherPos).normalize();
+                }
+
+                // Strength increases as they get closer
                 double strength = (SEPARATION_RADIUS - dist) / SEPARATION_RADIUS;
-                separation = separation.add(away.multiply(strength * 0.1));
+                // Increased push force (0.4) to effectively separate clustered units
+                separation = separation.add(away.multiply(strength * 0.4));
                 count++;
             }
         }
