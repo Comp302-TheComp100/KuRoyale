@@ -321,71 +321,54 @@ public class CombatService {
         int intDamage = (int) Math.round(damage);
 
         // Damage enemy troops
-        java.util.List<Troop> troops = new java.util.ArrayList<>(gameState.getActiveTroops());
-        for (Troop t : troops) {
-            if (!t.isAlive())
+        // Use SpatialGrid to efficiently find all potential targets in the blast area
+        com.kuroyale.model.logic.SpatialGrid grid = gameState.getArena().getSpatialGrid();
+        if (grid == null)
+            return;
+
+        java.util.List<ICombatant> candidates = grid.getNearby(center, radiusTiles);
+
+        for (ICombatant candidate : candidates) {
+            if (!candidate.isAlive())
                 continue;
-            // Don't hurt friendly troops
-            if (t.isPlayerSide() == isPlayerSource)
+            // Don't hurt friendly units
+            if (candidate.isPlayerSide() == isPlayerSource)
                 continue;
 
-            // Validate Target Type
-            if (targetType == com.kuroyale.model.enums.TargetType.GROUND && t.isAirUnit())
-                continue;
-            if (targetType == com.kuroyale.model.enums.TargetType.AIR && !t.isAirUnit())
-                continue;
-            if (targetType == com.kuroyale.model.enums.TargetType.NONE)
-                continue;
-
-            // Distance Check - PRECISE
-            double dist = center.getEuclideanDistanceTo(t.getPosition());
-
-            if (dist <= radiusTiles) {
-                t.takeDamage(intDamage);
+            // Handle Target Types
+            if (candidate instanceof Troop t) {
+                if (targetType == com.kuroyale.model.enums.TargetType.GROUND && t.isAirUnit())
+                    continue;
+                if (targetType == com.kuroyale.model.enums.TargetType.AIR && !t.isAirUnit())
+                    continue;
+                if (targetType == com.kuroyale.model.enums.TargetType.NONE)
+                    continue;
+            } else if ((candidate instanceof Building || candidate instanceof Tower)) {
+                // Buildings/Towers are always "Ground" for targeting purposes usually,
+                // but checking canHitGround is good practice.
+                boolean canHitGround = (targetType != com.kuroyale.model.enums.TargetType.AIR
+                        && targetType != com.kuroyale.model.enums.TargetType.NONE);
+                if (!canHitGround)
+                    continue;
             }
-        }
 
-        // Damage enemy buildings and towers
-        boolean canHitGround = (targetType != com.kuroyale.model.enums.TargetType.AIR
-                && targetType != com.kuroyale.model.enums.TargetType.NONE);
+            // Precise Distance Check
+            com.kuroyale.model.entities.GridPosition candidatePos = candidate.getPosition();
+            // For structures, use center for better splash approximation or keep simple pos
+            if (candidate instanceof Building || candidate instanceof Tower) {
+                candidatePos = candidate.getCenterPosition();
+            }
 
-        if (canHitGround) {
-            // Check Buildings
-            java.util.List<Building> buildings = new java.util.ArrayList<>(gameState.getActiveBuildings());
-            for (Building b : buildings) {
-                if (!b.isAlive())
-                    continue;
-                if (b.isPlayerSide() == isPlayerSource)
-                    continue;
-
-                com.kuroyale.model.entities.GridPosition bCenter = b.getCenterPosition();
-                if (bCenter == null)
-                    continue;
-
-                double dist = center.getEuclideanDistanceTo(bCenter);
+            if (candidatePos != null) {
+                double dist = center.getEuclideanDistanceTo(candidatePos);
                 if (dist <= radiusTiles) {
-                    b.takeDamage(intDamage);
-                    if (!b.isAlive()) {
+                    // Apply Damage
+                    candidate.takeDamage(intDamage);
+
+                    // Check for destroyed buildings to free footprint immediately
+                    if (!candidate.isAlive() && candidate instanceof Building b) {
                         gameState.getArena().freeFootprint(b);
                     }
-                }
-            }
-
-            // Check Towers
-            java.util.Set<Tower> towers = gameState.getArena().getAllTowers();
-            for (Tower t : towers) {
-                if (!t.isAlive())
-                    continue;
-                if (t.isPlayerSide() == isPlayerSource)
-                    continue;
-
-                com.kuroyale.model.entities.GridPosition tCenter = t.getCenterPosition();
-                if (tCenter == null)
-                    continue;
-
-                double dist = center.getEuclideanDistanceTo(tCenter);
-                if (dist <= radiusTiles) {
-                    t.takeDamage(intDamage);
                 }
             }
         }
