@@ -18,7 +18,7 @@ public class Building implements ICombatant {
     // Combat
     private int damage;
     private double hitSpeedSeconds;
-    private int rangeTiles;
+    private double rangeTiles;
     private TargetType targetType = TargetType.GROUND; // default
     private double attackCooldown;
     private boolean areaEffect = false;
@@ -63,8 +63,7 @@ public class Building implements ICombatant {
         this.cardName = card.getName();
         this.damage = card.getDamage();
         this.hitSpeedSeconds = card.getHitSpeed();
-        this.rangeTiles = (int) Math.round(card.getRange());
-        this.targetType = card.getTarget();
+        this.rangeTiles = card.getRange();
         this.targetType = card.getTarget();
         this.areaEffect = card.isAreaEffect();
         this.minRange = card.getMinRange();
@@ -145,7 +144,7 @@ public class Building implements ICombatant {
         return rangeTiles;
     }
 
-    public int getRangeTiles() {
+    public double getRangeTiles() {
         return rangeTiles;
     }
 

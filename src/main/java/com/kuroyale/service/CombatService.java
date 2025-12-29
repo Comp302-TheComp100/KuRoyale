@@ -7,6 +7,7 @@ import com.kuroyale.model.entities.ICombatant;
 import com.kuroyale.model.entities.Card;
 
 public class CombatService {
+    public static final double MELEE_ATTACK_BUFFER = 1.5;
 
     // Core single-target damage methods
     public void applyDamage(ICombatant attacker, ICombatant target) {
@@ -178,8 +179,7 @@ public class CombatService {
         if (attacker instanceof Troop troop) {
             com.kuroyale.model.entities.CombatStats stats = troop.getCombatStats();
             if (stats != null && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
-                double meleeBase = Math.max(range, 1.0);
-                range = Math.max(1.1, meleeBase);
+                range = Math.max(range, MELEE_ATTACK_BUFFER);
             }
         }
 
@@ -233,7 +233,7 @@ public class CombatService {
             com.kuroyale.model.entities.CombatStats stats = troop.getCombatStats();
             if (stats != null && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
                 range = Math.max(range, 1.0);
-                double threshold = Math.max(1.5, range);
+                double threshold = Math.max(MELEE_ATTACK_BUFFER, range);
                 return getDistanceToTarget(attacker, target) <= threshold;
             }
         }

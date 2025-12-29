@@ -6,7 +6,7 @@ import com.kuroyale.model.logic.*;
 import java.util.ArrayList;
 
 public class TargetingService {
-    private static final int BASE_DETECTION_RADIUS = 5; // tiles
+    private static final double BASE_DETECTION_RADIUS = 5.0; // tiles (world units)
 
     public GridPosition findNearestEnemyOrObjective(IBattleState state, Troop troop) {
         Vector2 troopWorldPos = troop.getWorldPosition();
@@ -15,10 +15,10 @@ public class TargetingService {
         GridPosition bestPos = null;
 
         // Compute detection radius: ranged cards use range+2, melee use base radius
-        int detectionRadius = BASE_DETECTION_RADIUS;
+        double detectionRadius = BASE_DETECTION_RADIUS;
         double cardRange = troop.getBaseCard().getRange();
         if (cardRange > 0) {
-            detectionRadius = (int) Math.floor(cardRange + 2);
+            detectionRadius = cardRange + 2.0;
         }
 
         // Optimize with SpatialGrid for detection radius query

@@ -93,7 +93,7 @@ public class TroopMovementService {
         // Define a "trigger range" slightly larger than attack range to be responsive
         // Melee units (range ~0.8-1.0) need a bit of buffer (1.5) to snap to targets
         double attackRange = troop.getRange();
-        double triggerRange = Math.max(attackRange, 1.5);
+        double triggerRange = Math.max(attackRange, CombatService.MELEE_ATTACK_BUFFER);
 
         if (distToNearest <= triggerRange) {
             // We have a valid target in immediate range.

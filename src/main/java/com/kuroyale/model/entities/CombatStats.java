@@ -3,7 +3,7 @@ package com.kuroyale.model.entities;
 public class CombatStats {
     private final int damage;
     private final double hitSpeedSeconds;
-    private final int rangeTiles;
+    private final double rangeTiles;
     private final AttackType attackType;
 
     public enum AttackType {
@@ -11,7 +11,7 @@ public class CombatStats {
         RANGED
     }
 
-    public CombatStats(int damage, double hitSpeedSeconds, int rangeTiles, AttackType attackType) {
+    public CombatStats(int damage, double hitSpeedSeconds, double rangeTiles, AttackType attackType) {
         this.damage = damage;
         this.hitSpeedSeconds = hitSpeedSeconds;
         this.rangeTiles = rangeTiles;
@@ -26,7 +26,7 @@ public class CombatStats {
         return hitSpeedSeconds;
     }
 
-    public int getRangeTiles() {
+    public double getRangeTiles() {
         return rangeTiles;
     }
 
