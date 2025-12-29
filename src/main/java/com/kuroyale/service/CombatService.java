@@ -102,7 +102,7 @@ public class CombatService {
     private void performAttack(ICombatant attacker, ICombatant target, com.kuroyale.model.logic.GameState state) {
         if (attacker.isAreaEffect()) {
             // Splash radius is usually 1.0 tiles for units/buildings unless specified
-            applyAreaDamage(state, target.getPosition(), 1.0, attacker.getDamage(),
+            applyAreaDamage(state, target.getCenterPosition(), 1.0, attacker.getDamage(),
                     attacker.getTargetType(), attacker.isPlayerSide());
         } else {
             applyDamage(attacker, target);
@@ -122,7 +122,7 @@ public class CombatService {
             com.kuroyale.model.entities.CombatStats stats = troop.getCombatStats();
             if (stats != null && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
                 double meleeBase = Math.max(range, 1.0);
-                range = Math.max(1.5, meleeBase);
+                range = Math.max(1.1, meleeBase);
             }
         }
 
