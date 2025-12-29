@@ -32,10 +32,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 
-/**
- * Controller for deck building with challenge-specific restrictions.
- * Filters available cards based on challenge rules and validates deck.
- */
+/*Controller for deck building with challenge-specific restrictions.
+ * Filters available cards based on challenge rules and validates deck.*/
 public class ChallengeDeckBuilderController {
 
     // Constants
@@ -55,40 +53,23 @@ public class ChallengeDeckBuilderController {
     private static final int SLOT_CONTAINER_HEIGHT = 280;
     private static final int RECESSED_RECT_OFFSET_Y = 20;
 
-    @FXML
-    private AnchorPane deckSlotsBackground;
-    @FXML
-    private AnchorPane deckSlotsContainer;
-    @FXML
-    private AnchorPane cardsGridBackground;
-    @FXML
-    private GridPane cardsGrid;
-    @FXML
-    private ScrollPane cardsScrollPane;
-    @FXML
-    private StackPane rootPane;
-    @FXML
-    private Button backButton;
-    @FXML
-    private Button startChallengeButton;
-    @FXML
-    private Label averageElixirValue;
-    @FXML
-    private Label battleDeckTitle;
-    @FXML
-    private HBox averageElixirContainer;
-    @FXML
-    private HBox challengeBanner;
-    @FXML
-    private Label challengeNameLabel;
-    @FXML
-    private Label challengeRulesLabel;
-    @FXML
-    private HBox validationBox;
-    @FXML
-    private Label validationIcon;
-    @FXML
-    private Label validationLabel;
+    @FXML private AnchorPane deckSlotsBackground;
+    @FXML private AnchorPane deckSlotsContainer;
+    @FXML private AnchorPane cardsGridBackground;
+    @FXML private GridPane cardsGrid;
+    @FXML private ScrollPane cardsScrollPane;
+    @FXML private StackPane rootPane;
+    @FXML private Button backButton;
+    @FXML private Button startChallengeButton;
+    @FXML private Label averageElixirValue;
+    @FXML private Label battleDeckTitle;
+    @FXML private HBox averageElixirContainer;
+    @FXML private HBox challengeBanner;
+    @FXML private Label challengeNameLabel;
+    @FXML private Label challengeRulesLabel;
+    @FXML private HBox validationBox;
+    @FXML private Label validationIcon;
+    @FXML private Label validationLabel;
 
     private final DeckBuilderModel model = new DeckBuilderModel();
     private final SceneLoader sceneLoader = new SceneLoader();
@@ -105,10 +86,8 @@ public class ChallengeDeckBuilderController {
     private boolean replaceMode;
     private Card cardToReplace;
 
-    /**
-     * Sets the challenge for this deck builder.
-     * Must be called before the scene is shown.
-     */
+    /* Sets the challenge for this deck builder.
+     * Must be called before the scene is shown. */
     public void setChallenge(Challenge challenge) {
         this.currentChallenge = challenge;
 
@@ -287,9 +266,7 @@ public class ChallengeDeckBuilderController {
         reorganizeCardGrid();
     }
 
-    /**
-     * Checks if a card is allowed for the current challenge.
-     */
+    // Checks if a card is allowed for the current challenge.
     private boolean isCardAllowed(Card card) {
         if (allowedCardNames == null) {
             return true;
@@ -320,9 +297,7 @@ public class ChallengeDeckBuilderController {
         }
     }
 
-    /**
-     * Validates the current deck against challenge requirements.
-     */
+    // Validates the current deck against challenge requirements.
     private void validateDeck() {
         if (currentChallenge == null)
             return;

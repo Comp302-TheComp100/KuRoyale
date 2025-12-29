@@ -8,17 +8,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
-/**
- * Factory class for creating Challenge instances.
- * 
- * Design Pattern: Factory Pattern
+/** Design Pattern: Factory Pattern
  * - Centralizes challenge creation with proper initialization
- * - Each create method returns a specific challenge type with its validation
- * logic
- * 
+ * - Each create method returns a specific challenge type with its validation logic
+ *
  * Design Pattern: Strategy Pattern (implemented via anonymous inner classes)
- * - Each challenge has unique deck validation rules
- */
+ *  Each challenge has unique deck validation rules*/
 public class ChallengeFactory {
 
     // Swarm troop card names
@@ -33,10 +28,8 @@ public class ChallengeFactory {
     private static final Set<String> TANK_CARDS = new HashSet<>(Arrays.asList(
             "Giant", "Knight", "Valkyrie", "Mini P.E.K.K.A", "Barbarians"));
 
-    /**
-     * Creates the "Swarm Master" challenge.
-     * Rules: Must include at least 5 swarm cards. Other cards can be anything.
-     */
+    /*Creates the "Swarm Master" challenge.
+     * Rules: Must include at least 5 swarm cards. Other cards can be anything.*/
     public Challenge createSwarmMaster() {
         return new Challenge(1, ChallengeType.SWARM_MASTER,
                 "Overwhelm your opponent with swarm troops!",
@@ -62,10 +55,8 @@ public class ChallengeFactory {
         };
     }
 
-    /**
-     * Creates the "Spell Barrage" challenge.
-     * Rules: Must contain all 4 spell cards, spells cost 1 less elixir.
-     */
+    /* Creates the "Spell Barrage" challenge.
+     * Rules: Must contain all 4 spell cards, spells cost 1 less elixir.*/
     public Challenge createSpellBarrage() {
         return new Challenge(2, ChallengeType.SPELL_BARRAGE,
                 "Rain destruction with powerful spells!",
@@ -93,10 +84,8 @@ public class ChallengeFactory {
         };
     }
 
-    /**
-     * Creates the "No Buildings Allowed" challenge.
-     * Rules: Cannot use any building cards.
-     */
+    /* Creates the "No Buildings Allowed" challenge.
+     * Rules: Cannot use any building cards. */
     public Challenge createNoBuildingsAllowed() {
         return new Challenge(3, ChallengeType.NO_BUILDINGS,
                 "Fight without defensive structures!",
@@ -117,10 +106,8 @@ public class ChallengeFactory {
         };
     }
 
-    /**
-     * Creates the "Budget Battle" challenge.
-     * Rules: Only cards costing 3 elixir or less.
-     */
+    /* Creates the "Budget Battle" challenge.
+     * Rules: Only cards costing 3 elixir or less.*/
     public Challenge createBudgetBattle() {
         return new Challenge(4, ChallengeType.BUDGET_BATTLE,
                 "Win with cheap but effective cards!",
@@ -145,10 +132,8 @@ public class ChallengeFactory {
         };
     }
 
-    /**
-     * Creates the "Tank Rush" challenge.
-     * Rules: Only high-HP units, no spells or buildings.
-     */
+    /* Creates the "Tank Rush" challenge.
+     * Rules: Only high-HP units, no spells or buildings. */
     public Challenge createTankRush() {
         return new Challenge(5, ChallengeType.TANK_RUSH,
                 "Crush your enemies with heavy units!",
@@ -174,10 +159,8 @@ public class ChallengeFactory {
         };
     }
 
-    /**
-     * Returns all 5 challenges in order.
-     * Challenges must be completed in sequence.
-     */
+    /* Returns all 5 challenges in order.
+     * Challenges must be completed in sequence. */
     public List<Challenge> getAllChallenges() {
         List<Challenge> challenges = new ArrayList<>();
         challenges.add(createSwarmMaster());

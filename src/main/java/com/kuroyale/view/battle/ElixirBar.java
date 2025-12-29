@@ -22,6 +22,7 @@ public class ElixirBar extends VBox {
         this.setSpacing(5);
         this.getStyleClass().add("elixir-bar-container");
         this.setMinWidth(220); // Ensure it has a minimum width
+        this.setMaxWidth(220); // Ensure it does not stretch beyond minimum width
         this.setMinHeight(60); // Ensure it has a minimum height
 
         // HBox to contain label and x2 indicator
@@ -87,5 +88,30 @@ public class ElixirBar extends VBox {
                         "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
             }
         }
+    }
+
+    // Shows a +N indicator with purple text when elixir is produced (e.g. from
+    // Elixir Collector)
+    public void showProductionIndicator(int amount) {
+        Label indicator = new Label("+" + amount);
+        indicator.setStyle(
+                "-fx-font-weight: bold; -fx-text-fill: #9932CC; -fx-font-size: 20px; -fx-effect: dropshadow(one-pass-box, black, 2, 0.8, 0, 0);");
+
+        // Add to progressBar parent (this VBox)
+        this.getChildren().add(indicator);
+
+        // Animate: move up and fade out
+        javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(
+                javafx.util.Duration.seconds(1.0), indicator);
+        tt.setByY(-30);
+
+        javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(
+                javafx.util.Duration.seconds(1.0), indicator);
+        ft.setFromValue(1.0);
+        ft.setToValue(0.0);
+
+        javafx.animation.ParallelTransition pt = new javafx.animation.ParallelTransition(tt, ft);
+        pt.setOnFinished(e -> this.getChildren().remove(indicator));
+        pt.play();
     }
 }

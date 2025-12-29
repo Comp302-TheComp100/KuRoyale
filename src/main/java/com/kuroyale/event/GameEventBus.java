@@ -5,11 +5,9 @@ import com.kuroyale.model.entities.Tower;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Event Bus for broadcasting game events to registered listeners.
+/* Event Bus for broadcasting game events to registered listeners.
  * Facilitates loose coupling between the game engine (GameState) and
- * auxiliary systems like Quests and Achievements.
- */
+ * auxiliary systems like Quests and Achievements.*/
 public class GameEventBus {
     private static GameEventBus instance;
     private final List<GameEventListener> listeners = new ArrayList<>();
@@ -48,8 +46,13 @@ public class GameEventBus {
         new ArrayList<>(listeners).forEach(l -> l.onElixirSpent(isPlayer, amount));
     }
 
+    public void publishBuildingProduction(com.kuroyale.model.entities.Building building, String resource, int amount) {
+        new ArrayList<>(listeners).forEach(l -> l.onBuildingProduction(building, resource, amount));
+    }
+
     public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
             double radius, double duration) {
+
         new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration));
     }
 }

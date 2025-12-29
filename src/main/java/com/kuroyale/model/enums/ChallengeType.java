@@ -1,9 +1,7 @@
 package com.kuroyale.model.enums;
 
-/**
- * Enum defining the 5 challenge types in Challenge Mode.
- * Each challenge has unique rules and victory conditions.
- */
+/*Enum defining the 5 challenge types in Challenge Mode.
+ * Each challenge has unique rules and victory conditions.*/
 public enum ChallengeType {
     SWARM_MASTER("Swarm Master", 250),
     SPELL_BARRAGE("Spell Barrage", 300),

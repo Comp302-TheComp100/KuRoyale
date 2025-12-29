@@ -55,6 +55,13 @@ public class GridCell {
         this.occupied = true;
     }
 
+    // Forces occupant on this cell without validating canPlaceUnit (for building
+    // footprints)
+    public void forceSetOccupant(Object occupant) {
+        this.occupant = occupant;
+        this.occupied = true;
+    }
+
     // Removes the unit from this cell.
     public void clearOccupant() {
         this.occupant = null;

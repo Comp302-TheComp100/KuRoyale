@@ -31,7 +31,7 @@ public class HandView extends VBox {
         this.setSpacing(10);
         this.getStyleClass().add("hand-container");
         // Make background semi-transparent and compact
-        this.setStyle("-fx-background-color: rgba(79, 35, 24, 0.68); -fx-background-radius: 15; -fx-padding: 5;");
+        // Background style is now handled in CSS (.hand-container)
 
         initializeCards();
     }

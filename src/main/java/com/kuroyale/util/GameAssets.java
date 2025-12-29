@@ -5,10 +5,8 @@ import javafx.scene.image.Image;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Singleton class for managing and caching game assets (images, audio).
- * Prevents redundant loading of resources.
- */
+/* Singleton class for managing and caching game assets (images, audio).
+ * Prevents redundant loading of resources. */
 public class GameAssets {
     private static GameAssets instance;
 
@@ -38,9 +36,7 @@ public class GameAssets {
         return instance;
     }
 
-    /**
-     * Preloads core battle assets.
-     */
+    // Preloads core battle assets.
     public void loadBattleAssets() {
         getImage(PRINCESS_TOWER_USER, ATH_PRINCESS_TOWER_USER);
         getImage(PRINCESS_TOWER_COMPUTER, PATH_PRINCESS_TOWER_COMPUTER);
@@ -48,14 +44,7 @@ public class GameAssets {
         getImage(KING_TOWER_COMPUTER, PATH_KING_TOWER_COMPUTER);
     }
 
-    /**
-     * Gets a cached image or loads it if not present.
-     * 
-     * @param key  Unique identifier for the asset
-     * @param path Resource path (required only for first load, but generally
-     *             managed internally)
-     * @return The JavaFX Image
-     */
+    // Gets a cached image or loads it if not present.
     public Image getImage(String key, String path) {
         if (!imageCache.containsKey(key)) {
             try {

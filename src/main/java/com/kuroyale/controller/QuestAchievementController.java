@@ -21,28 +21,18 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
-/**
- * Controller for the Quests & Achievements screen.
- * Manages daily quests and permanent achievements display.
- */
+/* Controller for the Quests & Achievements screen.
+ * Manages daily quests and permanent achievements display.*/
 public class QuestAchievementController {
 
-    @FXML
-    private AnchorPane root;
-    @FXML
-    private Button backButton;
-    @FXML
-    private Label titleLabel;
-    @FXML
-    private TabPane tabPane;
-    @FXML
-    private VBox questsContainer;
-    @FXML
-    private VBox questCardsContainer;
-    @FXML
-    private Label resetTimerLabel;
-    @FXML
-    private VBox achievementsContainer;
+    @FXML private AnchorPane root;
+    @FXML private Button backButton;
+    @FXML private Label titleLabel;
+    @FXML private TabPane tabPane;
+    @FXML private VBox questsContainer;
+    @FXML private VBox questCardsContainer;
+    @FXML private Label resetTimerLabel;
+    @FXML private VBox achievementsContainer;
 
     private final SceneLoader sceneLoader = new SceneLoader();
     private final QuestService questService = ServiceFactory.getInstance().getQuestService();
@@ -66,9 +56,7 @@ public class QuestAchievementController {
         }
     }
 
-    /**
-     * Loads the 3 daily quests and displays them.
-     */
+    // Loads the 3 daily quests and displays them.
     private void loadDailyQuests() {
         questCardsContainer.getChildren().clear();
 
@@ -91,9 +79,7 @@ public class QuestAchievementController {
         questCardsContainer.getChildren().add(card);
     }
 
-    /**
-     * Handles claiming a quest reward.
-     */
+    // Handles claiming a quest reward.
     private void handleClaimQuest(String questId) {
         SoundEffectUtil.playButtonClick();
         int reward = questService.claimReward(questId);
@@ -112,9 +98,7 @@ public class QuestAchievementController {
         loadDailyQuests(); // Refresh
     }
 
-    /**
-     * Loads all achievements and displays them.
-     */
+    // Loads all achievements and displays them.
     private void loadAchievements() {
         achievementsContainer.getChildren().clear();
 
@@ -141,9 +125,7 @@ public class QuestAchievementController {
         achievementsContainer.getChildren().add(card);
     }
 
-    /**
-     * Handles claiming an achievement reward.
-     */
+    // Handles claiming an achievement reward.
     private void handleClaimAchievement(com.kuroyale.model.enums.AchievementType type) {
         SoundEffectUtil.playButtonClick();
         int reward = achievementService.claimReward(type);
@@ -163,9 +145,7 @@ public class QuestAchievementController {
         loadAchievements(); // Refresh
     }
 
-    /**
-     * Starts the countdown timer for daily reset.
-     */
+    // Starts the countdown timer for daily reset.
     private void startResetTimer() {
         // Update timer immediately
         resetTimerLabel.setText(questService.getTimeUntilReset());

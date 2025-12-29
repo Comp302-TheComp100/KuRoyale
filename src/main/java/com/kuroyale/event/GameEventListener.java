@@ -1,21 +1,18 @@
 package com.kuroyale.event;
 
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.Tower;
-
-/**
- * Interface for listening to game-related events.
- * Implements the Observer pattern to decouple GameState from secondary
- * services.
- */
+/* Interface for listening to game-related events.
+ * Implements the Observer pattern to decouple GameState from secondary services. */
 public interface GameEventListener {
-    default void onCardPlayed(boolean isPlayer, Card card) {
+    default void onCardPlayed(boolean isPlayer, com.kuroyale.model.entities.Card card) {
     }
 
-    default void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
+    default void onTowerDestroyed(boolean isPlayerTower, com.kuroyale.model.entities.Tower tower) {
     }
 
     default void onElixirSpent(boolean isPlayer, int amount) {
+    }
+
+    default void onBuildingProduction(com.kuroyale.model.entities.Building building, String resource, int amount) {
     }
 
     default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center, double radius,

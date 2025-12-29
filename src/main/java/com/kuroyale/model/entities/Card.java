@@ -23,9 +23,23 @@ public class Card {
     public static final int MAX_LEVEL = 3;
     public static final int MIN_LEVEL = 1;
     private int level = 1;
-    // Optional footprint for buildings (tiles). Defaults to 3x3 if unset.
-    private int footprintWidthTiles = 3;
-    private int footprintHeightTiles = 3;
+    // Optional footprint for buildings (tiles). Defaults to 2x2 if unset.
+    private int footprintWidthTiles = 2;
+    private int footprintHeightTiles = 2;
+
+    // Advanced Combat properties
+    private double minRange = 0; // Blind spot radius
+
+    // Production properties (for Elixir Collector usually)
+    private String productionResource; // e.g., "ELIXIR"
+    private int productionAmount;
+    private double productionInterval;
+
+    // Spawning properties
+    private String spawnUnitName;
+    private int spawnUnitCount;
+    private String deathSpawnUnitName;
+    private int deathSpawnUnitCount;
 
     public Card(String name, int cost, CardType type, Rarity rarity, int hp, int damage, double hitSpeed,
             double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
@@ -45,6 +59,17 @@ public class Card {
         this.description = description;
         this.count = count;
         this.lifetime = lifetime;
+    }
+
+    // Builder-like setters for optional properties
+    public void setMinRange(double minRange) {
+        this.minRange = minRange;
+    }
+
+    public void setProduction(String resource, int amount, double interval) {
+        this.productionResource = resource;
+        this.productionAmount = amount;
+        this.productionInterval = interval;
     }
 
     // Getters
@@ -92,6 +117,10 @@ public class Card {
 
     public double getRange() {
         return range;
+    }
+
+    public double getMinRange() {
+        return minRange;
     }
 
     public SpeedType getSpeed() {
@@ -144,6 +173,50 @@ public class Card {
             this.footprintWidthTiles = width;
         if (height > 0)
             this.footprintHeightTiles = height;
+    }
+
+    public String getSpawnUnitName() {
+        return spawnUnitName;
+    }
+
+    public void setSpawnUnitName(String spawnUnitName) {
+        this.spawnUnitName = spawnUnitName;
+    }
+
+    public int getSpawnUnitCount() {
+        return spawnUnitCount;
+    }
+
+    public void setSpawnUnitCount(int spawnUnitCount) {
+        this.spawnUnitCount = spawnUnitCount;
+    }
+
+    public String getDeathSpawnUnitName() {
+        return deathSpawnUnitName;
+    }
+
+    public void setDeathSpawnUnitName(String deathSpawnUnitName) {
+        this.deathSpawnUnitName = deathSpawnUnitName;
+    }
+
+    public int getDeathSpawnUnitCount() {
+        return deathSpawnUnitCount;
+    }
+
+    public void setDeathSpawnUnitCount(int deathSpawnUnitCount) {
+        this.deathSpawnUnitCount = deathSpawnUnitCount;
+    }
+
+    public String getProductionResource() {
+        return productionResource;
+    }
+
+    public int getProductionAmount() {
+        return productionAmount;
+    }
+
+    public double getProductionInterval() {
+        return productionInterval;
     }
 
     public String getImagePath() {

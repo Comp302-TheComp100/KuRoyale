@@ -25,10 +25,8 @@ import org.json.JSONObject;
 import com.kuroyale.model.entities.Quest;
 import com.kuroyale.model.enums.QuestType;
 
-/**
- * Service for managing daily quests.
- * Handles quest generation, progress tracking, and persistence.
- */
+/*Service for managing daily quests.
+ * Handles quest generation, progress tracking, and persistence.*/
 public class QuestService implements GameEventListener {
 
     private static final String QUEST_FILE_TEMPLATE = "quests_%s.json";
@@ -49,20 +47,15 @@ public class QuestService implements GameEventListener {
         GameEventBus.getInstance().subscribe(this);
     }
 
-    /**
-     * Loads quest data for the specified user.
-     * 
-     * @param username The username to load data for.
-     */
+    // Loads quest data for the specified user.
+
     public void loadForUser(String username) {
         this.currentUsername = username;
         loadQuests();
         checkAndResetDaily();
     }
 
-    /**
-     * Gets the current daily quests, generating new ones if needed.
-     */
+    // Gets the current daily quests, generating new ones if needed.
     public List<Quest> getDailyQuests() {
         if (currentUsername == null) {
             return Collections.emptyList();
@@ -71,9 +64,7 @@ public class QuestService implements GameEventListener {
         return Collections.unmodifiableList(dailyQuests);
     }
 
-    /**
-     * Checks if a daily reset is needed and performs it.
-     */
+    // Checks if a daily reset is needed and performs it.
     public void checkAndResetDaily() {
         if (currentUsername == null)
             return;
@@ -86,9 +77,7 @@ public class QuestService implements GameEventListener {
         }
     }
 
-    /**
-     * Generates 3 random daily quests.
-     */
+    // Generates 3 random daily quests.
     private void generateNewDailyQuests() {
         dailyQuests.clear();
         List<QuestType> allTypes = new ArrayList<>(Arrays.asList(QuestType.values()));
@@ -100,9 +89,7 @@ public class QuestService implements GameEventListener {
         }
     }
 
-    /**
-     * Updates progress for a specific quest type.
-     */
+    // Updates progress for a specific quest type.
     public void updateProgress(QuestType type, int amount) {
         if (currentUsername == null)
             return;
@@ -115,11 +102,7 @@ public class QuestService implements GameEventListener {
         saveQuests();
     }
 
-    /**
-     * Claims a quest reward.
-     * 
-     * @return The gold reward if successful, 0 otherwise.
-     */
+    // Claims a quest reward.
     public int claimReward(String questId) {
         if (currentUsername == null)
             return 0;
@@ -134,9 +117,7 @@ public class QuestService implements GameEventListener {
         return 0;
     }
 
-    /**
-     * Gets the time remaining until daily reset.
-     */
+    // Gets the time remaining until daily reset.
     public String getTimeUntilReset() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime midnight = now.toLocalDate().plusDays(1).atStartOfDay();
@@ -146,9 +127,7 @@ public class QuestService implements GameEventListener {
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
-    /**
-     * Loads quests from disk.
-     */
+    //Loads quests from disk.
     private void loadQuests() {
         if (currentUsername == null)
             return;
@@ -189,9 +168,7 @@ public class QuestService implements GameEventListener {
         }
     }
 
-    /**
-     * Saves quests to disk.
-     */
+    //Saves quests to disk.
     private void saveQuests() {
         if (currentUsername == null)
             return;

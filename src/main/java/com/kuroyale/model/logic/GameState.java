@@ -12,9 +12,9 @@ import java.util.List;
 public class GameState {
     private final Hand playerHand;
     private final ElixirManager playerElixir;
-
     private final ElixirManager botElixir;
     private final BotLogic bot;
+    private java.util.function.Function<String, Card> cardCatalog;
 
     private final Arena arena;
     private final List<PlacedCard> placedCards;
@@ -51,6 +51,17 @@ public class GameState {
         this.activeBuildings = new ArrayList<>();
     }
 
+    public void setCardCatalog(java.util.function.Function<String, Card> cardCatalog) {
+        this.cardCatalog = cardCatalog;
+    }
+
+    public Card getCardByName(String name) {
+        if (cardCatalog != null) {
+            return cardCatalog.apply(name);
+        }
+        return null;
+    }
+
     public void setActiveChallenge(ChallengeType activeChallenge) {
         this.activeChallenge = activeChallenge;
     }
@@ -71,6 +82,14 @@ public class GameState {
             this.playerElixir.setDoubleElixir(true);
             this.botElixir.setDoubleElixir(true);
         }
+    }
+
+    /*
+     * Restores the player's hand and draw pile from saved card data.
+     * This ensures the exact same cards appear in hand after loading a saved game.
+     */
+    public void restorePlayerHand(List<Card> handCards, List<Card> drawPileCards) {
+        playerHand.restoreFromSaved(handCards, drawPileCards);
     }
 
     // Restores tower health from saved data
@@ -174,7 +193,7 @@ public class GameState {
         }
 
         // Cleanup destroyed towers
-        arena.removeDeadTowers(); // Towers handle their own removal? No we need to check Arena.
+        arena.removeDeadTowers();
     }
 
     private void checkWinConditions() {
@@ -252,19 +271,12 @@ public class GameState {
                 cost = Math.max(1, cost - 1);
             }
 
-            // --- CRITICAL FIX: TRANSACTIONAL LOGIC ---
-
-            // Adım A: İksir yetiyor mu KONTROL ET (Ama harcama!)
-            // Not: ElixirManager'da 'getCurrentElixir()' metodu olduğunu varsayıyorum.
             if (playerElixir.getCurrentElixir() >= cost) {
-
-                // Adım B: Birimi koymayı DENE (Bina çakışması vb. burada kontrol edilir)
                 boolean success = spawnUnit(true, card, x, y);
 
-                // Adım C: Sadece başarılıysa HARCA ve KARTI SİL
                 if (success) {
-                    playerElixir.spend(cost); // Şimdi düşüyoruz
-                    playerHand.playCard(handIndex); // Kartı elden çıkarıyoruz
+                    playerElixir.spend(cost);
+                    playerHand.playCard(handIndex);
 
                     // Notify listeners that elixir was spent
                     GameEventBus.getInstance().publishElixirSpent(true, cost);
@@ -290,6 +302,44 @@ public class GameState {
 
     public int getBotScore() {
         return botScore;
+    }
+
+    // Spawns troops directly (used by buildings/spells)
+    public boolean spawnTroopDirectly(boolean isPlayer, Card card, int x, int y, int count) {
+        if (card == null)
+            return false;
+
+        // Temporarily override the card's count for this specific spawn if requested
+        Card spawnCard = card;
+        if (count > 0 && count != card.getCount()) {
+            spawnCard = new Card(card.getName(), card.getCost(), card.getType(), card.getRarity(),
+                    card.getBaseHp(), card.getBaseDamage(), card.getHitSpeed(), card.getRange(),
+                    card.getSpeed(), card.getTarget(), card.isAirUnit(), card.isAreaEffect(),
+                    card.getDescription(), count, card.getLifetime());
+            spawnCard.setLevel(card.getLevel());
+        }
+
+        return spawnTroopGroup(isPlayer, spawnCard, x, y);
+    }
+
+    public GridPosition getFrontPosition(Building b) {
+        if (b == null)
+            return null;
+        int bw = b.getWidth();
+        int bh = b.getHeight();
+        int x = b.getPosition().getX();
+        int y = b.getPosition().getY();
+
+        int spawnX = x + bw / 2;
+        int spawnY;
+
+        if (b.isPlayerSide()) {
+            spawnY = y - 1; // "Above" the building for player
+        } else {
+            spawnY = y + bh; // "Below" the building for bot
+        }
+
+        return GridPosition.tryCreate(spawnX, spawnY);
     }
 
     // Overload for direct card placement (used by Bot)
@@ -346,6 +396,12 @@ public class GameState {
             Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
                     card.getLifetime());
             building.configureCombatFromCard(card);
+
+            // Set initial spawn delay if it's a spawner
+            if (card.getSpawnUnitName() != null) {
+                building.setAttackCooldown(1.0);
+            }
+
             arena.occupyFootprint(building);
             activeBuildings.add(building);
             arena.getSpatialGrid().add(building);
@@ -407,7 +463,7 @@ public class GameState {
         combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer);
     }
 
-    /**
+    /*
      * Apply circular area damage originating from a troop attack.
      * Center is derived from the primary target to keep targeting logic unchanged.
      */
@@ -429,13 +485,6 @@ public class GameState {
         combatService.applyAreaDamage(this, center, radius, damage, targetType, attacker.isPlayerSide());
     }
 
-    // Trigger death explosion for area-effect buildings (e.g., Bomb Tower)
-
-    /*
-     * Checks for destroyed towers and updates scores accordingly.
-     * Princess towers: +1 point to the attacker
-     * King towers: Set attacker's score to 3 and end the game
-     */
     /*
      * Checks for destroyed towers and updates scores accordingly.
      * Princess towers: +1 point to the attacker
@@ -491,7 +540,16 @@ public class GameState {
         return playerElixir;
     }
 
+    public ElixirManager getBotElixir() {
+        return botElixir;
+    }
+
+    public ElixirManager getElixirManager(boolean isPlayer) {
+        return isPlayer ? playerElixir : botElixir;
+    }
+
     public Arena getArena() {
+
         return arena;
     }
 

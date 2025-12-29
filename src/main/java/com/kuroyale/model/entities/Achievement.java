@@ -2,10 +2,8 @@ package com.kuroyale.model.entities;
 
 import com.kuroyale.model.enums.*;
 
-/**
- * Represents a permanent achievement.
- * Tracks lifetime progress toward achievement goals.
- */
+/* Represents a permanent achievement.
+ * Tracks lifetime progress toward achievement goals.*/
 public class Achievement {
     private final AchievementType type;
     private int progress;

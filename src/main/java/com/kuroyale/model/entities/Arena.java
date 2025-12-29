@@ -299,14 +299,12 @@ public class Arena {
         return towerMap.get(grid[x][y].getPosition());
     }
 
-    /* Returns a set of all unique active towers on the board. */
+    // Returns a set of all unique active towers on the board.
     public java.util.Set<Tower> getAllTowers() {
         return new java.util.HashSet<>(towerMap.values());
     }
 
-    /**
-     * Retrieves towers filtered by type and side.
-     */
+    // Retrieves towers filtered by type and side.
     public List<Tower> getTowersByType(Tower.TowerType type, boolean isPlayerSide) {
         return towerMap.values().stream()
                 .distinct()
@@ -335,8 +333,6 @@ public class Arena {
             GridCell cell = getCell(pos);
             if (cell != null) {
                 cell.setTileType(TileType.GRASS);
-                // Also ensure no occupant is left if it was the tower itself (though tower is
-                // not an occupant in the GridCell, it's a TileType)
             }
         }
     }
@@ -381,11 +377,7 @@ public class Arena {
                 if (pos != null) {
                     GridCell cell = getCell(pos);
                     if (cell != null) {
-                        try {
-                            cell.setOccupant(b);
-                        } catch (IllegalStateException e) {
-                            // ignore if invalid
-                        }
+                        cell.forceSetOccupant(b);
                     }
                 }
             }

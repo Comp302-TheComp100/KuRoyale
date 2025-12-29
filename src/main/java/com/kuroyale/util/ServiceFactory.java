@@ -29,10 +29,8 @@ public class ServiceFactory {
     private QuestService questService; // Lazy initialized
     private AchievementService achievementService; // Lazy initialized
 
-    /*
-     * Private constructor to enforce singleton pattern
-     * Creator pattern - ServiceFactory has initialization data for services
-     */
+    /* Private constructor to enforce singleton pattern
+     * Creator pattern - ServiceFactory has initialization data for services*/
     private ServiceFactory() {
         // Create repository
         this.userRepository = new JsonUserRepository();

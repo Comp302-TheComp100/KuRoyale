@@ -4,10 +4,8 @@ import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.User;
 import com.kuroyale.util.ServiceFactory;
 
-/**
- * Service for handling card-related operations like upgrades.
- * Validates business rules and delegates to services.
- */
+/* Service for handling card-related operations like upgrades.
+ * Validates business rules and delegates to services.*/
 public class CardService {
 
     private final AuthenticationService authService;
@@ -16,15 +14,7 @@ public class CardService {
         this.authService = ServiceFactory.getInstance().getAuthenticationService();
     }
 
-    /**
-     * Attempts to upgrade a card for the current user.
-     * 
-     * @param card The card to upgrade.
-     * @param user The user performing the upgrade.
-     * @throws IllegalStateException    If validation fails (insufficient gold, max
-     *                                  level).
-     * @throws IllegalArgumentException If parameters are null.
-     */
+    // Attempts to upgrade a card for the current user.
     public void upgradeCard(Card card, User user) {
         if (card == null || user == null) {
             throw new IllegalArgumentException("Card and User cannot be null");
@@ -57,8 +47,6 @@ public class CardService {
 
         } catch (Exception e) {
             // Revert on failure (simple in-memory revert)
-            // In a real DB, transaction rollback would handle this.
-            // Here we just re-throw to let UI know.
             throw new RuntimeException("Failed to save upgrade state: " + e.getMessage(), e);
         }
     }

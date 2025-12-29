@@ -2,10 +2,8 @@ package com.kuroyale.model.entities;
 
 import com.kuroyale.model.enums.*;
 
-/**
- * Common interface for all structures that can attack or be attacked.
- * Unifies Towers and Buildings for easier combat logic.
- */
+/* Common interface for all structures that can attack or be attacked.
+ * Unifies Towers and Buildings for easier combat logic.*/
 public interface ICombatant {
     // Identity & State
     boolean isPlayerSide();

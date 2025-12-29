@@ -141,17 +141,13 @@ public class MainMenuController {
             return;
         }
 
-        // Controller/Navigation: If valid, load the next scene.
+        // Navigate to battle mode selection screen
         try {
-            // Use the SceneLoader with a special initializer lambda for BattleController
-            sceneLoader.load(startMatchButton, "/fxml/battle.fxml", "KU Royale - Battle", controller -> {
-                if (controller instanceof BattleController battleController) {
-                    battleController.startGame();
-                }
-            });
+            sceneLoader.load(startMatchButton, "/fxml/battle-mode-selection.fxml", "KU Royale - Select Battle Mode",
+                    null);
         } catch (IOException e) {
             e.printStackTrace();
-            showError("Failed to load Battle: " + e.getMessage());
+            showError("Failed to load Battle Mode Selection: " + e.getMessage());
         }
     }
 
@@ -192,8 +188,6 @@ public class MainMenuController {
     private void handleSettings() {
         SoundEffectUtil.playButtonClick();
         try {
-            // Note: Settings title is usually set in its own controller/FMXL,
-            // but we pass a title here for consistency
             sceneLoader.load(settingsButton, "/fxml/settings.fxml", "KU Royale - Settings", null);
         } catch (IOException e) {
             e.printStackTrace();

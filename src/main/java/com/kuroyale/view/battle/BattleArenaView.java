@@ -20,6 +20,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private final Canvas highlightLayer;
     private final Pane arenaPane;
     private final GameState gameState;
+    private final com.kuroyale.model.logic.PvPGameState pvpGameState; // For PvP mode
     private final javafx.scene.control.Label timerLabel;
     private final javafx.scene.control.Label scoreLabel;
     private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
@@ -31,8 +32,74 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
     private static final int TILE_SIZE = 18; // Matches ArenaDesignController
 
+    /**
+     * Constructor for PvP mode.
+     */
+    public BattleArenaView(com.kuroyale.model.logic.PvPGameState pvpGameState) {
+        this.gameState = null;
+        this.pvpGameState = pvpGameState;
+
+        Arena arena = pvpGameState.getArena();
+
+        // Initialize with common setup
+        this.grid = new GridPane();
+        this.grid.setHgap(0);
+        this.grid.setVgap(0);
+        this.unitLayer = new Pane();
+        unitLayer.setMouseTransparent(true);
+        this.highlightLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        this.highlightLayer.setMouseTransparent(true);
+        this.arenaPane = new Pane(grid, highlightLayer, unitLayer);
+        arenaPane.setPrefSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+
+        unitLayer.layoutXProperty().bind(grid.layoutXProperty());
+        unitLayer.layoutYProperty().bind(grid.layoutYProperty());
+        highlightLayer.layoutXProperty().bind(grid.layoutXProperty().add(TILE_SIZE / 2.0));
+        highlightLayer.layoutYProperty().bind(grid.layoutYProperty().add(TILE_SIZE / 2.0));
+
+        arenaPane.setOnMouseClicked(e -> {
+            if (onGridClick != null) {
+                int[] coords = calculateTileCoordinates(e.getX(), e.getY());
+                if (coords != null) {
+                    onGridClick.accept(coords[0], coords[1]);
+                }
+            }
+        });
+
+        arenaPane.setOnMouseMoved(e -> {
+            int[] coords = calculateTileCoordinates(e.getX(), e.getY());
+            if (coords != null) {
+                highlightHoveredTile(coords[0], coords[1]);
+            } else {
+                clearHoverHighlight();
+            }
+        });
+
+        arenaPane.setOnMouseExited(e -> clearHoverHighlight());
+
+        // PvP mode: No sidebar (timer/score handled in controller)
+        this.timerLabel = null;
+        this.scoreLabel = null;
+
+        StackPane centerContainer = new StackPane(arenaPane);
+        centerContainer.setAlignment(javafx.geometry.Pos.TOP_CENTER);
+        centerContainer.setPadding(new javafx.geometry.Insets(20, 0, 0, 0));
+        this.setCenter(centerContainer);
+
+        // Initialize renderers - create a minimal proxy for rendering
+        this.troopRenderer = new TroopRenderer(unitLayer, this::getGridCell);
+        this.projectileRenderer = new ProjectileRenderer(unitLayer, TILE_SIZE);
+        this.towerRenderer = new TowerRenderer(grid, TILE_SIZE, this::indexCellNode);
+        this.buildingRenderer = new BuildingRenderer(unitLayer, TILE_SIZE, this::getGridCell);
+
+        com.kuroyale.event.GameEventBus.getInstance().subscribe(this);
+
+        renderArenaPvP(arena);
+    }
+
     public BattleArenaView(GameState gameState) {
         this.gameState = gameState;
+        this.pvpGameState = null;
 
         // Right Sidebar (Timer and Score)
         javafx.scene.layout.VBox sidebar = new javafx.scene.layout.VBox(20);
@@ -185,6 +252,56 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         towerRenderer.renderTowers(gameState.getArena());
     }
 
+    /**
+     * Render arena for PvP mode (takes Arena directly instead of from gameState).
+     */
+    private void renderArenaPvP(Arena arena) {
+        grid.getChildren().clear();
+        cellIndex.clear();
+
+        for (int x = 0; x < Arena.WIDTH; x++) {
+            for (int y = 0; y < Arena.HEIGHT; y++) {
+                GridCell cell = arena.getCell(x, y);
+                Rectangle rect = new Rectangle(TILE_SIZE, TILE_SIZE);
+                TileType type = cell.getTileType();
+
+                // Treat towers as grass for base tile
+                if (type == TileType.PRINCESS_TOWER_USER || type == TileType.PRINCESS_TOWER_COMPUTER
+                        || type == TileType.KING_TOWER_USER || type == TileType.KING_TOWER_COMPUTER) {
+                    type = TileType.GRASS;
+                }
+
+                switch (type) {
+                    case GRASS:
+                        if ((x + y) % 2 == 0) {
+                            rect.setFill(Color.rgb(124, 252, 0));
+                        } else {
+                            rect.setFill(Color.rgb(50, 205, 50));
+                        }
+                        break;
+                    case WATER:
+                        rect.setFill(Color.LIGHTBLUE);
+                        break;
+                    case BRIDGE:
+                        rect.setFill(Color.SADDLEBROWN);
+                        break;
+                    case ROAD:
+                        rect.setFill(Color.SANDYBROWN);
+                        break;
+                    default:
+                        rect.setFill(Color.GRAY);
+                        break;
+                }
+                rect.setStroke(Color.TRANSPARENT);
+                rect.setStrokeWidth(0.0);
+                grid.add(rect, x, y);
+                indexCellNode(x, y, rect);
+            }
+        }
+
+        towerRenderer.renderTowers(arena);
+    }
+
     private final java.util.List<ActiveSpellVisual> activeSpellVisuals = new java.util.ArrayList<>();
 
     private static class ActiveSpellVisual {
@@ -257,6 +374,35 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         updateSpellEffects(deltaTime);
     }
 
+    /**
+     * Update method for PvP mode.
+     * Timer and score are handled by PvPBattleController, not in BattleArenaView.
+     */
+    public void updatePvP(double deltaTime) {
+        if (pvpGameState == null) {
+            return;
+        }
+
+        Arena arena = pvpGameState.getArena();
+
+        // Delegate to Renderers
+        towerRenderer.cleanupDestroyedTowers(arena);
+        towerRenderer.updateHealthBars(arena);
+
+        // Render troops using PvP renderers
+        troopRenderer.renderPvP(pvpGameState);
+        buildingRenderer.renderPvP(pvpGameState);
+
+        // Render projectiles for all combatants
+        java.util.List<com.kuroyale.model.entities.ICombatant> combatants = new java.util.ArrayList<>();
+        combatants.addAll(arena.getAllTowers());
+        combatants.addAll(pvpGameState.getActiveBuildings());
+        projectileRenderer.render(combatants);
+
+        // Spell Effects
+        updateSpellEffects(deltaTime);
+    }
+
     /*
      * Helper method to calculate tile coordinates from mouse position.
      * Finds which cell actually contains the mouse point to avoid offset issues.
@@ -295,6 +441,18 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         return (((long) x) << 32) | (y & 0xFFFFFFFFL);
     }
 
+    /**
+     * Helper to get the arena from either GameState or PvPGameState.
+     */
+    private Arena getArena() {
+        if (gameState != null) {
+            return gameState.getArena();
+        } else if (pvpGameState != null) {
+            return pvpGameState.getArena();
+        }
+        return null;
+    }
+
     public void highlightValidCells(boolean show, boolean isSpell) {
         GraphicsContext gc = highlightLayer.getGraphicsContext2D();
         gc.clearRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
@@ -310,12 +468,48 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             gc.fillRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
         } else {
             // Standard units: Player side (bottom half) AND walkable (Grass)
-            Arena arena = gameState.getArena();
+            Arena arena = getArena();
+            if (arena == null)
+                return;
             for (int x = 0; x < Arena.WIDTH; x++) {
                 // Iterating only bottom half (Player Side)
                 for (int y = Arena.HEIGHT / 2; y < Arena.HEIGHT; y++) {
                     GridCell cell = arena.getCell(x, y);
                     // Check logic matches original: GRASS check
+                    if (cell.getTileType() == TileType.GRASS) {
+                        gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Highlights valid placement cells for Player 2 (top half of arena).
+     * Used in PvP mode.
+     */
+    public void highlightPlayer2ValidCells(boolean show, boolean isSpell) {
+        GraphicsContext gc = highlightLayer.getGraphicsContext2D();
+        gc.clearRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
+
+        if (!show)
+            return;
+
+        // Use semi-transparent red for Player 2
+        gc.setFill(Color.rgb(255, 100, 100, 0.3));
+
+        if (isSpell) {
+            // Spells can be placed anywhere - highlight full arena
+            gc.fillRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
+        } else {
+            // Standard units: Player 2 side (top half) AND walkable (Grass)
+            Arena arena = getArena();
+            if (arena == null)
+                return;
+            for (int x = 0; x < Arena.WIDTH; x++) {
+                // Iterating only top half (Player 2 Side)
+                for (int y = 0; y < Arena.HEIGHT / 2; y++) {
+                    GridCell cell = arena.getCell(x, y);
                     if (cell.getTileType() == TileType.GRASS) {
                         gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     }

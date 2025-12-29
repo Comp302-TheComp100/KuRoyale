@@ -4,6 +4,7 @@ import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.entities.Troop;
 import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.entities.ICombatant;
+import com.kuroyale.model.entities.Card;
 
 public class CombatService {
 
@@ -15,9 +16,7 @@ public class CombatService {
         target.takeDamage(dmg);
     }
 
-    /**
-     * Orchestrates combat for all entities in the game state.
-     */
+    // Orchestrates combat for all entities in the game state.
     public void update(double deltaTime, com.kuroyale.model.logic.GameState state) {
         if (state == null)
             return;
@@ -33,18 +32,57 @@ public class CombatService {
         java.util.List<Building> buildings = new java.util.ArrayList<>(state.getActiveBuildings());
         for (Building building : buildings) {
             if (building.isAlive()) {
+                processBuildingProduction(building, state, deltaTime);
                 processCombatant(building, state, deltaTime);
-            }
+            } else {
 
-            // Death Damage handling (e.g. Bomb Tower)
-            if (!building.isAlive()) {
-                if (building.isAreaEffect()) {
-                    com.kuroyale.model.entities.GridPosition center = building.getCenterPosition();
-                    if (center != null) {
-                        applyAreaDamage(state, center, 1.0, building.getDamage(),
-                                building.getTargetType(), building.isPlayerSide());
+                // Cleanup building footprint
+                state.getArena().freeFootprint(building);
+
+                // Death Spawn handling (e.g. Tombstone)
+                Card base = building.getBaseCard();
+                if (base != null && base.getDeathSpawnUnitName() != null) {
+                    com.kuroyale.model.entities.GridPosition spawnPos = state.getFrontPosition(building);
+                    if (spawnPos == null) {
+                        spawnPos = building.getPosition();
+                    }
+
+                    Card unitCard = state.getCardByName(base.getDeathSpawnUnitName());
+                    if (unitCard != null) {
+                        state.spawnTroopDirectly(building.isPlayerSide(), unitCard,
+                                spawnPos.getX(), spawnPos.getY(), base.getDeathSpawnUnitCount());
                     }
                 }
+            }
+        }
+        // 3. Towers
+        java.util.Set<Tower> towers = state.getArena().getAllTowers();
+        for (Tower tower : towers) {
+            processCombatant(tower, state, deltaTime);
+        }
+    }
+
+    /**
+     * Orchestrates combat for PvP game state (two human players).
+     * Same logic as update() but works with PvPGameState instead of GameState.
+     */
+    public void updatePvP(double deltaTime, com.kuroyale.model.logic.PvPGameState state) {
+        if (state == null)
+            return;
+
+        // Process all potential attackers
+        // 1. Troops
+        java.util.List<Troop> troops = new java.util.ArrayList<>(state.getActiveTroops());
+        for (Troop troop : troops) {
+            processCombatantPvP(troop, state, deltaTime);
+        }
+
+        // 2. Buildings
+        java.util.List<Building> buildings = new java.util.ArrayList<>(state.getActiveBuildings());
+        for (Building building : buildings) {
+            if (building.isAlive()) {
+                processCombatantPvP(building, state, deltaTime);
+            } else {
                 // Cleanup building footprint
                 state.getArena().freeFootprint(building);
             }
@@ -53,7 +91,191 @@ public class CombatService {
         // 3. Towers
         java.util.Set<Tower> towers = state.getArena().getAllTowers();
         for (Tower tower : towers) {
-            processCombatant(tower, state, deltaTime);
+            processCombatantPvP(tower, state, deltaTime);
+        }
+    }
+
+    private void processCombatantPvP(ICombatant attacker, com.kuroyale.model.logic.PvPGameState state,
+            double deltaTime) {
+        if (!attacker.isAlive())
+            return;
+
+        double cd = attacker.getAttackCooldown() - deltaTime;
+
+        ICombatant target = attacker.getTarget();
+        boolean targetValid = (target != null && target.isAlive() && isInAttackRange(attacker, target));
+
+        if (!targetValid) {
+            target = findNearestTargetPvP(attacker, state);
+            attacker.setTarget(target);
+        }
+
+        if (attacker instanceof Troop troop) {
+            if (target != null) {
+                troop.setUnitState(com.kuroyale.model.enums.UnitState.ATTACKING);
+                troop.setTarget(target);
+            } else {
+                if (troop.getUnitState() == com.kuroyale.model.enums.UnitState.ATTACKING) {
+                    troop.setUnitState(com.kuroyale.model.enums.UnitState.MOVING);
+                    troop.setTarget(null);
+                }
+            }
+        }
+
+        if (target != null) {
+            if (cd <= 0) {
+                performAttackPvP(attacker, target, state);
+                attacker.setAttackCooldown(attacker.getHitSpeed());
+            } else {
+                attacker.setAttackCooldown(cd);
+            }
+        } else {
+            attacker.setAttackCooldown(Math.max(0, cd));
+        }
+    }
+
+    private ICombatant findNearestTargetPvP(ICombatant attacker, com.kuroyale.model.logic.PvPGameState state) {
+        ICombatant best = null;
+        double bestDist = Double.MAX_VALUE;
+        com.kuroyale.model.entities.GridPosition center = attacker.getCenterPosition();
+        if (center == null)
+            return null;
+
+        double range = attacker.getRange();
+        com.kuroyale.model.logic.SpatialGrid grid = state.getArena().getSpatialGrid();
+        if (grid == null)
+            return null;
+
+        java.util.List<ICombatant> candidates = grid.getNearby(center, range);
+
+        for (ICombatant candidate : candidates) {
+            if (!candidate.isAlive() || candidate.isPlayerSide() == attacker.isPlayerSide())
+                continue;
+
+            if (!attacker.canTarget(candidate))
+                continue;
+
+            double dist = getDistanceToTarget(attacker, candidate);
+            if (dist <= range && dist < bestDist) {
+                bestDist = dist;
+                best = candidate;
+            }
+        }
+
+        return best;
+    }
+
+    private void performAttackPvP(ICombatant attacker, ICombatant target, com.kuroyale.model.logic.PvPGameState state) {
+        if (attacker.isAreaEffect()) {
+            com.kuroyale.model.entities.GridPosition targetPos = target.getPosition();
+            if (target instanceof Tower || target instanceof Building) {
+                targetPos = target.getCenterPosition();
+            }
+            applyAreaDamagePvP(state, targetPos, 1.0, attacker.getDamage(),
+                    attacker.getTargetType(), attacker.isPlayerSide());
+        } else {
+            applyDamage(attacker, target);
+        }
+    }
+
+    /**
+     * Apply area damage for PvP game state.
+     */
+    public void applyAreaDamage(com.kuroyale.model.logic.PvPGameState pvpState,
+            com.kuroyale.model.entities.GridPosition center,
+            double radiusTiles,
+            double damage,
+            com.kuroyale.model.enums.TargetType targetType,
+            boolean isPlayer1Source) {
+        applyAreaDamagePvP(pvpState, center, radiusTiles, damage, targetType, isPlayer1Source);
+    }
+
+    private void applyAreaDamagePvP(com.kuroyale.model.logic.PvPGameState pvpState,
+            com.kuroyale.model.entities.GridPosition center,
+            double radiusTiles,
+            double damage,
+            com.kuroyale.model.enums.TargetType targetType,
+            boolean isPlayer1Source) {
+
+        if (pvpState == null || center == null || radiusTiles <= 0)
+            return;
+
+        int intDamage = (int) Math.round(damage);
+
+        // Damage enemy troops
+        java.util.List<Troop> troops = new java.util.ArrayList<>(pvpState.getActiveTroops());
+        for (Troop t : troops) {
+            if (!t.isAlive() || t.isPlayerSide() == isPlayer1Source)
+                continue;
+
+            if (targetType == com.kuroyale.model.enums.TargetType.GROUND && t.isAirUnit())
+                continue;
+            if (targetType == com.kuroyale.model.enums.TargetType.AIR && !t.isAirUnit())
+                continue;
+
+            double dist = center.getEuclideanDistanceTo(t.getPosition());
+            if (dist <= radiusTiles) {
+                t.takeDamage(intDamage);
+            }
+        }
+
+        // Damage buildings and towers
+        boolean canHitGround = (targetType != com.kuroyale.model.enums.TargetType.AIR
+                && targetType != com.kuroyale.model.enums.TargetType.NONE);
+
+        if (canHitGround) {
+            java.util.List<Building> buildings = new java.util.ArrayList<>(pvpState.getActiveBuildings());
+            for (Building b : buildings) {
+                if (!b.isAlive() || b.isPlayerSide() == isPlayer1Source)
+                    continue;
+
+                com.kuroyale.model.entities.GridPosition bCenter = b.getCenterPosition();
+                if (bCenter == null)
+                    continue;
+
+                double dist = center.getEuclideanDistanceTo(bCenter);
+                if (dist <= radiusTiles) {
+                    b.takeDamage(intDamage);
+                    if (!b.isAlive()) {
+                        pvpState.getArena().freeFootprint(b);
+                    }
+                }
+            }
+
+            java.util.Set<Tower> towers = pvpState.getArena().getAllTowers();
+            for (Tower t : towers) {
+                if (!t.isAlive() || t.isPlayerSide() == isPlayer1Source)
+                    continue;
+
+                com.kuroyale.model.entities.GridPosition tCenter = t.getCenterPosition();
+                if (tCenter == null)
+                    continue;
+
+                double dist = center.getEuclideanDistanceTo(tCenter);
+                if (dist <= radiusTiles) {
+                    t.takeDamage(intDamage);
+                }
+            }
+        }
+
+        com.kuroyale.event.GameEventBus.getInstance().publishAreaEffect(isPlayer1Source, center, radiusTiles, 0.3);
+    }
+
+    private void processBuildingProduction(Building b, com.kuroyale.model.logic.GameState state, double deltaTime) {
+        if (b.getProductionResource() != null && b.isAlive()) {
+            double newTimer = b.getProductionTimer() - deltaTime;
+            if (newTimer <= 0) {
+                // Producing
+                if ("ELIXIR".equals(b.getProductionResource())) {
+                    state.getElixirManager(b.isPlayerSide()).addElixir(b.getProductionAmount());
+                    // Visual feedback
+                    com.kuroyale.event.GameEventBus.getInstance().publishBuildingProduction(b, "ELIXIR",
+                            b.getProductionAmount());
+                }
+                newTimer = b.getProductionInterval();
+
+            }
+            b.setProductionTimer(newTimer);
         }
     }
 
@@ -66,7 +288,10 @@ public class CombatService {
 
         // 2. Target Handling
         ICombatant target = attacker.getTarget();
-        if (target == null || !target.isAlive() || !isInAttackRange(attacker, target)) {
+        boolean targetValid = (target != null && target.isAlive() && isInAttackRange(attacker, target));
+
+        // STICKY TARGETING: Only search for new target if current is invalid
+        if (!targetValid) {
             target = findNearestTarget(attacker, state);
             attacker.setTarget(target);
         }
@@ -96,13 +321,45 @@ public class CombatService {
         } else {
             // No target, just tick down cooldown
             attacker.setAttackCooldown(Math.max(0, cd));
+
+            // Building periodic spawning
+            if (attacker instanceof Building b && cd <= 0) {
+                Card base = b.getBaseCard();
+                if (base != null && base.getSpawnUnitName() != null) {
+                    spawnUnitsFromBuilding(b, state);
+                    // Ensure we don't spam if hitSpeed is 0
+                    double nextCooldown = Math.max(b.getHitSpeed(), 0.5);
+                    b.setAttackCooldown(nextCooldown);
+                }
+            }
+        }
+    }
+
+    private void spawnUnitsFromBuilding(Building b, com.kuroyale.model.logic.GameState state) {
+        Card base = b.getBaseCard();
+        if (base == null || base.getSpawnUnitName() == null)
+            return;
+
+        com.kuroyale.model.entities.GridPosition spawnPos = state.getFrontPosition(b);
+        if (spawnPos == null)
+            return;
+
+        Card unitCard = state.getCardByName(base.getSpawnUnitName());
+        if (unitCard != null) {
+            state.spawnTroopDirectly(b.isPlayerSide(), unitCard,
+                    spawnPos.getX(), spawnPos.getY(), base.getSpawnUnitCount());
         }
     }
 
     private void performAttack(ICombatant attacker, ICombatant target, com.kuroyale.model.logic.GameState state) {
         if (attacker.isAreaEffect()) {
             // Splash radius is usually 1.0 tiles for units/buildings unless specified
-            applyAreaDamage(state, target.getCenterPosition(), 1.0, attacker.getDamage(),
+            com.kuroyale.model.entities.GridPosition targetPos = target.getPosition();
+            if (target instanceof Tower || target instanceof Building) {
+                targetPos = target.getCenterPosition();
+            }
+
+            applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
                     attacker.getTargetType(), attacker.isPlayerSide());
         } else {
             applyDamage(attacker, target);
@@ -144,7 +401,22 @@ public class CombatService {
             if (!attacker.canTarget(candidate))
                 continue;
 
+            if (!attacker.canTarget(candidate))
+                continue;
+
             double dist = getDistanceToTarget(attacker, candidate);
+            // Check Blind Spot (Min Range)
+            if (attacker instanceof Building && dist < ((Building) attacker).getMinRange()) {
+                continue;
+            }
+            if (attacker instanceof Troop) {
+                // Troops usually don't have min range but check card just in case
+                Troop t = (Troop) attacker;
+                if (t.getBaseCard() != null && dist < t.getBaseCard().getMinRange()) {
+                    continue;
+                }
+            }
+
             if (dist <= range && dist < bestDist) {
                 bestDist = dist;
                 best = candidate;
@@ -169,7 +441,24 @@ public class CombatService {
             }
         }
 
-        return getDistanceToTarget(attacker, target) <= range;
+        double dist = getDistanceToTarget(attacker, target); // Renaming for clarity
+
+        // Check Min Range (Blind Spot)
+        double minRange = 0;
+        if (attacker instanceof Building) {
+            minRange = ((Building) attacker).getMinRange();
+        } else if (attacker instanceof Troop) {
+            Troop t = (Troop) attacker;
+            if (t.getBaseCard() != null) {
+                minRange = t.getBaseCard().getMinRange();
+            }
+        }
+
+        if (dist < minRange) {
+            return false;
+        }
+
+        return dist <= range;
     }
 
     private double getDistanceToTarget(ICombatant attacker, ICombatant target) {
@@ -221,18 +510,7 @@ public class CombatService {
         return best;
     }
 
-    /**
-     * Centralized Area Damage logic.
-     * 
-     * @param gameState      Reference to game state to access active entities.
-     * @param center         Center point of the damage (e.g. projectile impact or
-     *                       unit center).
-     * @param radiusTiles    Radius in tiles.
-     * @param damage         Amount of damage to deal.
-     * @param targetType     Restrictions on what can be hit (AIR, GROUND, BOTH).
-     * @param isPlayerSource True if the damage comes from the player (hurts
-     *                       enemies), False otherwise.
-     */
+    // Centralized Area Damage logic.
     public void applyAreaDamage(com.kuroyale.model.logic.GameState gameState,
             com.kuroyale.model.entities.GridPosition center,
             double radiusTiles,
@@ -269,7 +547,6 @@ public class CombatService {
                 // distance logic
                 // Area Damage center is usually a tile center (x.5, y.5) if coming from spell,
                 // or unit center if coming from unit.
-                // let's stick to simple Euclidean for consistency with previous working version
                 dist = center.getEuclideanDistanceTo(t.getPosition());
             } else {
                 dist = center.getEuclideanDistanceTo(t.getPosition());

@@ -18,10 +18,8 @@ import org.json.JSONObject;
 import com.kuroyale.model.entities.Achievement;
 import com.kuroyale.model.enums.AchievementType;
 
-/**
- * Service for managing permanent achievements.
- * Handles achievement tracking, unlocking, and persistence.
- */
+/*Service for managing permanent achievements.
+ * Handles achievement tracking, unlocking, and persistence.*/
 public class AchievementService implements GameEventListener {
 
     private static final String ACHIEVEMENT_FILE_TEMPLATE = "achievements_%s.json";
@@ -35,17 +33,11 @@ public class AchievementService implements GameEventListener {
         this.dataPath = Paths.get(userHome, ".kuroyale");
         this.achievements = new EnumMap<>(AchievementType.class);
         initializeAchievements();
-        // Removed initial loadAchievements() as it requires username
-
         // Register to game events
         GameEventBus.getInstance().subscribe(this);
     }
 
-    /**
-     * Loads achievement data for the specified user.
-     * 
-     * @param username The username to load data for.
-     */
+    // Loads achievement data for the specified user.
     public void loadForUser(String username) {
         this.currentUsername = username;
 
@@ -56,9 +48,7 @@ public class AchievementService implements GameEventListener {
         loadAchievements();
     }
 
-    /**
-     * Initializes all achievements with default values.
-     */
+    // Initializes all achievements with default values.
     private void initializeAchievements() {
         achievements.clear();
         for (AchievementType type : AchievementType.values()) {
@@ -66,9 +56,7 @@ public class AchievementService implements GameEventListener {
         }
     }
 
-    /**
-     * Gets all achievements.
-     */
+    // Gets all achievements.
     public List<Achievement> getAllAchievements() {
         if (currentUsername == null) {
             return new ArrayList<>(achievements.values()); // Returns initialized defaults
@@ -76,16 +64,10 @@ public class AchievementService implements GameEventListener {
         return new ArrayList<>(achievements.values());
     }
 
-    /**
-     * Gets a specific achievement.
-     */
-    public Achievement getAchievement(AchievementType type) {
-        return achievements.get(type);
-    }
+    //Gets a specific achievement.
+    public Achievement getAchievement(AchievementType type) {return achievements.get(type);}
 
-    /**
-     * Updates progress for a specific achievement.
-     */
+    // Updates progress for a specific achievement.
     public void updateProgress(AchievementType type, int amount) {
         if (currentUsername == null)
             return;
@@ -97,9 +79,7 @@ public class AchievementService implements GameEventListener {
         }
     }
 
-    /**
-     * Sets progress for a specific achievement (for milestone achievements).
-     */
+    // Sets progress for a specific achievement (for milestone achievements).
     public void setProgress(AchievementType type, int progress) {
         if (currentUsername == null)
             return;
@@ -111,11 +91,7 @@ public class AchievementService implements GameEventListener {
         }
     }
 
-    /**
-     * Claims an achievement reward.
-     * 
-     * @return The gold reward if successful, 0 otherwise.
-     */
+    // Claims an achievement reward.
     public int claimReward(AchievementType type) {
         if (currentUsername == null)
             return 0;
@@ -129,26 +105,20 @@ public class AchievementService implements GameEventListener {
         return 0;
     }
 
-    /**
-     * Checks if there are any unclaimed unlocked achievements.
-     */
+    // Checks if there are any unclaimed unlocked achievements.
     public boolean hasUnclaimedAchievements() {
         return achievements.values().stream()
                 .anyMatch(a -> a.isUnlocked() && !a.isClaimed());
     }
 
-    /**
-     * Gets count of completed achievements.
-     */
+    // Gets count of completed achievements.
     public int getCompletedCount() {
         return (int) achievements.values().stream()
                 .filter(Achievement::isClaimed)
                 .count();
     }
 
-    /**
-     * Loads achievements from disk.
-     */
+    // Loads achievements from disk.
     private void loadAchievements() {
         if (currentUsername == null)
             return;
@@ -176,9 +146,7 @@ public class AchievementService implements GameEventListener {
         }
     }
 
-    /**
-     * Saves achievements to disk.
-     */
+    // Saves achievements to disk.
     private void saveAchievements() {
         if (currentUsername == null)
             return;

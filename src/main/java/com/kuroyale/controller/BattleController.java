@@ -74,14 +74,19 @@ public class BattleController {
     private boolean doubleElixirShown = false;
     private boolean gameOverShown = false;
 
+    /**
+     * Returns the arena container for external navigation (used by strategies).
+     */
+    public StackPane getArenaContainer() {
+        return arenaContainer;
+    }
+
     // Sets a saved game to load from
     public void setLoadedSavedGame(SavedGameState savedGame) {
         this.loadedSavedGame = savedGame;
     }
 
-    /**
-     * Starts a challenge match with specific rules and deck.
-     */
+    // Starts a challenge match with specific rules and deck.
     public void startChallengeGame(Challenge challenge, Deck playerDeck) {
         this.currentChallenge = challenge;
         this.challengePlayerDeck = playerDeck;
@@ -93,10 +98,8 @@ public class BattleController {
         // The actual initialization happens in startGame() which is called after setup
     }
 
-    /*
-     * Starts the game. Must be called AFTER setLoadedSavedGame() if loading a saved
-     * game
-     */
+    // Starts the game. Must be called AFTER setLoadedSavedGame() if loading a saved
+    // game
     public void startGame() {
         // Initialize game state
         User currentUser = model.getCurrentUser();
@@ -139,6 +142,7 @@ public class BattleController {
 
             // Initialize GameState
             gameState = new GameState(playerDeck, botDeck, arena);
+            gameState.setCardCatalog(name -> model.getCardByName(name));
             if (currentChallenge != null) {
                 gameState.setActiveChallenge(currentChallenge.getType());
             }
@@ -170,6 +174,37 @@ public class BattleController {
 
         // Start Game Loop
         startGameLoop();
+
+        // Subscribe to Elixir Events for visual feedback
+        com.kuroyale.event.GameEventBus.getInstance().subscribe(new com.kuroyale.event.GameEventListener() {
+            @Override
+            public void onCardPlayed(boolean isPlayer, Card card) {
+            }
+
+            @Override
+            public void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
+            }
+
+            @Override
+            public void onElixirSpent(boolean isPlayer, int amount) {
+                // Legacy: do nothing, or handle manual spends if needed.
+                // We use onBuildingProduction for +1 visual now.
+            }
+
+            @Override
+            public void onBuildingProduction(Building building, String resource, int amount) {
+                if (building.isPlayerSide() && "ELIXIR".equals(resource)) {
+                    javafx.application.Platform.runLater(() -> {
+                        // Show +1 indicator on the elixir bar with purple font
+                        elixirBar.showProductionIndicator(amount);
+                    });
+                }
+            }
+
+            @Override
+            public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration) {
+            }
+        });
     }
 
     private void startGameLoop() {
@@ -264,9 +299,7 @@ public class BattleController {
 
         // Title
         challengeTitle.setText(playerWon ? "CHALLENGE COMPLETE!" : "CHALLENGE FAILED");
-        // We can toggle style classes if needed, but text color is handled by generic
-        // class?
-        // No, current CSS has fixed color or we need to set it.
+
         // The original code set color manually.
         challengeTitle.getStyleClass().removeAll("challenge-victory-text", "challenge-defeat-text");
         challengeTitle.getStyleClass().add(playerWon ? "challenge-victory-text" : "challenge-defeat-text");
@@ -529,4 +562,5 @@ public class BattleController {
 
         model.processMatchResult(playerScore, botScore);
     }
+
 }

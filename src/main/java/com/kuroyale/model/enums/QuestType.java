@@ -1,9 +1,7 @@
 package com.kuroyale.model.enums;
 
-/**
- * Enum defining all possible daily quest types.
- * Each quest has a target value, gold reward, and description template.
- */
+/*Enum defining all possible daily quest types.
+ * Each quest has a target value, gold reward, and description template.*/
 public enum QuestType {
     WIN_MATCHES(3, 250, "Win %d matches"),
     DESTROY_CROWN_TOWERS(5, 200, "Destroy %d Crown Towers"),

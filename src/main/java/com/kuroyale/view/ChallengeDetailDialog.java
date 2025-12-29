@@ -14,10 +14,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
-/**
- * Dialog showing challenge details, stats, and action buttons.
- * Opens when a player clicks on an unlocked challenge.
- */
+/* Dialog showing challenge details, stats, and action buttons.
+ * Opens when a player clicks on an unlocked challenge.*/
 public class ChallengeDetailDialog extends StackPane {
 
     private final Challenge challenge;

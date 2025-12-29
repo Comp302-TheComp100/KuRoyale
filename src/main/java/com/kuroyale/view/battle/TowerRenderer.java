@@ -113,7 +113,7 @@ public class TowerRenderer {
         double maxHealth = (tower != null) ? tower.getMaxHealth() : 1.0;
 
         double width = (size == 4) ? 50 : 40;
-        double height = 12;
+        double height = 10;
 
         Rectangle bg = new Rectangle(width, height);
         bg.setFill(Color.DARKBLUE);
@@ -122,7 +122,7 @@ public class TowerRenderer {
 
         double healthPercentage = currentHealth / maxHealth;
         Rectangle fg = new Rectangle(width * healthPercentage, height);
-        fg.setFill(Color.ROYALBLUE);
+        fg.setFill((tower != null && !tower.isPlayerSide()) ? Color.CRIMSON : Color.ROYALBLUE);
 
         String towerKey = x + "_" + y;
         towerHpForegrounds.put(towerKey, fg);
@@ -136,8 +136,16 @@ public class TowerRenderer {
 
         StackPane healthBarContainer = new StackPane(bg, fg, healthText);
         StackPane.setAlignment(fg, javafx.geometry.Pos.CENTER_LEFT);
-        StackPane.setAlignment(healthBarContainer, javafx.geometry.Pos.TOP_CENTER);
-        StackPane.setMargin(healthBarContainer, new javafx.geometry.Insets(2, 0, 0, 0));
+
+        if (tower != null && tower.isPlayerSide()) {
+            // Player Tower: Bottom
+            StackPane.setAlignment(healthBarContainer, javafx.geometry.Pos.BOTTOM_CENTER);
+            StackPane.setMargin(healthBarContainer, new javafx.geometry.Insets(0, 0, -15, 0));
+        } else {
+            // Computer (Component) Tower: Top
+            StackPane.setAlignment(healthBarContainer, javafx.geometry.Pos.TOP_CENTER);
+            StackPane.setMargin(healthBarContainer, new javafx.geometry.Insets(-75, 0, 0, 0));
+        }
 
         towerStack.getChildren().add(healthBarContainer);
 

@@ -14,6 +14,7 @@ public class Building implements ICombatant {
     // Lifetime tracking for depreciation
     private final int lifetimeSeconds; // Total lifetime in seconds
     private double remainingLifetime; // Remaining lifetime in seconds
+    private double accumulatedDecay = 0; // Tracks fractional damage due to lifetime decay
     // Combat
     private int damage;
     private double hitSpeedSeconds;
@@ -21,6 +22,16 @@ public class Building implements ICombatant {
     private TargetType targetType = TargetType.GROUND; // default
     private double attackCooldown;
     private boolean areaEffect = false;
+    private Card baseCard; // Reference to original card for spawning and other properties
+
+    // Advanced Combat
+    private double minRange = 0;
+
+    // Production
+    private String productionResource;
+    private int productionAmount;
+    private double productionInterval;
+    private double productionTimer;
 
     public Building(GridPosition position, int width, int height, boolean playerSide, int maxHealth,
             String imagePath) {
@@ -48,12 +59,25 @@ public class Building implements ICombatant {
     public void configureCombatFromCard(Card card) {
         if (card == null)
             return;
+        this.baseCard = card;
         this.cardName = card.getName();
         this.damage = card.getDamage();
         this.hitSpeedSeconds = card.getHitSpeed();
         this.rangeTiles = (int) Math.round(card.getRange());
         this.targetType = card.getTarget();
+        this.targetType = card.getTarget();
         this.areaEffect = card.isAreaEffect();
+        this.minRange = card.getMinRange();
+
+        this.productionResource = card.getProductionResource();
+        this.productionAmount = card.getProductionAmount();
+        this.productionInterval = card.getProductionInterval();
+        // Initialize timer to full interval so it produces after the first interval
+        this.productionTimer = this.productionInterval;
+    }
+
+    public Card getBaseCard() {
+        return baseCard;
     }
 
     public String getCardName() {
@@ -125,6 +149,10 @@ public class Building implements ICombatant {
         return rangeTiles;
     }
 
+    public double getMinRange() {
+        return minRange;
+    }
+
     public TargetType getTargetType() {
         return targetType;
     }
@@ -159,8 +187,14 @@ public class Building implements ICombatant {
             double decayPerSecond = (double) maxHealth / lifetimeSeconds;
             double decayAmount = decayPerSecond * deltaTime;
 
-            // Apply decay - subtract then clamp
-            currentHealth = (int) Math.max(0, Math.ceil(currentHealth - decayAmount));
+            // Accumulate decay
+            accumulatedDecay += decayAmount;
+
+            if (accumulatedDecay >= 1.0) {
+                int damage = (int) accumulatedDecay;
+                currentHealth = Math.max(0, currentHealth - damage);
+                accumulatedDecay -= damage;
+            }
 
             if (remainingLifetime <= 0) {
                 // Building expired, ensure health is 0
@@ -208,5 +242,26 @@ public class Building implements ICombatant {
 
     public ICombatant getTarget() {
         return target;
+    }
+
+    // Production getters/state
+    public String getProductionResource() {
+        return productionResource;
+    }
+
+    public double getProductionTimer() {
+        return productionTimer;
+    }
+
+    public void setProductionTimer(double timer) {
+        this.productionTimer = timer;
+    }
+
+    public int getProductionAmount() {
+        return productionAmount;
+    }
+
+    public double getProductionInterval() {
+        return productionInterval;
     }
 }

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- PvP Battle Layout: P1 hand left, Arena center, P2 hand right, Time/Score far right -->
+<StackPane xmlns="http://javafx.com/javafx/21"
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.kuroyale.controller.PvPBattleController" stylesheets="@../styles/application.css">
+
+    <!-- Background -->
+    <AnchorPane styleClass="main-background">
+        <BorderPane AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+
+            <!-- Left: Player 1 Elixir and Hand -->
+            <left>
+                <VBox fx:id="player1Container" spacing="20" alignment="CENTER" style="-fx-padding: 20; -fx-background-color: rgba(30, 60, 120, 0.4);">
+                    <!-- Player 1 Elixir Bar -->
+                    <HBox fx:id="player1ElixirContainer" alignment="CENTER">
+                        <!-- ElixirBar added dynamically -->
+                    </HBox>
+
+                    <!-- Player 1 Hand -->
+                    <VBox fx:id="player1HandContainer" alignment="CENTER" spacing="10">
+                        <!-- HandView added dynamically -->
+                    </VBox>
+
+                    <Button text="Pause" onAction="#handlePause" styleClass="menu-button-small"/>
+                    <Button text="Exit Battle" onAction="#handleExit" styleClass="menu-button-small"/>
+                </VBox>
+            </left>
+
+            <!-- Center: Arena -->
+            <center>
+                <StackPane fx:id="arenaContainer" style="-fx-padding: 20;">
+                    <!-- Arena View will be added here dynamically -->
+                </StackPane>
+            </center>
+
+            <!-- Right: Player 2 Elixir and Hand (switched with Time/Score per user request) -->
+            <right>
+                <HBox spacing="0">
+                    <!-- Player 2 Panel - mirrors P1 layout -->
+                    <VBox fx:id="player2Container" spacing="20" alignment="CENTER" style="-fx-padding: 20; -fx-background-color: rgba(120, 30, 30, 0.4);">
+                        <!-- Player 2 Elixir Bar -->
+                        <HBox fx:id="player2ElixirContainer" alignment="CENTER">
+                            <!-- ElixirBar added dynamically -->
+                        </HBox>
+
+                        <!-- Player 2 Hand -->
+                        <VBox fx:id="player2HandContainer" alignment="CENTER" spacing="10">
+                            <!-- HandView added dynamically -->
+                        </VBox>
+
+                        <!-- End Turn Button for PvP -->
+                        <Button fx:id="endTurnButton" text="END TURN" onAction="#handleEndTurn" styleClass="menu-button-gold" prefWidth="150"/>
+                    </VBox>
+
+                    <!-- Time and Score Panel (Far Right) -->
+                    <VBox fx:id="infoPanel" spacing="20" alignment="CENTER" style="-fx-padding: 20; -fx-background-color: rgba(0,0,0,0.5);">
+                        <Label text="TIME" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        <Label fx:id="timeLabel" text="03:00" style="-fx-text-fill: white; -fx-font-size: 32px; -fx-font-weight: bold;"/>
+
+                        <Label text="SCORE" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        <Label fx:id="scoreLabel" text="0 - 0" style="-fx-text-fill: white; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+
+                        <!-- Turn Indicator -->
+                        <VBox alignment="CENTER" spacing="5" style="-fx-padding: 15; -fx-background-color: rgba(0,0,0,0.3); -fx-background-radius: 10;">
+                            <Label fx:id="turnIndicatorLabel" text="P1 TURN" style="-fx-text-fill: #3b82f6; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+                            <Label fx:id="turnArrowLabel" text="◀" style="-fx-text-fill: #3b82f6; -fx-font-size: 24px;"/>
+                        </VBox>
+                    </VBox>
+                </HBox>
+            </right>
+
+        </BorderPane>
+    </AnchorPane>
+
+    <!-- Pause Menu Overlay -->
+    <VBox fx:id="pauseMenuContainer" alignment="CENTER" visible="false" style="-fx-background-color: rgba(0,0,0,0.8);">
+    </VBox>
+
+    <!-- Game Over Overlay -->
+    <VBox fx:id="gameOverRoot" alignment="CENTER" visible="false" spacing="20" maxWidth="450" maxHeight="350" styleClass="game-over-popup">
+        <Label fx:id="gameOverTitle" text="PLAYER 1 WINS!" styleClass="game-over-title"/>
+        <Label fx:id="gameOverScore" text="Player 1: 0 - Player 2: 0" styleClass="game-over-score"/>
+        <Button text="RETURN TO MENU" onAction="#handleExit" styleClass="menu-button-gold"/>
+    </VBox>
+
+</StackPane>

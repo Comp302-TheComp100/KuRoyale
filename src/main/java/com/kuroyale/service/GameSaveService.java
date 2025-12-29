@@ -146,11 +146,10 @@ public class GameSaveService {
         // Get deck from user
         List<String> playerDeckCards = user != null ? new ArrayList<>(user.getDeck()) : new ArrayList<>();
 
-        // Capture draw pile (next cards)
-        List<String> playerDrawPileCards = new ArrayList<>();
-        if (playerHand.getNextCard() != null) {
-            playerDrawPileCards.add(playerHand.getNextCard().getName());
-        }
+        // Capture full draw pile (all remaining cards not in hand)
+        List<String> playerDrawPileCards = playerHand.getDrawPileCards().stream()
+                .map(Card::getName)
+                .collect(Collectors.toList());
 
         // Capture bot state
         List<String> botDeckCards = new ArrayList<>(playerDeckCards);

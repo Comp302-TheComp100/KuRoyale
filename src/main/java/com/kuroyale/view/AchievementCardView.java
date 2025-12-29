@@ -7,9 +7,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-/**
- * Custom View component for an Achievement Card.
- */
+// Custom View component for an Achievement Card.
 public class AchievementCardView extends HBox {
 
     public interface ClaimListener {

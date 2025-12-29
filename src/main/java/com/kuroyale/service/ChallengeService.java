@@ -15,11 +15,8 @@ import org.json.JSONObject;
 import com.kuroyale.model.entities.Challenge;
 import com.kuroyale.model.entities.ChallengeFactory;
 
-/**
- * Service for managing challenge progression and state.
- * Handles saving and loading challenge progress (unlocks, stars, attempts)
- * locally.
- */
+/* Service for managing challenge progression and state.
+ * Handles saving and loading challenge progress (unlocks, stars, attempts) locally.*/
 public class ChallengeService {
     private static final String DATA_DIR = System.getProperty("user.home") + File.separator + ".kuroyale";
     private static final String SAVE_FILE_TEMPLATE = DATA_DIR + File.separator + "challenges_%s.json";
@@ -35,11 +32,7 @@ public class ChallengeService {
         // Removed initial loadProgress() as it requires username
     }
 
-    /**
-     * Loads challenge data for the specified user.
-     * 
-     * @param username The username to load data for.
-     */
+    //Loads challenge data for the specified user.
     public void loadForUser(String username) {
         this.currentUsername = username;
 
@@ -50,9 +43,7 @@ public class ChallengeService {
         loadProgress();
     }
 
-    /**
-     * Initializes challenges.
-     */
+    // Initializes challenges.
     private void initializeChallenges() {
         // Create fresh challenge instances
         this.challenges = challengeFactory.getAllChallenges();
@@ -69,10 +60,8 @@ public class ChallengeService {
                 .orElse(null);
     }
 
-    /**
-     * Records a completed attempt for a challenge.
-     * Updates stats and unlocks the next challenge if won.
-     */
+    /* Records a completed attempt for a challenge.
+     * Updates stats and unlocks the next challenge if won.*/
     public void recordAttempt(int challengeId, boolean won, int timeSeconds, int damageDealt) {
         if (currentUsername == null)
             return;
@@ -96,9 +85,7 @@ public class ChallengeService {
         }
     }
 
-    /**
-     * Saves challenge progress to simple JSON.
-     */
+    //Saves challenge progress to simple JSON.
     public void saveProgress() {
         if (currentUsername == null)
             return;
@@ -124,9 +111,7 @@ public class ChallengeService {
         }
     }
 
-    /**
-     * Loads progress from JSON and applies it to current challenge instances.
-     */
+    // Loads progress from JSON and applies it to current challenge instances.
     private void loadProgress() {
         if (currentUsername == null)
             return;

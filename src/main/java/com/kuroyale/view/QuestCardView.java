@@ -7,10 +7,8 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-/**
- * Custom View component for a Quest Card.
- * Encapsulates the visual representation of a quest.
- */
+/*Custom View component for a Quest Card.
+ * Encapsulates the visual representation of a quest.*/
 public class QuestCardView extends VBox {
 
     public interface ClaimListener {
