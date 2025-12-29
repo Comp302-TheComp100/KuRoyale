@@ -70,7 +70,42 @@ public class TroopMovementService {
     }
 
     private boolean shouldRetarget(IBattleState state, Troop troop) {
-        return troop.getPath().isEmpty() || troop.getTargetWorldPosition() == null;
+        // 1. Sticky Targeting: If already attacking, do not switch (CombatService
+        // handles
+        // invalid/dead targets)
+        if (troop.getUnitState() == UnitState.ATTACKING)
+            return false;
+
+        // 2. Navigation: If path is finished or lost, we must find a target
+        if (troop.getPath().isEmpty() || troop.getTargetWorldPosition() == null)
+            return true;
+
+        // 3. Opportunistic Targeting:
+        // If we are just moving (not attacking), check if a NEW enemy has entered our
+        // immediate attack range.
+        GridPosition nearestGrid = targetingService.findNearestEnemyOrObjective(state, troop);
+        if (nearestGrid == null)
+            return false;
+
+        Vector2 nearestPos = Vector2.fromGridPosition(nearestGrid);
+        double distToNearest = troop.getWorldPosition().distanceTo(nearestPos);
+
+        // Define a "trigger range" slightly larger than attack range to be responsive
+        // Melee units (range ~0.8-1.0) need a bit of buffer (1.5) to snap to targets
+        double attackRange = troop.getRange();
+        double triggerRange = Math.max(attackRange, 1.5);
+
+        if (distToNearest <= triggerRange) {
+            // We have a valid target in immediate range.
+            // Only switch if it is DIFFERENT from our current long-distance goal.
+            Vector2 currentTarget = troop.getTargetWorldPosition();
+            if (currentTarget == null || currentTarget.distanceTo(nearestPos) > 1.0) {
+                // It's a different, closer target! Engage!
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // Converts a GridPosition path to Vector2 waypoints and smooths it using string
