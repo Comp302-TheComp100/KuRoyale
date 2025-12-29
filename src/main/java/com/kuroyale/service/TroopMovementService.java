@@ -79,8 +79,12 @@ public class TroopMovementService {
 
             troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
 
-            if (troop.getTargetWorldPosition() == null || troop.getPathfindingCooldown() <= 0) {
+            // Only check for retargeting if cooldown is ready or no target
+            if (troop.getTargetWorldPosition() == null
+                    || (troop.getPathfindingCooldown() <= 0 && shouldRetargetPvP(state, troop))) {
                 GridPosition newTargetGrid = targetingService.findNearestEnemyOrObjectivePvP(state, troop);
+
+                // If target hasn't changed significantly, don't recompute path
                 troop.setTargetWorldPosition(Vector2.fromGridPosition(newTargetGrid));
                 troop.clearPath();
                 if (newTargetGrid != null) {
@@ -89,6 +93,8 @@ public class TroopMovementService {
                     Deque<Vector2> worldPath = convertPathToVector2(gridPath);
                     troop.setPath(worldPath);
                 }
+
+                // Reset cooldown (randomize slightly to distribute load)
                 troop.setPathfindingCooldown(0.25 + Math.random() * 0.1);
             }
 
@@ -146,6 +152,21 @@ public class TroopMovementService {
         if (troop.getPath().isEmpty())
             return true;
         GridPosition nearestGrid = targetingService.findNearestEnemyOrObjective(state, troop);
+        if (nearestGrid == null)
+            return false;
+        Vector2 nearest = Vector2.fromGridPosition(nearestGrid);
+        Vector2 currentPos = troop.getWorldPosition();
+        Vector2 currentTarget = troop.getTargetWorldPosition();
+        if (currentTarget == null)
+            return true;
+        return currentPos.distanceTo(nearest) < currentPos.distanceTo(currentTarget);
+    }
+
+    private boolean shouldRetargetPvP(com.kuroyale.model.logic.PvPGameState state, Troop troop) {
+        // Instant retarget if new closer enemy appears inside attack range or path
+        if (troop.getPath().isEmpty())
+            return true;
+        GridPosition nearestGrid = targetingService.findNearestEnemyOrObjectivePvP(state, troop);
         if (nearestGrid == null)
             return false;
         Vector2 nearest = Vector2.fromGridPosition(nearestGrid);

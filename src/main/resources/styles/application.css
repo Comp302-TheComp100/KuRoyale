@@ -719,13 +719,4 @@
   -fx-padding: 5;
 }
 
-/* Fixes for Right Side (Player 2) in PvP to match Left Side appearance */
-.right-side-bar {
-  -fx-background-color: rgba(20, 20, 20, 0.9) !important;
-}
-
-.right-side-bar .elixir-progress-bar {
-  -fx-max-height: 20;
-  -fx-min-height: 20;
-  -fx-pref-height: 20;
-}
+/* Fixes for Right Side (Player 2) in PvP to match Left Side appearance - REMOVED per user request to match exact styles */

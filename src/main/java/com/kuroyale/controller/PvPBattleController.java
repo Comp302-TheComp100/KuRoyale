@@ -106,20 +106,18 @@ public class PvPBattleController {
 
         // Initialize Player 2 UI (right side)
         player2ElixirBar = new ElixirBar(gameState.getPlayer2Elixir());
-        player2ElixirBar.getStyleClass().add("right-side-bar"); // Fix specific to right side
         player2ElixirContainer.getChildren().add(player2ElixirBar);
 
         player2HandView = new HandView(gameState.getPlayer2Hand(), gameState.getPlayer2Elixir());
-        player2HandView.getStyleClass().add("right-side-bar"); // Fix specific to right side
         player2HandView.setOnCardSelected(index -> handlePlayer2CardSelected(index));
         player2HandContainer.getChildren().add(player2HandView);
 
         // Set up turn change listener
         gameState.getTurnManager().addTurnChangeListener(this::onTurnChanged);
 
-        // Initial UI update
+        // Initial UI update (0 deltaTime since no time has passed yet)
         updateTurnIndicator();
-        updateUI();
+        updateUI(0);
 
         // Start game loop
         startGameLoop();
@@ -177,6 +175,8 @@ public class PvPBattleController {
             if (gameState.placeCard(true, p1SelectedIndex, tileX, tileY)) {
                 player1HandView.clearSelection();
                 arenaView.highlightValidCells(false, false);
+                // Auto-switch turn after successful card deployment
+                gameState.getTurnManager().endTurn();
             }
             return;
         }
@@ -187,6 +187,8 @@ public class PvPBattleController {
             if (gameState.placeCard(false, p2SelectedIndex, tileX, tileY)) {
                 player2HandView.clearSelection();
                 arenaView.highlightPlayer2ValidCells(false, false);
+                // Auto-switch turn after successful card deployment
+                gameState.getTurnManager().endTurn();
             }
         }
     }
@@ -254,7 +256,7 @@ public class PvPBattleController {
         gameState.update(deltaTime);
 
         // Update UI
-        updateUI();
+        updateUI(deltaTime);
 
         // Check for game over
         if (gameState.isGameOver() && !gameOverShown) {
@@ -264,7 +266,7 @@ public class PvPBattleController {
         }
     }
 
-    private void updateUI() {
+    private void updateUI(double deltaTime) {
         // Update elixir bars
         player1ElixirBar.update();
         player2ElixirBar.update();
@@ -273,8 +275,9 @@ public class PvPBattleController {
         player1HandView.update();
         player2HandView.update();
 
-        // Update arena (use PvP update method)
-        arenaView.updatePvP(0);
+        // Update arena (use PvP update method with actual deltaTime for spell effect
+        // cleanup)
+        arenaView.updatePvP(deltaTime);
 
         // Update time display
         int seconds = (int) gameState.getGameTime();
