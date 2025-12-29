@@ -24,12 +24,21 @@ public class TroopMovementService {
 
             // Force retarget if current target is dead or null (sync with CombatService)
             ICombatant currentTarget = troop.getTarget();
-            boolean hasNoTarget = (troop.getTargetWorldPosition() == null);
             boolean targetIsDead = (currentTarget != null && !currentTarget.isAlive());
+            boolean hasNoTargetPos = (troop.getTargetWorldPosition() == null);
             boolean cooldownReady = (troop.getPathfindingCooldown() <= 0);
 
-            // Only check for retargeting if forced or cooldown is ready
-            if (hasNoTarget || targetIsDead || (cooldownReady && shouldRetarget(state, troop))) {
+            // Instant reaction if target is dead: clear path and reset state
+            if (targetIsDead) {
+                troop.setTarget(null);
+                troop.setTargetWorldPosition(null);
+                troop.clearPath();
+                troop.setUnitState(UnitState.IDLE);
+                // Force immediate retargeting logic below
+            }
+
+            // Check for retargeting if forced (dead/null) or periodic cooldown ready
+            if (targetIsDead || hasNoTargetPos || (cooldownReady && shouldRetarget(state, troop))) {
                 GridPosition newTargetGrid = targetingService.findNearestEnemyOrObjective(state, troop);
 
                 // If target hasn't changed significantly, don't recompute path
@@ -46,41 +55,17 @@ public class TroopMovementService {
                 // Reset cooldown (randomize slightly to distribute load)
                 troop.setPathfindingCooldown(0.25 + Math.random() * 0.1);
             }
+
             // Apply movement and/or separation
-            // Note: Even attacking units need separation to avoid stacking
             if (troop.getUnitState() != UnitState.ATTACKING) {
                 troop.setUnitState(UnitState.MOVING);
             }
             updateTroopPosition(deltaTime, troop, state);
         }
-        // Cleanup: remove destroyed troops and notify others to retarget/move
+
+        // Cleanup: remove destroyed troops
         if (!toRemove.isEmpty()) {
             troops.removeAll(toRemove);
-            for (Troop t : troops) {
-                if (!t.isAlive())
-                    continue;
-
-                // If their target was removed, clear and allow retarget next frame
-                ICombatant target = t.getTarget();
-                if (target != null && !target.isAlive()) {
-                    t.setTarget(null);
-                    t.setTargetWorldPosition(null);
-                    t.clearPath();
-                    t.setUnitState(UnitState.IDLE);
-                } else {
-                    // Fallback for distance-based targeting if target entity isn't set
-                    for (Troop dead : toRemove) {
-                        Vector2 targetPos = t.getTargetWorldPosition();
-                        Vector2 deadPos = dead.getWorldPosition();
-                        if (targetPos != null && deadPos != null && targetPos.distanceTo(deadPos) < 1.0) {
-                            t.setTargetWorldPosition(null);
-                            t.clearPath();
-                            t.setUnitState(UnitState.IDLE);
-                            break;
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -95,9 +80,22 @@ public class TroopMovementService {
 
             troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
 
-            // Only check for retargeting if cooldown is ready or no target
-            if (troop.getTargetWorldPosition() == null
-                    || (troop.getPathfindingCooldown() <= 0 && shouldRetargetPvP(state, troop))) {
+            // Force retarget if current target is dead or null
+            ICombatant currentTarget = troop.getTarget();
+            boolean targetIsDead = (currentTarget != null && !currentTarget.isAlive());
+            boolean hasNoTargetPos = (troop.getTargetWorldPosition() == null);
+            boolean cooldownReady = (troop.getPathfindingCooldown() <= 0);
+
+            // Instant reaction if target is dead
+            if (targetIsDead) {
+                troop.setTarget(null);
+                troop.setTargetWorldPosition(null);
+                troop.clearPath();
+                troop.setUnitState(UnitState.IDLE);
+            }
+
+            // Only check for retargeting if forced or cooldown is ready
+            if (targetIsDead || hasNoTargetPos || (cooldownReady && shouldRetargetPvP(state, troop))) {
                 GridPosition newTargetGrid = targetingService.findNearestEnemyOrObjectivePvP(state, troop);
 
                 // If target hasn't changed significantly, don't recompute path
