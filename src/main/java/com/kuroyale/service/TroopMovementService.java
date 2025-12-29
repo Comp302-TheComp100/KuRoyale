@@ -163,8 +163,48 @@ public class TroopMovementService {
             GridCell cell = arena.getCell(gx, gy);
             if (cell == null || !cell.isWalkable())
                 return false;
+
+            // Wall Buffer Check:
+            // Ensure we aren't clipping a corner by checking immediate non-diagonal
+            // neighbors.
+            // If we are effectively "sliding" along a wall, that's fine, but if we are
+            // piercing a corner (e.g. going through a diagonal gap between two walls), this
+            // should catch it depending on the exact geometry.
+            // A safer, robust check for corner clipping is: if we are at (x,y), check if
+            // ANY neighbor is a wall.
+            // If so, treat this point as "tight" and potentially unsafe for string pulling
+            // if we want strictly wide paths.
+            // But for corner clipping specifically: if (x,y) is walkable, we just need to
+            // ensure we didn't
+            // skip over a corner. The discrete sampling handles skipping.
+            // To handle *width*, we check if adjacent cells are walls.
+
+            // Check 4-neighbors for walls. If a neighbor is a wall, we might be too close.
+            // This is a "fat raycast" approximation.
+            // We only check if the point is *very* close to the boundary of that neighbor.
+
+            double px = x1 + (x2 - x1) * t;
+            double py = y1 + (y2 - y1) * t;
+
+            // Check right neighbor if we are close to right edge
+            if (px - gx > 0.7 && !isWalkable(arena, gx + 1, gy))
+                return false;
+            // Check left neighbor if we are close to left edge
+            if (px - gx < 0.3 && !isWalkable(arena, gx - 1, gy))
+                return false;
+            // Check bottom neighbor if we are close to bottom edge
+            if (py - gy > 0.7 && !isWalkable(arena, gx, gy + 1))
+                return false;
+            // Check top neighbor if we are close to top edge
+            if (py - gy < 0.3 && !isWalkable(arena, gx, gy - 1))
+                return false;
         }
         return true;
+    }
+
+    private boolean isWalkable(Arena arena, int x, int y) {
+        GridCell cell = arena.getCell(x, y);
+        return cell != null && cell.isWalkable();
     }
 
     private static final double WAYPOINT_THRESHOLD = 0.1; // How close to waypoint before moving to next
