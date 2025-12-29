@@ -14,15 +14,22 @@ public class TroopMovementService {
         Arena arena = state.getArena();
         java.util.List<Troop> toRemove = new java.util.ArrayList<>();
         for (Troop troop : troops) {
-            if (!troop.isAlive())
+            if (!troop.isAlive()) {
+                toRemove.add(troop);
                 continue;
+            }
 
             // Update pathfinding cooldown
             troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
 
-            // Only check for retargeting if cooldown is ready or no target
-            if (troop.getTargetWorldPosition() == null
-                    || (troop.getPathfindingCooldown() <= 0 && shouldRetarget(state, troop))) {
+            // Force retarget if current target is dead or null (sync with CombatService)
+            ICombatant currentTarget = troop.getTarget();
+            boolean hasNoTarget = (troop.getTargetWorldPosition() == null);
+            boolean targetIsDead = (currentTarget != null && !currentTarget.isAlive());
+            boolean cooldownReady = (troop.getPathfindingCooldown() <= 0);
+
+            // Only check for retargeting if forced or cooldown is ready
+            if (hasNoTarget || targetIsDead || (cooldownReady && shouldRetarget(state, troop))) {
                 GridPosition newTargetGrid = targetingService.findNearestEnemyOrObjective(state, troop);
 
                 // If target hasn't changed significantly, don't recompute path
@@ -54,14 +61,25 @@ public class TroopMovementService {
             for (Troop t : troops) {
                 if (!t.isAlive())
                     continue;
-                // If their target was removed, clear and allow retarget
-                for (Troop dead : toRemove) {
-                    Vector2 targetPos = t.getTargetWorldPosition();
-                    Vector2 deadPos = dead.getWorldPosition();
-                    if (targetPos != null && deadPos != null && targetPos.distanceTo(deadPos) < 1.0) {
-                        t.setTargetWorldPosition(null);
-                        t.clearPath();
-                        t.setUnitState(UnitState.IDLE);
+
+                // If their target was removed, clear and allow retarget next frame
+                ICombatant target = t.getTarget();
+                if (target != null && !target.isAlive()) {
+                    t.setTarget(null);
+                    t.setTargetWorldPosition(null);
+                    t.clearPath();
+                    t.setUnitState(UnitState.IDLE);
+                } else {
+                    // Fallback for distance-based targeting if target entity isn't set
+                    for (Troop dead : toRemove) {
+                        Vector2 targetPos = t.getTargetWorldPosition();
+                        Vector2 deadPos = dead.getWorldPosition();
+                        if (targetPos != null && deadPos != null && targetPos.distanceTo(deadPos) < 1.0) {
+                            t.setTargetWorldPosition(null);
+                            t.clearPath();
+                            t.setUnitState(UnitState.IDLE);
+                            break;
+                        }
                     }
                 }
             }
