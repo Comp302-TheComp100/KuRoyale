@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 //Central game state manager.Holds references to player and bot states, arena, and manages the game loop updates.
-public class GameState {
+public class GameState implements IBattleState {
     private final Hand playerHand;
     private final ElixirManager playerElixir;
     private final ElixirManager botElixir;

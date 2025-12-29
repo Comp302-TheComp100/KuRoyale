@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class TargetingService {
     private static final int BASE_DETECTION_RADIUS = 5; // tiles
 
-    public GridPosition findNearestEnemyOrObjective(GameState state, Troop troop) {
+    public GridPosition findNearestEnemyOrObjective(IBattleState state, Troop troop) {
         Vector2 troopWorldPos = troop.getWorldPosition();
         GridPosition troopPos = troop.getPosition(); // Fallback for grid-based queries
         double bestDist = Double.MAX_VALUE;
@@ -74,76 +74,14 @@ public class TargetingService {
 
         if (bestPos != null)
             return bestPos;
+
         // fallback to nearest enemy tower cell
-        return findNearestEnemyTower(state.getArena(), troop);
-    }
-
-    /**
-     * Find nearest enemy or objective for PvP game state.
-     */
-    public GridPosition findNearestEnemyOrObjectivePvP(com.kuroyale.model.logic.PvPGameState state, Troop troop) {
-        Vector2 troopWorldPos = troop.getWorldPosition();
-        GridPosition troopPos = troop.getPosition();
-        double bestDist = Double.MAX_VALUE;
-        GridPosition bestPos = null;
-
-        int detectionRadius = BASE_DETECTION_RADIUS;
-        double cardRange = troop.getBaseCard().getRange();
-        if (cardRange > 0) {
-            detectionRadius = (int) Math.floor(cardRange + 2);
-        }
-
-        com.kuroyale.model.logic.SpatialGrid grid = state.getArena().getSpatialGrid();
-        java.util.List<ICombatant> candidates;
-
-        if (grid != null) {
-            candidates = grid.getNearby(troopPos, detectionRadius);
-        } else {
-            candidates = new ArrayList<>();
-            candidates.addAll(state.getActiveTroops());
-            candidates.addAll(state.getActiveBuildings());
-        }
-
-        for (ICombatant candidate : candidates) {
-            if (!candidate.isAlive())
-                continue;
-            if (candidate.isPlayerSide() == troop.isPlayerSide())
-                continue;
-
-            if (candidate instanceof Troop other) {
-                if (troop.isBuildingOnly())
-                    continue;
-                if (troop.getBaseCard().getTarget() == TargetType.GROUND && other.isAirUnit())
-                    continue;
-
-                Vector2 otherWorldPos = other.getWorldPosition();
-                double dist = (troopWorldPos != null && otherWorldPos != null)
-                        ? troopWorldPos.distanceTo(otherWorldPos)
-                        : troopPos.getEuclideanDistanceTo(other.getPosition());
-
-                if (dist <= detectionRadius && dist < bestDist) {
-                    bestDist = dist;
-                    bestPos = other.getPosition();
-                }
-            } else if (candidate instanceof Building b) {
-                GridPosition perimeter = nearestPerimeterTile(state.getArena(), b, troopPos);
-                if (perimeter == null)
-                    continue;
-
-                double dist = troopPos.getEuclideanDistanceTo(perimeter);
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    bestPos = perimeter;
-                }
-            }
-        }
-
-        if (bestPos != null)
-            return bestPos;
         GridPosition towerTarget = findNearestEnemyTower(state.getArena(), troop);
         if (towerTarget == null) {
-            System.out.println("[DEBUG] PvP Targeting: No target found for troop at " + troop.getPosition() +
-                    ", isPlayerSide=" + troop.isPlayerSide() + ", towers=" + state.getArena().getAllTowers().size());
+            // Log if even the tower cannot be found (usually only happens if king tower is
+            // destroyed but game hasn't ended)
+            System.out.println("[DEBUG] Targeting: No target found for troop at " + troop.getPosition() +
+                    ", side=" + (troop.isPlayerSide() ? "Player" : "Opponent"));
         }
         return towerTarget;
     }
