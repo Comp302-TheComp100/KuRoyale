@@ -135,7 +135,7 @@ public class BuildingRenderer {
         double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
 
         double hbWidth = Math.max(40, TILE_SIZE * wPixelsTiles - 6);
-        double hbHeight = 12;
+        double hbHeight = 6;
 
         Rectangle bg = new Rectangle(hbWidth, hbHeight);
         bg.setFill(Color.DARKBLUE);
@@ -148,7 +148,7 @@ public class BuildingRenderer {
         StackPane hbPane = new StackPane(bg, fg);
         hbPane.setAlignment(Pos.CENTER_LEFT);
         StackPane.setAlignment(hbPane, Pos.TOP_CENTER);
-        StackPane.setMargin(hbPane, new javafx.geometry.Insets(2, 0, 0, 0));
+        StackPane.setMargin(hbPane, new javafx.geometry.Insets(-35, 0, 0, 0));
 
         container.getChildren().add(hbPane);
 
