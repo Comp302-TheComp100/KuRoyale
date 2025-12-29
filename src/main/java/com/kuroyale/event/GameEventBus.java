@@ -33,7 +33,8 @@ public class GameEventBus {
     }
 
     public void publishCardPlayed(boolean isPlayer, Card card) {
-        // Create a copy to avoid ConcurrentModificationException if a listener unsubscribes during notify
+        // Create a copy to avoid ConcurrentModificationException if a listener
+        // unsubscribes during notify
         new ArrayList<>(listeners).forEach(l -> l.onCardPlayed(isPlayer, card));
     }
 
@@ -45,8 +46,13 @@ public class GameEventBus {
         new ArrayList<>(listeners).forEach(l -> l.onElixirSpent(isPlayer, amount));
     }
 
+    public void publishBuildingProduction(com.kuroyale.model.entities.Building building, String resource, int amount) {
+        new ArrayList<>(listeners).forEach(l -> l.onBuildingProduction(building, resource, amount));
+    }
+
     public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
             double radius, double duration) {
+
         new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration));
     }
 }

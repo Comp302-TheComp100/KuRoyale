@@ -27,6 +27,14 @@ public class Card {
     private int footprintWidthTiles = 2;
     private int footprintHeightTiles = 2;
 
+    // Advanced Combat properties
+    private double minRange = 0; // Blind spot radius
+
+    // Production properties (for Elixir Collector usually)
+    private String productionResource; // e.g., "ELIXIR"
+    private int productionAmount;
+    private double productionInterval;
+
     // Spawning properties
     private String spawnUnitName;
     private int spawnUnitCount;
@@ -51,6 +59,17 @@ public class Card {
         this.description = description;
         this.count = count;
         this.lifetime = lifetime;
+    }
+
+    // Builder-like setters for optional properties
+    public void setMinRange(double minRange) {
+        this.minRange = minRange;
+    }
+
+    public void setProduction(String resource, int amount, double interval) {
+        this.productionResource = resource;
+        this.productionAmount = amount;
+        this.productionInterval = interval;
     }
 
     // Getters
@@ -98,6 +117,10 @@ public class Card {
 
     public double getRange() {
         return range;
+    }
+
+    public double getMinRange() {
+        return minRange;
     }
 
     public SpeedType getSpeed() {
@@ -182,6 +205,18 @@ public class Card {
 
     public void setDeathSpawnUnitCount(int deathSpawnUnitCount) {
         this.deathSpawnUnitCount = deathSpawnUnitCount;
+    }
+
+    public String getProductionResource() {
+        return productionResource;
+    }
+
+    public int getProductionAmount() {
+        return productionAmount;
+    }
+
+    public double getProductionInterval() {
+        return productionInterval;
     }
 
     public String getImagePath() {

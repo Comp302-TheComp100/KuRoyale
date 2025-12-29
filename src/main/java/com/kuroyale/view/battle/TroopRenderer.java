@@ -252,7 +252,7 @@ public class TroopRenderer {
             foreground.setY(background.getY());
 
             if (isPlayerSide) {
-                foreground.setFill(healthPct > 0.5 ? Color.LIMEGREEN : (healthPct > 0.2 ? Color.GOLD : Color.CRIMSON));
+                foreground.setFill(Color.ROYALBLUE);
             } else {
                 foreground.setFill(Color.CRIMSON);
             }

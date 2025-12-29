@@ -91,6 +91,12 @@ public class CardCatalog {
         copy.setSpawnUnitCount(base.getSpawnUnitCount());
         copy.setDeathSpawnUnitName(base.getDeathSpawnUnitName());
         copy.setDeathSpawnUnitCount(base.getDeathSpawnUnitCount());
+        // Copy production properties (for Elixir Collector)
+        if (base.getProductionResource() != null) {
+            copy.setProduction(base.getProductionResource(), base.getProductionAmount(), base.getProductionInterval());
+        }
+        // Copy minRange (for Mortar blind spot)
+        copy.setMinRange(base.getMinRange());
         copy.setLevel(level);
         return copy;
     }

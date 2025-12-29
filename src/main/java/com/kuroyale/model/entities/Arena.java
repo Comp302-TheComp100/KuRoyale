@@ -27,9 +27,11 @@ public class Arena {
         initializeGrid();
     }
 
-    /*Initializes the grid with GridCell objects.
+    /*
+     * Initializes the grid with GridCell objects.
      * Sets up terrain (grass, water, bridges) based on layout.
-     * Places towers and mirrors user's layout for computer side.*/
+     * Places towers and mirrors user's layout for computer side.
+     */
     private void initializeGrid() {
         // Initialize all cells as grass by default
         for (int x = 0; x < WIDTH; x++) {
@@ -178,7 +180,8 @@ public class Arena {
         }
     }
 
-    // Gets all adjacent positions to the specified position (4-directional: up,down, left, right).
+    // Gets all adjacent positions to the specified position (4-directional:
+    // up,down, left, right).
     public List<GridPosition> getAdjacentPositions(GridPosition position) {
         List<GridPosition> adjacent = new ArrayList<>();
         if (position == null) {
@@ -309,7 +312,8 @@ public class Arena {
                 .collect(Collectors.toList());
     }
 
-    // Removes a tower from the arena.Clears the tower from the map and resets the tiles to GRASS
+    // Removes a tower from the arena.Clears the tower from the map and resets the
+    // tiles to GRASS
     public void removeTower(Tower tower) {
         if (tower == null)
             return;
@@ -373,11 +377,7 @@ public class Arena {
                 if (pos != null) {
                     GridCell cell = getCell(pos);
                     if (cell != null) {
-                        try {
-                            cell.setOccupant(b);
-                        } catch (IllegalStateException e) {
-                            // ignore if invalid
-                        }
+                        cell.forceSetOccupant(b);
                     }
                 }
             }

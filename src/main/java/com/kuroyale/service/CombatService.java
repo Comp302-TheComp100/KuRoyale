@@ -32,8 +32,10 @@ public class CombatService {
         java.util.List<Building> buildings = new java.util.ArrayList<>(state.getActiveBuildings());
         for (Building building : buildings) {
             if (building.isAlive()) {
+                processBuildingProduction(building, state, deltaTime);
                 processCombatant(building, state, deltaTime);
             } else {
+
                 // Cleanup building footprint
                 state.getArena().freeFootprint(building);
 
@@ -60,6 +62,24 @@ public class CombatService {
         }
     }
 
+    private void processBuildingProduction(Building b, com.kuroyale.model.logic.GameState state, double deltaTime) {
+        if (b.getProductionResource() != null && b.isAlive()) {
+            double newTimer = b.getProductionTimer() - deltaTime;
+            if (newTimer <= 0) {
+                // Producing
+                if ("ELIXIR".equals(b.getProductionResource())) {
+                    state.getElixirManager(b.isPlayerSide()).addElixir(b.getProductionAmount());
+                    // Visual feedback
+                    com.kuroyale.event.GameEventBus.getInstance().publishBuildingProduction(b, "ELIXIR",
+                            b.getProductionAmount());
+                }
+                newTimer = b.getProductionInterval();
+
+            }
+            b.setProductionTimer(newTimer);
+        }
+    }
+
     private void processCombatant(ICombatant attacker, com.kuroyale.model.logic.GameState state, double deltaTime) {
         if (!attacker.isAlive())
             return;
@@ -69,7 +89,10 @@ public class CombatService {
 
         // 2. Target Handling
         ICombatant target = attacker.getTarget();
-        if (target == null || !target.isAlive() || !isInAttackRange(attacker, target)) {
+        boolean targetValid = (target != null && target.isAlive() && isInAttackRange(attacker, target));
+
+        // STICKY TARGETING: Only search for new target if current is invalid
+        if (!targetValid) {
             target = findNearestTarget(attacker, state);
             attacker.setTarget(target);
         }
@@ -132,7 +155,12 @@ public class CombatService {
     private void performAttack(ICombatant attacker, ICombatant target, com.kuroyale.model.logic.GameState state) {
         if (attacker.isAreaEffect()) {
             // Splash radius is usually 1.0 tiles for units/buildings unless specified
-            applyAreaDamage(state, target.getPosition(), 1.0, attacker.getDamage(),
+            com.kuroyale.model.entities.GridPosition targetPos = target.getPosition();
+            if (target instanceof Tower || target instanceof Building) {
+                targetPos = target.getCenterPosition();
+            }
+
+            applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
                     attacker.getTargetType(), attacker.isPlayerSide());
         } else {
             applyDamage(attacker, target);
@@ -166,7 +194,22 @@ public class CombatService {
             if (!attacker.canTarget(candidate))
                 continue;
 
+            if (!attacker.canTarget(candidate))
+                continue;
+
             double dist = getDistanceToTarget(attacker, candidate);
+            // Check Blind Spot (Min Range)
+            if (attacker instanceof Building && dist < ((Building) attacker).getMinRange()) {
+                continue;
+            }
+            if (attacker instanceof Troop) {
+                // Troops usually don't have min range but check card just in case
+                Troop t = (Troop) attacker;
+                if (t.getBaseCard() != null && dist < t.getBaseCard().getMinRange()) {
+                    continue;
+                }
+            }
+
             if (dist <= range && dist < bestDist) {
                 bestDist = dist;
                 best = candidate;
@@ -191,7 +234,24 @@ public class CombatService {
             }
         }
 
-        return getDistanceToTarget(attacker, target) <= range;
+        double dist = getDistanceToTarget(attacker, target); // Renaming for clarity
+
+        // Check Min Range (Blind Spot)
+        double minRange = 0;
+        if (attacker instanceof Building) {
+            minRange = ((Building) attacker).getMinRange();
+        } else if (attacker instanceof Troop) {
+            Troop t = (Troop) attacker;
+            if (t.getBaseCard() != null) {
+                minRange = t.getBaseCard().getMinRange();
+            }
+        }
+
+        if (dist < minRange) {
+            return false;
+        }
+
+        return dist <= range;
     }
 
     private double getDistanceToTarget(ICombatant attacker, ICombatant target) {

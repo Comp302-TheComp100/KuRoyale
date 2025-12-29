@@ -540,7 +540,16 @@ public class GameState {
         return playerElixir;
     }
 
+    public ElixirManager getBotElixir() {
+        return botElixir;
+    }
+
+    public ElixirManager getElixirManager(boolean isPlayer) {
+        return isPlayer ? playerElixir : botElixir;
+    }
+
     public Arena getArena() {
+
         return arena;
     }
 

@@ -114,9 +114,11 @@ public class CardFactory {
     }
 
     public Card createMortar() {
-        return new Card("Mortar", 4, CardType.BUILDING, Rarity.RARE, 600, 108, 5.0, 11.0,
+        Card card = new Card("Mortar", 4, CardType.BUILDING, Rarity.RARE, 600, 108, 5.0, 11.0,
                 SpeedType.NONE, TargetType.GROUND, false, true,
-                "Long-range artillery. Range: 4.5-11 tiles.", 1, 30);
+                "Long-range artillery. Range: 5-11 tiles. Blind spot near.", 1, 30);
+        card.setMinRange(5.0);
+        return card;
     }
 
     public Card createBombTower() {
@@ -161,9 +163,11 @@ public class CardFactory {
     }
 
     public Card createElixirCollector() {
-        return new Card("Elixir Collector", 5, CardType.BUILDING, Rarity.RARE, 640, 0, 0, 0,
+        Card card = new Card("Elixir Collector", 5, CardType.BUILDING, Rarity.RARE, 640, 0, 0, 0,
                 SpeedType.NONE, TargetType.NONE, false, false,
                 "Generates Elixir over time. Produces 1 Elixir every 10s. Total: 7 Elixir.", 1, 70);
+        card.setProduction("ELIXIR", 1, 10.0);
+        return card;
     }
 
     // SPELLS

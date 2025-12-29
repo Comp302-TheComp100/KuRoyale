@@ -167,6 +167,37 @@ public class BattleController {
 
         // Start Game Loop
         startGameLoop();
+
+        // Subscribe to Elixir Events for visual feedback
+        com.kuroyale.event.GameEventBus.getInstance().subscribe(new com.kuroyale.event.GameEventListener() {
+            @Override
+            public void onCardPlayed(boolean isPlayer, Card card) {
+            }
+
+            @Override
+            public void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
+            }
+
+            @Override
+            public void onElixirSpent(boolean isPlayer, int amount) {
+                // Legacy: do nothing, or handle manual spends if needed.
+                // We use onBuildingProduction for +1 visual now.
+            }
+
+            @Override
+            public void onBuildingProduction(Building building, String resource, int amount) {
+                if (building.isPlayerSide() && "ELIXIR".equals(resource)) {
+                    javafx.application.Platform.runLater(() -> {
+                        // Show +1 indicator on the elixir bar with purple font
+                        elixirBar.showProductionIndicator(amount);
+                    });
+                }
+            }
+
+            @Override
+            public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration) {
+            }
+        });
     }
 
     private void startGameLoop() {
@@ -524,4 +555,5 @@ public class BattleController {
 
         model.processMatchResult(playerScore, botScore);
     }
+
 }

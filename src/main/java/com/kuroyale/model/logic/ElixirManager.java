@@ -33,6 +33,19 @@ public class ElixirManager {
             if (currentElixir > MAX_ELIXIR) {
                 currentElixir = MAX_ELIXIR;
             }
+            if (currentElixir > MAX_ELIXIR) {
+                currentElixir = MAX_ELIXIR;
+            }
+        }
+    }
+
+    // Produce elixir from external source (e.g. Pump)
+    public void addElixir(double amount) {
+        if (amount > 0) {
+            currentElixir += amount;
+            if (currentElixir > MAX_ELIXIR) {
+                currentElixir = MAX_ELIXIR;
+            }
         }
     }
 
