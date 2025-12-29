@@ -114,51 +114,57 @@ public class TroopMovementService {
                 troop.setPathfindingCooldown(0.25 + Math.random() * 0.1);
             }
 
-            if (troop.getUnitState() == UnitState.ATTACKING) {
-                continue;
+            // Apply movement and/or separation
+            // Note: Even attacking units need separation to avoid stacking
+            if (troop.getUnitState() != UnitState.ATTACKING) {
+                troop.setUnitState(UnitState.MOVING);
             }
-
-            troop.setUnitState(UnitState.MOVING);
-            advanceAlongPathPvP(deltaTime, troop, state);
+            updatePvPTroopPosition(deltaTime, troop, state);
         }
     }
 
-    private void advanceAlongPathPvP(double deltaTime, Troop troop, com.kuroyale.model.logic.PvPGameState state) {
-        if (troop.getPath().isEmpty())
-            return;
-
+    private void updatePvPTroopPosition(double deltaTime, Troop troop, com.kuroyale.model.logic.PvPGameState state) {
         Vector2 currentPos = troop.getWorldPosition();
-        Vector2 nextWaypoint = troop.getPath().peekFirst();
+        Vector2 movement = Vector2.ZERO;
 
-        Vector2 toWaypoint = nextWaypoint.subtract(currentPos);
-        double distanceToWaypoint = toWaypoint.length();
+        // Calculate path movement only if not attacking and path exists
+        if (troop.getUnitState() != UnitState.ATTACKING && !troop.getPath().isEmpty()) {
+            Vector2 nextWaypoint = troop.getPath().peekFirst();
+            Vector2 toWaypoint = nextWaypoint.subtract(currentPos);
+            double distanceToWaypoint = toWaypoint.length();
 
-        if (distanceToWaypoint < WAYPOINT_THRESHOLD) {
-            troop.getPath().pollFirst();
-            if (troop.getPath().isEmpty()) {
-                return;
+            // Check if we've reached the waypoint
+            if (distanceToWaypoint < WAYPOINT_THRESHOLD) {
+                troop.getPath().pollFirst();
+                if (!troop.getPath().isEmpty()) {
+                    nextWaypoint = troop.getPath().peekFirst();
+                    toWaypoint = nextWaypoint.subtract(currentPos);
+                    distanceToWaypoint = toWaypoint.length();
+                }
             }
-            nextWaypoint = troop.getPath().peekFirst();
-            toWaypoint = nextWaypoint.subtract(currentPos);
-            distanceToWaypoint = toWaypoint.length();
+
+            // Only move if we have a valid destination vector
+            if (distanceToWaypoint > 1e-6) {
+                Vector2 direction = toWaypoint.normalize();
+                double moveDistance = troop.getMoveSpeed() * deltaTime;
+                if (moveDistance > distanceToWaypoint) {
+                    moveDistance = distanceToWaypoint;
+                }
+                movement = direction.multiply(moveDistance);
+            }
         }
 
-        if (distanceToWaypoint < 1e-6) {
-            return;
-        }
+        Vector2 proposedPos = currentPos.add(movement);
 
-        Vector2 direction = toWaypoint.normalize();
-        double moveDistance = troop.getMoveSpeed() * deltaTime;
+        // Apply separation (Always applies, even if stationary/attacking)
+        SpatialGrid spatialGrid = (state != null && state.getArena() != null) ? state.getArena().getSpatialGrid()
+                : null;
+        Vector2 finalPos = applySeparation(proposedPos, troop, spatialGrid);
 
-        if (moveDistance > distanceToWaypoint) {
-            moveDistance = distanceToWaypoint;
-        }
+        troop.setWorldPosition(finalPos);
 
-        Vector2 newPos = currentPos.add(direction.multiply(moveDistance));
-        newPos = applySeparation(newPos, troop, state.getActiveTroops());
-        troop.setWorldPosition(newPos);
-
-        if (state.getArena() != null && state.getArena().getSpatialGrid() != null) {
+        // Update SpatialGrid
+        if (state != null && state.getArena() != null && state.getArena().getSpatialGrid() != null) {
             state.getArena().getSpatialGrid().update(troop);
         }
     }
@@ -240,7 +246,9 @@ public class TroopMovementService {
         Vector2 proposedPos = currentPos.add(movement);
 
         // Apply separation (Always applies, even if stationary/attacking)
-        Vector2 finalPos = applySeparation(proposedPos, troop, state.getActiveTroops());
+        SpatialGrid spatialGrid = (state != null && state.getArena() != null) ? state.getArena().getSpatialGrid()
+                : null;
+        Vector2 finalPos = applySeparation(proposedPos, troop, spatialGrid);
 
         troop.setWorldPosition(finalPos);
 
@@ -251,15 +259,26 @@ public class TroopMovementService {
     }
 
     // Simple separation steering to prevent troops from overlapping.
-    private Vector2 applySeparation(Vector2 proposedPos, Troop self, List<Troop> troops) {
+    private Vector2 applySeparation(Vector2 proposedPos, Troop self, SpatialGrid grid) {
+        if (grid == null)
+            return proposedPos;
+
         Vector2 separation = Vector2.ZERO;
         int count = 0;
 
-        for (Troop other : troops) {
+        // Query only nearby entities using SpatialGrid (O(k) instead of O(N))
+        List<ICombatant> nearby = grid.getNearby(proposedPos.toGridPosition(), SEPARATION_RADIUS + 1.0);
+
+        for (ICombatant candidate : nearby) {
+            if (!(candidate instanceof Troop other))
+                continue;
             if (other == self || !other.isAlive())
                 continue;
 
             Vector2 otherPos = other.getWorldPosition();
+            if (otherPos == null)
+                continue;
+
             double dist = proposedPos.distanceTo(otherPos);
 
             if (dist < SEPARATION_RADIUS) {
@@ -269,8 +288,17 @@ public class TroopMovementService {
                     double angle = Math.random() * 2 * Math.PI;
                     away = new Vector2(Math.cos(angle), Math.sin(angle));
                 } else {
-                    // Push away from other troop
+                    // Push away from other troop (radial)
                     away = proposedPos.subtract(otherPos).normalize();
+
+                    // Add a tangential (perpendicular) component to encourage sliding/passing
+                    // This prevents the "straight line push" where units get stuck head-to-head.
+                    // By adding a perpendicular vector, we suggest a side to pass on.
+                    Vector2 tangential = new Vector2(-away.getY(), away.getX());
+
+                    // Mix in some tangential force (e.g., 0.5). This makes the push
+                    // diagonal rather than straight back, helping units "flow" around each other.
+                    away = away.add(tangential.multiply(0.5)).normalize();
                 }
 
                 // Strength increases as they get closer
