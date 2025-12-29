@@ -118,6 +118,14 @@ public class CombatService {
 
         double range = attacker.getRange();
 
+        if (attacker instanceof Troop troop) {
+            com.kuroyale.model.entities.CombatStats stats = troop.getCombatStats();
+            if (stats != null && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
+                double meleeBase = Math.max(range, 1.0);
+                range = Math.max(1.5, meleeBase);
+            }
+        }
+
         // Structures (Towers/Buildings) only target Troops
         // Troops target Troops, Buildings, and Towers
 
