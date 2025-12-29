@@ -290,20 +290,27 @@ public class TroopMovementService {
                     // Push away from other troop (radial)
                     away = proposedPos.subtract(otherPos).normalize();
 
-                    // Add a tangential (perpendicular) component to encourage sliding/passing
-                    // This prevents the "straight line push" where units get stuck head-to-head.
-                    // By adding a perpendicular vector, we suggest a side to pass on.
+                    // Tangential force to encourage sliding but avoid swirling (Parallel Slide)
+                    // Standard perpendicular vector
                     Vector2 tangential = new Vector2(-away.getY(), away.getX());
 
-                    // Mix in some tangential force (e.g., 0.5). This makes the push
-                    // diagonal rather than straight back, helping units "flow" around each other.
-                    away = away.add(tangential.multiply(0.5)).normalize();
+                    // We want both units to slide in the SAME world direction to avoid
+                    // rotation/swirling.
+                    // Since 'away' vectors are opposite for the two units, the default tangential
+                    // vectors are also opposite (causing rotation).
+                    // We flip one of them based on a consistent ID check so they align.
+                    if (System.identityHashCode(self) < System.identityHashCode(other)) {
+                        tangential = tangential.multiply(-1);
+                    }
+
+                    // Add tangential component (weighted) -> Mix 70% Push, 30% Slide
+                    away = away.add(tangential.multiply(0.3)).normalize();
                 }
 
                 // Strength increases as they get closer
                 double strength = (SEPARATION_RADIUS - dist) / SEPARATION_RADIUS;
-                // Increased push force (0.4) to effectively separate clustered units
-                separation = separation.add(away.multiply(strength * 0.4));
+                // Increased push force (0.5) to effectively separate clustered units
+                separation = separation.add(away.multiply(strength * 0.5));
                 count++;
             }
         }
