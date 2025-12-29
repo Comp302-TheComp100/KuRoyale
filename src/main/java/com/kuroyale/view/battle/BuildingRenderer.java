@@ -63,6 +63,30 @@ public class BuildingRenderer {
         }
     }
 
+    /**
+     * Render method for PvP mode (uses PvPGameState).
+     */
+    public void renderPvP(com.kuroyale.model.logic.PvPGameState pvpGameState) {
+        java.util.List<Building> buildings = pvpGameState.getActiveBuildings();
+        Set<Building> currentBuildings = new HashSet<>(buildings);
+
+        // Cleanup visuals for destroyed buildings
+        Iterator<Map.Entry<Building, BuildingVisual>> buildingIt = activeBuildingVisuals.entrySet().iterator();
+        while (buildingIt.hasNext()) {
+            Map.Entry<Building, BuildingVisual> entry = buildingIt.next();
+            Building b = entry.getKey();
+            if (!currentBuildings.contains(b) || !b.isAlive()) {
+                unitLayer.getChildren().remove(entry.getValue().root);
+                buildingIt.remove();
+            }
+        }
+
+        // Render Active Buildings
+        for (Building b : buildings) {
+            renderBuilding(b);
+        }
+    }
+
     private void renderBuilding(Building b) {
         BuildingVisual visual = activeBuildingVisuals.get(b);
         int w = Math.max(1, b.getWidth());

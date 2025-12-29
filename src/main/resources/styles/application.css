@@ -712,3 +712,20 @@
 .menu-button-small:hover {
   -fx-background-color: linear-gradient(to bottom, #9ca3af 0%, #6b7280 100%);
 }
+
+.hand-container {
+  -fx-background-color: rgba(0, 0, 0, 0.6);
+  -fx-background-radius: 15;
+  -fx-padding: 5;
+}
+
+/* Fixes for Right Side (Player 2) in PvP to match Left Side appearance */
+.right-side-bar {
+  -fx-background-color: rgba(20, 20, 20, 0.9) !important;
+}
+
+.right-side-bar .elixir-progress-bar {
+  -fx-max-height: 20;
+  -fx-min-height: 20;
+  -fx-pref-height: 20;
+}

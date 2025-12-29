@@ -74,6 +74,13 @@ public class BattleController {
     private boolean doubleElixirShown = false;
     private boolean gameOverShown = false;
 
+    /**
+     * Returns the arena container for external navigation (used by strategies).
+     */
+    public StackPane getArenaContainer() {
+        return arenaContainer;
+    }
+
     // Sets a saved game to load from
     public void setLoadedSavedGame(SavedGameState savedGame) {
         this.loadedSavedGame = savedGame;

@@ -68,6 +68,79 @@ public class TroopMovementService {
         }
     }
 
+    /**
+     * Update troops for PvP game state.
+     */
+    public void updateTroopsPvP(double deltaTime, com.kuroyale.model.logic.PvPGameState state, List<Troop> troops) {
+        Arena arena = state.getArena();
+        for (Troop troop : troops) {
+            if (!troop.isAlive())
+                continue;
+
+            troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
+
+            if (troop.getTargetWorldPosition() == null || troop.getPathfindingCooldown() <= 0) {
+                GridPosition newTargetGrid = targetingService.findNearestEnemyOrObjectivePvP(state, troop);
+                troop.setTargetWorldPosition(Vector2.fromGridPosition(newTargetGrid));
+                troop.clearPath();
+                if (newTargetGrid != null) {
+                    PathfindingStrategy strategy = troop.isAirUnit() ? airStrategy : groundStrategy;
+                    Deque<GridPosition> gridPath = strategy.computePath(arena, troop, newTargetGrid);
+                    Deque<Vector2> worldPath = convertPathToVector2(gridPath);
+                    troop.setPath(worldPath);
+                }
+                troop.setPathfindingCooldown(0.25 + Math.random() * 0.1);
+            }
+
+            if (troop.getUnitState() == UnitState.ATTACKING) {
+                continue;
+            }
+
+            troop.setUnitState(UnitState.MOVING);
+            advanceAlongPathPvP(deltaTime, troop, state);
+        }
+    }
+
+    private void advanceAlongPathPvP(double deltaTime, Troop troop, com.kuroyale.model.logic.PvPGameState state) {
+        if (troop.getPath().isEmpty())
+            return;
+
+        Vector2 currentPos = troop.getWorldPosition();
+        Vector2 nextWaypoint = troop.getPath().peekFirst();
+
+        Vector2 toWaypoint = nextWaypoint.subtract(currentPos);
+        double distanceToWaypoint = toWaypoint.length();
+
+        if (distanceToWaypoint < WAYPOINT_THRESHOLD) {
+            troop.getPath().pollFirst();
+            if (troop.getPath().isEmpty()) {
+                return;
+            }
+            nextWaypoint = troop.getPath().peekFirst();
+            toWaypoint = nextWaypoint.subtract(currentPos);
+            distanceToWaypoint = toWaypoint.length();
+        }
+
+        if (distanceToWaypoint < 1e-6) {
+            return;
+        }
+
+        Vector2 direction = toWaypoint.normalize();
+        double moveDistance = troop.getMoveSpeed() * deltaTime;
+
+        if (moveDistance > distanceToWaypoint) {
+            moveDistance = distanceToWaypoint;
+        }
+
+        Vector2 newPos = currentPos.add(direction.multiply(moveDistance));
+        newPos = applySeparation(newPos, troop, state.getActiveTroops());
+        troop.setWorldPosition(newPos);
+
+        if (state.getArena() != null && state.getArena().getSpatialGrid() != null) {
+            state.getArena().getSpatialGrid().update(troop);
+        }
+    }
+
     private boolean shouldRetarget(GameState state, Troop troop) {
         // Instant retarget if new closer enemy appears inside attack range or path
         if (troop.getPath().isEmpty())
