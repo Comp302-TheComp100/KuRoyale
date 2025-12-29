@@ -47,8 +47,8 @@ public class TroopMovementService {
                 if (newTargetGrid != null) {
                     PathfindingStrategy strategy = troop.isAirUnit() ? airStrategy : groundStrategy;
                     Deque<GridPosition> gridPath = strategy.computePath(arena, troop, newTargetGrid);
-                    // Convert GridPosition path to Vector2 waypoints
-                    Deque<Vector2> worldPath = convertPathToVector2(gridPath);
+                    // Convert and smooth GridPosition path to Vector2 waypoints
+                    Deque<Vector2> worldPath = convertPathToVector2(arena, gridPath, troop.isAirUnit());
                     troop.setPath(worldPath);
                 }
 
@@ -104,7 +104,7 @@ public class TroopMovementService {
                 if (newTargetGrid != null) {
                     PathfindingStrategy strategy = troop.isAirUnit() ? airStrategy : groundStrategy;
                     Deque<GridPosition> gridPath = strategy.computePath(arena, troop, newTargetGrid);
-                    Deque<Vector2> worldPath = convertPathToVector2(gridPath);
+                    Deque<Vector2> worldPath = convertPathToVector2(arena, gridPath, troop.isAirUnit());
                     troop.setPath(worldPath);
                 }
 
@@ -197,13 +197,63 @@ public class TroopMovementService {
         return currentPos.distanceTo(nearest) < currentPos.distanceTo(currentTarget);
     }
 
-    // Converts a GridPosition path to Vector2 waypoints (centered on tiles).
-    private Deque<Vector2> convertPathToVector2(Deque<GridPosition> gridPath) {
-        Deque<Vector2> worldPath = new ArrayDeque<>();
-        for (GridPosition gp : gridPath) {
-            worldPath.add(Vector2.fromGridPosition(gp));
+    // Converts a GridPosition path to Vector2 waypoints and smooths it using string
+    // pulling.
+    private Deque<Vector2> convertPathToVector2(Arena arena, Deque<GridPosition> gridPath, boolean isAir) {
+        if (gridPath == null || gridPath.isEmpty())
+            return new ArrayDeque<>();
+
+        List<GridPosition> original = new ArrayList<>(gridPath);
+        Deque<Vector2> smoothedPath = new ArrayDeque<>();
+
+        // Start from first node
+        int current = 0;
+        smoothedPath.add(Vector2.fromGridPosition(original.get(0)));
+
+        while (current < original.size() - 1) {
+            int furthestVisible = current + 1;
+            // Look ahead to find the furthest node we can see in a straight line
+            for (int next = current + 2; next < original.size(); next++) {
+                if (isLineWalkable(arena, original.get(current), original.get(next), isAir)) {
+                    furthestVisible = next;
+                } else {
+                    // Obstacle in the way, stop searching further
+                    break;
+                }
+            }
+            smoothedPath.add(Vector2.fromGridPosition(original.get(furthestVisible)));
+            current = furthestVisible;
         }
-        return worldPath;
+
+        return smoothedPath;
+    }
+
+    // Checks if a straight line between two tiles is walkable (LOS check).
+    private boolean isLineWalkable(Arena arena, GridPosition p1, GridPosition p2, boolean isAir) {
+        if (isAir || arena == null)
+            return true;
+
+        // Use centers for ray casting
+        double x1 = p1.getX() + 0.5;
+        double y1 = p1.getY() + 0.5;
+        double x2 = p2.getX() + 0.5;
+        double y2 = p2.getY() + 0.5;
+
+        double dist = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        if (dist < 1.0)
+            return true;
+
+        int samples = (int) Math.ceil(dist * 4); // 4 samples per tile for high accuracy
+        for (int i = 1; i < samples; i++) {
+            double t = (double) i / samples;
+            int gx = (int) Math.floor(x1 + (x2 - x1) * t);
+            int gy = (int) Math.floor(y1 + (y2 - y1) * t);
+
+            GridCell cell = arena.getCell(gx, gy);
+            if (cell == null || !cell.isWalkable())
+                return false;
+        }
+        return true;
     }
 
     private static final double WAYPOINT_THRESHOLD = 0.1; // How close to waypoint before moving to next
