@@ -4,6 +4,7 @@ import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.entities.Troop;
 import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.entities.ICombatant;
+import com.kuroyale.model.entities.Card;
 
 public class CombatService {
 
@@ -32,22 +33,26 @@ public class CombatService {
         for (Building building : buildings) {
             if (building.isAlive()) {
                 processCombatant(building, state, deltaTime);
-            }
-
-            // Death Damage handling (e.g. Bomb Tower)
-            if (!building.isAlive()) {
-                if (building.isAreaEffect()) {
-                    com.kuroyale.model.entities.GridPosition center = building.getCenterPosition();
-                    if (center != null) {
-                        applyAreaDamage(state, center, 1.0, building.getDamage(),
-                                building.getTargetType(), building.isPlayerSide());
-                    }
-                }
+            } else {
                 // Cleanup building footprint
                 state.getArena().freeFootprint(building);
+
+                // Death Spawn handling (e.g. Tombstone)
+                Card base = building.getBaseCard();
+                if (base != null && base.getDeathSpawnUnitName() != null) {
+                    com.kuroyale.model.entities.GridPosition spawnPos = state.getFrontPosition(building);
+                    if (spawnPos == null) {
+                        spawnPos = building.getPosition();
+                    }
+
+                    Card unitCard = state.getCardByName(base.getDeathSpawnUnitName());
+                    if (unitCard != null) {
+                        state.spawnTroopDirectly(building.isPlayerSide(), unitCard,
+                                spawnPos.getX(), spawnPos.getY(), base.getDeathSpawnUnitCount());
+                    }
+                }
             }
         }
-
         // 3. Towers
         java.util.Set<Tower> towers = state.getArena().getAllTowers();
         for (Tower tower : towers) {
@@ -94,6 +99,33 @@ public class CombatService {
         } else {
             // No target, just tick down cooldown
             attacker.setAttackCooldown(Math.max(0, cd));
+
+            // Building periodic spawning
+            if (attacker instanceof Building b && cd <= 0) {
+                Card base = b.getBaseCard();
+                if (base != null && base.getSpawnUnitName() != null) {
+                    spawnUnitsFromBuilding(b, state);
+                    // Ensure we don't spam if hitSpeed is 0
+                    double nextCooldown = Math.max(b.getHitSpeed(), 0.5);
+                    b.setAttackCooldown(nextCooldown);
+                }
+            }
+        }
+    }
+
+    private void spawnUnitsFromBuilding(Building b, com.kuroyale.model.logic.GameState state) {
+        Card base = b.getBaseCard();
+        if (base == null || base.getSpawnUnitName() == null)
+            return;
+
+        com.kuroyale.model.entities.GridPosition spawnPos = state.getFrontPosition(b);
+        if (spawnPos == null)
+            return;
+
+        Card unitCard = state.getCardByName(base.getSpawnUnitName());
+        if (unitCard != null) {
+            state.spawnTroopDirectly(b.isPlayerSide(), unitCard,
+                    spawnPos.getX(), spawnPos.getY(), base.getSpawnUnitCount());
         }
     }
 
@@ -244,8 +276,10 @@ public class CombatService {
             // Distance Check - PRECISE
             double dist;
             if (t.getWorldPosition() != null) {
-                // Convert integer center to center of tile (approx) to be fair, or use grid distance logic
-                // Area Damage center is usually a tile center (x.5, y.5) if coming from spell, or unit center if coming from unit.
+                // Convert integer center to center of tile (approx) to be fair, or use grid
+                // distance logic
+                // Area Damage center is usually a tile center (x.5, y.5) if coming from spell,
+                // or unit center if coming from unit.
                 dist = center.getEuclideanDistanceTo(t.getPosition());
             } else {
                 dist = center.getEuclideanDistanceTo(t.getPosition());

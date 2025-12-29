@@ -132,21 +132,32 @@ public class CardFactory {
     }
 
     public Card createTombstone() {
-        return new Card("Tombstone", 3, CardType.BUILDING, Rarity.COMMON, 200, 0, 2.9, 0,
-                SpeedType.NONE, TargetType.GROUND, false, false,
+        Card card = new Card("Tombstone", 3, CardType.BUILDING, Rarity.COMMON, 200, 0, 2.9, 0,
+                SpeedType.NONE, TargetType.NONE, false, false,
                 "Spawns 1 Skeleton every 2.9s. When destroyed, spawns 4 more.", 1, 40);
+        card.setSpawnUnitName("Skeletons");
+        card.setSpawnUnitCount(1);
+        card.setDeathSpawnUnitName("Skeletons");
+        card.setDeathSpawnUnitCount(4);
+        return card;
     }
 
     public Card createGoblinHut() {
-        return new Card("Goblin Hut", 5, CardType.BUILDING, Rarity.RARE, 700, 0, 4.9, 0,
-                SpeedType.NONE, TargetType.GROUND, false, false,
+        Card card = new Card("Goblin Hut", 5, CardType.BUILDING, Rarity.RARE, 700, 0, 4.9, 0,
+                SpeedType.NONE, TargetType.NONE, false, false,
                 "Spawns Spear Goblins periodically. Spawns 1 every 4.9s.", 1, 60);
+        card.setSpawnUnitName("Spear Goblins");
+        card.setSpawnUnitCount(1);
+        return card;
     }
 
     public Card createBarbarianHut() {
-        return new Card("Barbarian Hut", 7, CardType.BUILDING, Rarity.RARE, 1100, 0, 14.0, 0,
-                SpeedType.NONE, TargetType.GROUND, false, false,
+        Card card = new Card("Barbarian Hut", 7, CardType.BUILDING, Rarity.RARE, 1100, 0, 14.0, 0,
+                SpeedType.NONE, TargetType.NONE, false, false,
                 "Spawns 2 Barbarians periodically. Spawns 2 every 14s.", 1, 60);
+        card.setSpawnUnitName("Barbarians");
+        card.setSpawnUnitCount(2);
+        return card;
     }
 
     public Card createElixirCollector() {

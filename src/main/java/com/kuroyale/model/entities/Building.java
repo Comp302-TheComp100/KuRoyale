@@ -14,6 +14,7 @@ public class Building implements ICombatant {
     // Lifetime tracking for depreciation
     private final int lifetimeSeconds; // Total lifetime in seconds
     private double remainingLifetime; // Remaining lifetime in seconds
+    private double accumulatedDecay = 0; // Tracks fractional damage due to lifetime decay
     // Combat
     private int damage;
     private double hitSpeedSeconds;
@@ -21,6 +22,7 @@ public class Building implements ICombatant {
     private TargetType targetType = TargetType.GROUND; // default
     private double attackCooldown;
     private boolean areaEffect = false;
+    private Card baseCard; // Reference to original card for spawning and other properties
 
     public Building(GridPosition position, int width, int height, boolean playerSide, int maxHealth,
             String imagePath) {
@@ -48,12 +50,17 @@ public class Building implements ICombatant {
     public void configureCombatFromCard(Card card) {
         if (card == null)
             return;
+        this.baseCard = card;
         this.cardName = card.getName();
         this.damage = card.getDamage();
         this.hitSpeedSeconds = card.getHitSpeed();
         this.rangeTiles = (int) Math.round(card.getRange());
         this.targetType = card.getTarget();
         this.areaEffect = card.isAreaEffect();
+    }
+
+    public Card getBaseCard() {
+        return baseCard;
     }
 
     public String getCardName() {
@@ -159,8 +166,14 @@ public class Building implements ICombatant {
             double decayPerSecond = (double) maxHealth / lifetimeSeconds;
             double decayAmount = decayPerSecond * deltaTime;
 
-            // Apply decay - subtract then clamp
-            currentHealth = (int) Math.max(0, Math.ceil(currentHealth - decayAmount));
+            // Accumulate decay
+            accumulatedDecay += decayAmount;
+
+            if (accumulatedDecay >= 1.0) {
+                int damage = (int) accumulatedDecay;
+                currentHealth = Math.max(0, currentHealth - damage);
+                accumulatedDecay -= damage;
+            }
 
             if (remainingLifetime <= 0) {
                 // Building expired, ensure health is 0

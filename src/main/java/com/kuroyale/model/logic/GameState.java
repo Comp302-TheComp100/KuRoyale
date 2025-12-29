@@ -12,9 +12,9 @@ import java.util.List;
 public class GameState {
     private final Hand playerHand;
     private final ElixirManager playerElixir;
-
     private final ElixirManager botElixir;
     private final BotLogic bot;
+    private java.util.function.Function<String, Card> cardCatalog;
 
     private final Arena arena;
     private final List<PlacedCard> placedCards;
@@ -51,6 +51,17 @@ public class GameState {
         this.activeBuildings = new ArrayList<>();
     }
 
+    public void setCardCatalog(java.util.function.Function<String, Card> cardCatalog) {
+        this.cardCatalog = cardCatalog;
+    }
+
+    public Card getCardByName(String name) {
+        if (cardCatalog != null) {
+            return cardCatalog.apply(name);
+        }
+        return null;
+    }
+
     public void setActiveChallenge(ChallengeType activeChallenge) {
         this.activeChallenge = activeChallenge;
     }
@@ -73,8 +84,10 @@ public class GameState {
         }
     }
 
-    /* Restores the player's hand and draw pile from saved card data.
-     * This ensures the exact same cards appear in hand after loading a saved game. */
+    /*
+     * Restores the player's hand and draw pile from saved card data.
+     * This ensures the exact same cards appear in hand after loading a saved game.
+     */
     public void restorePlayerHand(List<Card> handCards, List<Card> drawPileCards) {
         playerHand.restoreFromSaved(handCards, drawPileCards);
     }
@@ -100,7 +113,9 @@ public class GameState {
         playerElixir.update(deltaTime);
         botElixir.update(deltaTime);
 
-        if (!isGameOver) {updateBot(deltaTime);}
+        if (!isGameOver) {
+            updateBot(deltaTime);
+        }
 
         updateEntities(deltaTime);
         handleCombat(deltaTime);
@@ -171,7 +186,8 @@ public class GameState {
             }
         }
 
-        // Check for destroyed towers and update scores (must be before removeDeadTowers)
+        // Check for destroyed towers and update scores (must be before
+        // removeDeadTowers)
         if (!isGameOver) {
             checkAndScoreDestroyedTowers();
         }
@@ -195,13 +211,22 @@ public class GameState {
         }
     }
 
-    public boolean isDoubleElixir() {return isDoubleElixir;}
-    public boolean isGameOver() {return isGameOver;}
-    public boolean isPlayerWinner() {return playerWon;}
+    public boolean isDoubleElixir() {
+        return isDoubleElixir;
+    }
+
+    public boolean isGameOver() {
+        return isGameOver;
+    }
+
+    public boolean isPlayerWinner() {
+        return playerWon;
+    }
 
     public int getPlayerDamageTaken() {
         int damage = 0;
-        // Optimization: Use getAllTowers() which is O(1-6) instead of scanning the grid O(N)
+        // Optimization: Use getAllTowers() which is O(1-6) instead of scanning the grid
+        // O(N)
         for (Tower t : arena.getAllTowers()) {
             if (t.isPlayerSide()) {
                 damage += (int) (t.getMaxHealth() - t.getCurrentHealth());
@@ -227,9 +252,13 @@ public class GameState {
         }
 
         // Validate terrain (Grass or Bridge only) - unless it's a spell
-        if (!isSpell && !arena.getCell(x, y).canPlaceUnit()) {return false;}
+        if (!isSpell && !arena.getCell(x, y).canPlaceUnit()) {
+            return false;
+        }
 
-        if (isPlayer && !isSpell && y < Arena.HEIGHT / 2) {return false;}
+        if (isPlayer && !isSpell && y < Arena.HEIGHT / 2) {
+            return false;
+        }
 
         if (isPlayer) {
             Card card = pendingCard != null ? pendingCard : playerHand.getCard(handIndex);
@@ -241,7 +270,6 @@ public class GameState {
             if (activeChallenge == ChallengeType.SPELL_BARRAGE && card.getType() == CardType.SPELL) {
                 cost = Math.max(1, cost - 1);
             }
-
 
             if (playerElixir.getCurrentElixir() >= cost) {
                 boolean success = spawnUnit(true, card, x, y);
@@ -264,12 +292,60 @@ public class GameState {
         return false;
     }
 
-    public double getGameTime() {return gameTime;}
-    public int getPlayerScore() {return playerScore;}
-    public int getBotScore() {return botScore;}
+    public double getGameTime() {
+        return gameTime;
+    }
+
+    public int getPlayerScore() {
+        return playerScore;
+    }
+
+    public int getBotScore() {
+        return botScore;
+    }
+
+    // Spawns troops directly (used by buildings/spells)
+    public boolean spawnTroopDirectly(boolean isPlayer, Card card, int x, int y, int count) {
+        if (card == null)
+            return false;
+
+        // Temporarily override the card's count for this specific spawn if requested
+        Card spawnCard = card;
+        if (count > 0 && count != card.getCount()) {
+            spawnCard = new Card(card.getName(), card.getCost(), card.getType(), card.getRarity(),
+                    card.getBaseHp(), card.getBaseDamage(), card.getHitSpeed(), card.getRange(),
+                    card.getSpeed(), card.getTarget(), card.isAirUnit(), card.isAreaEffect(),
+                    card.getDescription(), count, card.getLifetime());
+            spawnCard.setLevel(card.getLevel());
+        }
+
+        return spawnTroopGroup(isPlayer, spawnCard, x, y);
+    }
+
+    public GridPosition getFrontPosition(Building b) {
+        if (b == null)
+            return null;
+        int bw = b.getWidth();
+        int bh = b.getHeight();
+        int x = b.getPosition().getX();
+        int y = b.getPosition().getY();
+
+        int spawnX = x + bw / 2;
+        int spawnY;
+
+        if (b.isPlayerSide()) {
+            spawnY = y - 1; // "Above" the building for player
+        } else {
+            spawnY = y + bh; // "Below" the building for bot
+        }
+
+        return GridPosition.tryCreate(spawnX, spawnY);
+    }
 
     // Overload for direct card placement (used by Bot)
-    public void placeCard(boolean isPlayer, Card card, int x, int y) {spawnUnit(isPlayer, card, x, y);}
+    public void placeCard(boolean isPlayer, Card card, int x, int y) {
+        spawnUnit(isPlayer, card, x, y);
+    }
 
     private boolean spawnUnit(boolean isPlayer, Card card, int x, int y) {
         if (card == null)
@@ -320,6 +396,12 @@ public class GameState {
             Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
                     card.getLifetime());
             building.configureCombatFromCard(card);
+
+            // Set initial spawn delay if it's a spawner
+            if (card.getSpawnUnitName() != null) {
+                building.setAttackCooldown(1.0);
+            }
+
             arena.occupyFootprint(building);
             activeBuildings.add(building);
             arena.getSpatialGrid().add(building);
@@ -368,7 +450,8 @@ public class GameState {
         return playerHand;
     }
 
-    // Apply spell effects: simple AoE damage around target (affects enemy troops, buildings, and towers)
+    // Apply spell effects: simple AoE damage around target (affects enemy troops,
+    // buildings, and towers)
     private void applySpellEffect(boolean isPlayer, Card spell, int x, int y) {
         // Use card damage and range as radius in tiles
         double radius = Math.max(0, spell.getRange());
@@ -380,8 +463,10 @@ public class GameState {
         combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer);
     }
 
-    /* Apply circular area damage originating from a troop attack.
-     * Center is derived from the primary target to keep targeting logic unchanged.*/
+    /*
+     * Apply circular area damage originating from a troop attack.
+     * Center is derived from the primary target to keep targeting logic unchanged.
+     */
     public void applyAreaDamageFromTroop(Troop attacker, ICombatant primaryTarget) {
         if (attacker == null || primaryTarget == null)
             return;
@@ -399,7 +484,6 @@ public class GameState {
 
         combatService.applyAreaDamage(this, center, radius, damage, targetType, attacker.isPlayerSide());
     }
-
 
     /*
      * Checks for destroyed towers and updates scores accordingly.

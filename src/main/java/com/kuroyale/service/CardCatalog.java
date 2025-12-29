@@ -20,7 +20,8 @@ public class CardCatalog {
     private final Map<String, Card> cardsByName;
     private final List<Card> allCards;
 
-    //Creates a new CardCatalog. Creator pattern: CardCatalog aggregates Card references
+    // Creates a new CardCatalog. Creator pattern: CardCatalog aggregates Card
+    // references
     public CardCatalog() {
         this.cardFactory = new CardFactory();
         this.allCards = cardFactory.getAllCards();
@@ -32,7 +33,7 @@ public class CardCatalog {
         }
     }
 
-    //Gets all available cards in the game
+    // Gets all available cards in the game
     public List<Card> getAllCards() {
         return allCards;
     }
@@ -59,8 +60,11 @@ public class CardCatalog {
         }
     }
 
-    //Finds a card by its name. Information Expert: CardCatalog knows all available cards
-    public Card getCardByName(String name) {return cardsByName.get(name);}
+    // Finds a card by its name. Information Expert: CardCatalog knows all available
+    // cards
+    public Card getCardByName(String name) {
+        return cardsByName.get(name);
+    }
 
     public Card createCardWithLevel(String name, int level) {
         Card base = cardsByName.get(name);
@@ -83,13 +87,21 @@ public class CardCatalog {
                 base.getDescription(),
                 base.getCount(),
                 base.getLifetime());
+        copy.setSpawnUnitName(base.getSpawnUnitName());
+        copy.setSpawnUnitCount(base.getSpawnUnitCount());
+        copy.setDeathSpawnUnitName(base.getDeathSpawnUnitName());
+        copy.setDeathSpawnUnitCount(base.getDeathSpawnUnitCount());
         copy.setLevel(level);
         return copy;
     }
 
-    //Checks if a card with the given name exists
-    public boolean cardExists(String name) {return cardsByName.containsKey(name);}
+    // Checks if a card with the given name exists
+    public boolean cardExists(String name) {
+        return cardsByName.containsKey(name);
+    }
 
-    //Gets the total number of available cards
-    public int getCardCount() {return allCards.size();}
+    // Gets the total number of available cards
+    public int getCardCount() {
+        return allCards.size();
+    }
 }

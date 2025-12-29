@@ -18,25 +18,42 @@ import javafx.scene.layout.VBox;
  * Manages the game loop, user input, and UI updates.*/
 public class BattleController {
 
-    @FXML private StackPane arenaContainer;
-    @FXML private HBox elixirContainer;
-    @FXML private VBox handContainer;
-    @FXML private VBox overlayContainer;
-    @FXML private VBox pauseMenuContainer;
+    @FXML
+    private StackPane arenaContainer;
+    @FXML
+    private HBox elixirContainer;
+    @FXML
+    private VBox handContainer;
+    @FXML
+    private VBox overlayContainer;
+    @FXML
+    private VBox pauseMenuContainer;
 
-    @FXML private VBox challengeGameOverRoot;
-    @FXML private javafx.scene.control.Label challengeTitle;
-    @FXML private HBox challengeStarBox;
-    @FXML private javafx.scene.control.Label star1;
-    @FXML private javafx.scene.control.Label star2;
-    @FXML private javafx.scene.control.Label star3;
-    @FXML private javafx.scene.control.Label challengeTimeLabel;
-    @FXML private VBox challengeConditionsBox;
-    @FXML private javafx.scene.control.Label challengeRewardLabel;
+    @FXML
+    private VBox challengeGameOverRoot;
+    @FXML
+    private javafx.scene.control.Label challengeTitle;
+    @FXML
+    private HBox challengeStarBox;
+    @FXML
+    private javafx.scene.control.Label star1;
+    @FXML
+    private javafx.scene.control.Label star2;
+    @FXML
+    private javafx.scene.control.Label star3;
+    @FXML
+    private javafx.scene.control.Label challengeTimeLabel;
+    @FXML
+    private VBox challengeConditionsBox;
+    @FXML
+    private javafx.scene.control.Label challengeRewardLabel;
 
-    @FXML private VBox gameOverRoot;
-    @FXML private javafx.scene.control.Label gameOverTitle;
-    @FXML private javafx.scene.control.Label gameOverScore;
+    @FXML
+    private VBox gameOverRoot;
+    @FXML
+    private javafx.scene.control.Label gameOverTitle;
+    @FXML
+    private javafx.scene.control.Label gameOverScore;
 
     private GameState gameState;
     private BattleArenaView arenaView;
@@ -74,11 +91,13 @@ public class BattleController {
         // The actual initialization happens in startGame() which is called after setup
     }
 
-    // Starts the game. Must be called AFTER setLoadedSavedGame() if loading a saved game
+    // Starts the game. Must be called AFTER setLoadedSavedGame() if loading a saved
+    // game
     public void startGame() {
         // Initialize game state
         User currentUser = model.getCurrentUser();
-        // Allow starting challenge even if user logic is tricky, but we usually need currentUser for other things
+        // Allow starting challenge even if user logic is tricky, but we usually need
+        // currentUser for other things
         if (currentUser == null && currentChallenge == null) {
             handleExit();
             return;
@@ -116,6 +135,7 @@ public class BattleController {
 
             // Initialize GameState
             gameState = new GameState(playerDeck, botDeck, arena);
+            gameState.setCardCatalog(name -> model.getCardByName(name));
             if (currentChallenge != null) {
                 gameState.setActiveChallenge(currentChallenge.getType());
             }

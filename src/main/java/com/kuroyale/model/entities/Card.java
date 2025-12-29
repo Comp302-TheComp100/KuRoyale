@@ -23,9 +23,15 @@ public class Card {
     public static final int MAX_LEVEL = 3;
     public static final int MIN_LEVEL = 1;
     private int level = 1;
-    // Optional footprint for buildings (tiles). Defaults to 3x3 if unset.
-    private int footprintWidthTiles = 3;
-    private int footprintHeightTiles = 3;
+    // Optional footprint for buildings (tiles). Defaults to 2x2 if unset.
+    private int footprintWidthTiles = 2;
+    private int footprintHeightTiles = 2;
+
+    // Spawning properties
+    private String spawnUnitName;
+    private int spawnUnitCount;
+    private String deathSpawnUnitName;
+    private int deathSpawnUnitCount;
 
     public Card(String name, int cost, CardType type, Rarity rarity, int hp, int damage, double hitSpeed,
             double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
@@ -144,6 +150,38 @@ public class Card {
             this.footprintWidthTiles = width;
         if (height > 0)
             this.footprintHeightTiles = height;
+    }
+
+    public String getSpawnUnitName() {
+        return spawnUnitName;
+    }
+
+    public void setSpawnUnitName(String spawnUnitName) {
+        this.spawnUnitName = spawnUnitName;
+    }
+
+    public int getSpawnUnitCount() {
+        return spawnUnitCount;
+    }
+
+    public void setSpawnUnitCount(int spawnUnitCount) {
+        this.spawnUnitCount = spawnUnitCount;
+    }
+
+    public String getDeathSpawnUnitName() {
+        return deathSpawnUnitName;
+    }
+
+    public void setDeathSpawnUnitName(String deathSpawnUnitName) {
+        this.deathSpawnUnitName = deathSpawnUnitName;
+    }
+
+    public int getDeathSpawnUnitCount() {
+        return deathSpawnUnitCount;
+    }
+
+    public void setDeathSpawnUnitCount(int deathSpawnUnitCount) {
+        this.deathSpawnUnitCount = deathSpawnUnitCount;
     }
 
     public String getImagePath() {

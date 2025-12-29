@@ -74,7 +74,8 @@ public class BattleModel {
         return deck;
     }
 
-    // Creates a list of cards from a list of card names (for restoring hand/draw pile)
+    // Creates a list of cards from a list of card names (for restoring hand/draw
+    // pile)
     private List<Card> createCardsFromNames(List<String> cardNames) {
         List<Card> cards = new java.util.ArrayList<>();
         if (cardNames != null) {
@@ -110,6 +111,7 @@ public class BattleModel {
 
         // Create game state
         GameState gameState = new GameState(playerDeck, botDeck, arena);
+        gameState.setCardCatalog(name -> getCardByName(name));
 
         // Restore saved state (time, elixir, scores)
         gameState.restoreFromSaved(
