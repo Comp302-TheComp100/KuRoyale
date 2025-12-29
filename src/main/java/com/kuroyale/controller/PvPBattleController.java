@@ -6,7 +6,6 @@ import com.kuroyale.view.battle.BattleArenaView;
 import com.kuroyale.view.battle.ElixirBar;
 import com.kuroyale.view.battle.HandView;
 import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.ServiceFactory;
 
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;

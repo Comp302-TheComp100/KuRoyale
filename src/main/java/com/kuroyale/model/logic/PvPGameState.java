@@ -2,7 +2,7 @@ package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
+
 import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.HashSet;
  * Replaces BotLogic with second human player controls.
  * Uses TurnManager for turn-based gameplay.
  */
-public class PvPGameState {
+public class PvPGameState implements IBattleState {
 
     // Player 1 (left side - bottom half of arena)
     private final Hand player1Hand;
@@ -103,7 +103,7 @@ public class PvPGameState {
     }
 
     private void updateEntities(double deltaTime) {
-        troopMovementService.updateTroopsPvP(deltaTime, this, activeTroops);
+        troopMovementService.updateTroops(deltaTime, this, activeTroops);
 
         for (Building b : activeBuildings) {
             if (b.isAlive()) {
@@ -113,7 +113,7 @@ public class PvPGameState {
     }
 
     private void handleCombat(double deltaTime) {
-        combatService.updatePvP(deltaTime, this);
+        combatService.update(deltaTime, this);
         activeTroops.removeIf(t -> !t.isAlive());
     }
 
@@ -289,6 +289,54 @@ public class PvPGameState {
             }
         }
         return true;
+    }
+
+    // Spawns troops directly (used by buildings/spells)
+    public boolean spawnTroopDirectly(boolean isPlayerSide, Card card, int x, int y, int count) {
+        if (card == null)
+            return false;
+
+        Card spawnCard = card;
+        if (count > 0 && count != card.getCount()) {
+            spawnCard = new Card(card.getName(), card.getCost(), card.getType(), card.getRarity(),
+                    card.getBaseHp(), card.getBaseDamage(), card.getHitSpeed(), card.getRange(),
+                    card.getSpeed(), card.getTarget(), card.isAirUnit(), card.isAreaEffect(),
+                    card.getDescription(), count, card.getLifetime());
+            spawnCard.setLevel(card.getLevel());
+        }
+
+        return spawnTroopGroup(isPlayerSide, spawnCard, x, y);
+    }
+
+    public GridPosition getFrontPosition(Building b) {
+        if (b == null)
+            return null;
+        int bw = b.getWidth();
+        int bh = b.getHeight();
+        int x = b.getPosition().getX();
+        int y = b.getPosition().getY();
+
+        int spawnX = x + bw / 2;
+        int spawnY;
+
+        if (b.isPlayerSide()) {
+            spawnY = y - 1; // "Above" for player 1 (bottom side)
+        } else {
+            spawnY = y + bh; // "Below" for player 2 (top side)
+        }
+
+        return GridPosition.tryCreate(spawnX, spawnY);
+    }
+
+    public Card getCardByName(String name) {
+        if (cardCatalog != null) {
+            return cardCatalog.apply(name);
+        }
+        return null;
+    }
+
+    public ElixirManager getElixirManager(boolean isPlayerSide) {
+        return isPlayerSide ? player1Elixir : player2Elixir;
     }
 
     private void applySpellEffect(boolean isPlayer1, Card spell, int x, int y) {

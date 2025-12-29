@@ -35,7 +35,7 @@ public class Troop implements ICombatant {
         this.path = new ArrayDeque<>();
         CombatStats.AttackType at = card.getRange() > 1.5 ? CombatStats.AttackType.RANGED
                 : CombatStats.AttackType.MELEE;
-        this.combatStats = new CombatStats(card.getDamage(), card.getHitSpeed(), (int) Math.round(card.getRange()), at);
+        this.combatStats = new CombatStats(card.getDamage(), card.getHitSpeed(), card.getRange(), at);
         this.attackCooldown = 0.0;
     }
 
@@ -64,14 +64,15 @@ public class Troop implements ICombatant {
         return targetWorldPosition;
     }
 
-
     @Deprecated
     public void setTargetPosition(GridPosition target) {
         this.targetWorldPosition = Vector2.fromGridPosition(target);
     }
 
     @Deprecated
-    public GridPosition getTargetPosition() {return targetWorldPosition != null ? targetWorldPosition.toGridPosition() : null;}
+    public GridPosition getTargetPosition() {
+        return targetWorldPosition != null ? targetWorldPosition.toGridPosition() : null;
+    }
 
     public void clearPath() {
         path.clear();
@@ -105,7 +106,6 @@ public class Troop implements ICombatant {
     public GridPosition getPosition() {
         return worldPosition != null ? worldPosition.toGridPosition() : null;
     }
-
 
     @Deprecated
     public void setPosition(GridPosition pos) {
@@ -141,7 +141,6 @@ public class Troop implements ICombatant {
     public double getAttackRange() {
         return attackRange;
     }
-
 
     public CombatStats getCombatStats() {
         return combatStats;
