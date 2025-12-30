@@ -67,6 +67,7 @@ public class Building implements ICombatant {
         this.targetType = card.getTarget();
         this.areaEffect = card.isAreaEffect();
         this.minRange = card.getMinRange();
+        this.attackCooldown = this.hitSpeedSeconds;
 
         this.productionResource = card.getProductionResource();
         this.productionAmount = card.getProductionAmount();

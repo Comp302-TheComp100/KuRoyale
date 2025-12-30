@@ -37,7 +37,7 @@ public class Tower implements ICombatant {
         }
         this.currentHealth = this.maxHealth;
         this.targetType = TargetType.BOTH;
-        this.attackCooldown = 0.0;
+        this.attackCooldown = this.hitSpeed;
     }
 
     @Override
@@ -92,7 +92,8 @@ public class Tower implements ICombatant {
         return GridPosition.tryCreate(cx, cy);
     }
 
-    // Actually, can't check Arena.java easily here inside the class without passing it.
+    // Actually, can't check Arena.java easily here inside the class without passing
+    // it.
     public int getWidthTiles() { // Renamed helper for clarity
         return type == TowerType.KING ? 4 : 3;
     }

@@ -36,7 +36,7 @@ public class Troop implements ICombatant {
         CombatStats.AttackType at = card.getRange() > 1.5 ? CombatStats.AttackType.RANGED
                 : CombatStats.AttackType.MELEE;
         this.combatStats = new CombatStats(card.getDamage(), card.getHitSpeed(), card.getRange(), at);
-        this.attackCooldown = 0.0;
+        this.attackCooldown = card.getHitSpeed();
     }
 
     private double mapSpeed(SpeedType speedType) {
