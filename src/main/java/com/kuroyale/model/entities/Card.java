@@ -41,6 +41,9 @@ public class Card {
     private String deathSpawnUnitName;
     private int deathSpawnUnitCount;
 
+    // Effect properties
+    private double stunDuration;
+
     public Card(String name, int cost, CardType type, Rarity rarity, int hp, int damage, double hitSpeed,
             double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
             String description, int count, int lifetime) {
@@ -217,6 +220,14 @@ public class Card {
 
     public double getProductionInterval() {
         return productionInterval;
+    }
+
+    public double getStunDuration() {
+        return stunDuration;
+    }
+
+    public void setStunDuration(double stunDuration) {
+        this.stunDuration = stunDuration;
     }
 
     public String getImagePath() {

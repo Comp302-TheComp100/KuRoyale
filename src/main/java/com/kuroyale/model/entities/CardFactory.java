@@ -172,9 +172,11 @@ public class CardFactory {
 
     // SPELLS
     public Card createZap() {
-        return new Card("Zap", 2, CardType.SPELL, Rarity.COMMON, 0, 80, 0, 2.5,
+        Card card = new Card("Zap", 2, CardType.SPELL, Rarity.COMMON, 0, 80, 0, 2.5,
                 SpeedType.NONE, TargetType.BOTH, false, true,
                 "Small area damage + stuns enemies for 0.5 seconds. Radius: 2.5 tiles.", 1, 0);
+        card.setStunDuration(0.5);
+        return card;
     }
 
     public Card createArrows() {

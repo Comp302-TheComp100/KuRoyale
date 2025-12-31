@@ -19,6 +19,12 @@ public class TroopMovementService {
                 continue;
             }
 
+            // If stunned, skip movement and retargeting
+            if (troop.isStunned()) {
+                troop.setUnitState(UnitState.STUNNED);
+                continue;
+            }
+
             // Update pathfinding cooldown
             troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
 

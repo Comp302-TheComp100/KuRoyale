@@ -48,4 +48,11 @@ public interface ICombatant {
     void setTarget(ICombatant target);
 
     ICombatant getTarget();
+
+    // Status effects
+    void stun(double duration);
+
+    boolean isStunned();
+
+    void updateStatus(double deltaTime);
 }

@@ -174,4 +174,23 @@ public class Tower implements ICombatant {
     public ICombatant getTarget() {
         return target;
     }
+
+    private double stunTimer = 0.0;
+
+    @Override
+    public void stun(double duration) {
+        this.stunTimer = Math.max(this.stunTimer, duration);
+    }
+
+    @Override
+    public boolean isStunned() {
+        return stunTimer > 0;
+    }
+
+    @Override
+    public void updateStatus(double deltaTime) {
+        if (stunTimer > 0) {
+            stunTimer -= deltaTime;
+        }
+    }
 }

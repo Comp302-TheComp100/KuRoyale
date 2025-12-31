@@ -63,6 +63,9 @@ public class CombatService {
     }
 
     private void processBuildingProduction(Building b, com.kuroyale.model.logic.IBattleState state, double deltaTime) {
+        if (b.isStunned()) {
+            return;
+        }
         if (b.getProductionResource() != null && b.isAlive()) {
             double newTimer = b.getProductionTimer() - deltaTime;
             if (newTimer <= 0) {
@@ -83,6 +86,17 @@ public class CombatService {
     private void processCombatant(ICombatant attacker, com.kuroyale.model.logic.IBattleState state, double deltaTime) {
         if (!attacker.isAlive())
             return;
+
+        // Update status effects (stun, freeze, etc.)
+        attacker.updateStatus(deltaTime);
+
+        // If stunned, skip all combat logic
+        if (attacker.isStunned()) {
+            if (attacker instanceof Troop t) {
+                t.setUnitState(com.kuroyale.model.enums.UnitState.STUNNED);
+            }
+            return;
+        }
 
         // 1. Update Cooldown
         double cd = attacker.getAttackCooldown() - deltaTime;
@@ -168,7 +182,7 @@ public class CombatService {
             }
 
             applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
-                    attacker.getTargetType(), attacker.isPlayerSide(), false);
+                    attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0);
         } else {
             applyDamage(attacker, target);
         }
@@ -321,7 +335,8 @@ public class CombatService {
             double damage,
             com.kuroyale.model.enums.TargetType targetType,
             boolean isPlayerSource,
-            boolean isSpell) {
+            boolean isSpell,
+            double stunDuration) {
 
         if (gameState == null || center == null || radiusTiles <= 0)
             return;
@@ -378,6 +393,11 @@ public class CombatService {
 
                     // Apply Damage
                     candidate.takeDamage(finalDamage);
+
+                    // Apply Stun
+                    if (stunDuration > 0) {
+                        candidate.stun(stunDuration);
+                    }
 
                     // Check for destroyed buildings to free footprint immediately
                     if (!candidate.isAlive() && candidate instanceof Building b) {

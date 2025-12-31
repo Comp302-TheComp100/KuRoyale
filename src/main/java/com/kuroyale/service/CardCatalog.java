@@ -97,6 +97,8 @@ public class CardCatalog {
         }
         // Copy minRange (for Mortar blind spot)
         copy.setMinRange(base.getMinRange());
+        // Copy stunDuration (for Zap)
+        copy.setStunDuration(base.getStunDuration());
         copy.setLevel(level);
         return copy;
     }

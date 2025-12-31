@@ -237,4 +237,23 @@ public class Troop implements ICombatant {
     public boolean isAreaEffect() {
         return baseCard != null && baseCard.isAreaEffect();
     }
+
+    private double stunTimer = 0.0;
+
+    @Override
+    public void stun(double duration) {
+        this.stunTimer = Math.max(this.stunTimer, duration);
+    }
+
+    @Override
+    public boolean isStunned() {
+        return stunTimer > 0;
+    }
+
+    @Override
+    public void updateStatus(double deltaTime) {
+        if (stunTimer > 0) {
+            stunTimer -= deltaTime;
+        }
+    }
 }
