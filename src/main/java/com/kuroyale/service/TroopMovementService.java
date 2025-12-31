@@ -77,8 +77,7 @@ public class TroopMovementService {
 
     private boolean shouldRetarget(IBattleState state, Troop troop) {
         // 1. Sticky Targeting: If already attacking, do not switch (CombatService
-        // handles
-        // invalid/dead targets)
+        // handles invalid/dead targets)
         if (troop.getUnitState() == UnitState.ATTACKING)
             return false;
 
@@ -151,10 +150,8 @@ public class TroopMovementService {
             return true;
 
         // Use centers for ray casting
-        double x1 = p1.getX() + 0.5;
-        double y1 = p1.getY() + 0.5;
-        double x2 = p2.getX() + 0.5;
-        double y2 = p2.getY() + 0.5;
+        double x1 = p1.getX() + 0.5, y1 = p1.getY() + 0.5;
+        double x2 = p2.getX() + 0.5, y2 = p2.getY() + 0.5;
 
         double dist = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
         if (dist < 1.0)
@@ -170,23 +167,16 @@ public class TroopMovementService {
             if (cell == null || !cell.isWalkable())
                 return false;
 
-            // Wall Buffer Check:
             // Ensure we aren't clipping a corner by checking immediate non-diagonal
             // neighbors.
-            // If we are effectively "sliding" along a wall, that's fine, but if we are
-            // piercing a corner (e.g. going through a diagonal gap between two walls), this
-            // should catch it depending on the exact geometry.
-            // A safer, robust check for corner clipping is: if we are at (x,y), check if
-            // ANY neighbor is a wall.
+
             // If so, treat this point as "tight" and potentially unsafe for string pulling
             // if we want strictly wide paths.
             // But for corner clipping specifically: if (x,y) is walkable, we just need to
-            // ensure we didn't
-            // skip over a corner. The discrete sampling handles skipping.
+            // ensure we didn't skip over a corner. The discrete sampling handles skipping.
             // To handle *width*, we check if adjacent cells are walls.
 
             // Check 4-neighbors for walls. If a neighbor is a wall, we might be too close.
-            // This is a "fat raycast" approximation.
             // We only check if the point is *very* close to the boundary of that neighbor.
 
             double px = x1 + (x2 - x1) * t;
@@ -304,7 +294,6 @@ public class TroopMovementService {
                     // rotation/swirling.
                     // Since 'away' vectors are opposite for the two units, the default tangential
                     // vectors are also opposite (causing rotation).
-                    // We flip one of them based on a consistent ID check so they align.
                     if (System.identityHashCode(self) < System.identityHashCode(other)) {
                         tangential = tangential.multiply(-1);
                     }
@@ -326,5 +315,4 @@ public class TroopMovementService {
         }
         return proposedPos;
     }
-
 }
