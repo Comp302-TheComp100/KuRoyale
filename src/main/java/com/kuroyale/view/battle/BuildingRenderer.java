@@ -23,10 +23,12 @@ public class BuildingRenderer {
     private static class BuildingVisual {
         final StackPane root;
         final Rectangle hpForeground;
+        final Rectangle elixirForeground; // New field for elixir bar
 
-        BuildingVisual(StackPane root, Rectangle hpForeground) {
+        BuildingVisual(StackPane root, Rectangle hpForeground, Rectangle elixirForeground) {
             this.root = root;
             this.hpForeground = hpForeground;
+            this.elixirForeground = elixirForeground;
         }
     }
 
@@ -109,8 +111,8 @@ public class BuildingRenderer {
             unitLayer.getChildren().add(visual.root);
             activeBuildingVisuals.put(b, visual);
         } else {
-            // Update existing health bar
-            updateBuildingHealthBar(b, visual, w * TILE_SIZE);
+            // Update existing bars
+            updateBuildingBars(b, visual, w * TILE_SIZE);
         }
     }
 
@@ -142,7 +144,13 @@ public class BuildingRenderer {
         // Add Health Bar
         Rectangle hpFg = createHealthBar(b, w, buildingStack);
 
-        return new BuildingVisual(buildingStack, hpFg);
+        // Add Elixir Bar if applicable
+        Rectangle elixirFg = null;
+        if ("ELIXIR".equals(b.getProductionResource())) {
+            elixirFg = createElixirBar(b, w, buildingStack);
+        }
+
+        return new BuildingVisual(buildingStack, hpFg, elixirFg);
     }
 
     private Rectangle createFallbackRect(Building b, int w, int h) {
@@ -179,12 +187,56 @@ public class BuildingRenderer {
         return fg;
     }
 
-    private void updateBuildingHealthBar(Building b, BuildingVisual visual, double totalWidthPixels) {
+    private Rectangle createElixirBar(Building b, int wTiles, StackPane container) {
+        double interval = b.getProductionInterval();
+        double timer = b.getProductionTimer();
+        double pct = interval > 0 ? (1.0 - (timer / interval)) : 0.0;
+
+        double hbWidth = Math.max(40, TILE_SIZE * wTiles - 6);
+        double hbHeight = 4; // Slightly thinner than HP bar
+
+        Rectangle bg = new Rectangle(hbWidth, hbHeight);
+        bg.setFill(Color.BLACK);
+        bg.setStroke(Color.BLACK);
+        bg.setStrokeWidth(0.5);
+
+        Rectangle fg = new Rectangle(hbWidth * pct, hbHeight);
+        fg.setFill(Color.MAGENTA); // Elixir color
+
+        StackPane elPane = new StackPane(bg, fg);
+        elPane.setAlignment(Pos.CENTER_LEFT);
+        StackPane.setAlignment(elPane, Pos.TOP_CENTER);
+
+        // Position BELOW the building image
+        // Top margin = height of building + small gap
+        int h = Math.max(1, b.getHeight());
+        double topMargin = (h * TILE_SIZE) + 2;
+        StackPane.setMargin(elPane, new javafx.geometry.Insets(topMargin, 0, 0, 0));
+
+        container.getChildren().add(elPane);
+
+        return fg;
+    }
+
+    private void updateBuildingBars(Building b, BuildingVisual visual, double totalWidthPixels) {
+        // Update Health Bar
         double maxHp = b.getMaxHealth();
         double curHp = Math.max(0, b.getCurrentHealth());
-        double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
-        double hbWidth = Math.max(40, totalWidthPixels - 6);
+        double hpPct = maxHp > 0 ? (curHp / maxHp) : 0.0;
+        double barWidth = Math.max(40, totalWidthPixels - 6);
 
-        visual.hpForeground.setWidth(hbWidth * pct);
+        visual.hpForeground.setWidth(barWidth * hpPct);
+
+        // Update Elixir Bar
+        if (visual.elixirForeground != null && "ELIXIR".equals(b.getProductionResource())) {
+            double interval = b.getProductionInterval();
+            double timer = b.getProductionTimer();
+            // Timer counts down from interval to 0
+            double elPct = interval > 0 ? (1.0 - (timer / interval)) : 0.0;
+            // Clamp between 0 and 1 just in case
+            elPct = Math.max(0.0, Math.min(1.0, elPct));
+
+            visual.elixirForeground.setWidth(barWidth * elPct);
+        }
     }
 }
