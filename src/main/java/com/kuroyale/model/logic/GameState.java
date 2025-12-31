@@ -460,7 +460,7 @@ public class GameState implements IBattleState {
         if (center == null)
             return;
 
-        combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer);
+        combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer, true);
     }
 
     /*
@@ -482,7 +482,7 @@ public class GameState implements IBattleState {
         double damage = attacker.getCombatStats() != null ? attacker.getCombatStats().getDamage() : 0;
         TargetType targetType = attacker.getBaseCard() != null ? attacker.getBaseCard().getTarget() : TargetType.BOTH;
 
-        combatService.applyAreaDamage(this, center, radius, damage, targetType, attacker.isPlayerSide());
+        combatService.applyAreaDamage(this, center, radius, damage, targetType, attacker.isPlayerSide(), false);
     }
 
     /*

@@ -168,7 +168,7 @@ public class CombatService {
             }
 
             applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
-                    attacker.getTargetType(), attacker.isPlayerSide());
+                    attacker.getTargetType(), attacker.isPlayerSide(), false);
         } else {
             applyDamage(attacker, target);
         }
@@ -320,7 +320,8 @@ public class CombatService {
             double radiusTiles,
             double damage,
             com.kuroyale.model.enums.TargetType targetType,
-            boolean isPlayerSource) {
+            boolean isPlayerSource,
+            boolean isSpell) {
 
         if (gameState == null || center == null || radiusTiles <= 0)
             return;
@@ -369,8 +370,14 @@ public class CombatService {
             if (candidatePos != null) {
                 double dist = center.getEuclideanDistanceTo(candidatePos);
                 if (dist <= radiusTiles) {
+
+                    int finalDamage = intDamage;
+                    if (isSpell && candidate instanceof Tower) {
+                        finalDamage = (int) Math.round(damage * 0.4);
+                    }
+
                     // Apply Damage
-                    candidate.takeDamage(intDamage);
+                    candidate.takeDamage(finalDamage);
 
                     // Check for destroyed buildings to free footprint immediately
                     if (!candidate.isAlive() && candidate instanceof Building b) {

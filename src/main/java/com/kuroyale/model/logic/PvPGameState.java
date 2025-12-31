@@ -346,7 +346,7 @@ public class PvPGameState implements IBattleState {
         if (center == null)
             return;
 
-        combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer1);
+        combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer1, true);
     }
 
     private void checkAndScoreDestroyedTowers() {
