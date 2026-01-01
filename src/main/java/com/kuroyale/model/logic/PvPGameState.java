@@ -95,11 +95,29 @@ public class PvPGameState implements IBattleState {
                     } else if (player2Score > player1Score) {
                         winner = TurnManager.Turn.PLAYER_2;
                     } else {
-                        winner = null; // Draw
+                        // Tiebreaker: Compare lowest HP towers
+                        double p1MinHP = getLowestTowerHealth(true);
+                        double p2MinHP = getLowestTowerHealth(false);
+
+                        if (p1MinHP < p2MinHP) {
+                            winner = TurnManager.Turn.PLAYER_2; // Player 1 has weaker tower
+                        } else if (p2MinHP < p1MinHP) {
+                            winner = TurnManager.Turn.PLAYER_1; // Player 2 has weaker tower
+                        } else {
+                            winner = null; // Draw
+                        }
                     }
                 }
             }
         }
+    }
+
+    private double getLowestTowerHealth(boolean isPlayer1Side) {
+        return arena.getAllTowers().stream()
+                .filter(t -> t.isPlayerSide() == isPlayer1Side && t.isAlive())
+                .mapToDouble(Tower::getCurrentHealth)
+                .min()
+                .orElse(0.0);
     }
 
     private void updateEntities(double deltaTime) {

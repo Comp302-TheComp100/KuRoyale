@@ -140,13 +140,37 @@ public class GameState implements IBattleState {
                     isGameOver = true;
                     if (playerScore > botScore) {
                         playerWon = true;
-                    } else {
-                        // For bot win or draw, playerWon remains false
+                    } else if (botScore > playerScore) {
+                        // Bot wins
                         playerWon = false;
+                    } else {
+                        // Tiebreaker: Compare lowest HP towers
+                        // The side with the single lowest health tower loses.
+                        double playerMinHP = getLowestTowerHealth(true);
+                        double botMinHP = getLowestTowerHealth(false);
+
+                        if (playerMinHP < botMinHP) {
+                            // Player has the weakest tower -> Player loses
+                            playerWon = false;
+                        } else if (botMinHP < playerMinHP) {
+                            // Bot has the weakest tower -> Player wins
+                            playerWon = true;
+                        } else {
+                            // Equal lowest HP -> Draw (very rare)
+                            playerWon = false;
+                        }
                     }
                 }
             }
         }
+    }
+
+    private double getLowestTowerHealth(boolean isPlayer) {
+        return arena.getAllTowers().stream()
+                .filter(t -> t.isPlayerSide() == isPlayer && t.isAlive())
+                .mapToDouble(Tower::getCurrentHealth)
+                .min()
+                .orElse(0.0);
     }
 
     private void updateBot(double deltaTime) {
