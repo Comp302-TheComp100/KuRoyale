@@ -83,7 +83,29 @@ public class CombatService {
         }
     }
 
-    private void processCombatant(ICombatant attacker, com.kuroyale.model.logic.IBattleState state, double deltaTime) {
+    /**
+     * Processes combat logic for a single combatant (Troop, Building, or Tower).
+     * Handles status effects, cooldown management, target acquisition, state
+     * transitions, and attack execution.
+     *
+     * @requires attacker != null && state != null
+     * @modifies attacker, state
+     * @effects
+     * 
+     *          <pre>
+     *          - If attacker is not alive, does nothing.
+     *          - Updates attacker's status effects (e.g., stun duration).
+     *          - If attacker is stunned, sets unit state to STUNNED (if Troop) and returns.
+     *          - Decrements attack cooldown.
+     *          - If current target is invalid (dead, out of range, null), attempts to find a new nearest target.
+     *          - If a new target is found and attacker is a Troop, sets state to ATTACKING.
+     *          - If target is lost and was ATTACKING, resets Troop state to MOVING.
+     *          - If target is valid and cooldown is ready, performs attack and resets cooldown.
+     *          - If no target, tick down cooldown and handles building periodic spawning.
+     *          </pre>
+     */
+    protected void processCombatant(ICombatant attacker, com.kuroyale.model.logic.IBattleState state,
+            double deltaTime) {
         if (!attacker.isAlive())
             return;
 
