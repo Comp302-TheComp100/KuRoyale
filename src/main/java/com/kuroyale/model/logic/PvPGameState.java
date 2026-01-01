@@ -10,20 +10,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
-/**
- * Game state for Local Player vs Player battles.
+/* Game state for Local Player vs Player battles.
  * Replaces BotLogic with second human player controls.
- * Uses TurnManager for turn-based gameplay.
- */
+ * Uses TurnManager for turn-based gameplay.*/
 public class PvPGameState implements IBattleState {
 
     // Player 1 (left side - bottom half of arena)
-    private final Hand player1Hand;
-    private final ElixirManager player1Elixir;
-
-    // Player 2 (right side - top half of arena)
-    private final Hand player2Hand;
-    private final ElixirManager player2Elixir;
+    private final Hand player1Hand, player2Hand;
+    private final ElixirManager player1Elixir, player2Elixir;
 
     private final Arena arena;
     private final TurnManager turnManager;
@@ -34,11 +28,9 @@ public class PvPGameState implements IBattleState {
     private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
 
     private double gameTime = 180.0; // 3 minutes
-    private int player1Score = 0;
-    private int player2Score = 0;
+    private int player1Score = 0, player2Score = 0;
 
-    private boolean isDoubleElixir = false;
-    private boolean isGameOver = false;
+    private boolean isDoubleElixir = false, isGameOver = false;
     private TurnManager.Turn winner = null;
 
     private Set<Tower> scoredTowers = new HashSet<>();
@@ -166,9 +158,7 @@ public class PvPGameState implements IBattleState {
         }
     }
 
-    /**
-     * Place a card for a player. In PvP, we check if it's the player's turn.
-     */
+    // Place a card for a player. In PvP, we check if it's the player's turn.
     public boolean placeCard(boolean isPlayer1, int handIndex, int x, int y) {
         Hand hand = isPlayer1 ? player1Hand : player2Hand;
         ElixirManager elixir = isPlayer1 ? player1Elixir : player2Elixir;
@@ -329,10 +319,7 @@ public class PvPGameState implements IBattleState {
     public GridPosition getFrontPosition(Building b) {
         if (b == null)
             return null;
-        int bw = b.getWidth();
-        int bh = b.getHeight();
-        int x = b.getPosition().getX();
-        int y = b.getPosition().getY();
+        int bw = b.getWidth(), bh = b.getHeight(), x = b.getPosition().getX(), y = b.getPosition().getY();
 
         int spawnX = x + bw / 2;
         int spawnY;
@@ -466,8 +453,7 @@ public class PvPGameState implements IBattleState {
     // Inner class for placed cards
     public static class PlacedCard {
         public final Card card;
-        public final int x;
-        public final int y;
+        public final int x, y;
         public final boolean isPlayer1;
 
         public PlacedCard(Card card, int x, int y, boolean isPlayer1) {

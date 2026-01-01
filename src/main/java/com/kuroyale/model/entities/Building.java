@@ -3,26 +3,21 @@ package com.kuroyale.model.entities;
 import com.kuroyale.model.enums.*;
 
 public class Building implements ICombatant {
-    private final GridPosition position; // top-left grid position
-    private final int width;
-    private final int height;
-    private final boolean playerSide; // owner
-    private int maxHealth;
-    private int currentHealth;
-    private final String imagePath; // optional image path from card
-    private String cardName; // Store the card name for save/load functionality
-    // Lifetime tracking for depreciation
-    private final int lifetimeSeconds; // Total lifetime in seconds
-    private double remainingLifetime; // Remaining lifetime in seconds
-    private double accumulatedDecay = 0; // Tracks fractional damage due to lifetime decay
-    // Combat
+    private final GridPosition position;
+    private final int width, height;
+    private final boolean playerSide;
+    private int maxHealth, currentHealth;
+    private final String imagePath;
+    private String cardName;
+    private final int lifetimeSeconds;
+    private double remainingLifetime;
+    private double accumulatedDecay = 0;
     private int damage;
-    private double hitSpeedSeconds;
-    private double rangeTiles;
-    private TargetType targetType = TargetType.GROUND; // default
+    private double hitSpeedSeconds, rangeTiles;
+    private TargetType targetType = TargetType.GROUND;
     private double attackCooldown;
     private boolean areaEffect = false;
-    private Card baseCard; // Reference to original card for spawning and other properties
+    private Card baseCard;
 
     // Advanced Combat
     private double minRange = 0;
@@ -30,8 +25,7 @@ public class Building implements ICombatant {
     // Production
     private String productionResource;
     private int productionAmount;
-    private double productionInterval;
-    private double productionTimer;
+    private double productionInterval, productionTimer;
 
     public Building(GridPosition position, int width, int height, boolean playerSide, int maxHealth,
             String imagePath) {
@@ -142,10 +136,6 @@ public class Building implements ICombatant {
 
     // ICombatant getter for range
     public double getRange() {
-        return rangeTiles;
-    }
-
-    public double getRangeTiles() {
         return rangeTiles;
     }
 

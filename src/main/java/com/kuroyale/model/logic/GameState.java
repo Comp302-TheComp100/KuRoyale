@@ -11,8 +11,7 @@ import java.util.List;
 //Central game state manager.Holds references to player and bot states, arena, and manages the game loop updates.
 public class GameState implements IBattleState {
     private final Hand playerHand;
-    private final ElixirManager playerElixir;
-    private final ElixirManager botElixir;
+    private final ElixirManager playerElixir, botElixir;
     private final BotLogic bot;
     private java.util.function.Function<String, Card> cardCatalog;
 
@@ -24,12 +23,9 @@ public class GameState implements IBattleState {
     private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
 
     private double gameTime = 180.0; // 3 minutes
-    private int playerScore = 0;
-    private int botScore = 0;
+    private int playerScore = 0, botScore = 0;
 
-    private boolean isDoubleElixir = false;
-    private boolean isGameOver = false;
-    private boolean playerWon = false;
+    private boolean isDoubleElixir = false, isGameOver = false, playerWon = false;
 
     // Track towers that have already been scored to avoid double-counting
     private java.util.Set<Tower> scoredTowers = new java.util.HashSet<>();
@@ -328,7 +324,6 @@ public class GameState implements IBattleState {
         return botScore;
     }
 
-    // Spawns troops directly (used by buildings/spells)
     public boolean spawnTroopDirectly(boolean isPlayer, Card card, int x, int y, int count) {
         if (card == null)
             return false;
@@ -349,13 +344,9 @@ public class GameState implements IBattleState {
     public GridPosition getFrontPosition(Building b) {
         if (b == null)
             return null;
-        int bw = b.getWidth();
-        int bh = b.getHeight();
-        int x = b.getPosition().getX();
-        int y = b.getPosition().getY();
+        int bw = b.getWidth(), bh = b.getHeight(), x = b.getPosition().getX(), y = b.getPosition().getY();
 
-        int spawnX = x + bw / 2;
-        int spawnY;
+        int spawnX = x + bw / 2, spawnY;
 
         if (b.isPlayerSide()) {
             spawnY = y - 1; // "Above" the building for player
@@ -477,7 +468,6 @@ public class GameState implements IBattleState {
     // Apply spell effects: simple AoE damage around target (affects enemy troops,
     // buildings, and towers)
     private void applySpellEffect(boolean isPlayer, Card spell, int x, int y) {
-        // Use card damage and range as radius in tiles
         double radius = Math.max(0, spell.getRange());
         double damage = Math.max(0, spell.getDamage());
         GridPosition center = GridPosition.tryCreate(x, y);
@@ -489,8 +479,8 @@ public class GameState implements IBattleState {
     }
 
     /*
-     * Apply circular area damage originating from a troop attack.
-     * Center is derived from the primary target to keep targeting logic unchanged.
+     * Apply circular area damage originating from a troop attack. Center is derived
+     * from the primary target to keep targeting logic unchanged.
      */
     public void applyAreaDamageFromTroop(Troop attacker, ICombatant primaryTarget) {
         if (attacker == null || primaryTarget == null)
@@ -511,13 +501,11 @@ public class GameState implements IBattleState {
     }
 
     /*
-     * Checks for destroyed towers and updates scores accordingly.
-     * Princess towers: +1 point to the attacker
-     * King towers: Set attacker's score to 3 and end the game
+     * Checks for destroyed towers and updates scores accordingly. Princess towers:
+     * +1 point to the attacker. King towers: Set attacker's score to 3 and end the
+     * game.
      */
     private void checkAndScoreDestroyedTowers() {
-        // Optimization: Iterate unique towers directly instead of scanning all grid
-        // cells (O(1) vs O(N))
         java.util.Set<Tower> towers = arena.getAllTowers();
 
         for (Tower tower : towers) {
@@ -574,7 +562,6 @@ public class GameState implements IBattleState {
     }
 
     public Arena getArena() {
-
         return arena;
     }
 
@@ -593,9 +580,8 @@ public class GameState implements IBattleState {
     // Inner class to track placed units
     public static class PlacedCard {
         public final Card card;
-        public final int x;
-        public final int y;
-        public final boolean isPlayer; // true = player, false = bot
+        public final int x, y;
+        public final boolean isPlayer;
 
         public PlacedCard(Card card, int x, int y, boolean isPlayer) {
             this.card = card;

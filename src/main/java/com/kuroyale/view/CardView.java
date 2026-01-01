@@ -11,6 +11,7 @@ import javafx.scene.layout.StackPane;
 //Simple card view component showing only image, name, and cost
 public class CardView extends StackPane {
     private final Card card;
+    private final javafx.scene.shape.Rectangle dimmer;
 
     public CardView(Card card) {
         this.card = card;
@@ -20,19 +21,19 @@ public class CardView extends StackPane {
         setMinSize(90, 120);
         setMaxSize(90, 120);
         getStyleClass().add("card-view");
-        
+
         String rarityColor = getRarityColor();
         setStyle("-fx-border-color: " + rarityColor + "; " +
                 "-fx-border-width: 3; " +
                 "-fx-border-radius: 8; " +
                 "-fx-background-radius: 8;");
-        
+
         // Add programmatic hover effects for scale transforms
         setOnMouseEntered(e -> {
             setScaleX(1.02);
             setScaleY(1.02);
         });
-        
+
         setOnMouseExited(e -> {
             setScaleX(1.0);
             setScaleY(1.0);
@@ -51,6 +52,12 @@ public class CardView extends StackPane {
         StackPane.setMargin(levelLabel, new Insets(0, 3, 3, 0));
 
         getChildren().addAll(imageView, elixirPane, levelLabel);
+
+        // Add dimmer overlay for unavailable state
+        dimmer = new javafx.scene.shape.Rectangle(90, 120, javafx.scene.paint.Color.rgb(0, 0, 0, 0.6));
+        dimmer.setMouseTransparent(true);
+        dimmer.setVisible(false);
+        getChildren().add(dimmer);
     }
 
     private StackPane createElixirCost() {
@@ -106,7 +113,7 @@ public class CardView extends StackPane {
         for (int i = 0; i < level; i++) {
             stars += "★";
         }
-        
+
         Label levelLabel = new Label(stars);
         levelLabel.setStyle("-fx-font-size: 14px; " +
                 "-fx-font-weight: bold; " +
@@ -114,7 +121,7 @@ public class CardView extends StackPane {
                 "-fx-background-color: rgba(0, 0, 0, 0.6); " +
                 "-fx-padding: 1 3 1 3; " +
                 "-fx-background-radius: 3;");
-        
+
         return levelLabel;
     }
 
@@ -138,11 +145,12 @@ public class CardView extends StackPane {
     }
 
     public void refreshLevelIndicator() {
-        // Level indicator is always the last child (index 2: imageView, elixirPane, levelLabel)
+        // Level indicator is always the 3rd child (index 2)
+        // Children: [imageView, elixirPane, levelLabel, dimmer]
         if (getChildren().size() >= 3) {
-            javafx.scene.Node lastChild = getChildren().get(getChildren().size() - 1);
-            if (lastChild instanceof Label) {
-                Label levelLabel = (Label) lastChild;
+            javafx.scene.Node node = getChildren().get(2);
+            if (node instanceof Label) {
+                Label levelLabel = (Label) node;
                 int level = card.getLevel();
                 String stars = "";
                 for (int i = 0; i < level; i++) {
@@ -151,5 +159,9 @@ public class CardView extends StackPane {
                 levelLabel.setText(stars);
             }
         }
+    }
+
+    public void setDimmed(boolean dimmed) {
+        dimmer.setVisible(dimmed);
     }
 }

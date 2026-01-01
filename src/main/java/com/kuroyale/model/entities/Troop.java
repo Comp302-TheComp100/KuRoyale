@@ -1,26 +1,21 @@
 package com.kuroyale.model.entities;
 
 import com.kuroyale.model.enums.*;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 
 public class Troop implements ICombatant {
     private final Card baseCard;
-    private Vector2 worldPosition; // Continuous position in world-space
-    private Vector2 targetWorldPosition; // Continuous target position
-    private final boolean isPlayer;
-    private final boolean isAirUnit;
-    private final boolean buildingOnly;
+    private Vector2 worldPosition, targetWorldPosition;
+    private final boolean isPlayer, isAirUnit, buildingOnly;
     private int currentHealth;
-    private final double moveSpeed; // tiles per second
-    private final double attackRange; // in tiles
-    private final Deque<Vector2> path; // Continuous waypoints
+    private final double moveSpeed, attackRange;
+    private final Deque<Vector2> path;
     // Combat
     private CombatStats combatStats;
     private double attackCooldown;
     private UnitState unitState = UnitState.IDLE;
-    private ICombatant currentTarget; // The specific entity this unit is attacking
+    private ICombatant currentTarget;
 
     public Troop(Card card, GridPosition spawn, boolean isPlayer) {
         this.baseCard = card;
@@ -165,7 +160,7 @@ public class Troop implements ICombatant {
     // ICombatant Implementation
 
     public GridPosition getCenterPosition() {
-        return getPosition(); // For 1x1 units, center is same as position
+        return getPosition();
     }
 
     public int getWidth() {

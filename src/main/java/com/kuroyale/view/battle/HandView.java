@@ -6,7 +6,7 @@ import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.logic.ElixirManager;
 import com.kuroyale.model.entities.Hand;
 import javafx.geometry.Pos;
-import javafx.scene.effect.ColorAdjust;
+
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
@@ -120,16 +120,16 @@ public class HandView extends VBox {
                     view.setStyle(rarityBorder
                             + "-fx-effect: dropshadow(three-pass-box, gold, 10, 0, 0, 0); -fx-translate-y: -10;");
                     view.setEffect(null);
+                    view.setDimmed(false);
                 } else if (affordable) {
                     view.setStyle(rarityBorder);
                     view.setEffect(null);
+                    view.setDimmed(false);
                 } else {
                     // Dim unavailable cards
-                    ColorAdjust dim = new ColorAdjust();
-                    dim.setBrightness(-0.5);
-                    dim.setSaturation(-0.5);
-                    view.setEffect(dim);
                     view.setStyle(rarityBorder);
+                    view.setEffect(null);
+                    view.setDimmed(true);
                 }
             }
         }
