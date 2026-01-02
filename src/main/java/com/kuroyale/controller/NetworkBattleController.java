@@ -1,13 +1,21 @@
 package com.kuroyale.controller;
 
 import com.kuroyale.model.dto.NetworkMessage;
-import com.kuroyale.model.enums.NetworkMessageType;
+import com.kuroyale.model.entities.*;
+import com.kuroyale.model.enums.*;
+import com.kuroyale.model.logic.*;
 import com.kuroyale.service.NetworkService;
 import com.kuroyale.service.NetworkService.ConnectionState;
 import com.kuroyale.util.NetworkConfig;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.view.battle.BattleArenaView;
+import com.kuroyale.view.battle.ElixirBar;
+import com.kuroyale.view.battle.HandView;
+import com.kuroyale.view.battle.PauseMenuView;
+import com.kuroyale.event.GameEventBus;
+import com.kuroyale.event.GameEventListener;
 
 import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
@@ -15,9 +23,8 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -25,40 +32,32 @@ import javafx.util.Duration;
 
 /**
  * Controller for Network Battle gameplay.
- * Handles synchronized game state between two players over the network.
+ * Integrates with existing game logic and synchronizes state between players.
  * 
  * GRASP Patterns:
  * - Controller: Handles UI events and game logic coordination
  * - Low Coupling: Delegates network operations to NetworkService
- * - Observer: Listens for network messages
+ * - Observer: Listens for game events and network messages
  */
-public class NetworkBattleController {
+public class NetworkBattleController implements GameEventListener {
 
-    @FXML private AnchorPane root;
+    // FXML Components - matching battle.fxml structure
+    @FXML private StackPane arenaContainer;
+    @FXML private HBox elixirContainer;
+    @FXML private VBox handContainer;
+    @FXML private VBox pauseMenuContainer;
     
-    // Top bar
-    @FXML private Label playerNameLabel;
-    @FXML private Label playerScoreLabel;
-    @FXML private Label timerLabel;
+    // Network status indicators
     @FXML private Circle connectionIndicator;
     @FXML private Label connectionStatusLabel;
-    @FXML private Label opponentNameLabel;
-    @FXML private Label opponentScoreLabel;
-    
-    // Arena
-    @FXML private Pane arenaPane;
-    
-    // Left panel
-    @FXML private ProgressBar elixirBar;
-    @FXML private Label elixirLabel;
-    @FXML private Button pauseButton;
-    
-    // Right panel
     @FXML private Label pingLabel;
     @FXML private Label lagIndicator;
     
-    // Card hand
-    @FXML private HBox cardHandPane;
+    // Score display
+    @FXML private Label playerNameLabel;
+    @FXML private Label playerScoreLabel;
+    @FXML private Label opponentNameLabel;
+    @FXML private Label opponentScoreLabel;
     
     // Overlays
     @FXML private VBox disconnectionOverlay;
@@ -71,20 +70,22 @@ public class NetworkBattleController {
     
     private final SceneLoader sceneLoader = new SceneLoader();
     private final NetworkConfig config = NetworkConfig.getInstance();
+    private final BattleModel model = new BattleModel();
     
+    // Game components
     private NetworkService networkService;
+    private GameState gameState;
+    private BattleArenaView arenaView;
+    private ElixirBar elixirBar;
+    private HandView handView;
     private AnimationTimer gameLoop;
     private Timeline syncTimer;
+    private ArenaLayout currentArenaLayout;
     
-    // Game state
-    private double gameTime = 180.0; // 3 minutes
-    private double playerElixir = 5.0;
-    private double opponentElixir = 5.0;
-    private int playerScore = 0;
-    private int opponentScore = 0;
-    private boolean isDoubleElixir = false;
-    private boolean gameEnded = false;
+    // Game state flags
     private boolean isPaused = false;
+    private boolean gameEnded = false;
+    private boolean doubleElixirShown = false;
     
     // Network timing
     private long lastPingTime = 0;
@@ -104,6 +105,9 @@ public class NetworkBattleController {
         setupNetworkCallbacks();
         initializeGame();
         startGameLoop();
+        
+        // Subscribe to game events for network sync
+        GameEventBus.getInstance().subscribe(this);
     }
     
     private void setupNetworkCallbacks() {
@@ -130,32 +134,76 @@ public class NetworkBattleController {
         playerNameLabel.setText(myName != null ? myName : "You");
         opponentNameLabel.setText(oppName != null ? oppName : "Opponent");
         
-        // Initialize UI
-        updateTimerDisplay();
-        updateElixirDisplay();
-        updateScoreDisplay();
-        updateConnectionStatus(networkService.getState());
+        // Get current user
+        User currentUser = model.getCurrentUser();
+        if (currentUser == null) {
+            handleBackToMenu();
+            return;
+        }
         
-        // TODO: Load cards into hand, setup arena, etc.
-        // This would integrate with existing BattleController logic
+        // Set current user in arena service
+        model.setCurrentUserInArenaService(currentUser);
+        
+        // Create deck
+        Deck playerDeck = model.createDeckFromNames(currentUser.getDeck());
+        
+        // Load arena layout
+        ArenaLayout playerLayout = model.loadArenaLayout();
+        currentArenaLayout = playerLayout;
+        
+        // Create Arena
+        Arena arena = model.createArena(playerLayout);
+        
+        // Create opponent deck (mirrored for network play)
+        Deck opponentDeck = model.createBotDeck(currentUser);
+        
+        // Initialize GameState
+        gameState = new GameState(playerDeck, opponentDeck, arena);
+        gameState.setCardCatalog(name -> model.getCardByName(name));
+        
+        // Initialize UI Components
+        arenaView = new BattleArenaView(gameState);
+        arenaContainer.getChildren().add(arenaView);
+        
+        // Handle clicks on arena for card placement
+        arenaView.setOnGridClicked((tileX, tileY) -> {
+            handleArenaClick(tileX, tileY);
+        });
+        
+        elixirBar = new ElixirBar(gameState.getPlayerElixir());
+        elixirContainer.getChildren().add(elixirBar);
+        
+        handView = new HandView(gameState.getPlayerHand(), gameState.getPlayerElixir());
+        handView.setOnCardSelected(index -> {
+            if (index != -1) {
+                Card card = gameState.getPlayerHand().getCard(index);
+                boolean isSpell = (card != null && card.getType() == CardType.SPELL);
+                arenaView.highlightValidCells(true, isSpell);
+            } else {
+                arenaView.highlightValidCells(false, false);
+            }
+        });
+        handContainer.getChildren().add(handView);
+        
+        updateConnectionStatus(networkService.getState());
+        updateScoreDisplay();
     }
     
     private void startGameLoop() {
-        // Game loop for continuous updates
         gameLoop = new AnimationTimer() {
-            private long lastUpdate = 0;
+            private long lastTime = 0;
             
             @Override
             public void handle(long now) {
-                if (lastUpdate == 0) {
-                    lastUpdate = now;
+                if (lastTime == 0) {
+                    lastTime = now;
                     return;
                 }
                 
                 if (isPaused || gameEnded) return;
                 
-                double deltaTime = (now - lastUpdate) / 1_000_000_000.0;
-                lastUpdate = now;
+                double deltaTime = (now - lastTime) / 1_000_000_000.0;
+                lastTime = now;
                 
                 update(deltaTime);
             }
@@ -169,26 +217,25 @@ public class NetworkBattleController {
     }
     
     private void update(double deltaTime) {
-        // Update game time
-        gameTime -= deltaTime;
-        if (gameTime <= 0) {
-            gameTime = 0;
+        // Update Game Logic and UI
+        gameState.update(deltaTime);
+        elixirBar.update();
+        handView.update();
+        arenaView.update(deltaTime);
+        
+        // Update score display
+        updateScoreDisplay();
+        
+        // Check for Double Elixir
+        if (gameState.isDoubleElixir() && !doubleElixirShown) {
+            doubleElixirShown = true;
+            elixirBar.setDoubleElixirActive(true);
+        }
+        
+        // Check for Game Over
+        if (gameState.isGameOver() && !gameEnded) {
             endGame();
-            return;
         }
-        
-        // Check for double elixir
-        if (!isDoubleElixir && gameTime <= 60) {
-            isDoubleElixir = true;
-        }
-        
-        // Regenerate elixir
-        double elixirRate = isDoubleElixir ? 2.0 : 1.0;
-        playerElixir = Math.min(10.0, playerElixir + elixirRate * deltaTime / 2.8);
-        
-        // Update displays
-        updateTimerDisplay();
-        updateElixirDisplay();
     }
     
     private void syncGameState() {
@@ -196,11 +243,11 @@ public class NetworkBattleController {
         
         // Host syncs timer
         if (networkService.isHost()) {
-            networkService.send(NetworkMessage.timerSync(gameTime));
+            networkService.send(NetworkMessage.timerSync(gameState.getGameTime()));
         }
         
         // Both sync elixir
-        networkService.sendElixirUpdate(playerElixir);
+        networkService.sendElixirUpdate(gameState.getPlayerElixir().getCurrentElixir());
         
         // Measure ping
         lastPingTime = System.currentTimeMillis();
@@ -214,27 +261,19 @@ public class NetworkBattleController {
                 break;
                 
             case TOWER_DAMAGED:
-                handleTowerDamaged(message);
+                // Tower damage is handled by game state, but we can validate
                 break;
                 
             case TOWER_DESTROYED:
                 handleTowerDestroyed(message);
                 break;
                 
-            case ELIXIR_UPDATE:
-                // Update opponent elixir (for display if needed)
-                try {
-                    opponentElixir = Double.parseDouble(message.getData());
-                } catch (NumberFormatException e) {
-                    // Ignore
-                }
-                break;
-                
             case TIMER_SYNC:
                 // Client syncs timer with host
                 if (!networkService.isHost()) {
                     try {
-                        gameTime = Double.parseDouble(message.getData());
+                        double hostTime = Double.parseDouble(message.getData());
+                        // Could sync game time here if needed
                     } catch (NumberFormatException e) {
                         // Ignore
                     }
@@ -275,41 +314,33 @@ public class NetworkBattleController {
         if (data == null) return;
         
         String cardName = data[0];
-        double x = Double.parseDouble(data[1]);
-        double y = Double.parseDouble(data[2]);
+        int x = (int) Double.parseDouble(data[1]);
+        int y = (int) Double.parseDouble(data[2]);
         
-        // TODO: Spawn opponent's card on arena
-        // This would integrate with existing card spawning logic
-        System.out.println("[NetworkBattle] Opponent placed " + cardName + " at (" + x + ", " + y + ")");
-    }
-    
-    private void handleTowerDamaged(NetworkMessage message) {
-        // TODO: Apply damage to tower
-        String[] parts = message.getData().split("\\|");
-        if (parts.length >= 2) {
-            String towerName = parts[0];
-            int damage = Integer.parseInt(parts[1]);
-            System.out.println("[NetworkBattle] Tower " + towerName + " took " + damage + " damage");
+        // Mirror the position for opponent (they see our side as their side)
+        int mirroredY = Arena.HEIGHT - 1 - y;
+        
+        // Get the card from catalog
+        Card card = model.getCardByName(cardName);
+        if (card == null) {
+            System.err.println("[NetworkBattle] Unknown card: " + cardName);
+            return;
         }
+        
+        // Spawn the card for the opponent (bot side from our perspective)
+        gameState.placeCard(false, card, x, mirroredY);
+        
+        System.out.println("[NetworkBattle] Opponent placed " + cardName + " at (" + x + ", " + mirroredY + ")");
     }
     
     private void handleTowerDestroyed(NetworkMessage message) {
-        String towerName = message.getData();
-        
-        // Update score
-        if (message.getPlayerId() == networkService.getPlayerId()) {
-            // Our tower was destroyed, opponent scores
-            opponentScore++;
-        } else {
-            // Opponent's tower destroyed, we score
-            playerScore++;
-        }
-        
+        // Score is tracked by game state
         updateScoreDisplay();
         
-        // Check for king tower (instant win)
-        if (towerName.contains("KING")) {
+        String towerName = message.getData();
+        if (towerName != null && towerName.contains("KING")) {
             if (message.getPlayerId() == networkService.getPlayerId()) {
+                // Our tower was destroyed
                 showDefeat("Your King Tower was destroyed!");
             } else {
                 showVictory("You destroyed the enemy King Tower!");
@@ -320,7 +351,6 @@ public class NetworkBattleController {
     private void handleOpponentDisconnected() {
         if (gameEnded) return;
         
-        // Show overlay
         showDisconnectionOverlay();
         
         // Start countdown
@@ -329,8 +359,7 @@ public class NetworkBattleController {
             countdown[0]--;
             reconnectCountdownLabel.setText(String.valueOf(countdown[0]));
             
-            if (countdown[0] <= 0) {
-                // Reconnection failed, award victory
+            if (countdown[0] <= 0 && !networkService.isConnected()) {
                 showVictory("Opponent disconnected - Victory awarded!");
             }
         }));
@@ -338,16 +367,107 @@ public class NetworkBattleController {
         countdownTimer.play();
     }
     
+    private void handleArenaClick(int tileX, int tileY) {
+        int selectedIndex = handView.getSelectedIndex();
+        if (selectedIndex != -1) {
+            // Validate bounds
+            if (tileX >= 0 && tileX < Arena.WIDTH && tileY >= 0 && tileY < Arena.HEIGHT) {
+                Card card = gameState.getPlayerHand().getCard(selectedIndex);
+                
+                // Try to place card
+                if (gameState.placeCard(true, selectedIndex, tileX, tileY)) {
+                    // Success - send to opponent
+                    if (card != null) {
+                        networkService.sendCardPlaced(card.getName(), tileX, tileY);
+                    }
+                    
+                    handView.clearSelection();
+                    arenaView.highlightValidCells(false, false);
+                }
+            }
+        }
+    }
+    
+    // ==================== Game Event Listener ====================
+    
+    @Override
+    public void onCardPlayed(boolean isPlayer, Card card) {
+        // Card played events are handled by arena click
+    }
+    
+    @Override
+    public void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
+        // Send tower destroyed message
+        String towerName = (isPlayerTower ? "PLAYER_" : "OPPONENT_") + tower.getType().name();
+        networkService.send(NetworkMessage.towerDestroyed(networkService.getPlayerId(), towerName));
+        updateScoreDisplay();
+    }
+    
+    @Override
+    public void onElixirSpent(boolean isPlayer, int amount) {
+        // Handled by sync timer
+    }
+    
+    @Override
+    public void onBuildingProduction(Building building, String resource, int amount) {
+        if (building.isPlayerSide() && "ELIXIR".equals(resource)) {
+            Platform.runLater(() -> elixirBar.showProductionIndicator(amount));
+        }
+    }
+    
+    @Override
+    public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration) {
+        // Visual effects handled by arena view
+    }
+    
     // ==================== UI Actions ====================
     
     @FXML
     private void handlePause() {
-        SoundEffectUtil.playButtonClick();
-        isPaused = !isPaused;
-        pauseButton.setText(isPaused ? "RESUME" : "PAUSE");
+        if (gameEnded) return;
         
-        // In network mode, we might want to pause for both players
-        // For now, just local pause
+        SoundEffectUtil.playButtonClick();
+        isPaused = true;
+        showPauseMenu();
+    }
+    
+    private void showPauseMenu() {
+        pauseMenuContainer.getChildren().clear();
+        pauseMenuContainer.setVisible(true);
+        
+        PauseMenuView menu = new PauseMenuView(new PauseMenuView.PauseMenuListener() {
+            @Override
+            public void onResume() {
+                handleResume();
+            }
+            
+            @Override
+            public void onSaveAndResume() {
+                // Network games can't be saved mid-match
+                handleResume();
+            }
+            
+            @Override
+            public void onSaveAndExit() {
+                // Network games can't be saved
+                handleBackToMenu();
+            }
+            
+            @Override
+            public void onExitWithoutSaving() {
+                // Send defeat message before exiting
+                networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
+                handleBackToMenu();
+            }
+        });
+        
+        pauseMenuContainer.getChildren().add(menu);
+    }
+    
+    private void handleResume() {
+        isPaused = false;
+        pauseMenuContainer.setVisible(false);
+        pauseMenuContainer.getChildren().clear();
     }
     
     @FXML
@@ -356,43 +476,19 @@ public class NetworkBattleController {
         cleanup();
         
         try {
-            sceneLoader.load(root, "/fxml/main-menu.fxml", "KU Royale - Main Menu", null);
+            sceneLoader.load(arenaContainer, "/fxml/main-menu.fxml", "KU Royale - Main Menu", null);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
     
-    /**
-     * Called when player places a card.
-     * Sends card placement to opponent.
-     */
-    public void onCardPlaced(String cardName, double x, double y) {
-        networkService.sendCardPlaced(cardName, x, y);
-    }
-    
-    /**
-     * Called when a tower takes damage.
-     */
-    public void onTowerDamaged(String towerName, int damage) {
-        networkService.sendTowerDamaged(towerName, damage);
-    }
-    
     // ==================== UI Updates ====================
     
-    private void updateTimerDisplay() {
-        int minutes = (int) gameTime / 60;
-        int seconds = (int) gameTime % 60;
-        timerLabel.setText(String.format("%d:%02d", minutes, seconds));
-    }
-    
-    private void updateElixirDisplay() {
-        elixirBar.setProgress(playerElixir / 10.0);
-        elixirLabel.setText(String.format("%.0f/10", playerElixir));
-    }
-    
     private void updateScoreDisplay() {
-        playerScoreLabel.setText(String.valueOf(playerScore));
-        opponentScoreLabel.setText(String.valueOf(opponentScore));
+        if (gameState != null) {
+            playerScoreLabel.setText(String.valueOf(gameState.getPlayerScore()));
+            opponentScoreLabel.setText(String.valueOf(gameState.getBotScore()));
+        }
     }
     
     private void updatePingDisplay() {
@@ -440,10 +536,10 @@ public class NetworkBattleController {
         gameEnded = true;
         
         // Determine winner
-        if (playerScore > opponentScore) {
+        if (gameState.getPlayerScore() > gameState.getBotScore()) {
             showVictory("You destroyed more towers!");
             networkService.send(NetworkMessage.victory(networkService.getPlayerId()));
-        } else if (opponentScore > playerScore) {
+        } else if (gameState.getBotScore() > gameState.getPlayerScore()) {
             showDefeat("Opponent destroyed more towers!");
             networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
         } else {
@@ -453,29 +549,49 @@ public class NetworkBattleController {
     
     private void showVictory(String details) {
         gameEnded = true;
+        if (gameLoop != null) gameLoop.stop();
+        if (syncTimer != null) syncTimer.stop();
+        
         resultLabel.setText("VICTORY!");
-        resultLabel.setStyle("-fx-text-fill: gold;");
+        resultLabel.setStyle("-fx-text-fill: gold; -fx-font-size: 48px; -fx-font-weight: bold;");
         resultDetailsLabel.setText(details);
         resultOverlay.setVisible(true);
+        
+        // Track achievements
+        ServiceFactory.getInstance().getAchievementService()
+                .updateProgress(AchievementType.FIRST_BLOOD, 1);
+        ServiceFactory.getInstance().getQuestService()
+                .updateProgress(QuestType.WIN_MATCHES, 1);
+        ServiceFactory.getInstance().getQuestService()
+                .updateProgress(QuestType.WIN_PVP_MATCH, 1);
     }
     
     private void showDefeat(String details) {
         gameEnded = true;
+        if (gameLoop != null) gameLoop.stop();
+        if (syncTimer != null) syncTimer.stop();
+        
         resultLabel.setText("DEFEAT");
-        resultLabel.setStyle("-fx-text-fill: #ff4444;");
+        resultLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 48px; -fx-font-weight: bold;");
         resultDetailsLabel.setText(details);
         resultOverlay.setVisible(true);
     }
     
     private void showDraw() {
         gameEnded = true;
+        if (gameLoop != null) gameLoop.stop();
+        if (syncTimer != null) syncTimer.stop();
+        
         resultLabel.setText("DRAW");
-        resultLabel.setStyle("-fx-text-fill: #aaaaaa;");
+        resultLabel.setStyle("-fx-text-fill: #aaaaaa; -fx-font-size: 48px; -fx-font-weight: bold;");
         resultDetailsLabel.setText("Equal towers destroyed!");
         resultOverlay.setVisible(true);
     }
     
     private void cleanup() {
+        // Unsubscribe from events
+        GameEventBus.getInstance().unsubscribe(this);
+        
         if (gameLoop != null) {
             gameLoop.stop();
         }
@@ -487,4 +603,3 @@ public class NetworkBattleController {
         }
     }
 }
-
