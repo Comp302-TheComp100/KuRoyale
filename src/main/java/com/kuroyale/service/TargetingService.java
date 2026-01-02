@@ -14,15 +14,17 @@ public class TargetingService {
      * @requires state != null && troop != null && troop.getPosition() != null &&
      *           state.getArena() != null
      * @modifies None
-     * @effects Returns the GridPosition of the nearest valid target (Troop,
+     * @effects
+     *          Returns the GridPosition of the nearest valid target (Troop,
      *          Building, or Tower) within detection radius. Returns null if no
      *          valid target is found within range and fallback fails.
-     *          <p>
+     * 
+     *          <pre>
      *          Target selection priority:
      *          1. Nearest enemy Troop or Building within detection radius (taking
      *          into account target type filters).
      *          2. Closest enemy Tower if no immediate targets found.
-     *          </p>
+     *          </pre>
      */
     public GridPosition findNearestEnemyOrObjective(IBattleState state, Troop troop) {
         Vector2 troopWorldPos = troop.getWorldPosition();
