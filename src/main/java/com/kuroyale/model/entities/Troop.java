@@ -189,10 +189,19 @@ public class Troop implements ICombatant {
 
     /**
      * Checks if this troop can target the specified combatant.
-     * Requires: target is not null (implementation handles null safely, but
-     * logically requires a valid target check).
-     * Effects:Returns true if the target is alive and matches the targeting rules
-     * of this troop (e.g., Air vs Ground, Building only), false otherwise.
+     *
+     * Requires: None (handles null gracefully).
+     *
+     * Modifies: None.
+     *
+     * Effects: Returns true if and only if:
+     * - target is not null
+     * - target is alive
+     * - target matches this troop's targeting type:
+     * - If BUILDINGS: target is a Building or Tower.
+     * - If GROUND: target is not an air unit.
+     * - If AIR: target is an air unit.
+     * Returns false otherwise.
      */
     @Override
     public boolean canTarget(ICombatant target) {

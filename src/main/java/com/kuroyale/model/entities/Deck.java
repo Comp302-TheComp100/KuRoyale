@@ -5,22 +5,22 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Manages a deck of 8 cards.
- * <p>
- * <b>Overview:</b>
- * The Deck class represents a collection of exactly 8 Cards chosen by a user
- * for battle.
- * It provides operations to add, remove, and query cards.
- * <p>
- * <b>Abstract Function:</b>
- * AF(c) = a deck D containing elements c.cards where D = {card_i | 0 <= i <
- * c.cards.size()}
- * <p>
- * <b>Representation Invariant:</b>
- * c.cards != null &&
- * c.cards.size() <= MAX_CARDS &&
- * for all cards, card != null &&
- * no duplicates in c.cards
+ * Manages a collection of cards selected for battle.
+ *
+ * Overview:
+ * A Deck is a mutable container for unique {@link Card} objects.
+ * While it can hold fewer, a valid deck for gameplay must contain exactly 8
+ * cards.
+ *
+ * Abstract Function:
+ * AF(this) = D, where D is a set of Cards { c | c in this.cards }
+ *
+ * Representation Invariant:
+ * - cards != null
+ * - cards.size() <= MAX_CARDS
+ * - For all c in cards: c != null
+ * - cards contains no duplicate elements (elements are distinct regarding
+ * equals())
  */
 public class Deck {
     private static final int MAX_CARDS = 8;
