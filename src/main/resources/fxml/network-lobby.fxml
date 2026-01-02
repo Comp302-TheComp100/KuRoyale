@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.shape.Circle?>
+
+<AnchorPane fx:id="root" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" 
+    fx:controller="com.kuroyale.controller.NetworkLobbyController" 
+    prefWidth="1280" prefHeight="720" styleClass="main-menu-background">
+
+    <!-- Main Content -->
+    <VBox alignment="CENTER" spacing="20" AnchorPane.topAnchor="50" AnchorPane.bottomAnchor="50" 
+          AnchorPane.leftAnchor="100" AnchorPane.rightAnchor="100">
+
+        <!-- Title -->
+        <Label fx:id="titleLabel" text="NETWORK MULTIPLAYER" styleClass="title-label"/>
+
+        <!-- Connection Status Indicator -->
+        <HBox alignment="CENTER" spacing="10">
+            <Circle fx:id="statusIndicator" radius="8" styleClass="status-disconnected"/>
+            <Label fx:id="statusLabel" text="Disconnected" styleClass="status-label"/>
+        </HBox>
+
+        <!-- Mode Selection (Host or Join) - Initially visible -->
+        <VBox fx:id="modeSelectionPane" alignment="CENTER" spacing="20" visible="true">
+            <Label text="Choose how to play:" styleClass="subtitle-label"/>
+            
+            <HBox alignment="CENTER" spacing="30">
+                <Button fx:id="hostButton" text="HOST GAME" onAction="#handleHostGame" 
+                        prefWidth="200" prefHeight="60" styleClass="menu-button"/>
+                <Button fx:id="joinButton" text="JOIN GAME" onAction="#handleJoinGame" 
+                        prefWidth="200" prefHeight="60" styleClass="menu-button"/>
+            </HBox>
+        </VBox>
+
+        <!-- Host Setup Pane - Hidden initially -->
+        <VBox fx:id="hostSetupPane" alignment="CENTER" spacing="15" visible="false" managed="false">
+            <Label text="HOSTING GAME" styleClass="subtitle-label"/>
+            
+            <HBox alignment="CENTER" spacing="10">
+                <Label text="Port:" prefWidth="80"/>
+                <TextField fx:id="portField" text="8080" prefWidth="100"/>
+            </HBox>
+            
+            <Label fx:id="hostIpLabel" text="Your IP: Loading..." styleClass="info-label"/>
+            
+            <HBox alignment="CENTER" spacing="20">
+                <Button text="START HOSTING" onAction="#handleStartHosting" 
+                        prefWidth="180" prefHeight="50" styleClass="menu-button"/>
+                <Button text="CANCEL" onAction="#handleCancelSetup" 
+                        prefWidth="120" prefHeight="50" styleClass="back-button"/>
+            </HBox>
+        </VBox>
+
+        <!-- Join Setup Pane - Hidden initially -->
+        <VBox fx:id="joinSetupPane" alignment="CENTER" spacing="15" visible="false" managed="false">
+            <Label text="JOIN GAME" styleClass="subtitle-label"/>
+            
+            <HBox alignment="CENTER" spacing="10">
+                <Label text="Host IP:" prefWidth="80"/>
+                <TextField fx:id="hostIpField" promptText="e.g., 192.168.1.100" prefWidth="200"/>
+            </HBox>
+            
+            <HBox alignment="CENTER" spacing="10">
+                <Label text="Port:" prefWidth="80"/>
+                <TextField fx:id="joinPortField" text="8080" prefWidth="100"/>
+            </HBox>
+            
+            <HBox alignment="CENTER" spacing="20">
+                <Button text="CONNECT" onAction="#handleConnect" 
+                        prefWidth="150" prefHeight="50" styleClass="menu-button"/>
+                <Button text="CANCEL" onAction="#handleCancelSetup" 
+                        prefWidth="120" prefHeight="50" styleClass="back-button"/>
+            </HBox>
+        </VBox>
+
+        <!-- Waiting for Player (Host waiting) -->
+        <VBox fx:id="waitingPane" alignment="CENTER" spacing="15" visible="false" managed="false">
+            <ProgressIndicator prefWidth="50" prefHeight="50"/>
+            <Label fx:id="waitingLabel" text="Waiting for opponent to connect..." styleClass="info-label"/>
+            <Label fx:id="connectionInfoLabel" text="" styleClass="info-label"/>
+            <Button text="CANCEL" onAction="#handleCancelWaiting" 
+                    prefWidth="120" prefHeight="40" styleClass="back-button"/>
+        </VBox>
+
+        <!-- Lobby Pane - Both players connected -->
+        <VBox fx:id="lobbyPane" alignment="CENTER" spacing="20" visible="false" managed="false">
+            <Label text="GAME LOBBY" styleClass="subtitle-label"/>
+            
+            <!-- Players Grid -->
+            <GridPane hgap="50" vgap="10" alignment="CENTER">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50"/>
+                    <ColumnConstraints percentWidth="50"/>
+                </columnConstraints>
+                
+                <!-- Player 1 (Host) -->
+                <VBox alignment="CENTER" spacing="10" GridPane.columnIndex="0" styleClass="player-card">
+                    <Label text="PLAYER 1 (HOST)" styleClass="player-title"/>
+                    <Label fx:id="player1NameLabel" text="---" styleClass="player-name"/>
+                    <Label text="Deck:" styleClass="deck-title"/>
+                    <ListView fx:id="player1DeckList" prefHeight="150" prefWidth="200"/>
+                    <HBox alignment="CENTER" spacing="5">
+                        <Circle fx:id="player1ReadyIndicator" radius="6" styleClass="status-not-ready"/>
+                        <Label fx:id="player1ReadyLabel" text="Not Ready" styleClass="ready-label"/>
+                    </HBox>
+                </VBox>
+                
+                <!-- Player 2 (Client) -->
+                <VBox alignment="CENTER" spacing="10" GridPane.columnIndex="1" styleClass="player-card">
+                    <Label text="PLAYER 2 (CLIENT)" styleClass="player-title"/>
+                    <Label fx:id="player2NameLabel" text="---" styleClass="player-name"/>
+                    <Label text="Deck:" styleClass="deck-title"/>
+                    <ListView fx:id="player2DeckList" prefHeight="150" prefWidth="200"/>
+                    <HBox alignment="CENTER" spacing="5">
+                        <Circle fx:id="player2ReadyIndicator" radius="6" styleClass="status-not-ready"/>
+                        <Label fx:id="player2ReadyLabel" text="Not Ready" styleClass="ready-label"/>
+                    </HBox>
+                </VBox>
+            </GridPane>
+            
+            <!-- Action Buttons -->
+            <HBox alignment="CENTER" spacing="20">
+                <Button fx:id="readyButton" text="READY" onAction="#handleToggleReady" 
+                        prefWidth="150" prefHeight="50" styleClass="menu-button"/>
+                <Button fx:id="startMatchButton" text="START MATCH" onAction="#handleStartMatch" 
+                        prefWidth="180" prefHeight="50" styleClass="menu-button" disable="true"/>
+            </HBox>
+            
+            <!-- Connection Quality -->
+            <HBox alignment="CENTER" spacing="10">
+                <Label text="Connection Quality:" styleClass="info-label"/>
+                <Label fx:id="connectionQualityLabel" text="Good" styleClass="quality-good"/>
+            </HBox>
+        </VBox>
+    </VBox>
+
+    <!-- Back Button -->
+    <Button fx:id="backButton" text="BACK" onAction="#handleBack" styleClass="back-button" 
+            AnchorPane.bottomAnchor="30" AnchorPane.leftAnchor="30"/>
+
+</AnchorPane>
+

@@ -123,15 +123,23 @@ public class BattleModeSelectionController {
 
         // Handle different modes differently
         if (mode == BattleMode.LOCAL_PVP) {
-            // PvP mode: Navigate directly to PvP deck selection (no BattleController)
+            // Local PvP mode: Navigate to PvP deck selection
             try {
                 sceneLoader.load(root, "/fxml/pvp-deck-selection.fxml", "KU Royale - PvP Deck Selection", null);
             } catch (IOException e) {
                 e.printStackTrace();
                 showError("Failed to load PvP Deck Selection: " + e.getMessage());
             }
+        } else if (mode == BattleMode.NETWORK_PVP) {
+            // Network PvP mode: Navigate to network lobby for host/join setup
+            try {
+                sceneLoader.load(root, "/fxml/network-lobby.fxml", "KU Royale - Network Lobby", null);
+            } catch (IOException e) {
+                e.printStackTrace();
+                showError("Failed to load Network Lobby: " + e.getMessage());
+            }
         } else {
-            // Other modes: Load battle scene and initialize with strategy
+            // Other modes (Local vs Bot): Load battle scene and initialize with strategy
             try {
                 sceneLoader.load(root, "/fxml/battle.fxml", "KU Royale - Battle", controller -> {
                     if (controller instanceof BattleController battleController) {
