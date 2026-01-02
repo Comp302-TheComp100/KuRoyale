@@ -8,6 +8,22 @@ import java.util.ArrayList;
 public class TargetingService {
     private static final double BASE_DETECTION_RADIUS = 5.0; // tiles (world units)
 
+    /**
+     * Finds the nearest valid enemy target or objective for a troop.
+     * 
+     * @requires state != null && troop != null && troop.getPosition() != null &&
+     *           state.getArena() != null
+     * @modifies None
+     * @effects Returns the GridPosition of the nearest valid target (Troop,
+     *          Building, or Tower) within detection radius. Returns null if no
+     *          valid target is found within range and fallback fails.
+     *          <p>
+     *          Target selection priority:
+     *          1. Nearest enemy Troop or Building within detection radius (taking
+     *          into account target type filters).
+     *          2. Closest enemy Tower if no immediate targets found.
+     *          </p>
+     */
     public GridPosition findNearestEnemyOrObjective(IBattleState state, Troop troop) {
         Vector2 troopWorldPos = troop.getWorldPosition();
         GridPosition troopPos = troop.getPosition(); // Fallback for grid-based queries
