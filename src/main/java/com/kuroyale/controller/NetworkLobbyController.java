@@ -1,7 +1,8 @@
 package com.kuroyale.controller;
 
 import com.kuroyale.model.dto.NetworkMessage;
-import com.kuroyale.model.enums.NetworkMessageType;
+import com.kuroyale.model.entities.User;
+import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.NetworkService;
 import com.kuroyale.service.NetworkService.ConnectionState;
 import com.kuroyale.util.NetworkConfig;
@@ -84,8 +85,9 @@ public class NetworkLobbyController {
     
     @FXML
     private void initialize() {
-        // Get current user info
-        var currentUser = ServiceFactory.getInstance().getCurrentUser();
+        // Get current user info through AuthenticationService
+        AuthenticationService authService = ServiceFactory.getInstance().getAuthenticationService();
+        User currentUser = authService.getCurrentUser();
         if (currentUser != null) {
             playerName = currentUser.getUsername();
             playerDeck = currentUser.getDeck();
@@ -167,12 +169,8 @@ public class NetworkLobbyController {
         boolean ready = Boolean.parseBoolean(message.getData());
         opponentReady = ready;
         
-        // Update opponent ready indicator
-        if (networkService.isHost()) {
-            updateReadyIndicator(player2ReadyIndicator, player2ReadyLabel, ready);
-        } else {
-            updateReadyIndicator(player1ReadyIndicator, player1ReadyLabel, ready);
-        }
+        // Opponent is always in column 2 (player2)
+        updateReadyIndicator(player2ReadyIndicator, player2ReadyLabel, ready);
         
         checkStartConditions();
     }
@@ -194,17 +192,9 @@ public class NetworkLobbyController {
     }
     
     private void updateOpponentInfo(String name, List<String> deck) {
-        if (networkService.isHost()) {
-            player2NameLabel.setText(name);
-            if (deck != null) {
-                player2DeckList.setItems(FXCollections.observableArrayList(deck));
-            }
-        } else {
-            player1NameLabel.setText(name);
-            if (deck != null) {
-                player1DeckList.setItems(FXCollections.observableArrayList(deck));
-            }
-        }
+        // Opponent info always goes to player2 column (deck is hidden)
+        player2NameLabel.setText(name != null ? name : "Opponent");
+        // Deck is intentionally not shown - it's a secret!
     }
     
     // ==================== UI Actions ====================
@@ -284,12 +274,8 @@ public class NetworkLobbyController {
         SoundEffectUtil.playButtonClick();
         isReady = !isReady;
         
-        // Update local ready indicator
-        if (networkService.isHost()) {
-            updateReadyIndicator(player1ReadyIndicator, player1ReadyLabel, isReady);
-        } else {
-            updateReadyIndicator(player2ReadyIndicator, player2ReadyLabel, isReady);
-        }
+        // You are always player1 (column 1)
+        updateReadyIndicator(player1ReadyIndicator, player1ReadyLabel, isReady);
         
         readyButton.setText(isReady ? "NOT READY" : "READY");
         
@@ -329,8 +315,13 @@ public class NetworkLobbyController {
     @FXML
     private void handleBack() {
         SoundEffectUtil.playButtonClick();
-        networkService.disconnect();
         
+        // Disconnect in background to avoid UI freeze
+        new Thread(() -> {
+            networkService.disconnect();
+        }).start();
+        
+        // Navigate immediately - don't wait for disconnect to complete
         try {
             sceneLoader.load(root, "/fxml/battle-mode-selection.fxml", "KU Royale - Select Battle Mode", null);
         } catch (IOException e) {
@@ -349,22 +340,16 @@ public class NetworkLobbyController {
     private void showLobby() {
         showPane(lobbyPane);
         
-        // Setup player info
-        if (networkService.isHost()) {
-            player1NameLabel.setText(playerName + " (You)");
-            player1DeckList.setItems(FXCollections.observableArrayList(playerDeck));
-            player2NameLabel.setText(networkService.getOpponentName() != null ? 
-                    networkService.getOpponentName() : "Opponent");
-        } else {
-            player2NameLabel.setText(playerName + " (You)");
-            player2DeckList.setItems(FXCollections.observableArrayList(playerDeck));
-            player1NameLabel.setText(networkService.getOpponentName() != null ? 
-                    networkService.getOpponentName() : "Host");
-        }
+        // Column 1 is always YOU (your deck visible)
+        // Column 2 is always OPPONENT (deck hidden)
+        player1NameLabel.setText(playerName);
+        player1DeckList.setItems(FXCollections.observableArrayList(playerDeck));
         
-        // Send player info
-        String deckStr = String.join(",", playerDeck);
-        networkService.send(NetworkMessage.playerInfo(networkService.getPlayerId(), playerName, deckStr));
+        String opponentName = networkService.getOpponentName();
+        player2NameLabel.setText(opponentName != null ? opponentName : "Waiting...");
+        
+        // Send player info (without deck - keep it secret!)
+        networkService.send(NetworkMessage.playerInfo(networkService.getPlayerId(), playerName, ""));
         
         // Reset ready state
         isReady = false;

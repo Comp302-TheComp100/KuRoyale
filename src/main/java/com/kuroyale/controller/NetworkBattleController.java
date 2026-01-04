@@ -161,6 +161,10 @@ public class NetworkBattleController implements GameEventListener {
         gameState = new GameState(playerDeck, opponentDeck, arena);
         gameState.setCardCatalog(name -> model.getCardByName(name));
         
+        // IMPORTANT: Enable network mode to disable bot AI
+        // In network mode, the opponent is a real player, not AI
+        gameState.setNetworkMode(true);
+        
         // Initialize UI Components
         arenaView = new BattleArenaView(gameState);
         arenaContainer.getChildren().add(arenaView);
@@ -255,8 +259,11 @@ public class NetworkBattleController implements GameEventListener {
     }
     
     private void handleNetworkMessage(NetworkMessage message) {
+        System.out.println("[NetworkBattle] Received message type: " + message.getType());
+        
         switch (message.getType()) {
             case CARD_PLACED:
+                System.out.println("[NetworkBattle] Processing CARD_PLACED message");
                 handleOpponentCardPlaced(message);
                 break;
                 
@@ -269,13 +276,16 @@ public class NetworkBattleController implements GameEventListener {
                 break;
                 
             case TIMER_SYNC:
-                // Client syncs timer with host
+                // Client syncs timer with host (host is authoritative)
                 if (!networkService.isHost()) {
                     try {
                         double hostTime = Double.parseDouble(message.getData());
-                        // Could sync game time here if needed
+                        // Sync game timer with host
+                        if (gameState != null) {
+                            gameState.setGameTime(hostTime);
+                        }
                     } catch (NumberFormatException e) {
-                        // Ignore
+                        // Ignore invalid timer data
                     }
                 }
                 break;
@@ -310,15 +320,19 @@ public class NetworkBattleController implements GameEventListener {
     }
     
     private void handleOpponentCardPlaced(NetworkMessage message) {
+        System.out.println("[NetworkBattle] handleOpponentCardPlaced called with: " + message.getData());
+        
         String[] data = message.parseCardPlacement();
-        if (data == null) return;
+        if (data == null) {
+            System.err.println("[NetworkBattle] Failed to parse card placement data");
+            return;
+        }
         
         String cardName = data[0];
         int x = (int) Double.parseDouble(data[1]);
         int y = (int) Double.parseDouble(data[2]);
         
-        // Mirror the position for opponent (they see our side as their side)
-        int mirroredY = Arena.HEIGHT - 1 - y;
+        System.out.println("[NetworkBattle] Parsed: card=" + cardName + ", x=" + x + ", y=" + y);
         
         // Get the card from catalog
         Card card = model.getCardByName(cardName);
@@ -327,10 +341,20 @@ public class NetworkBattleController implements GameEventListener {
             return;
         }
         
-        // Spawn the card for the opponent (bot side from our perspective)
+        // Mirror the Y position because:
+        // - Opponent placed at (x, y) on THEIR bottom half (y >= 16)
+        // - From OUR perspective, that's on the TOP half (enemy side)
+        // - So we mirror: newY = (Arena.HEIGHT - 1) - y
+        // Example: They place at y=20 -> We see at y=11 (top half, enemy territory)
+        int mirroredY = (Arena.HEIGHT - 1) - y;
+        
+        System.out.println("[NetworkBattle] Spawning opponent's " + cardName + " at (" + x + ", " + mirroredY + ") [original y=" + y + "]");
+        
+        // Spawn the card for the opponent (isPlayer=false means enemy from our perspective)
+        // Use placeCard with the card directly to bypass hand/elixir checks
         gameState.placeCard(false, card, x, mirroredY);
         
-        System.out.println("[NetworkBattle] Opponent placed " + cardName + " at (" + x + ", " + mirroredY + ")");
+        System.out.println("[NetworkBattle] ✓ Opponent card spawned successfully");
     }
     
     private void handleTowerDestroyed(NetworkMessage message) {
@@ -378,11 +402,14 @@ public class NetworkBattleController implements GameEventListener {
                 if (gameState.placeCard(true, selectedIndex, tileX, tileY)) {
                     // Success - send to opponent
                     if (card != null) {
+                        System.out.println("[NetworkBattle] YOU placed " + card.getName() + " at (" + tileX + ", " + tileY + ") - sending to opponent");
                         networkService.sendCardPlaced(card.getName(), tileX, tileY);
                     }
                     
                     handView.clearSelection();
                     arenaView.highlightValidCells(false, false);
+                } else {
+                    System.out.println("[NetworkBattle] Failed to place card at (" + tileX + ", " + tileY + ")");
                 }
             }
         }

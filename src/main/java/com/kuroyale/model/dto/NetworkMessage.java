@@ -8,15 +8,17 @@ import java.time.format.DateTimeFormatter;
 /**
  * Represents a message sent over the network between players.
  * Implements the network protocol format: MESSAGE_TYPE|player_id|data|timestamp
+ * Data fields use ';' as internal delimiter to avoid conflict with '|'.
  * 
  * Examples:
- * - CARD_PLACED|1|Knight|5.2,3.8|00:45
- * - TOWER_DAMAGED|2|CrownLeft|450|01:23
+ * - CARD_PLACED|1|Knight;5.2,3.8|00:45
+ * - TOWER_DAMAGED|2|CrownLeft;450|01:23
  * - ELIXIR_UPDATE|1|7|01:24
  */
 public class NetworkMessage implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final String DELIMITER = "|";
+    private static final String DATA_DELIMITER = ";";  // Use different delimiter for data fields
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("mm:ss");
     
     private final NetworkMessageType type;
@@ -78,12 +80,12 @@ public class NetworkMessage implements Serializable {
     
     public static NetworkMessage cardPlaced(int playerId, String cardName, double x, double y) {
         return new NetworkMessage(NetworkMessageType.CARD_PLACED, playerId, 
-                cardName + DELIMITER + x + "," + y);
+                cardName + DATA_DELIMITER + x + "," + y);
     }
     
     public static NetworkMessage towerDamaged(int playerId, String towerName, int damage) {
         return new NetworkMessage(NetworkMessageType.TOWER_DAMAGED, playerId,
-                towerName + DELIMITER + damage);
+                towerName + DATA_DELIMITER + damage);
     }
     
     public static NetworkMessage towerDestroyed(int playerId, String towerName) {
@@ -102,7 +104,7 @@ public class NetworkMessage implements Serializable {
     
     public static NetworkMessage playerInfo(int playerId, String playerName, String deckCards) {
         return new NetworkMessage(NetworkMessageType.PLAYER_INFO, playerId,
-                playerName + DELIMITER + deckCards);
+                playerName + DATA_DELIMITER + deckCards);
     }
     
     public static NetworkMessage readyStatus(int playerId, boolean isReady) {
@@ -170,7 +172,7 @@ public class NetworkMessage implements Serializable {
      */
     public String[] parseCardPlacement() {
         if (type != NetworkMessageType.CARD_PLACED) return null;
-        String[] parts = data.split("\\|");
+        String[] parts = data.split(";");
         if (parts.length < 2) return null;
         String[] coords = parts[1].split(",");
         if (coords.length < 2) return null;
@@ -183,7 +185,7 @@ public class NetworkMessage implements Serializable {
      */
     public String[] parsePlayerInfo() {
         if (type != NetworkMessageType.PLAYER_INFO) return null;
-        String[] parts = data.split("\\|", 2);
+        String[] parts = data.split(";", 2);
         return parts.length >= 2 ? parts : null;
     }
     

@@ -104,11 +104,11 @@
                     <ColumnConstraints percentWidth="50"/>
                 </columnConstraints>
                 
-                <!-- Player 1 (Host) -->
+                <!-- You (Current Player) -->
                 <VBox alignment="CENTER" spacing="10" GridPane.columnIndex="0" styleClass="player-card">
-                    <Label text="PLAYER 1 (HOST)" styleClass="player-title"/>
+                    <Label fx:id="youLabel" text="YOU" styleClass="player-title"/>
                     <Label fx:id="player1NameLabel" text="---" styleClass="player-name"/>
-                    <Label text="Deck:" styleClass="deck-title"/>
+                    <Label text="Your Deck:" styleClass="deck-title"/>
                     <ListView fx:id="player1DeckList" prefHeight="150" prefWidth="200"/>
                     <HBox alignment="CENTER" spacing="5">
                         <Circle fx:id="player1ReadyIndicator" radius="6" styleClass="status-not-ready"/>
@@ -116,12 +116,13 @@
                     </HBox>
                 </VBox>
                 
-                <!-- Player 2 (Client) -->
+                <!-- Opponent -->
                 <VBox alignment="CENTER" spacing="10" GridPane.columnIndex="1" styleClass="player-card">
-                    <Label text="PLAYER 2 (CLIENT)" styleClass="player-title"/>
-                    <Label fx:id="player2NameLabel" text="---" styleClass="player-name"/>
+                    <Label text="OPPONENT" styleClass="player-title"/>
+                    <Label fx:id="player2NameLabel" text="Waiting..." styleClass="player-name"/>
                     <Label text="Deck:" styleClass="deck-title"/>
-                    <ListView fx:id="player2DeckList" prefHeight="150" prefWidth="200"/>
+                    <Label fx:id="opponentDeckHiddenLabel" text="🔒 Hidden" styleClass="info-label" style="-fx-font-size: 16px; -fx-padding: 60 0;"/>
+                    <ListView fx:id="player2DeckList" prefHeight="150" prefWidth="200" visible="false" managed="false"/>
                     <HBox alignment="CENTER" spacing="5">
                         <Circle fx:id="player2ReadyIndicator" radius="6" styleClass="status-not-ready"/>
                         <Label fx:id="player2ReadyLabel" text="Not Ready" styleClass="ready-label"/>

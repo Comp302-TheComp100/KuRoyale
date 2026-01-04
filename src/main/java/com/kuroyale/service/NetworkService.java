@@ -1,7 +1,6 @@
 package com.kuroyale.service;
 
 import com.kuroyale.model.dto.NetworkMessage;
-import com.kuroyale.model.enums.NetworkMessageType;
 import com.kuroyale.util.NetworkConfig;
 
 import java.io.*;
@@ -65,6 +64,24 @@ public class NetworkService {
     public NetworkService() {
         this.config = NetworkConfig.getInstance();
         this.executorService = Executors.newCachedThreadPool();
+        
+        // Add shutdown hook to ensure cleanup on JVM exit
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("[NetworkService] Shutdown hook triggered");
+            forceCloseAllSockets();
+        }));
+    }
+    
+    /**
+     * Force closes all sockets without sending messages (for shutdown hook).
+     */
+    private void forceCloseAllSockets() {
+        running = false;
+        try { if (serverSocket != null) serverSocket.close(); } catch (Exception e) { /* ignore */ }
+        try { if (socket != null) socket.close(); } catch (Exception e) { /* ignore */ }
+        try { if (clientSocket != null) clientSocket.close(); } catch (Exception e) { /* ignore */ }
+        if (executorService != null) executorService.shutdownNow();
+        if (heartbeatScheduler != null) heartbeatScheduler.shutdownNow();
     }
     
     /**
@@ -79,7 +96,10 @@ public class NetworkService {
         this.playerName = playerName;
         
         try {
-            serverSocket = new ServerSocket(port);
+            serverSocket = new ServerSocket();
+            // Allow port reuse - fixes "Address already in use" after restart
+            serverSocket.setReuseAddress(true);
+            serverSocket.bind(new InetSocketAddress("0.0.0.0", port));
             serverSocket.setSoTimeout(0); // No timeout for accepting connections
             setState(ConnectionState.CONNECTING);
             
@@ -175,9 +195,12 @@ public class NetworkService {
                         break;
                     }
                     
+                    System.out.println("[NetworkService] RECEIVED: " + line);
                     NetworkMessage message = NetworkMessage.fromProtocolString(line);
                     if (message != null) {
                         handleMessage(message);
+                    } else {
+                        System.err.println("[NetworkService] Failed to parse message: " + line);
                     }
                     
                 } catch (SocketTimeoutException e) {
@@ -291,7 +314,12 @@ public class NetworkService {
      */
     public void send(NetworkMessage message) {
         if (writer != null && state == ConnectionState.CONNECTED) {
-            writer.println(message.toProtocolString());
+            String protocolStr = message.toProtocolString();
+            writer.println(protocolStr);
+            writer.flush(); // Ensure message is sent immediately
+            System.out.println("[NetworkService] SENT: " + protocolStr);
+        } else {
+            System.err.println("[NetworkService] Cannot send - writer=" + (writer != null) + ", state=" + state);
         }
     }
     
@@ -333,36 +361,77 @@ public class NetworkService {
     }
     
     /**
-     * Gracefully disconnects.
+     * Gracefully disconnects and releases all resources.
      */
     public void disconnect() {
-        if (state == ConnectionState.DISCONNECTED) return;
+        System.out.println("[NetworkService] Disconnecting...");
         
+        // Set running to false first to stop loops
         running = false;
         
-        // Send disconnect message
-        if (writer != null) {
-            send(NetworkMessage.disconnect(playerId, "User disconnected"));
+        // Send disconnect message before closing (if connected)
+        if (writer != null && state == ConnectionState.CONNECTED) {
+            try {
+                writer.println(NetworkMessage.disconnect(playerId, "User disconnected").toProtocolString());
+                writer.flush();
+            } catch (Exception e) {
+                // Ignore errors during disconnect
+            }
         }
         
-        // Shutdown heartbeat
+        // Shutdown heartbeat scheduler
         if (heartbeatScheduler != null) {
             heartbeatScheduler.shutdownNow();
+            heartbeatScheduler = null;
         }
         
-        // Close streams and sockets
+        // Close server socket FIRST to interrupt accept() blocking call
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+            serverSocket = null;
+        }
+        
+        // Close client connections
         try {
-            if (reader != null) reader.close();
-            if (writer != null) writer.close();
-            if (socket != null) socket.close();
-            if (clientSocket != null) clientSocket.close();
-            if (serverSocket != null) serverSocket.close();
-        } catch (IOException e) {
-            System.err.println("[NetworkService] Error closing connections: " + e.getMessage());
+            if (reader != null) {
+                reader.close();
+                reader = null;
+            }
+        } catch (IOException e) { /* ignore */ }
+        
+        try {
+            if (writer != null) {
+                writer.close();
+                writer = null;
+            }
+        } catch (Exception e) { /* ignore */ }
+        
+        try {
+            if (socket != null) {
+                socket.close();
+                socket = null;
+            }
+        } catch (IOException e) { /* ignore */ }
+        
+        try {
+            if (clientSocket != null) {
+                clientSocket.close();
+                clientSocket = null;
+            }
+        } catch (IOException e) { /* ignore */ }
+        
+        // Shutdown executor service
+        if (executorService != null) {
+            executorService.shutdownNow();
+            executorService = Executors.newCachedThreadPool(); // Create fresh one for next use
         }
         
         setState(ConnectionState.DISCONNECTED);
-        System.out.println("[NetworkService] Disconnected");
+        System.out.println("[NetworkService] Disconnected successfully");
     }
     
     private void setState(ConnectionState newState) {
