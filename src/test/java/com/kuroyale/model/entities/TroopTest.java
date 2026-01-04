@@ -39,11 +39,8 @@ public class TroopTest {
         Troop groundTroop = createTroop(groundCard, true);
         Troop airTarget = createTroop(airCard, false);
 
-        // Ground card implies TargetType.GROUND (which targets both ground and air? No,
-        // usually GROUND targets Ground only)
-        // Let's check Card constructor: I passed TargetType.GROUND.
-        // In Troop.java: if (tt == TargetType.GROUND && target.isAirUnit()) return
-        // false;
+        // Ground card implies TargetType.GROUND
+        // In Troop.java: if (tt == TargetType.GROUND && target.isAirUnit()) return false;
 
         assertFalse(groundTroop.canTarget(airTarget), "Ground targeting unit should not target Air unit");
     }

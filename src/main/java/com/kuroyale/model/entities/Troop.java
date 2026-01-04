@@ -187,13 +187,9 @@ public class Troop implements ICombatant {
         return baseCard != null ? baseCard.getTarget() : TargetType.GROUND;
     }
 
-    /**
-     * Checks if this troop can target the specified combatant.
-     *
+    /* Checks if this troop can target the specified combatant.
      * Requires: None (handles null gracefully).
-     *
      * Modifies: None.
-     *
      * Effects: Returns true if and only if:
      * - target is not null
      * - target is alive
@@ -201,8 +197,7 @@ public class Troop implements ICombatant {
      * - If BUILDINGS: target is a Building or Tower.
      * - If GROUND: target is not an air unit.
      * - If AIR: target is an air unit.
-     * Returns false otherwise.
-     */
+     * Returns false otherwise. */
     @Override
     public boolean canTarget(ICombatant target) {
         if (target == null || !target.isAlive())

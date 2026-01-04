@@ -4,13 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Manages a collection of cards selected for battle.
- *
+/* Manages a collection of cards selected for battle.
  * Overview:
  * A Deck is a mutable container for unique {@link Card} objects.
- * While it can hold fewer, a valid deck for gameplay must contain exactly 8
- * cards.
+ * While it can hold fewer, a valid deck for gameplay must contain exactly 8 cards.
  *
  * Abstract Function:
  * AF(this) = D, where D is a set of Cards { c | c in this.cards }
@@ -19,8 +16,7 @@ import java.util.stream.Collectors;
  * - cards != null
  * - cards.size() <= MAX_CARDS
  * - For all c in cards: c != null
- * - cards contains no duplicate elements (elements are distinct regarding
- * equals())
+ * - cards contains no duplicate elements (elements are distinct regarding equals())
  */
 public class Deck {
     private static final int MAX_CARDS = 8;
