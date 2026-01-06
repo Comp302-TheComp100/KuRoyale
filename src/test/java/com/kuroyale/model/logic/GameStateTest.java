@@ -5,8 +5,10 @@ import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.entities.ArenaLayout;
 import com.kuroyale.model.entities.Arena;
 import com.kuroyale.model.entities.GridPosition;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,7 +19,8 @@ class GameStateTest {
     private Arena arena;
 
     @BeforeEach
-    void setUp() {
+    void setUp(TestInfo testInfo) {
+        System.out.println("Starting test: " + testInfo.getDisplayName());
         // Setup a basic arena and game state
         // We use empty decks for simplicity as we are testing win conditions only
         Deck deck = new Deck();
@@ -32,6 +35,11 @@ class GameStateTest {
 
         arena = new Arena(layout);
         gameState = new GameState(new Deck(), new Deck(), arena);
+    }
+
+    @AfterEach
+    void tearDown(TestInfo testInfo) {
+        System.out.println("Finished test: " + testInfo.getDisplayName());
     }
 
     /**

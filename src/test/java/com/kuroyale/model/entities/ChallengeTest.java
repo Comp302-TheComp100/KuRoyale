@@ -1,8 +1,10 @@
 package com.kuroyale.model.entities;
 
 import com.kuroyale.model.enums.ChallengeType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import java.util.List;
 
@@ -25,9 +27,15 @@ class ChallengeTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp(TestInfo testInfo) {
+        System.out.println("Starting test: " + testInfo.getDisplayName());
         // Use a dummy challenge type
         challenge = new TestChallenge(1, ChallengeType.SWARM_MASTER, "Test Description", "Test Rules");
+    }
+
+    @AfterEach
+    void tearDown(TestInfo testInfo) {
+        System.out.println("Finished test: " + testInfo.getDisplayName());
     }
 
     /**
