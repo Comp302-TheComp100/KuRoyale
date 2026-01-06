@@ -1,0 +1,79 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2639
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Bold;\f1\fswiss\fcharset0 Helvetica;\f2\fswiss\fcharset0 Helvetica-Oblique;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green100\blue0;\red128\green0\blue128;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\b\fs36 \cf0 Analysis of deleteSavedGame Method Documentation and Testing\
+\
+
+\fs28 Method Selection\
+\f1\b0\fs24 \
+The deleteSavedGame(String saveId) method was selected as the non-trivial method for testing and documentation due to its conditional complexity and central role in game persistence. The method\'92s behavior depends on multiple factors, including:\
+\
+\'95 Null/empty input validation\
+\'95 File system access and iteration\
+\'95 Object deserialization to find matching UUID\
+\'95 File deletion with proper error handling\
+\'95 Graceful handling of corrupted save files\
+\
+This makes it sufficiently complex to justify formal specification and multiple test cases.\
+\
+
+\f0\b\fs28 Method Specification\
+\f1\b0\fs24 \
+The method is documented with explicit Requires, Modifies, and Effects clauses in the source code:\
+\
+\f0\b The Requires clause\f1\b0  specifies that:\
+\'95 saveId must be a non-null, non-empty String representing a valid UUID\
+\'95 The save directory must exist and be accessible\
+\
+\f0\b The Modifies clause\f1\b0  states that the method:\
+\'95 Deletes the .krsave file that contains the matching saveId from the file system\
+\'95 Makes no modification if saveId is null, empty, or doesn\'92t match any existing save\
+\
+\f0\b The Effects clause\f1\b0  precisely defines the return conditions:\
+\'95 If saveId is null or empty: returns false without modifying any files\
+\'95 If no save file matches the saveId: returns false, all files remain unchanged\
+\'95 If a save file with matching saveId exists and is successfully deleted: returns true\
+\'95 If a save file matches but deletion fails (e.g., permission error): returns false\
+\'95 If the save directory cannot be read: returns false\
+\'95 Corrupted or unreadable save files are skipped during the search\
+\
+This formal documentation ensures that the method\'92s behavior is unambiguous and provides a clear contract for both implementation and testing.\
+\
+
+\f0\b\fs28 Test Design\
+\f1\b0\fs24 \
+JUnit 5 was used to implement black-box tests that validate the method\'92s observable behavior without relying on internal implementation details. The tests are designed to cover both valid and invalid cases, ensuring that all major logical branches of the method are exercised.\
+\
+Each test focuses on a distinct aspect of the specification:\
+\
+\f0\b Test 1: Successful Deletion (testDeleteExistingSaveReturnsTrue)\f1\b0 \
+Verifies that when a valid saveId matches an existing save file, the method returns true and the file is actually removed from disk. This tests the normal \'93happy path\'94 case.\
+\
+\f0\b Test 2: Null Input Handling (testDeleteWithNullSaveIdReturnsFalse)\f1\b0 \
+Confirms that the method safely handles null input without throwing exceptions, returning false as stated in the Requires and Effects clauses.\
+\
+\f0\b Test 3: Empty String Handling (testDeleteWithEmptySaveIdReturnsFalse)\f1\b0 \
+Ensures that an empty string is properly rejected, testing the boundary case for the input validation.\
+\
+\f0\b Test 4: Non-Existent UUID (testDeleteNonExistentSaveIdReturnsFalse)\f1\b0 \
+Validates that when a properly formatted UUID doesn\'92t match any existing save, the method returns false without modifying any files.\
+\
+\f0\b Test 5: Isolation Test (testDeleteOnlyAffectsTargetedSave)\f1\b0 \
+Confirms that deleting one save file does not impact other save files. Creates three saves, deletes one, and verifies the other two remain intact. This tests the Modifies clause.\
+\
+
+\f0\b\fs28 Result\
+\f1\b0\fs24 \
+All 5 test cases passed successfully, validating that:\
+\
+\f3\fs22 \cf3 \uc0\u10003 \f1\fs24 \cf0  Null saveId is safely rejected (returns false)\
+\f3\fs22 \cf3 \uc0\u10003 \f1\fs24 \cf0  Empty saveId is properly validated (returns false)\
+\f3\fs22 \cf3 \uc0\u10003 \f1\fs24 \cf0  Non-existent UUIDs return false without affecting files\
+\f3\fs22 \cf3 \uc0\u10003 \f1\fs24 \cf0  Existing saves are successfully deleted (returns true)\
+\f3\fs22 \cf3 \uc0\u10003 \f1\fs24 \cf0  Deletion is isolated - other saves remain unaffected\
+\
+The tests ensure the deleteSavedGame method is robust, handles edge cases gracefully, and maintains data integrity by only modifying the targeted save file.\
+}

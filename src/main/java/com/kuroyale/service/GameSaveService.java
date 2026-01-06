@@ -94,8 +94,37 @@ public class GameSaveService {
                 .collect(Collectors.toList());
     }
 
-    // Deletes a saved game
+    /**
+     * Deletes a saved game file from disk by its unique save ID.
+     * 
+     * This method searches through all saved game files in the save directory,
+     * deserializes each to find the matching save ID, and deletes the corresponding file.
+     * 
+     * @param saveId The unique identifier (UUID) of the saved game to delete
+     * @return true if the save was found and successfully deleted, false otherwise
+     * 
+     * REQUIRES:
+     *   - saveId is a non-null, non-empty String representing a valid UUID
+     *   - The save directory exists and is accessible
+     * 
+     * MODIFIES:
+     *   - File system: Deletes the .krsave file that contains the matching saveId
+     *   - No modification if saveId is null, empty, or doesn't match any existing save
+     * 
+     * EFFECTS:
+     *   - If saveId is null or empty: returns false without modifying any files
+     *   - If no save file matches the saveId: returns false, all files remain unchanged
+     *   - If a save file with matching saveId exists and is successfully deleted: returns true
+     *   - If a save file matches but deletion fails (e.g., permission error): returns false
+     *   - If the save directory cannot be read: returns false
+     *   - Corrupted or unreadable save files are skipped during the search
+     */
     public boolean deleteSavedGame(String saveId) {
+        // Handle null or empty saveId
+        if (saveId == null || saveId.trim().isEmpty()) {
+            System.err.println("Cannot delete save: saveId is null or empty");
+            return false;
+        }
         try {
             List<Path> files = Files.list(saveDirectory)
                     .filter(path -> path.toString().endsWith(SAVE_FILE_EXTENSION))
