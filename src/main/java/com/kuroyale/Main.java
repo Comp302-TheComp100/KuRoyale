@@ -31,8 +31,8 @@ public class Main extends Application {
             new com.kuroyale.controller.LoginController(loginView);
             Parent root = loginView;
 
-            // Create scene (1024x768 resolution - better fit for login background)
-            Scene scene = new Scene(root, 1024, 768);
+            // Create scene (1280x720 HD resolution)
+            Scene scene = new Scene(root, 1280, 720);
 
             // Load application stylesheet
             scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());

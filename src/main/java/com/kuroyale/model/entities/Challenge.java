@@ -63,23 +63,6 @@ public abstract class Challenge {
     }
 
     // Records a challenge attempt result.
-    /**
-     * Records a challenge attempt result.
-     * 
-     * @requires completionTimeSeconds >= 0 && damageTaken >= 0
-     * @modifies this.attempts, this.completions, this.completed, this.starsEarned
-     * @effects
-     * 
-     *          <pre>
-     *          attempts = attempts + 1
-     *          if won is true:
-     *              completions = completions + 1
-     *              completed = true
-     *              starsEarned = max(starsEarned, calculateStars(completionTimeSeconds, damageTaken))
-     *          else:
-     *              completions, completed, and starsEarned remain unchanged
-     *          </pre>
-     */
     public void recordAttempt(boolean won, int completionTimeSeconds, int damageTaken) {
         attempts++;
         if (won) {

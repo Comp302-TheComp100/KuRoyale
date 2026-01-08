@@ -32,17 +32,14 @@ public class LoginController {
     }
 
     private void setupHandlers() {
-        // Main buttons show forms (handled in LoginView)
-        // Submit buttons trigger actual login/registration
-        loginView.getSubmitLoginButton().setOnAction(e -> handleLogin());
-        loginView.getSubmitCreateButton().setOnAction(e -> handleCreateAccount());
+        loginView.getCreateAccountButton().setOnAction(e -> handleCreateAccount());
+        loginView.getLoginButton().setOnAction(e -> handleLogin());
     }
 
     public void initialize() {
     }
 
-    // Initialize styles after FXML is loaded (kept for compatibility with
-    // Main.java)
+    // Initialize styles after FXML is loaded (kept for compatibility with Main.java)
     public void initializeStyles() {
         // This method is kept for backward compatibility but does nothing
         // LoginView applies all styles during construction
