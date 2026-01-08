@@ -1,0 +1,79 @@
+.background {
+    -fx-background-color: linear-gradient(to bottom, #2a3d66, #1b2747);
+}
+
+.title {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.title-small {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.deck-slot {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-border-color: white;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-pref-width: 130;
+    -fx-pref-height: 150;
+    -fx-alignment: center;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0.2, 0, 3);
+}
+
+.deck-slot:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.25);
+    -fx-border-color: #7aa0ff;
+    -fx-effect: dropshadow(gaussian, #7aa0ff, 15, 0.4, 0, 0);
+}
+
+.elixir-label {
+    -fx-font-size: 18px;
+    -fx-text-fill: #f7b32b;
+    -fx-font-weight: bold;
+}
+
+.elixir-value {
+    -fx-font-size: 18px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.card-collection {
+    -fx-padding: 20;
+}
+
+.card-collection .card {
+    -fx-background-color: rgba(255, 255, 255, 0.15);
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-pref-width: 100;
+    -fx-pref-height: 130;
+    -fx-alignment: center;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+}
+
+.card-collection .card:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.3);
+    -fx-cursor: hand;
+}
+
+.back-button {
+    -fx-background-color: #3c4e74;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 8 20;
+    -fx-background-radius: 10;
+}
+
+.back-button:hover {
+    -fx-background-color: #5b76b2;
+}
