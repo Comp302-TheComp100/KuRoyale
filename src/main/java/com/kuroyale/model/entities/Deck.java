@@ -4,7 +4,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//Manages a deck of 8 cards. Information Expert: Deck knows about its own cards and has responsibility for operations on the deck
+/* Manages a collection of cards selected for battle.
+ * Overview:
+ * A Deck is a mutable container for unique {@link Card} objects.
+ * While it can hold fewer, a valid deck for gameplay must contain exactly 8 cards.
+ *
+ * Abstract Function:
+ * AF(this) = D, where D is a set of Cards { c | c in this.cards }
+ *
+ * Representation Invariant:
+ * - cards != null
+ * - cards.size() <= MAX_CARDS
+ * - For all c in cards: c != null
+ * - cards contains no duplicate elements (elements are distinct regarding equals())
+ */
 public class Deck {
     private static final int MAX_CARDS = 8;
     private final List<Card> cards;
@@ -75,7 +88,8 @@ public class Deck {
     }
 
     // Information Expert: Deck can provide its card names
-    // Returns a list of card names in the deck. Empty strings are used for positions that should remain empty
+    // Returns a list of card names in the deck. Empty strings are used for
+    // positions that should remain empty
     public List<String> getCardNames() {
         return cards.stream()
                 .map(Card::getName)
@@ -85,5 +99,27 @@ public class Deck {
     // Gets the maximum number of cards allowed in a deck
     public static int getMaxCards() {
         return MAX_CARDS;
+    }
+
+    /**
+     * Checks if the representation invariant holds.
+     * 
+     * @return true if the rep is valid, false otherwise.
+     */
+    public boolean repOk() {
+        if (cards == null)
+            return false;
+        if (cards.size() > MAX_CARDS)
+            return false;
+        for (Card c : cards) {
+            if (c == null)
+                return false;
+        }
+        // Check for duplicates
+        long distinctCount = cards.stream().distinct().count();
+        if (distinctCount != cards.size())
+            return false;
+
+        return true;
     }
 }
