@@ -127,7 +127,7 @@ public class QuestService implements GameEventListener {
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
-    //Loads quests from disk.
+    // Loads quests from disk.
     private void loadQuests() {
         if (currentUsername == null)
             return;
@@ -168,7 +168,7 @@ public class QuestService implements GameEventListener {
         }
     }
 
-    //Saves quests to disk.
+    // Saves quests to disk.
     private void saveQuests() {
         if (currentUsername == null)
             return;
@@ -198,7 +198,8 @@ public class QuestService implements GameEventListener {
     }
 
     @Override
-    public void onCardPlayed(boolean isPlayer, Card card) {
+    public void onCardPlayed(boolean isPlayer, Card card,
+            java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
         if (!isPlayer)
             return;
 

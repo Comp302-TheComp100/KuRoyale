@@ -212,7 +212,7 @@ public class BattleModel {
         authService.saveCurrentUser();
     }
 
-    public void processMatchResult(int playerScore, int botScore) throws java.io.IOException {
+    public void processMatchResult(int playerScore, int botScore, int comboBonus) throws java.io.IOException {
         int bonus = 0;
         if (playerScore > botScore) {
             bonus = VICTORY_GOLD;
@@ -221,6 +221,10 @@ public class BattleModel {
         } else {
             bonus = DEFEAT_GOLD;
         }
+
+        // Add Combo Bonus (10 gold per unique combo)
+        int comboGold = comboBonus * 10;
+        bonus += comboGold;
 
         if (bonus > 0) {
             authService.awardGoldToCurrentUser(bonus);

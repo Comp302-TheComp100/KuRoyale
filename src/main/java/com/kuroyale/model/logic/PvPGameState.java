@@ -221,7 +221,7 @@ public class PvPGameState implements IBattleState {
         if (success) {
             placedCards.add(new PlacedCard(card, x, y, isPlayer1));
             if (isPlayer1) {
-                GameEventBus.getInstance().publishCardPlayed(true, card);
+                GameEventBus.getInstance().publishCardPlayed(isPlayer1, card, new java.util.ArrayList<>());
             }
         }
 

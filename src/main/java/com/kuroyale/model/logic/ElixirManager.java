@@ -75,4 +75,8 @@ public class ElixirManager {
     public void setCurrentElixir(double elixir) {
         this.currentElixir = Math.max(0, Math.min(elixir, MAX_ELIXIR));
     }
+
+    public void refund(int amount) {
+        addElixir(amount);
+    }
 }

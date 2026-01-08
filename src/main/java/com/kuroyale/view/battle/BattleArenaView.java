@@ -23,6 +23,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private final com.kuroyale.model.logic.PvPGameState pvpGameState; // For PvP mode
     private final javafx.scene.control.Label timerLabel;
     private final javafx.scene.control.Label scoreLabel;
+    private final javafx.scene.control.Label comboLabel;
     private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
 
     // Track hovered tile for highlighting
@@ -80,6 +81,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         // PvP mode: No sidebar (timer/score handled in controller)
         this.timerLabel = null;
         this.scoreLabel = null;
+        this.comboLabel = null;
 
         StackPane centerContainer = new StackPane(arenaPane);
         centerContainer.setAlignment(javafx.geometry.Pos.TOP_CENTER);
@@ -123,8 +125,16 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         javafx.scene.control.Label opponentLabel = new javafx.scene.control.Label("OPPONENT");
         opponentLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 18px; -fx-font-weight: bold;");
 
+        // Combo Counter
+        javafx.scene.control.Label comboTitle = new javafx.scene.control.Label("COMBOS");
+        comboTitle.setStyle("-fx-text-fill: gold; -fx-font-size: 14px;");
+
+        comboLabel = new javafx.scene.control.Label("0");
+        comboLabel.setStyle("-fx-text-fill: gold; -fx-font-size: 24px; -fx-font-weight: bold;");
+
         sidebar.getChildren().addAll(timerTitle, timerLabel, new javafx.scene.control.Separator(), scoreTitle,
-                scoreLabel, new javafx.scene.control.Separator(), opponentLabel);
+                scoreLabel, new javafx.scene.control.Separator(), opponentLabel,
+                new javafx.scene.control.Separator(), comboTitle, comboLabel);
         this.setRight(sidebar);
 
         // Center Arena
@@ -617,6 +627,53 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
                 unitLayer.getChildren().remove(visual.node);
                 it.remove();
             }
+        }
+    }
+
+    public void showComboEffect(com.kuroyale.model.enums.ComboType combo,
+            java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
+        if (affectedUnits == null || affectedUnits.isEmpty())
+            return;
+
+        // Visual duration
+        double duration = 2.0;
+
+        for (com.kuroyale.model.entities.ICombatant unit : affectedUnits) {
+            com.kuroyale.model.entities.GridPosition pos = unit.getCenterPosition();
+            if (pos == null)
+                continue;
+
+            double cx = pos.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
+            double cy = pos.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
+
+            // Draw a gold star or ring
+            javafx.scene.shape.Circle ring = new javafx.scene.shape.Circle(cx, cy, TILE_SIZE * 0.8);
+            ring.setFill(null);
+            ring.setStroke(Color.GOLD);
+            ring.setStrokeWidth(3.0);
+            ring.setEffect(new javafx.scene.effect.Glow(0.8));
+
+            unitLayer.getChildren().add(ring);
+            activeSpellVisuals.add(new ActiveSpellVisual(ring, duration));
+
+            // Add a scaling animation for pop
+            javafx.animation.ScaleTransition st = new javafx.animation.ScaleTransition(
+                    javafx.util.Duration.seconds(0.5), ring);
+            st.setFromX(0.5);
+            st.setFromY(0.5);
+            st.setToX(1.2);
+            st.setToY(1.2);
+            st.setAutoReverse(true);
+            st.setCycleCount(2);
+            st.play();
+        }
+    }
+
+    public void updateComboCount(int count) {
+        if (comboLabel != null) {
+            javafx.application.Platform.runLater(() -> {
+                comboLabel.setText(String.valueOf(count));
+            });
         }
     }
 }
