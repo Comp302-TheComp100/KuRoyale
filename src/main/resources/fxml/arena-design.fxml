@@ -16,7 +16,9 @@
     xmlns="http://javafx.com/javafx/21"
     xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.kuroyale.controller.ArenaDesignController">
     <center>
-        <GridPane fx:id="arenaGrid" alignment="CENTER" gridLinesVisible="true" hgap="1.0" vgap="1.0" BorderPane.alignment="CENTER">
+        <GridPane fx:id="arenaGrid" alignment="CENTER" gridLinesVisible="true" hgap="1.0" vgap="1.0" 
+                  style="-fx-background-color: #2a2a3e; -fx-padding: 20;" 
+                  BorderPane.alignment="CENTER">
             <!-- Grid content will be populated by controller -->
         </GridPane>
     </center>
