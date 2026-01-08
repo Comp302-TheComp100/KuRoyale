@@ -28,7 +28,7 @@
               style="-fx-background-color: rgba(0, 0, 0, 0.5); -fx-background-radius: 25; -fx-padding: 8 20 8 20;">
             <ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
                 <image>
-                    <Image url="@../images/deck_icon.png"/>
+                    <Image url="@../images/gold_icon.png"/>
                 </image>
             </ImageView>
             <Label fx:id="goldLabel" text="0" styleClass="gold-label" style="-fx-font-size: 24px;"/>
@@ -59,37 +59,52 @@
            AnchorPane.rightAnchor="0.0"
            alignment="CENTER"/>
 
+    <!-- Left Side - Challenge and Quest Icons -->
+    <VBox spacing="20" alignment="TOP_LEFT"
+          AnchorPane.topAnchor="200.0"
+          AnchorPane.leftAnchor="10.0">
+        
+        <!-- Challenge -->
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Button fx:id="challengesButton"
+                    onAction="#handleChallenges"
+                    style="-fx-background-color: transparent; -fx-border-width: 0; -fx-pref-width: 100; -fx-pref-height: 100; -fx-cursor: hand;">
+                <graphic>
+                    <ImageView fitHeight="100.0" fitWidth="100.0" pickOnBounds="true" preserveRatio="true">
+                        <image>
+                            <Image url="@../images/challenge_icon.png"/>
+                        </image>
+                    </ImageView>
+                </graphic>
+            </Button>
+            
+            <Label text="CHALLENGES"
+                   style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-font-family: 'Clash', Arial; -fx-text-fill: white; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 5, 0, 0, 2);"/>
+        </HBox>
+        
+        <!-- Quest and Achievements -->
+        <HBox spacing="10" alignment="CENTER">
+            <Button fx:id="questsButton"
+                    onAction="#handleQuests"
+                    style="-fx-background-color: transparent; -fx-border-width: 0; -fx-pref-width: 100; -fx-pref-height: 100; -fx-cursor: hand;">
+                <graphic>
+                    <ImageView fitHeight="100.0" fitWidth="100.0" pickOnBounds="true" preserveRatio="true">
+                        <image>
+                            <Image url="@../images/quest_icon.png"/>
+                        </image>
+                    </ImageView>
+                </graphic>
+            </Button>
+            
+            <Label text="QUEST &amp; ACHIEVEMENTS"
+                   style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-font-family: 'Clash', Arial; -fx-text-fill: white; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 5, 0, 0, 2);"/>
+        </HBox>
+    </VBox>
 
-    <!-- Right Side Circular Buttons -->
+    <!-- Right Side Circular Button -->
     <VBox spacing="15" alignment="TOP_CENTER"
           AnchorPane.topAnchor="200.0"
           AnchorPane.rightAnchor="20.0">
-        
-        <Button fx:id="challengesButton"
-                onAction="#handleChallenges"
-                styleClass="menu-button"
-                style="-fx-background-radius: 50; -fx-pref-width: 80; -fx-pref-height: 80; -fx-font-size: 0;">
-            <graphic>
-                <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-                    <image>
-                        <Image url="@../images/battle_icon.png"/>
-                    </image>
-                </ImageView>
-            </graphic>
-        </Button>
-        
-        <Button fx:id="questsButton"
-                onAction="#handleQuests"
-                styleClass="menu-button"
-                style="-fx-background-radius: 50; -fx-pref-width: 80; -fx-pref-height: 80; -fx-font-size: 0;">
-            <graphic>
-                <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
-                    <image>
-                        <Image url="@../images/battle_icon.png"/>
-                    </image>
-                </ImageView>
-            </graphic>
-        </Button>
         
         <Button fx:id="resumeGameButton"
                 onAction="#handleResumeGame"
@@ -108,14 +123,13 @@
     <!-- Central Large Arena Design Button -->
     <Button fx:id="arenaDesignButton"
             onAction="#handleArenaDesign"
-            styleClass="menu-button"
-            AnchorPane.topAnchor="200.0"
-            AnchorPane.bottomAnchor="200.0"
-            AnchorPane.leftAnchor="200.0"
-            AnchorPane.rightAnchor="200.0"
-            style="-fx-background-radius: 25; -fx-font-size: 0; -fx-background-color: transparent; -fx-border-width: 0;">
+            AnchorPane.topAnchor="180.0"
+            AnchorPane.bottomAnchor="180.0"
+            AnchorPane.leftAnchor="250.0"
+            AnchorPane.rightAnchor="250.0"
+            style="-fx-background-color: transparent; -fx-border-width: 0; -fx-cursor: hand; -fx-padding: 0;">
         <graphic>
-            <ImageView fitHeight="250.0" fitWidth="250.0" pickOnBounds="true" preserveRatio="true">
+            <ImageView fitHeight="300.0" fitWidth="300.0" pickOnBounds="true" preserveRatio="true">
                 <image>
                     <Image url="@../images/arena_icon.png"/>
                 </image>
