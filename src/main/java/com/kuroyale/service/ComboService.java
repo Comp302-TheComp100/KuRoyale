@@ -31,6 +31,9 @@ public class ComboService implements GameEventListener {
 
     private final Deque<PlayedCardEvent> playedCards = new ArrayDeque<>();
     private final java.util.Set<ComboType> uniqueCombosTriggered = new java.util.HashSet<>();
+    // Track last trigger time per combo type to prevent re-triggering within same
+    // 5-second window
+    private final java.util.Map<ComboType, Long> comboCooldowns = new java.util.HashMap<>();
     private GameState gameState; // Reference to apply global effects like Elixir refund
 
     public ComboService() {
@@ -44,6 +47,7 @@ public class ComboService implements GameEventListener {
     public void cleanup() {
         GameEventBus.getInstance().unsubscribe(this);
         uniqueCombosTriggered.clear();
+        comboCooldowns.clear();
     }
 
     public int getUniqueComboCount() {
@@ -103,7 +107,17 @@ public class ComboService implements GameEventListener {
         }
     }
 
+    private boolean canTriggerCombo(ComboType type, long now) {
+        Long lastTrigger = comboCooldowns.get(type);
+        return lastTrigger == null || (now - lastTrigger > COMBO_WINDOW_MS);
+    }
+
     private void triggerCombo(ComboType type, List<ICombatant> affectedUnits) {
+        long now = System.currentTimeMillis();
+        if (!canTriggerCombo(type, now)) {
+            return; // Combo already triggered within this 5-second window
+        }
+        comboCooldowns.put(type, now);
         uniqueCombosTriggered.add(type);
         GameEventBus.getInstance().publishComboTriggered(type, affectedUnits);
     }

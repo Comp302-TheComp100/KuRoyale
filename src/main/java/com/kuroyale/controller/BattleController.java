@@ -236,9 +236,6 @@ public class BattleController {
                     java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
                 javafx.application.Platform.runLater(() -> {
                     // 1. Show Text Feedback
-                    // We can reuse challengeTitle or create a new label.
-                    // Or pass to arenaView to render floating text?
-                    // Let's create a temporary label in overlay or use a new method.
                     showComboText(combo.getDisplayName());
 
                     // 2. Show Visual Effects
@@ -247,6 +244,19 @@ public class BattleController {
                         if (comboService != null) {
                             arenaView.updateComboCount(comboService.getUniqueComboCount());
                         }
+                    }
+
+                    // 3. Play Sound Effect
+                    try {
+                        java.net.URL soundUrl = getClass().getResource("/musics/combo.mp3");
+                        if (soundUrl != null) {
+                            javafx.scene.media.Media sound = new javafx.scene.media.Media(soundUrl.toExternalForm());
+                            javafx.scene.media.MediaPlayer mediaPlayer = new javafx.scene.media.MediaPlayer(sound);
+                            mediaPlayer.setVolume(0.5);
+                            mediaPlayer.play();
+                        }
+                    } catch (Exception e) {
+                        // Silently ignore sound errors
                     }
                 });
             }
@@ -455,21 +465,22 @@ public class BattleController {
         int playerScore = gameState.getPlayerScore();
         int botScore = gameState.getBotScore();
 
-        gameOverScore
-                .setText(String.format("Player: %d  -  Bot: %d", playerScore, botScore));
+        int comboCount = 0;
+        if (comboService != null) {
+            comboCount = comboService.getUniqueComboCount();
+        }
+
+        // Update the overlay label with combo info
+        gameOverScore.setText(String.format("Player: %d  -  Bot: %d\nCombos: %d (+%d gold)",
+                playerScore, botScore, comboCount, comboCount * 10));
 
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
                 javafx.scene.control.Alert.AlertType.INFORMATION);
         alert.setTitle("Game Over");
         alert.setHeaderText(playerWon ? "VICTORY" : "DEFEAT");
 
-        int comboCount = 0;
-        if (comboService != null) {
-            comboCount = comboService.getUniqueComboCount();
-        }
-
         alert.setContentText("Score: " + playerScore + " - " + botScore
-                + "\nCombos Triggered: " + comboCount + " (+" + (comboCount * 10) + " gold)");
+                + "\nCombos: " + comboCount + " (+" + (comboCount * 10) + " gold)");
 
         alert.showAndWait();
 
