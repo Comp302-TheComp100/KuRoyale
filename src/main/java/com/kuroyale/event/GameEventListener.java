@@ -3,7 +3,8 @@ package com.kuroyale.event;
 /* Interface for listening to game-related events.
  * Implements the Observer pattern to decouple GameState from secondary services. */
 public interface GameEventListener {
-    default void onCardPlayed(boolean isPlayer, com.kuroyale.model.entities.Card card) {
+    default void onCardPlayed(boolean isPlayer, com.kuroyale.model.entities.Card card,
+            java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
     }
 
     default void onTowerDestroyed(boolean isPlayerTower, com.kuroyale.model.entities.Tower tower) {
@@ -17,5 +18,9 @@ public interface GameEventListener {
 
     default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center, double radius,
             double duration) {
+    }
+
+    default void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
+            java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
     }
 }

@@ -273,4 +273,13 @@ public class Building implements ICombatant {
             stunTimer -= deltaTime;
         }
     }
+
+    public void heal(int amount) {
+        currentHealth = Math.min(maxHealth, currentHealth + amount);
+    }
+
+    public void buffRange(double tiles) {
+        this.rangeTiles += tiles;
+        // Also update min range? No, default is fine.
+    }
 }
