@@ -61,4 +61,8 @@ public class GameEventBus {
             java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
         new ArrayList<>(listeners).forEach(l -> l.onComboTriggered(combo, affectedUnits));
     }
+
+    public void publishTowerDamaged(Tower tower) {
+        new ArrayList<>(listeners).forEach(l -> l.onTowerDamaged(tower));
+    }
 }

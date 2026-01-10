@@ -20,7 +20,7 @@
             
             <!-- Left: Elixir and Hand -->
             <left>
-                <VBox spacing="20" alignment="CENTER" prefWidth="300" style="-fx-padding: 20; -fx-background-color: rgba(0,0,0,0.3);">
+                <VBox spacing="20" alignment="CENTER" prefWidth="300" styleClass="sidebar-panel">
                     <!-- Elixir Bar -->
                     <HBox fx:id="elixirContainer" alignment="CENTER">
                         <!-- ElixirBar added dynamically -->
@@ -45,7 +45,7 @@
             
             <!-- Right: Timer and Score -->
             <right>
-                <VBox fx:id="sidebarContainer" spacing="20" alignment="CENTER" prefWidth="300" style="-fx-padding: 20; -fx-background-color: rgba(0,0,0,0.5);">
+                <VBox fx:id="sidebarContainer" spacing="20" alignment="CENTER" prefWidth="300" styleClass="sidebar-panel">
                     <Label text="TIME" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
                     <Label fx:id="timeLabel" text="03:00" style="-fx-text-fill: white; -fx-font-size: 36px; -fx-font-weight: bold;"/>
                     

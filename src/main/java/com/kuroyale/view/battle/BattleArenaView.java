@@ -676,4 +676,11 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             container.getChildren().add(crown);
         }
     }
+
+    public javafx.scene.Node getTowerNode(com.kuroyale.model.entities.Tower tower) {
+        if (tower == null || tower.getPosition() == null || towerRenderer == null) {
+            return null;
+        }
+        return towerRenderer.getTowerVisual(tower.getPosition());
+    }
 }
