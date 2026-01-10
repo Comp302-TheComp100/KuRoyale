@@ -53,7 +53,21 @@ public class BattleController {
     @FXML
     private javafx.scene.control.Label gameOverTitle;
     @FXML
-    private javafx.scene.control.Label gameOverScore;
+    private HBox gameOverPlayerCrowns;
+    @FXML
+    private HBox gameOverBotCrowns;
+    @FXML
+    private javafx.scene.control.Label gameOverInfoLabel;
+
+    // Right Sidebar (moved from BattleArenaView to FXML)
+    @FXML
+    private javafx.scene.control.Label timeLabel;
+    @FXML
+    private HBox playerScoreContainer;
+    @FXML
+    private HBox botScoreContainer;
+    @FXML
+    private javafx.scene.control.Label comboLabel;
 
     private GameState gameState;
     private BattleArenaView arenaView;
@@ -176,6 +190,10 @@ public class BattleController {
         // Initialize UI Components
         arenaView = new BattleArenaView(gameState);
         arenaContainer.getChildren().add(arenaView);
+
+        // Make arena view fill the container so sidebar stays on the right
+        arenaView.prefWidthProperty().bind(arenaContainer.widthProperty());
+        arenaView.prefHeightProperty().bind(arenaContainer.heightProperty());
 
         // Handle clicks on arena for card placement
         arenaView.setOnGridClicked((tileX, tileY) -> {
@@ -301,14 +319,68 @@ public class BattleController {
         handView.update();
         arenaView.update(deltaTime);
 
+        // Update Sidebar (moved from BattleArenaView)
+        updateSidebar();
+
         // Check for Double Elixir
         if (gameState.isDoubleElixir() && !doubleElixirShown) {
             doubleElixirShown = true;
             // Visual indicators are handled by ElixirBar and BattleArenaView
             elixirBar.setDoubleElixirActive(true);
+            // Update timer color for double elixir
+            timeLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 36px; -fx-font-weight: bold;");
         }
 
         // Check for Game Over
+        checkGameOver();
+    }
+
+    // Sidebar tracking variables
+    private int lastDisplayedSeconds = -1;
+    private int lastPlayerScore = -1;
+    private int lastBotScore = -1;
+
+    private void updateSidebar() {
+        // Update Timer (only when second changes)
+        int totalSeconds = (int) Math.ceil(gameState.getGameTime());
+        if (totalSeconds != lastDisplayedSeconds) {
+            lastDisplayedSeconds = totalSeconds;
+            int minutes = totalSeconds / 60;
+            int seconds = totalSeconds % 60;
+            timeLabel.setText(String.format("%02d:%02d", minutes, seconds));
+        }
+
+        // Update Score crowns
+        int playerScore = gameState.getPlayerScore();
+        int botScore = gameState.getBotScore();
+
+        if (playerScore != lastPlayerScore) {
+            lastPlayerScore = playerScore;
+            updateScoreContainerUI(playerScoreContainer, playerScore, false);
+        }
+        if (botScore != lastBotScore) {
+            lastBotScore = botScore;
+            updateScoreContainerUI(botScoreContainer, botScore, true);
+        }
+    }
+
+    private void updateScoreContainerUI(HBox container, int score, boolean isOpponent) {
+        if (container == null)
+            return;
+        container.getChildren().clear();
+        String imagePath = isOpponent ? "/images/oppo_crown.png" : "/images/crown.png";
+
+        for (int i = 0; i < score; i++) {
+            javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                    new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
+            crown.setFitWidth(32);
+            crown.setFitHeight(32);
+            container.getChildren().add(crown);
+        }
+    }
+
+    // Check for Game Over - called from update() method
+    private void checkGameOver() {
         if (gameState.isGameOver() && !gameOverShown) {
             gameOverShown = true;
             gameLoop.stop();
@@ -470,22 +542,13 @@ public class BattleController {
             comboCount = comboService.getUniqueComboCount();
         }
 
-        // Update the overlay label with combo info
-        gameOverScore.setText(String.format("Player: %d  -  Bot: %d\nCombos: %d (+%d gold)",
-                playerScore, botScore, comboCount, comboCount * 10));
+        // Render crowns (using larger size for Game Over)
+        renderGameOverCrowns(gameOverPlayerCrowns, playerScore, false);
+        renderGameOverCrowns(gameOverBotCrowns, botScore, true);
 
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.INFORMATION);
-        alert.setTitle("Game Over");
-        alert.setHeaderText(playerWon ? "VICTORY" : "DEFEAT");
-
-        alert.setContentText("Score: " + playerScore + " - " + botScore
+        gameOverInfoLabel.setText("Score: " + playerScore + " - " + botScore
                 + "\nCombos: " + comboCount + " (+" + (comboCount * 10) + " gold)");
-
-        alert.showAndWait();
-
-        // Return to main menu
-        handleExit();
+        // User will click EXIT button to return to menu
     }
 
     private void handleArenaClick(int tileX, int tileY) {
@@ -664,4 +727,16 @@ public class BattleController {
         model.processMatchResult(playerScore, botScore, comboBonus);
     }
 
+    private void renderGameOverCrowns(HBox container, int count, boolean isOpponent) {
+        container.getChildren().clear();
+        String imagePath = isOpponent ? "/images/oppo_crown.png" : "/images/crown.png";
+
+        for (int i = 0; i < count; i++) {
+            javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                    new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
+            crown.setFitWidth(64);
+            crown.setFitHeight(64);
+            container.getChildren().add(crown);
+        }
+    }
 }

@@ -61,12 +61,23 @@
                     </VBox>
 
                     <!-- Time and Score Panel (Far Right) -->
-                    <VBox fx:id="infoPanel" spacing="20" alignment="CENTER" style="-fx-padding: 20; -fx-background-color: rgba(0,0,0,0.5);">
+                    <VBox fx:id="infoPanel" spacing="20" alignment="CENTER" prefWidth="280" style="-fx-padding: 20; -fx-background-color: rgba(0,0,0,0.5);">
                         <Label text="TIME" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
                         <Label fx:id="timeLabel" text="03:00" style="-fx-text-fill: white; -fx-font-size: 32px; -fx-font-weight: bold;"/>
 
                         <Label text="SCORE" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
-                        <Label fx:id="scoreLabel" text="0 - 0" style="-fx-text-fill: white; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+                        
+                        <HBox alignment="CENTER" spacing="20">
+                             <VBox alignment="CENTER" spacing="5">
+                                 <Label text="P1" style="-fx-text-fill: #3b82f6; -fx-font-size: 12px;"/>
+                                 <HBox fx:id="player1ScoreContainer" alignment="CENTER" spacing="2" minHeight="30" minWidth="60"/>
+                             </VBox>
+                             <Label text="-" style="-fx-text-fill: white; -fx-font-size: 20px;"/>
+                             <VBox alignment="CENTER" spacing="5">
+                                 <Label text="P2" style="-fx-text-fill: #ef4444; -fx-font-size: 12px;"/>
+                                 <HBox fx:id="player2ScoreContainer" alignment="CENTER" spacing="2" minHeight="30" minWidth="60"/>
+                             </VBox>
+                        </HBox>
 
                         <!-- Turn Indicator -->
                         <VBox alignment="CENTER" spacing="5" style="-fx-padding: 15; -fx-background-color: rgba(0,0,0,0.3); -fx-background-radius: 10;">
@@ -85,9 +96,21 @@
     </VBox>
 
     <!-- Game Over Overlay -->
-    <VBox fx:id="gameOverRoot" alignment="CENTER" visible="false" spacing="20" maxWidth="450" maxHeight="350" styleClass="game-over-popup">
+    <VBox fx:id="gameOverRoot" alignment="CENTER" visible="false" spacing="20" maxWidth="500" maxHeight="500" styleClass="game-over-popup">
         <Label fx:id="gameOverTitle" text="PLAYER 1 WINS!" styleClass="game-over-title"/>
-        <Label fx:id="gameOverScore" text="Player 1: 0 - Player 2: 0" styleClass="game-over-score"/>
+        <HBox alignment="CENTER" spacing="40">
+            <VBox alignment="CENTER" spacing="10">
+                <Label text="PLAYER 1" style="-fx-text-fill: #3b82f6; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                <HBox fx:id="gameOverP1Crowns" alignment="CENTER" spacing="5" minHeight="70"/>
+            </VBox>
+            <Label text="-" style="-fx-text-fill: white; -fx-font-size: 48px; -fx-font-weight: bold;"/>
+            <VBox alignment="CENTER" spacing="10">
+                <Label text="PLAYER 2" style="-fx-text-fill: #ef4444; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                <HBox fx:id="gameOverP2Crowns" alignment="CENTER" spacing="5" minHeight="70"/>
+            </VBox>
+        </HBox>
+
+        <Label fx:id="gameOverInfoLabel" text="Combos: 0" style="-fx-text-fill: white; -fx-font-size: 24px; -fx-text-alignment: center; -fx-font-weight: bold;" wrapText="true"/>
         <Button text="RETURN TO MENU" onAction="#handleExit" styleClass="menu-button-gold"/>
     </VBox>
 

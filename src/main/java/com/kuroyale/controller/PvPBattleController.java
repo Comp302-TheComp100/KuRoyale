@@ -41,7 +41,9 @@ public class PvPBattleController {
     @FXML
     private Label timeLabel;
     @FXML
-    private Label scoreLabel;
+    private HBox player1ScoreContainer;
+    @FXML
+    private HBox player2ScoreContainer;
     @FXML
     private Label turnIndicatorLabel;
     @FXML
@@ -53,7 +55,11 @@ public class PvPBattleController {
     @FXML
     private Label gameOverTitle;
     @FXML
-    private Label gameOverScore;
+    private HBox gameOverP1Crowns;
+    @FXML
+    private HBox gameOverP2Crowns;
+    @FXML
+    private Label gameOverInfoLabel;
     @FXML
     private VBox infoPanel;
 
@@ -91,6 +97,11 @@ public class PvPBattleController {
         // Initialize arena view
         arenaView = new BattleArenaView(gameState);
         arenaContainer.getChildren().add(arenaView);
+
+        // Center the arena view within the container
+        StackPane.setAlignment(arenaView, javafx.geometry.Pos.CENTER);
+        arenaView.setMaxWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        arenaView.setMaxHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
 
         // Set up arena click handlers for both players
         setupArenaClickHandler();
@@ -284,14 +295,40 @@ public class PvPBattleController {
         int secs = seconds % 60;
         timeLabel.setText(String.format("%02d:%02d", mins, secs));
 
-        // Update score display
-        scoreLabel.setText(String.format("%d - %d", gameState.getPlayer1Score(), gameState.getPlayer2Score()));
+        // Update score display with crowns
+        updateScoreCrowns(gameState.getPlayer1Score(), gameState.getPlayer2Score());
 
         // Update double elixir indicators
         if (gameState.isDoubleElixir()) {
             player1ElixirBar.setDoubleElixirActive(true);
             player2ElixirBar.setDoubleElixirActive(true);
         }
+    }
+
+    private void updateScoreCrowns(int p1Score, int p2Score) {
+        // Only update if child count differs (simple check) to avoid clearing/re-adding
+        // every frame
+        if (player1ScoreContainer.getChildren().size() != p1Score) {
+            player1ScoreContainer.getChildren().clear();
+            for (int i = 0; i < p1Score; i++) {
+                addCrown(player1ScoreContainer);
+            }
+        }
+
+        if (player2ScoreContainer.getChildren().size() != p2Score) {
+            player2ScoreContainer.getChildren().clear();
+            for (int i = 0; i < p2Score; i++) {
+                addCrown(player2ScoreContainer);
+            }
+        }
+    }
+
+    private void addCrown(HBox container) {
+        javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                new javafx.scene.image.Image(getClass().getResourceAsStream("/images/crown.png")));
+        crown.setFitWidth(32);
+        crown.setFitHeight(32);
+        container.getChildren().add(crown);
     }
 
     private void showGameOverPopup() {
@@ -309,8 +346,26 @@ public class PvPBattleController {
             gameOverTitle.setStyle("-fx-text-fill: white; -fx-font-size: 48px; -fx-font-weight: bold;");
         }
 
-        gameOverScore.setText(String.format("Player 1: %d - Player 2: %d",
-                gameState.getPlayer1Score(), gameState.getPlayer2Score()));
+        renderGameOverCrowns(gameOverP1Crowns, gameState.getPlayer1Score(), false);
+        renderGameOverCrowns(gameOverP2Crowns, gameState.getPlayer2Score(), true);
+
+        if (gameOverInfoLabel != null) {
+            gameOverInfoLabel.setText(String.format("Final Score\nPlayer 1: %d  -  Player 2: %d",
+                    gameState.getPlayer1Score(), gameState.getPlayer2Score()));
+        }
+    }
+
+    private void renderGameOverCrowns(HBox container, int count, boolean isOpponent) {
+        container.getChildren().clear();
+        String imagePath = isOpponent ? "/images/oppo_crown.png" : "/images/crown.png";
+
+        for (int i = 0; i < count; i++) {
+            javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                    new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
+            crown.setFitWidth(64);
+            crown.setFitHeight(64);
+            container.getChildren().add(crown);
+        }
     }
 
     @FXML

@@ -22,7 +22,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private final GameState gameState;
     private final com.kuroyale.model.logic.PvPGameState pvpGameState; // For PvP mode
     private final javafx.scene.control.Label timerLabel;
-    private final javafx.scene.control.Label scoreLabel;
+    private final javafx.scene.layout.HBox playerScoreContainer;
+    private final javafx.scene.layout.HBox botScoreContainer;
     private final javafx.scene.control.Label comboLabel;
     private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
 
@@ -80,12 +81,13 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
         // PvP mode: No sidebar (timer/score handled in controller)
         this.timerLabel = null;
-        this.scoreLabel = null;
+        this.playerScoreContainer = null;
+        this.botScoreContainer = null;
         this.comboLabel = null;
 
         StackPane centerContainer = new StackPane(arenaPane);
-        centerContainer.setAlignment(javafx.geometry.Pos.TOP_CENTER);
-        centerContainer.setPadding(new javafx.geometry.Insets(20, 0, 0, 0));
+        centerContainer.setAlignment(javafx.geometry.Pos.CENTER);
+        centerContainer.setPadding(new javafx.geometry.Insets(0, 0, 0, 0));
         this.setCenter(centerContainer);
 
         // Initialize renderers - create a minimal proxy for rendering
@@ -103,39 +105,11 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.gameState = gameState;
         this.pvpGameState = null;
 
-        // Right Sidebar (Timer and Score)
-        javafx.scene.layout.VBox sidebar = new javafx.scene.layout.VBox(20);
-        sidebar.setAlignment(javafx.geometry.Pos.TOP_CENTER);
-        sidebar.setPadding(new javafx.geometry.Insets(20));
-        sidebar.setStyle("-fx-background-color: rgba(0, 0, 0, 0.5);");
-        sidebar.setPrefWidth(200);
-
-        javafx.scene.control.Label timerTitle = new javafx.scene.control.Label("TIME");
-        timerTitle.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
-
-        timerLabel = new javafx.scene.control.Label("03:00");
-        timerLabel.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
-
-        javafx.scene.control.Label scoreTitle = new javafx.scene.control.Label("SCORE");
-        scoreTitle.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
-
-        scoreLabel = new javafx.scene.control.Label("0 - 0");
-        scoreLabel.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
-
-        javafx.scene.control.Label opponentLabel = new javafx.scene.control.Label("OPPONENT");
-        opponentLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 18px; -fx-font-weight: bold;");
-
-        // Combo Counter
-        javafx.scene.control.Label comboTitle = new javafx.scene.control.Label("COMBOS");
-        comboTitle.setStyle("-fx-text-fill: gold; -fx-font-size: 14px;");
-
-        comboLabel = new javafx.scene.control.Label("0");
-        comboLabel.setStyle("-fx-text-fill: gold; -fx-font-size: 24px; -fx-font-weight: bold;");
-
-        sidebar.getChildren().addAll(timerTitle, timerLabel, new javafx.scene.control.Separator(), scoreTitle,
-                scoreLabel, new javafx.scene.control.Separator(), opponentLabel,
-                new javafx.scene.control.Separator(), comboTitle, comboLabel);
-        this.setRight(sidebar);
+        // Sidebar is now defined in battle.fxml - no longer created here
+        this.timerLabel = null;
+        this.playerScoreContainer = null;
+        this.botScoreContainer = null;
+        this.comboLabel = null;
 
         // Center Arena
         this.grid = new GridPane();
@@ -187,8 +161,13 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         });
 
         StackPane centerContainer = new StackPane(arenaPane);
-        centerContainer.setAlignment(javafx.geometry.Pos.TOP_CENTER); // Align to top as requested
-        centerContainer.setPadding(new javafx.geometry.Insets(20, 0, 0, 0)); // Add some top padding
+        // Explicitly center the arenaPane within the StackPane
+        StackPane.setAlignment(arenaPane, javafx.geometry.Pos.CENTER);
+        // Constrain arenaPane to its preferred size so it doesn't stretch
+        arenaPane.setMaxSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        arenaPane.setMinSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        // Shift arena 20px to the left
+        arenaPane.setTranslateX(-10);
 
         this.setCenter(centerContainer);
 
@@ -362,10 +341,15 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         // Update Score
         int playerScore = gameState.getPlayerScore();
         int botScore = gameState.getBotScore();
-        if (playerScore != lastPlayerScore || botScore != lastBotScore) {
+
+        // Update crowns if score changed
+        if (playerScore != lastPlayerScore) {
             lastPlayerScore = playerScore;
+            updateScoreContainer(playerScoreContainer, playerScore, false);
+        }
+        if (botScore != lastBotScore) {
             lastBotScore = botScore;
-            scoreLabel.setText(String.format("%d - %d", playerScore, botScore));
+            updateScoreContainer(botScoreContainer, botScore, true);
         }
 
         // Delegate to Renderers
@@ -674,6 +658,22 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             javafx.application.Platform.runLater(() -> {
                 comboLabel.setText(String.valueOf(count));
             });
+        }
+    }
+
+    private void updateScoreContainer(javafx.scene.layout.HBox container, int score, boolean isOpponent) {
+        if (container == null)
+            return;
+
+        container.getChildren().clear();
+        String imagePath = isOpponent ? "/images/oppo_crown.png" : "/images/crown.png";
+
+        for (int i = 0; i < score; i++) {
+            javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                    new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
+            crown.setFitWidth(32);
+            crown.setFitHeight(32);
+            container.getChildren().add(crown);
         }
     }
 }
