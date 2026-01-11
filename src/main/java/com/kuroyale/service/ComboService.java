@@ -67,6 +67,17 @@ public class ComboService implements GameEventListener {
         return playerUniqueCombos.size();
     }
 
+    // Restores combo count from saved game (adds dummy combos to reach the count)
+    public void restoreComboCount(int count) {
+        // Add placeholder combos to reach the saved count
+        // We use the first N combo types as placeholders since the exact combos aren't
+        // saved
+        ComboType[] allTypes = ComboType.values();
+        for (int i = 0; i < count && i < allTypes.length; i++) {
+            playerUniqueCombos.add(allTypes[i]);
+        }
+    }
+
     public java.util.Set<ComboType> getTriggeredCombos() {
         return new java.util.HashSet<>(playerUniqueCombos);
     }

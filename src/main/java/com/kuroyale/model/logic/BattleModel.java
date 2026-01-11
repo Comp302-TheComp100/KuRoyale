@@ -204,21 +204,26 @@ public class BattleModel {
     }
 
     // Saves the current game state
-    public SavedGameState saveGame(GameState gameState, User user, ArenaLayout layout) {
-        return gameSaveService.saveGame(gameState, user, layout);
+    public SavedGameState saveGame(GameState gameState, User user, ArenaLayout layout, int comboCount) {
+        return gameSaveService.saveGame(gameState, user, layout, comboCount);
     }
 
     public void saveCurrentUser() throws java.io.IOException {
         authService.saveCurrentUser();
     }
 
-    public void processMatchResult(int playerScore, int botScore, int comboBonus) throws java.io.IOException {
+    public void processMatchResult(int playerScore, int botScore, int comboBonus, boolean playerWon, boolean isDraw)
+            throws java.io.IOException {
         int bonus = 0;
-        if (playerScore > botScore) {
-            bonus = VICTORY_GOLD;
-        } else if (playerScore == botScore) {
+
+        if (isDraw) {
+            // True draw (equal scores AND equal lowest tower HP)
             bonus = DRAW_GOLD;
+        } else if (playerWon) {
+            // Player won (by score or tiebreaker)
+            bonus = VICTORY_GOLD;
         } else {
+            // Player lost (by score or tiebreaker)
             bonus = DEFEAT_GOLD;
         }
 

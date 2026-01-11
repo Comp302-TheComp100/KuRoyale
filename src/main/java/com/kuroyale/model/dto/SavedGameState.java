@@ -43,6 +43,9 @@ public class SavedGameState implements Serializable {
     private final List<SavedTroop> activeTroops;
     private final List<SavedBuilding> activeBuildings;
 
+    // Combo tracking
+    private final int comboCount;
+
     // Constructor for creating a saved game state
     public SavedGameState(String playerUsername, double gameTime, boolean isDoubleElixir,
             int playerScore, int botScore,
@@ -51,7 +54,8 @@ public class SavedGameState implements Serializable {
             double botElixir, List<String> botDeckCards,
             List<String> botHandCards, List<String> botDrawPileCards,
             ArenaLayout arenaLayout, List<SavedTower> towers,
-            List<SavedTroop> activeTroops, List<SavedBuilding> activeBuildings) {
+            List<SavedTroop> activeTroops, List<SavedBuilding> activeBuildings,
+            int comboCount) {
         this.saveId = UUID.randomUUID().toString();
         this.saveTime = LocalDateTime.now();
         this.playerUsername = playerUsername;
@@ -71,6 +75,7 @@ public class SavedGameState implements Serializable {
         this.towers = new ArrayList<>(towers);
         this.activeTroops = new ArrayList<>(activeTroops);
         this.activeBuildings = new ArrayList<>(activeBuildings);
+        this.comboCount = comboCount;
     }
 
     // Getters
@@ -148,6 +153,10 @@ public class SavedGameState implements Serializable {
 
     public List<SavedBuilding> getActiveBuildings() {
         return new ArrayList<>(activeBuildings);
+    }
+
+    public int getComboCount() {
+        return comboCount;
     }
 
     // Gets a formatted string showing the time remaining
