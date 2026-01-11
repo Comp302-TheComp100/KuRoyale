@@ -18,6 +18,7 @@ import com.kuroyale.util.ButtonFactory;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.util.StyleHelper;
+import com.kuroyale.model.state.PvPDeckBuilderSession;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Bounds;
@@ -98,6 +99,15 @@ public class DeckBuilderController {
     private HBox deckSlotButtonsBox;
     private boolean replaceMode; // Track if in replace mode
     private Card cardToReplace; // Card selected for replacement
+    private boolean pvpMode = false; // Track if in PvP deck building mode
+
+    /**
+     * Set PvP mode - when true, deck is saved to session and navigates back to PvP
+     * selection.
+     */
+    public void setPvPMode(boolean pvpMode) {
+        this.pvpMode = pvpMode;
+    }
 
     @FXML
     private void initialize() {
@@ -767,10 +777,21 @@ public class DeckBuilderController {
             return;
         }
 
-        try {
-            sceneLoader.load(backButton, "/fxml/main-menu.fxml", "KU Royale", null);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (pvpMode) {
+            // Save deck to PvP session and return to PvP selection
+            PvPDeckBuilderSession session = PvPDeckBuilderSession.getInstance();
+            session.saveBuiltDeck(deck);
+            try {
+                sceneLoader.load(backButton, "/fxml/pvp-deck-selection.fxml", "KU Royale - PvP Deck Selection", null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                sceneLoader.load(backButton, "/fxml/main-menu.fxml", "KU Royale", null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

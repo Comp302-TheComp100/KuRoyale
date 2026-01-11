@@ -1,17 +1,15 @@
 package com.kuroyale.controller;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.Deck;
-import com.kuroyale.model.entities.User;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.CardCatalog;
+import com.kuroyale.model.state.PvPDeckBuilderSession;
+import com.kuroyale.model.strategy.CurrentDeckStrategy;
+import com.kuroyale.model.strategy.CustomDeckStrategy;
+import com.kuroyale.model.strategy.DeckBuildingStrategy;
+import com.kuroyale.model.strategy.RandomDeckStrategy;
 import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.view.CardView;
 
@@ -27,8 +25,12 @@ import javafx.scene.layout.VBox;
 
 /**
  * Controller for PvP deck selection screen.
- * Both players must select their decks before the battle begins.
- * Uses MVC pattern (GRASP Controller).
+ * Both players can select deck source and build custom decks.
+ * 
+ * Design Patterns:
+ * - Strategy Pattern: DeckBuildingStrategy for different deck sources
+ * - Memento Pattern: PvPDeckBuilderSession for state across navigation
+ * - GRASP Controller: Coordinates UI and model
  */
 public class PvPDeckSelectionController {
 
@@ -37,17 +39,21 @@ public class PvPDeckSelectionController {
     @FXML
     private Label titleLabel;
     @FXML
-    private VBox player1Panel;
-    @FXML
-    private VBox player2Panel;
-    @FXML
     private ComboBox<String> player1DeckCombo;
     @FXML
     private ComboBox<String> player2DeckCombo;
     @FXML
+    private VBox player1DeckContainer;
+    @FXML
+    private VBox player2DeckContainer;
+    @FXML
     private GridPane player1DeckGrid;
     @FXML
     private GridPane player2DeckGrid;
+    @FXML
+    private Button player1BuildButton;
+    @FXML
+    private Button player2BuildButton;
     @FXML
     private Label player1ReadyLabel;
     @FXML
@@ -58,120 +64,201 @@ public class PvPDeckSelectionController {
     private Button startBattleButton;
 
     private final SceneLoader sceneLoader = new SceneLoader();
-    private final CardCatalog cardCatalog = ServiceFactory.getInstance().getCardCatalog();
-    private final AuthenticationService authService = ServiceFactory.getInstance().getAuthenticationService();
+    private final PvPDeckBuilderSession session = PvPDeckBuilderSession.getInstance();
 
+    private DeckBuildingStrategy player1Strategy;
+    private DeckBuildingStrategy player2Strategy;
     private Deck player1Deck;
     private Deck player2Deck;
-    private List<String> availableDeckNames;
 
     @FXML
     private void initialize() {
         initializeStyles();
-        loadAvailableDecks();
+        loadDeckOptions();
         setupDeckSelectionListeners();
+
+        // Start PvP session
+        session.startSession();
+
+        // Restore any previously built decks
+        restoreDecksFromSession();
     }
 
     private void initializeStyles() {
         root.getStyleClass().add("main-menu-background");
-
         if (titleLabel != null) {
             titleLabel.getStyleClass().add("title-label");
         }
-
-        // Initially disable start button
         startBattleButton.setDisable(true);
     }
 
-    private void loadAvailableDecks() {
-        // For simplicity, we'll use the current user's deck for selection
-        // In a full implementation, you might have multiple saved decks
-        availableDeckNames = List.of("Current Deck", "Random Deck");
+    private void loadDeckOptions() {
+        var deckOptions = FXCollections.observableArrayList(
+                "Build Deck",
+                "Current Deck",
+                "Random Deck");
 
-        player1DeckCombo.setItems(FXCollections.observableArrayList(availableDeckNames));
-        player2DeckCombo.setItems(FXCollections.observableArrayList(availableDeckNames));
+        player1DeckCombo.setItems(deckOptions);
+        player2DeckCombo.setItems(deckOptions);
 
-        // Set default selection
         player1DeckCombo.getSelectionModel().selectFirst();
         player2DeckCombo.getSelectionModel().selectFirst();
 
-        // Load initial decks
-        updatePlayer1Deck();
-        updatePlayer2Deck();
+        updatePlayer1Selection();
+        updatePlayer2Selection();
     }
 
     private void setupDeckSelectionListeners() {
-        player1DeckCombo.setOnAction(e -> updatePlayer1Deck());
-        player2DeckCombo.setOnAction(e -> updatePlayer2Deck());
+        player1DeckCombo.setOnAction(e -> updatePlayer1Selection());
+        player2DeckCombo.setOnAction(e -> updatePlayer2Selection());
     }
 
-    private void updatePlayer1Deck() {
+    private void restoreDecksFromSession() {
+        // Restore P1 deck if exists
+        if (session.getPlayer1Deck() != null && session.getPlayer1Deck().isValid()) {
+            player1Deck = session.getPlayer1Deck();
+            displayDeckInGrid(player1Deck, player1DeckGrid);
+            player1DeckCombo.getSelectionModel().select("Build Deck");
+        }
+
+        // Restore P2 deck if exists
+        if (session.getPlayer2Deck() != null && session.getPlayer2Deck().isValid()) {
+            player2Deck = session.getPlayer2Deck();
+            displayDeckInGrid(player2Deck, player2DeckGrid);
+            player2DeckCombo.getSelectionModel().select("Build Deck");
+        }
+
+        updateReadyState();
+    }
+
+    private DeckBuildingStrategy createStrategy(String selected) {
+        switch (selected) {
+            case "Current Deck":
+                return new CurrentDeckStrategy();
+            case "Random Deck":
+                return new RandomDeckStrategy();
+            case "Build Deck":
+            default:
+                return new CustomDeckStrategy();
+        }
+    }
+
+    private void updatePlayer1Selection() {
         String selected = player1DeckCombo.getValue();
         if (selected == null)
             return;
 
-        player1Deck = loadDeckByName(selected, 1);
-        displayDeckInGrid(player1Deck, player1DeckGrid);
+        player1Strategy = createStrategy(selected);
+
+        if (player1Strategy.requiresUserInput()) {
+            // Show BUILD button, hide/clear grid unless we have a saved deck
+            showBuildButton(1);
+            if (session.getPlayer1Deck() != null && session.getPlayer1Deck().isValid()) {
+                player1Deck = session.getPlayer1Deck();
+                displayDeckInGrid(player1Deck, player1DeckGrid);
+            } else {
+                player1DeckGrid.getChildren().clear();
+                player1Deck = null;
+            }
+        } else {
+            // Use strategy to build deck
+            hideBuildButton(1);
+            player1Deck = player1Strategy.buildDeck();
+            session.setPlayer1Deck(player1Deck);
+            displayDeckInGrid(player1Deck, player1DeckGrid);
+        }
+
         updateReadyState();
     }
 
-    private void updatePlayer2Deck() {
+    private void updatePlayer2Selection() {
         String selected = player2DeckCombo.getValue();
         if (selected == null)
             return;
 
-        player2Deck = loadDeckByName(selected, 2);
-        displayDeckInGrid(player2Deck, player2DeckGrid);
+        player2Strategy = createStrategy(selected);
+
+        if (player2Strategy.requiresUserInput()) {
+            showBuildButton(2);
+            if (session.getPlayer2Deck() != null && session.getPlayer2Deck().isValid()) {
+                player2Deck = session.getPlayer2Deck();
+                displayDeckInGrid(player2Deck, player2DeckGrid);
+            } else {
+                player2DeckGrid.getChildren().clear();
+                player2Deck = null;
+            }
+        } else {
+            hideBuildButton(2);
+            player2Deck = player2Strategy.buildDeck();
+            session.setPlayer2Deck(player2Deck);
+            displayDeckInGrid(player2Deck, player2DeckGrid);
+        }
+
         updateReadyState();
     }
 
-    private Deck loadDeckByName(String name, int playerNumber) {
-        User currentUser = authService.getCurrentUser();
-
-        if ("Current Deck".equals(name) && currentUser != null) {
-            // Load the user's current deck
-            List<String> cardNames = currentUser.getDeck();
-            Deck deck = new Deck();
-            for (String cardName : cardNames) {
-                if (cardName != null && !cardName.isEmpty()) {
-                    int level = currentUser.getCardLevel(cardName);
-                    Card card = cardCatalog.createCardWithLevel(cardName, level);
-                    if (card != null) {
-                        deck.addCard(card);
-                    }
-                }
-            }
-            return deck;
-        } else {
-            // Generate a random deck
-            return generateRandomDeck();
+    private void showBuildButton(int player) {
+        if (player == 1 && player1BuildButton != null) {
+            player1BuildButton.setVisible(true);
+            player1BuildButton.setManaged(true);
+        } else if (player == 2 && player2BuildButton != null) {
+            player2BuildButton.setVisible(true);
+            player2BuildButton.setManaged(true);
         }
     }
 
-    private Deck generateRandomDeck() {
-        Deck deck = new Deck();
-        List<Card> allCards = new ArrayList<>(cardCatalog.getAllCards());
-        Collections.shuffle(allCards);
-
-        for (int i = 0; i < Math.min(8, allCards.size()); i++) {
-            deck.addCard(allCards.get(i));
+    private void hideBuildButton(int player) {
+        if (player == 1 && player1BuildButton != null) {
+            player1BuildButton.setVisible(false);
+            player1BuildButton.setManaged(false);
+        } else if (player == 2 && player2BuildButton != null) {
+            player2BuildButton.setVisible(false);
+            player2BuildButton.setManaged(false);
         }
-        return deck;
+    }
+
+    @FXML
+    private void handlePlayer1Build() {
+        SoundEffectUtil.playButtonClick();
+        session.setActivePlayer(1);
+        navigateToDeckBuilder();
+    }
+
+    @FXML
+    private void handlePlayer2Build() {
+        SoundEffectUtil.playButtonClick();
+        session.setActivePlayer(2);
+        navigateToDeckBuilder();
+    }
+
+    private void navigateToDeckBuilder() {
+        try {
+            sceneLoader.load(root, "/fxml/deck-builder.fxml", "KU Royale - Build Deck", controller -> {
+                if (controller instanceof DeckBuilderController deckController) {
+                    deckController.setPvPMode(true);
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to open deck builder: " + e.getMessage());
+        }
     }
 
     private void displayDeckInGrid(Deck deck, GridPane grid) {
+        if (grid == null)
+            return;
         grid.getChildren().clear();
 
         if (deck == null)
             return;
 
-        List<Card> cards = deck.getCards();
+        var cards = deck.getCards();
         for (int i = 0; i < cards.size(); i++) {
             Card card = cards.get(i);
             if (card != null) {
                 CardView cardView = new CardView(card);
-                cardView.setPrefWidth(50);
-                cardView.setPrefHeight(65);
+                cardView.setPrefWidth(60);
+                cardView.setPrefHeight(80);
 
                 int col = i % 4;
                 int row = i / 4;
@@ -181,10 +268,9 @@ public class PvPDeckSelectionController {
     }
 
     private void updateReadyState() {
-        boolean p1Ready = player1Deck != null && player1Deck.getCards().size() >= 8;
-        boolean p2Ready = player2Deck != null && player2Deck.getCards().size() >= 8;
+        boolean p1Ready = player1Deck != null && player1Deck.isValid();
+        boolean p2Ready = player2Deck != null && player2Deck.isValid();
 
-        // Update ready labels
         player1ReadyLabel.setText(p1Ready ? "READY!" : "NOT READY");
         player1ReadyLabel.setStyle(p1Ready ? "-fx-text-fill: #22c55e; -fx-font-weight: bold;"
                 : "-fx-text-fill: #ef4444; -fx-font-weight: bold;");
@@ -193,7 +279,6 @@ public class PvPDeckSelectionController {
         player2ReadyLabel.setStyle(p2Ready ? "-fx-text-fill: #22c55e; -fx-font-weight: bold;"
                 : "-fx-text-fill: #ef4444; -fx-font-weight: bold;");
 
-        // Enable start button only if both players are ready
         startBattleButton.setDisable(!(p1Ready && p2Ready));
     }
 
@@ -202,15 +287,19 @@ public class PvPDeckSelectionController {
         SoundEffectUtil.playButtonClick();
 
         if (player1Deck == null || player2Deck == null) {
-            showError("Both players must select a deck!");
+            showError("Both players must have a deck!");
             return;
         }
 
-        // Navigate to PvP battle with both decks
+        // End session before battle
+        session.endSession();
+
         try {
+            final Deck p1 = player1Deck;
+            final Deck p2 = player2Deck;
             sceneLoader.load(root, "/fxml/pvp-battle.fxml", "KU Royale - PvP Battle", controller -> {
                 if (controller instanceof PvPBattleController pvpController) {
-                    pvpController.initializeGame(player1Deck, player2Deck);
+                    pvpController.initializeGame(p1, p2);
                 }
             });
         } catch (IOException e) {
@@ -222,6 +311,7 @@ public class PvPDeckSelectionController {
     @FXML
     private void handleBack() {
         SoundEffectUtil.playButtonClick();
+        session.endSession();
         try {
             sceneLoader.load(backButton, "/fxml/battle-mode-selection.fxml", "KU Royale - Select Battle Mode", null);
         } catch (IOException e) {
