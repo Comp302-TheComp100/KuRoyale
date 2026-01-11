@@ -86,7 +86,13 @@ public class PvPBattleController {
      * Called from PvPDeckSelectionController after deck selection.
      */
     public void initializeGame(Deck player1Deck, Deck player2Deck) {
-        // Load arena layout (use default for PvP)
+        // Set current user in arena service to load their saved layout
+        User currentUser = model.getCurrentUser();
+        if (currentUser != null) {
+            model.setCurrentUserInArenaService(currentUser);
+        }
+
+        // Load arena layout (loads saved layout if available)
         ArenaLayout arenaLayout = model.loadArenaLayout();
         Arena arena = model.createArena(arenaLayout);
 
