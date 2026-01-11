@@ -5,7 +5,6 @@ import java.io.IOException;
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.Deck;
 import com.kuroyale.model.state.PvPDeckBuilderSession;
-import com.kuroyale.model.strategy.CurrentDeckStrategy;
 import com.kuroyale.model.strategy.CustomDeckStrategy;
 import com.kuroyale.model.strategy.DeckBuildingStrategy;
 import com.kuroyale.model.strategy.RandomDeckStrategy;
@@ -55,6 +54,10 @@ public class PvPDeckSelectionController {
     @FXML
     private Button player2BuildButton;
     @FXML
+    private Button player1RandomizeButton;
+    @FXML
+    private Button player2RandomizeButton;
+    @FXML
     private Label player1ReadyLabel;
     @FXML
     private Label player2ReadyLabel;
@@ -95,7 +98,6 @@ public class PvPDeckSelectionController {
     private void loadDeckOptions() {
         var deckOptions = FXCollections.observableArrayList(
                 "Build Deck",
-                "Current Deck",
                 "Random Deck");
 
         player1DeckCombo.setItems(deckOptions);
@@ -133,8 +135,6 @@ public class PvPDeckSelectionController {
 
     private DeckBuildingStrategy createStrategy(String selected) {
         switch (selected) {
-            case "Current Deck":
-                return new CurrentDeckStrategy();
             case "Random Deck":
                 return new RandomDeckStrategy();
             case "Build Deck":
@@ -151,8 +151,10 @@ public class PvPDeckSelectionController {
         player1Strategy = createStrategy(selected);
 
         if (player1Strategy.requiresUserInput()) {
-            // Show BUILD button, hide/clear grid unless we have a saved deck
+            // Show BUILD button, hide randomize, hide/clear grid unless we have a saved
+            // deck
             showBuildButton(1);
+            hideRandomizeButton(1);
             if (session.getPlayer1Deck() != null && session.getPlayer1Deck().isValid()) {
                 player1Deck = session.getPlayer1Deck();
                 displayDeckInGrid(player1Deck, player1DeckGrid);
@@ -161,8 +163,9 @@ public class PvPDeckSelectionController {
                 player1Deck = null;
             }
         } else {
-            // Use strategy to build deck
+            // Use strategy to build deck (Random Deck)
             hideBuildButton(1);
+            showRandomizeButton(1);
             player1Deck = player1Strategy.buildDeck();
             session.setPlayer1Deck(player1Deck);
             displayDeckInGrid(player1Deck, player1DeckGrid);
@@ -180,6 +183,7 @@ public class PvPDeckSelectionController {
 
         if (player2Strategy.requiresUserInput()) {
             showBuildButton(2);
+            hideRandomizeButton(2);
             if (session.getPlayer2Deck() != null && session.getPlayer2Deck().isValid()) {
                 player2Deck = session.getPlayer2Deck();
                 displayDeckInGrid(player2Deck, player2DeckGrid);
@@ -189,6 +193,7 @@ public class PvPDeckSelectionController {
             }
         } else {
             hideBuildButton(2);
+            showRandomizeButton(2);
             player2Deck = player2Strategy.buildDeck();
             session.setPlayer2Deck(player2Deck);
             displayDeckInGrid(player2Deck, player2DeckGrid);
@@ -217,6 +222,26 @@ public class PvPDeckSelectionController {
         }
     }
 
+    private void showRandomizeButton(int player) {
+        if (player == 1 && player1RandomizeButton != null) {
+            player1RandomizeButton.setVisible(true);
+            player1RandomizeButton.setManaged(true);
+        } else if (player == 2 && player2RandomizeButton != null) {
+            player2RandomizeButton.setVisible(true);
+            player2RandomizeButton.setManaged(true);
+        }
+    }
+
+    private void hideRandomizeButton(int player) {
+        if (player == 1 && player1RandomizeButton != null) {
+            player1RandomizeButton.setVisible(false);
+            player1RandomizeButton.setManaged(false);
+        } else if (player == 2 && player2RandomizeButton != null) {
+            player2RandomizeButton.setVisible(false);
+            player2RandomizeButton.setManaged(false);
+        }
+    }
+
     @FXML
     private void handlePlayer1Build() {
         SoundEffectUtil.playButtonClick();
@@ -229,6 +254,28 @@ public class PvPDeckSelectionController {
         SoundEffectUtil.playButtonClick();
         session.setActivePlayer(2);
         navigateToDeckBuilder();
+    }
+
+    @FXML
+    private void handlePlayer1Randomize() {
+        SoundEffectUtil.playButtonClick();
+        // Generate a new random deck for player 1
+        player1Strategy = new RandomDeckStrategy();
+        player1Deck = player1Strategy.buildDeck();
+        session.setPlayer1Deck(player1Deck);
+        displayDeckInGrid(player1Deck, player1DeckGrid);
+        updateReadyState();
+    }
+
+    @FXML
+    private void handlePlayer2Randomize() {
+        SoundEffectUtil.playButtonClick();
+        // Generate a new random deck for player 2
+        player2Strategy = new RandomDeckStrategy();
+        player2Deck = player2Strategy.buildDeck();
+        session.setPlayer2Deck(player2Deck);
+        displayDeckInGrid(player2Deck, player2DeckGrid);
+        updateReadyState();
     }
 
     private void navigateToDeckBuilder() {

@@ -34,6 +34,9 @@
             <!-- BUILD Button (shown when Build Deck selected) -->
             <Button fx:id="player1BuildButton" text="BUILD DECK" onAction="#handlePlayer1Build" styleClass="menu-button-gold" prefWidth="180" prefHeight="45"/>
 
+            <!-- RANDOMIZE Button (shown when Random Deck selected) -->
+            <Button fx:id="player1RandomizeButton" text="🎲 RANDOMIZE" onAction="#handlePlayer1Randomize" styleClass="menu-button" prefWidth="180" prefHeight="45" visible="false" managed="false"/>
+
             <!-- Deck Preview Grid -->
             <VBox fx:id="player1DeckContainer" alignment="CENTER" spacing="10">
                 <Label text="Deck Preview:" style="-fx-text-fill: #aaa; -fx-font-size: 14px;"/>
@@ -62,6 +65,9 @@
 
             <!-- BUILD Button (shown when Build Deck selected) -->
             <Button fx:id="player2BuildButton" text="BUILD DECK" onAction="#handlePlayer2Build" styleClass="menu-button-gold" prefWidth="180" prefHeight="45"/>
+
+            <!-- RANDOMIZE Button (shown when Random Deck selected) -->
+            <Button fx:id="player2RandomizeButton" text="🎲 RANDOMIZE" onAction="#handlePlayer2Randomize" styleClass="menu-button" prefWidth="180" prefHeight="45" visible="false" managed="false"/>
 
             <!-- Deck Preview Grid -->
             <VBox fx:id="player2DeckContainer" alignment="CENTER" spacing="10">
