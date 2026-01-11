@@ -6,7 +6,7 @@ import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.ICombatant;
 import com.kuroyale.model.enums.CardType;
 import com.kuroyale.model.enums.ComboType;
-import com.kuroyale.model.logic.GameState;
+// import com.kuroyale.model.logic.GameState; // Removed unused import
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -29,150 +29,181 @@ public class ComboService implements GameEventListener {
         }
     }
 
-    private final Deque<PlayedCardEvent> playedCards = new ArrayDeque<>();
-    private final java.util.Set<ComboType> uniqueCombosTriggered = new java.util.HashSet<>();
-    // Track last trigger time per combo type to prevent re-triggering within same
-    // 5-second window
-    private final java.util.Map<ComboType, Long> comboCooldowns = new java.util.HashMap<>();
-    private GameState gameState; // Reference to apply global effects like Elixir refund
+    private final Deque<PlayedCardEvent> playerPlayedCards = new ArrayDeque<>();
+    private final Deque<PlayedCardEvent> opponentPlayedCards = new ArrayDeque<>();
+
+    // Track unique combos for both sides separately for stats
+    private final java.util.Set<ComboType> playerUniqueCombos = new java.util.HashSet<>();
+    private final java.util.Set<ComboType> opponentUniqueCombos = new java.util.HashSet<>();
+
+    // Track last trigger time per combo type (globally or per player? Usually per
+    // player is better but to keep it simple let's use a composite key or just
+    // separate maps if needed.
+    // Actually, simply using separate maps for cooldowns is safer.)
+    private final java.util.Map<ComboType, Long> playerComboCooldowns = new java.util.HashMap<>();
+    private final java.util.Map<ComboType, Long> opponentComboCooldowns = new java.util.HashMap<>();
+
+    private com.kuroyale.model.logic.IBattleState gameState; // Reference to apply global effects like Elixir refund
 
     public ComboService() {
         GameEventBus.getInstance().subscribe(this);
     }
 
-    public void setGameState(GameState gameState) {
+    public void setGameState(com.kuroyale.model.logic.IBattleState gameState) {
         this.gameState = gameState;
     }
 
     public void cleanup() {
         GameEventBus.getInstance().unsubscribe(this);
-        uniqueCombosTriggered.clear();
-        comboCooldowns.clear();
+        playerUniqueCombos.clear();
+        opponentUniqueCombos.clear();
+        playerComboCooldowns.clear();
+        opponentComboCooldowns.clear();
+        playerPlayedCards.clear();
+        opponentPlayedCards.clear();
     }
 
     public int getUniqueComboCount() {
-        return uniqueCombosTriggered.size();
+        return playerUniqueCombos.size();
     }
 
     public java.util.Set<ComboType> getTriggeredCombos() {
-        return new java.util.HashSet<>(uniqueCombosTriggered);
+        return new java.util.HashSet<>(playerUniqueCombos);
+    }
+
+    // New method for opponent stats if needed (e.g. PvP end screen)
+    public int getOpponentUniqueComboCount() {
+        return opponentUniqueCombos.size();
+    }
+
+    public java.util.Set<ComboType> getOpponentTriggeredCombos() {
+        return new java.util.HashSet<>(opponentUniqueCombos);
     }
 
     @Override
     public void onCardPlayed(boolean isPlayer, Card card, List<ICombatant> spawnedUnits) {
-        if (!isPlayer)
-            return;
-
         long now = System.currentTimeMillis();
-        pruneOldEvents(now);
+
+        Deque<PlayedCardEvent> targetList = isPlayer ? playerPlayedCards : opponentPlayedCards;
+
+        pruneOldEvents(targetList, now);
 
         // Check for combos
-        checkCombos(card, spawnedUnits, now);
+        checkCombos(isPlayer, card, spawnedUnits, targetList, now);
 
         // Add current event
-        playedCards.addLast(new PlayedCardEvent(card, now, spawnedUnits));
+        targetList.addLast(new PlayedCardEvent(card, now, spawnedUnits));
     }
 
-    private void pruneOldEvents(long now) {
-        while (!playedCards.isEmpty() && (now - playedCards.peekFirst().timestamp > COMBO_WINDOW_MS)) {
-            playedCards.removeFirst();
+    private void pruneOldEvents(Deque<PlayedCardEvent> list, long now) {
+        while (!list.isEmpty() && (now - list.peekFirst().timestamp > COMBO_WINDOW_MS)) {
+            list.removeFirst();
         }
     }
 
-    private void checkCombos(Card currentCard, List<ICombatant> currentUnits, long now) {
+    private void checkCombos(boolean isPlayer, Card currentCard, List<ICombatant> currentUnits,
+            Deque<PlayedCardEvent> history, long now) {
         // Iterate backwards to find the most recent matching pair
-        java.util.Iterator<PlayedCardEvent> it = playedCards.descendingIterator();
+        java.util.Iterator<PlayedCardEvent> it = history.descendingIterator();
 
         while (it.hasNext()) {
             PlayedCardEvent prevEvent = it.next();
 
-            // Avoid triggering with itself (shouldn't happen as we add after check)
+            // Priority 1: Siege Mode & Air Assault
+            if (checkSiegeMode(isPlayer, prevEvent, currentCard, currentUnits, now))
+                return;
+            if (checkAirAssault(isPlayer, prevEvent, currentCard, currentUnits, now))
+                return;
 
-            if (checkTankSupport(prevEvent, currentCard, currentUnits))
+            // Priority 2: Royal Combo (Prioritized over generic Tank+Support)
+            if (checkRoyalCombo(isPlayer, prevEvent, currentCard, currentUnits, now))
                 return;
-            if (checkSpellSynergy(prevEvent, currentCard))
+
+            // Priority 3: Others
+            if (checkTankSupport(isPlayer, prevEvent, currentCard, currentUnits, now))
                 return;
-            if (checkSwarmAttack(prevEvent, currentCard, currentUnits))
+            if (checkSpellSynergy(isPlayer, prevEvent, currentCard, now))
                 return;
-            if (checkBuildingDefense(prevEvent, currentCard, currentUnits))
+            if (checkSwarmAttack(isPlayer, prevEvent, currentCard, currentUnits, now))
                 return;
-            if (checkAirAssault(prevEvent, currentCard, currentUnits))
+            if (checkBuildingDefense(isPlayer, prevEvent, currentCard, currentUnits, now))
                 return;
-            if (checkRoyalCombo(prevEvent, currentCard, currentUnits))
-                return;
-            if (checkSiegeMode(prevEvent, currentCard, currentUnits))
-                return;
-            if (checkRushAttack(prevEvent, currentCard, currentUnits))
+            if (checkRushAttack(isPlayer, prevEvent, currentCard, currentUnits, now))
                 return;
         }
     }
 
-    private boolean canTriggerCombo(ComboType type, long now) {
-        Long lastTrigger = comboCooldowns.get(type);
+    private boolean canTriggerCombo(boolean isPlayer, ComboType type, long now) {
+        java.util.Map<ComboType, Long> cooldowns = isPlayer ? playerComboCooldowns : opponentComboCooldowns;
+        Long lastTrigger = cooldowns.get(type);
         return lastTrigger == null || (now - lastTrigger > COMBO_WINDOW_MS);
     }
 
-    private void triggerCombo(ComboType type, List<ICombatant> affectedUnits) {
+    private void triggerCombo(boolean isPlayer, ComboType type, List<ICombatant> affectedUnits) {
         long now = System.currentTimeMillis();
-        if (!canTriggerCombo(type, now)) {
+        if (!canTriggerCombo(isPlayer, type, now)) {
             return; // Combo already triggered within this 5-second window
         }
-        comboCooldowns.put(type, now);
-        uniqueCombosTriggered.add(type);
+
+        if (isPlayer) {
+            playerComboCooldowns.put(type, now);
+            playerUniqueCombos.add(type);
+        } else {
+            opponentComboCooldowns.put(type, now);
+            opponentUniqueCombos.add(type);
+        }
+
         GameEventBus.getInstance().publishComboTriggered(type, affectedUnits);
     }
 
     // 1. Tank + Support
-    private boolean checkTankSupport(PlayedCardEvent prev, Card curr, List<ICombatant> currUnits) {
+    private boolean checkTankSupport(boolean isPlayer, PlayedCardEvent prev, Card curr, List<ICombatant> currUnits,
+            long now) {
         boolean prevIsTank = isTank(prev.card);
         boolean currIsRanged = isRangedTroop(curr);
 
         if (prevIsTank && currIsRanged) {
             applyDamageBuff(currUnits, 0.15); // +15%
-            triggerCombo(ComboType.TANK_SUPPORT, currUnits);
+            triggerCombo(isPlayer, ComboType.TANK_SUPPORT, currUnits);
             return true;
         }
         return false;
     }
 
     // 2. Spell Synergy
-    private boolean checkSpellSynergy(PlayedCardEvent prev, Card curr) {
+    private boolean checkSpellSynergy(boolean isPlayer, PlayedCardEvent prev, Card curr, long now) {
         if (prev.card.getType() == CardType.SPELL && curr.getType() == CardType.SPELL) {
             // Refund 1 Elixir
             if (gameState != null) {
-                gameState.getPlayerElixir().refund(1);
+                gameState.getElixirManager(isPlayer).refund(1);
             }
-            triggerCombo(ComboType.SPELL_SYNERGY, new ArrayList<>());
+            triggerCombo(isPlayer, ComboType.SPELL_SYNERGY, new ArrayList<>());
             return true;
         }
         return false;
     }
 
     // 3. Swarm Attack
-    private boolean checkSwarmAttack(PlayedCardEvent prev, Card curr, List<ICombatant> currUnits) {
+    private boolean checkSwarmAttack(boolean isPlayer, PlayedCardEvent prev, Card curr, List<ICombatant> currUnits,
+            long now) {
         if (isSwarm(prev.card) && isSwarm(curr)) {
             List<ICombatant> allUnits = new ArrayList<>(prev.spawnedUnits);
             allUnits.addAll(currUnits);
-            // Effect: +10% Movement Speed (Not directly supported by Unit yet, but let's
-            // assume valid or skip logic)
-            // Implementation: We might need to add speed modifier to ICombatant/Troop.
-            // For now, let's just trigger visual and maybe skip actual mechanic if too
-            // hard,
-            // OR cast to Troop and set speed.
-
+            // Effect: +10% Movement Speed
             for (ICombatant u : allUnits) {
                 if (u instanceof com.kuroyale.model.entities.Troop) {
                     ((com.kuroyale.model.entities.Troop) u).modifySpeed(1.10);
                 }
             }
-            triggerCombo(ComboType.SWARM_ATTACK, allUnits);
+            triggerCombo(isPlayer, ComboType.SWARM_ATTACK, allUnits);
             return true;
         }
         return false;
     }
 
     // 4. Building Defense
-    private boolean checkBuildingDefense(PlayedCardEvent prev, Card curr, List<ICombatant> currUnits) {
+    private boolean checkBuildingDefense(boolean isPlayer, PlayedCardEvent prev, Card curr, List<ICombatant> currUnits,
+            long now) {
         if (prev.card.getType() == CardType.BUILDING && curr.getType() == CardType.BUILDING) {
             List<ICombatant> allUnits = new ArrayList<>(prev.spawnedUnits);
             allUnits.addAll(currUnits);
@@ -183,14 +214,15 @@ public class ComboService implements GameEventListener {
                             .heal((int) (((com.kuroyale.model.entities.Building) u).getMaxHealth() * 0.20));
                 }
             }
-            triggerCombo(ComboType.BUILDING_DEFENSE, allUnits);
+            triggerCombo(isPlayer, ComboType.BUILDING_DEFENSE, allUnits);
             return true;
         }
         return false;
     }
 
     // 5. Air Assault
-    private boolean checkAirAssault(PlayedCardEvent prev, Card curr, List<ICombatant> currUnits) {
+    private boolean checkAirAssault(boolean isPlayer, PlayedCardEvent prev, Card curr, List<ICombatant> currUnits,
+            long now) {
         boolean minions1 = prev.card.getName().contains("Minion");
         boolean minions2 = curr.getName().contains("Minion");
 
@@ -198,26 +230,24 @@ public class ComboService implements GameEventListener {
             List<ICombatant> allUnits = new ArrayList<>(prev.spawnedUnits);
             allUnits.addAll(currUnits);
             applyDamageBuff(allUnits, 0.15);
-            triggerCombo(ComboType.AIR_ASSAULT, allUnits);
+            triggerCombo(isPlayer, ComboType.AIR_ASSAULT, allUnits);
             return true;
         }
         return false;
     }
 
     // 6. Royal Combo
-    private boolean checkRoyalCombo(PlayedCardEvent prev, Card curr, List<ICombatant> currUnits) {
+    private boolean checkRoyalCombo(boolean isPlayer, PlayedCardEvent prev, Card curr, List<ICombatant> currUnits,
+            long now) {
         boolean knightPlayed = prev.card.getName().equals("Knight") || curr.getName().equals("Knight");
         boolean archersPlayed = prev.card.getName().equals("Archers") || curr.getName().equals("Archers");
 
         if (knightPlayed && archersPlayed) {
-            // Find the Knight instance
             List<ICombatant> knightUnits = new ArrayList<>();
             List<ICombatant> allUnits = new ArrayList<>(prev.spawnedUnits);
             allUnits.addAll(currUnits);
 
             for (ICombatant u : allUnits) {
-                // How to check name from unit? Unit doesn't have name field usually, Card does.
-                // Troop has getBaseCard().
                 if (u instanceof com.kuroyale.model.entities.Troop) {
                     if (((com.kuroyale.model.entities.Troop) u).getBaseCard().getName().equals("Knight")) {
                         ((com.kuroyale.model.entities.Troop) u).heal(100);
@@ -227,7 +257,7 @@ public class ComboService implements GameEventListener {
             }
 
             if (!knightUnits.isEmpty()) {
-                triggerCombo(ComboType.ROYAL_COMBO, knightUnits);
+                triggerCombo(isPlayer, ComboType.ROYAL_COMBO, knightUnits);
                 return true;
             }
         }
@@ -235,11 +265,11 @@ public class ComboService implements GameEventListener {
     }
 
     // 7. Siege Mode
-    private boolean checkSiegeMode(PlayedCardEvent prev, Card curr, List<ICombatant> currUnits) {
+    private boolean checkSiegeMode(boolean isPlayer, PlayedCardEvent prev, Card curr, List<ICombatant> currUnits,
+            long now) {
         boolean mortarPlayed = prev.card.getName().equals("Mortar") || curr.getName().equals("Mortar");
         boolean defensePlayed = isDefensiveBuilding(prev.card) || isDefensiveBuilding(curr);
 
-        // Ensure they are different cards or just satisfy the condition
         if (mortarPlayed && defensePlayed) {
             List<ICombatant> allUnits = new ArrayList<>(prev.spawnedUnits);
             allUnits.addAll(currUnits);
@@ -248,11 +278,8 @@ public class ComboService implements GameEventListener {
             for (ICombatant u : allUnits) {
                 if (u instanceof com.kuroyale.model.entities.Building) {
                     com.kuroyale.model.entities.Building b = (com.kuroyale.model.entities.Building) u;
-                    // Check if it corresponds to Mortar (via image path or similar?)
-                    // Building doesn't keep Card reference easily visible in all versions.
-                    // But we know which batch it came from.
                     boolean fromMortarCard = false;
-                    // We can infer from the event batch
+
                     if (prev.spawnedUnits.contains(u) && prev.card.getName().equals("Mortar"))
                         fromMortarCard = true;
                     if (currUnits.contains(u) && curr.getName().equals("Mortar"))
@@ -266,7 +293,7 @@ public class ComboService implements GameEventListener {
             }
 
             if (!mortars.isEmpty()) {
-                triggerCombo(ComboType.SIEGE_MODE, mortars);
+                triggerCombo(isPlayer, ComboType.SIEGE_MODE, mortars);
                 return true;
             }
         }
@@ -274,7 +301,8 @@ public class ComboService implements GameEventListener {
     }
 
     // 8. Rush Attack
-    private boolean checkRushAttack(PlayedCardEvent prev, Card curr, List<ICombatant> currUnits) {
+    private boolean checkRushAttack(boolean isPlayer, PlayedCardEvent prev, Card curr, List<ICombatant> currUnits,
+            long now) {
         boolean hogPlayed = prev.card.getName().equals("Hog Rider") || curr.getName().equals("Hog Rider");
         boolean lowCostPlayed = prev.card.getCost() <= 2 || curr.getCost() <= 2;
 
@@ -294,7 +322,7 @@ public class ComboService implements GameEventListener {
             }
 
             if (!hogs.isEmpty()) {
-                triggerCombo(ComboType.RUSH_ATTACK, hogs);
+                triggerCombo(isPlayer, ComboType.RUSH_ATTACK, hogs);
                 return true;
             }
         }

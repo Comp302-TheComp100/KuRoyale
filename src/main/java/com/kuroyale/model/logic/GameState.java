@@ -380,10 +380,10 @@ public class GameState implements IBattleState {
             // 2. Add to Placed History
             placedCards.add(new PlacedCard(card, x, y, isPlayer));
 
-            // 3. Quests & Achievements (Player Only)
-            if (isPlayer) {
-                GameEventBus.getInstance().publishCardPlayed(true, card, spawnedUnits);
-            }
+            // 3. Quests & Achievements (Player Only - listeners will filter)
+            // Correction: ComboService needs this for Bot too.
+            // Quests should filter by isPlayer themselves if needed.
+            GameEventBus.getInstance().publishCardPlayed(isPlayer, card, spawnedUnits);
         }
 
         return spawnedUnits;

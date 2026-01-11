@@ -48,10 +48,25 @@ public class PvPGameState implements IBattleState {
         this.placedCards = new ArrayList<>();
         this.activeTroops = new ArrayList<>();
         this.activeBuildings = new ArrayList<>();
+
+        // Initialize Combo Service
+        this.comboService.setGameState(this);
+    }
+
+    private final com.kuroyale.service.ComboService comboService = new com.kuroyale.service.ComboService();
+
+    public com.kuroyale.service.ComboService getComboService() {
+        return comboService;
     }
 
     public void setCardCatalog(java.util.function.Function<String, Card> cardCatalog) {
         this.cardCatalog = cardCatalog;
+    }
+
+    public void cleanup() {
+        if (comboService != null) {
+            comboService.cleanup();
+        }
     }
 
     public void update(double deltaTime) {
@@ -208,39 +223,39 @@ public class PvPGameState implements IBattleState {
         if (card == null)
             return false;
 
-        boolean success = false;
+        java.util.List<ICombatant> spawnedUnits = null;
         if (card.getType() == CardType.BUILDING) {
-            success = spawnBuilding(isPlayer1, card, x, y);
+            spawnedUnits = spawnBuilding(isPlayer1, card, x, y);
         } else if (card.getType() == CardType.TROOP) {
-            success = spawnTroopGroup(isPlayer1, card, x, y);
+            spawnedUnits = spawnTroopGroup(isPlayer1, card, x, y);
         } else if (card.getType() == CardType.SPELL) {
             applySpellEffect(isPlayer1, card, x, y);
-            success = true;
+            spawnedUnits = new java.util.ArrayList<>();
         }
 
-        if (success) {
+        if (spawnedUnits != null) {
             placedCards.add(new PlacedCard(card, x, y, isPlayer1));
-            if (isPlayer1) {
-                GameEventBus.getInstance().publishCardPlayed(isPlayer1, card, new java.util.ArrayList<>());
-            }
+            // Publish for both players/bot so ComboService can detect
+            GameEventBus.getInstance().publishCardPlayed(isPlayer1, card, spawnedUnits);
+            return true;
         }
 
-        return success;
+        return false;
     }
 
-    private boolean spawnBuilding(boolean isPlayer1, Card card, int x, int y) {
+    private java.util.List<ICombatant> spawnBuilding(boolean isPlayer1, Card card, int x, int y) {
         int bw = Math.max(1, card.getFootprintWidthTiles());
         int bh = Math.max(1, card.getFootprintHeightTiles());
 
         if (x < 0 || y < 0 || (x + bw) > Arena.WIDTH || (y + bh) > Arena.HEIGHT) {
-            return false;
+            return null;
         }
 
         for (int dx = 0; dx < bw; dx++) {
             for (int dy = 0; dy < bh; dy++) {
                 GridCell c = arena.getCell(x + dx, y + dy);
                 if (c == null || c.isOccupied() || !c.isWalkable()) {
-                    return false;
+                    return null;
                 }
             }
         }
@@ -258,12 +273,15 @@ public class PvPGameState implements IBattleState {
             arena.occupyFootprint(building);
             activeBuildings.add(building);
             arena.getSpatialGrid().add(building);
-            return true;
+
+            java.util.List<ICombatant> result = new java.util.ArrayList<>();
+            result.add(building);
+            return result;
         }
-        return false;
+        return null;
     }
 
-    private boolean spawnTroopGroup(boolean isPlayer1, Card card, int x, int y) {
+    private java.util.List<ICombatant> spawnTroopGroup(boolean isPlayer1, Card card, int x, int y) {
         final int[][] OFFSETS = {
                 { 0, 0 }, { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 },
                 { 1, 1 }, { -1, -1 }, { 1, -1 }, { -1, 1 },
@@ -271,6 +289,8 @@ public class PvPGameState implements IBattleState {
         };
 
         int count = Math.max(1, card.getCount());
+        java.util.List<ICombatant> spawned = new java.util.ArrayList<>();
+
         for (int i = 0; i < count; i++) {
             int[] offset = (i < OFFSETS.length) ? OFFSETS[i] : OFFSETS[0];
             int spawnX = x + offset[0];
@@ -294,9 +314,10 @@ public class PvPGameState implements IBattleState {
                 Troop troop = new Troop(card, spawn, isPlayer1);
                 activeTroops.add(troop);
                 arena.getSpatialGrid().add(troop);
+                spawned.add(troop);
             }
         }
-        return true;
+        return spawned.isEmpty() ? null : spawned;
     }
 
     // Spawns troops directly (used by buildings/spells)
@@ -313,7 +334,7 @@ public class PvPGameState implements IBattleState {
             spawnCard.setLevel(card.getLevel());
         }
 
-        return spawnTroopGroup(isPlayerSide, spawnCard, x, y);
+        return spawnTroopGroup(isPlayerSide, spawnCard, x, y) != null;
     }
 
     public GridPosition getFrontPosition(Building b) {
