@@ -43,7 +43,7 @@
 
             <!-- Right: Player 2 Elixir and Hand (switched with Time/Score per user request) -->
             <right>
-                <HBox spacing="0">
+                <HBox spacing="0" alignment="CENTER" fillHeight="false">
                     <!-- Player 2 Panel - mirrors P1 layout -->
                     <VBox fx:id="player2Container" spacing="20" alignment="CENTER" style="-fx-padding: 20; -fx-background-color: rgba(120, 30, 30, 0.4);">
                         <!-- Player 2 Elixir Bar -->
