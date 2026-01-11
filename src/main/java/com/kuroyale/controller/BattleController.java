@@ -267,7 +267,6 @@ public class BattleController {
                         arenaView.showComboEffect(combo, affectedUnits);
                         if (comboService != null) {
                             int count = comboService.getUniqueComboCount();
-                            arenaView.updateComboCount(count);
                             // FIX: Update the Label on the sidebar
                             comboLabel.setText(String.valueOf(count));
                         }

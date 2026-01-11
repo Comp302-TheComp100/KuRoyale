@@ -21,10 +21,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private final Pane arenaPane;
     private final GameState gameState;
     private final com.kuroyale.model.logic.PvPGameState pvpGameState; // For PvP mode
-    private final javafx.scene.control.Label timerLabel;
-    private final javafx.scene.layout.HBox playerScoreContainer;
-    private final javafx.scene.layout.HBox botScoreContainer;
-    private final javafx.scene.control.Label comboLabel;
     private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
 
     // Track hovered tile for highlighting
@@ -80,10 +76,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         arenaPane.setOnMouseExited(e -> clearHoverHighlight());
 
         // PvP mode: No sidebar (timer/score handled in controller)
-        this.timerLabel = null;
-        this.playerScoreContainer = null;
-        this.botScoreContainer = null;
-        this.comboLabel = null;
 
         StackPane centerContainer = new StackPane(arenaPane);
         centerContainer.setAlignment(javafx.geometry.Pos.CENTER);
@@ -106,10 +98,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.pvpGameState = null;
 
         // Sidebar is now defined in battle.fxml - no longer created here
-        this.timerLabel = null;
-        this.playerScoreContainer = null;
-        this.botScoreContainer = null;
-        this.comboLabel = null;
 
         // Center Arena
         this.grid = new GridPane();
@@ -310,49 +298,14 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private BuildingRenderer buildingRenderer;
 
     // Last-value tracking for observer pattern (only update UI when changed)
-    private int lastDisplayedSeconds = -1;
-    private int lastPlayerScore = -1;
-    private int lastBotScore = -1;
-    private boolean lastDoubleElixir = false;
 
     public void update(double deltaTime) {
         // === OBSERVER PATTERN: Only update UI when values change ===
 
-        // Update Timer (only when second changes)
-        int totalSeconds = (int) Math.ceil(gameState.getGameTime());
-        if (totalSeconds != lastDisplayedSeconds) {
-            lastDisplayedSeconds = totalSeconds;
-            int minutes = totalSeconds / 60;
-            int seconds = totalSeconds % 60;
-            timerLabel.setText(String.format("%02d:%02d", minutes, seconds));
-        }
-
-        // Change timer color during double elixir
-        boolean isDoubleElixir = gameState.isDoubleElixir();
-        if (isDoubleElixir != lastDoubleElixir) {
-            lastDoubleElixir = isDoubleElixir;
-            if (isDoubleElixir) {
-                timerLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 24px; -fx-font-weight: bold;");
-            } else {
-                timerLabel.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
-            }
-        }
-
-        // Update Score
-        int playerScore = gameState.getPlayerScore();
-        int botScore = gameState.getBotScore();
-
-        // Update crowns if score changed
-        if (playerScore != lastPlayerScore) {
-            lastPlayerScore = playerScore;
-            updateScoreContainer(playerScoreContainer, playerScore, false);
-        }
-        if (botScore != lastBotScore) {
-            lastBotScore = botScore;
-            updateScoreContainer(botScoreContainer, botScore, true);
-        }
+        // === OBSERVER PATTERN: Only update UI when values change ===
 
         // Delegate to Renderers
+
         towerRenderer.cleanupDestroyedTowers(gameState.getArena());
         towerRenderer.updateHealthBars(gameState.getArena());
         troopRenderer.render(gameState);
@@ -650,30 +603,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             st.setAutoReverse(true);
             st.setCycleCount(2);
             st.play();
-        }
-    }
-
-    public void updateComboCount(int count) {
-        if (comboLabel != null) {
-            javafx.application.Platform.runLater(() -> {
-                comboLabel.setText(String.valueOf(count));
-            });
-        }
-    }
-
-    private void updateScoreContainer(javafx.scene.layout.HBox container, int score, boolean isOpponent) {
-        if (container == null)
-            return;
-
-        container.getChildren().clear();
-        String imagePath = isOpponent ? "/images/oppo_crown.png" : "/images/crown.png";
-
-        for (int i = 0; i < score; i++) {
-            javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
-                    new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
-            crown.setFitWidth(32);
-            crown.setFitHeight(32);
-            container.getChildren().add(crown);
         }
     }
 
