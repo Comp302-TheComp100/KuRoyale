@@ -21,6 +21,7 @@ public enum NetworkMessageType {
     MATCH_START("Match is starting"),
     
     // Game State Synchronization
+    ARENA_LAYOUT("Arena layout synchronization from host"),
     CARD_PLACED("Card placement on arena"),
     UNIT_MOVE("Unit movement update"),
     UNIT_ATTACK("Unit attacking"),

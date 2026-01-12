@@ -147,12 +147,23 @@ public class NetworkBattleController implements GameEventListener {
         // Create deck
         Deck playerDeck = model.createDeckFromNames(currentUser.getDeck());
         
-        // Load arena layout
-        ArenaLayout playerLayout = model.loadArenaLayout();
-        currentArenaLayout = playerLayout;
+        // Determine which arena layout to use:
+        // - If we're the client and received the host's layout, use that
+        // - Otherwise (we're the host or no layout received), use our own layout
+        ArenaLayout layoutToUse;
+        if (!networkService.isHost() && networkService.getHostArenaLayout() != null) {
+            // Client: use the host's arena layout for consistency
+            layoutToUse = networkService.getHostArenaLayout();
+            System.out.println("[NetworkBattle] Using HOST's arena layout: " + layoutToUse.getName());
+        } else {
+            // Host: use own layout
+            layoutToUse = model.loadArenaLayout();
+            System.out.println("[NetworkBattle] Using own arena layout: " + layoutToUse.getName());
+        }
+        currentArenaLayout = layoutToUse;
         
         // Create Arena
-        Arena arena = model.createArena(playerLayout);
+        Arena arena = model.createArena(layoutToUse);
         
         // Create opponent deck (mirrored for network play)
         Deck opponentDeck = model.createBotDeck(currentUser);

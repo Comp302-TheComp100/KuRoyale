@@ -1,9 +1,12 @@
 package com.kuroyale.model.dto;
 
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.entities.GridPosition;
 import com.kuroyale.model.enums.NetworkMessageType;
 import java.io.Serializable;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * Represents a message sent over the network between players.
@@ -132,6 +135,42 @@ public class NetworkMessage implements Serializable {
         return new NetworkMessage(NetworkMessageType.MATCH_START, 0, "");
     }
     
+    /**
+     * Creates an arena layout message to sync the host's arena design to the client.
+     * Format: name#bridge1X,bridge1Y:bridge2X,bridge2Y:...#princess1X,princess1Y:princess2X,princess2Y#kingX,kingY
+     */
+    public static NetworkMessage arenaLayout(ArenaLayout layout) {
+        StringBuilder sb = new StringBuilder();
+        
+        // Name
+        sb.append(layout.getName() != null ? layout.getName() : "Arena");
+        sb.append("#");
+        
+        // Bridge positions
+        List<GridPosition> bridges = layout.getBridgePositions();
+        for (int i = 0; i < bridges.size(); i++) {
+            if (i > 0) sb.append(":");
+            sb.append(bridges.get(i).getX()).append(",").append(bridges.get(i).getY());
+        }
+        sb.append("#");
+        
+        // Princess tower positions
+        List<GridPosition> princess = layout.getPrincessTowerPositions();
+        for (int i = 0; i < princess.size(); i++) {
+            if (i > 0) sb.append(":");
+            sb.append(princess.get(i).getX()).append(",").append(princess.get(i).getY());
+        }
+        sb.append("#");
+        
+        // King tower position
+        GridPosition king = layout.getKingTowerPosition();
+        if (king != null) {
+            sb.append(king.getX()).append(",").append(king.getY());
+        }
+        
+        return new NetworkMessage(NetworkMessageType.ARENA_LAYOUT, 1, sb.toString());
+    }
+    
     public static NetworkMessage victory(int playerId) {
         return new NetworkMessage(NetworkMessageType.VICTORY, playerId, "");
     }
@@ -187,6 +226,57 @@ public class NetworkMessage implements Serializable {
         if (type != NetworkMessageType.PLAYER_INFO) return null;
         String[] parts = data.split(";", 2);
         return parts.length >= 2 ? parts : null;
+    }
+    
+    /**
+     * Parses arena layout from the message.
+     * @return ArenaLayout or null if invalid
+     */
+    public ArenaLayout parseArenaLayout() {
+        if (type != NetworkMessageType.ARENA_LAYOUT) return null;
+        
+        try {
+            String[] parts = data.split("#", -1);
+            if (parts.length < 4) return null;
+            
+            String name = parts[0];
+            ArenaLayout layout = new ArenaLayout(name);
+            
+            // Parse bridge positions
+            if (!parts[1].isEmpty()) {
+                String[] bridges = parts[1].split(":");
+                for (String bridge : bridges) {
+                    String[] coords = bridge.split(",");
+                    if (coords.length == 2) {
+                        layout.addBridgePosition(Integer.parseInt(coords[0]), Integer.parseInt(coords[1]));
+                    }
+                }
+            }
+            
+            // Parse princess tower positions
+            if (!parts[2].isEmpty()) {
+                String[] princess = parts[2].split(":");
+                for (String p : princess) {
+                    String[] coords = p.split(",");
+                    if (coords.length == 2) {
+                        layout.addPrincessTowerPosition(Integer.parseInt(coords[0]), Integer.parseInt(coords[1]));
+                    }
+                }
+            }
+            
+            // Parse king tower position
+            if (!parts[3].isEmpty()) {
+                String[] coords = parts[3].split(",");
+                if (coords.length == 2) {
+                    layout.setKingTowerPosition(Integer.parseInt(coords[0]), Integer.parseInt(coords[1]));
+                }
+            }
+            
+            return layout;
+        } catch (Exception e) {
+            System.err.println("[NetworkMessage] Failed to parse arena layout: " + e.getMessage());
+            return null;
+        }
     }
     
     @Override

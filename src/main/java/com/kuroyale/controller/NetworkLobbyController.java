@@ -1,7 +1,9 @@
 package com.kuroyale.controller;
 
 import com.kuroyale.model.dto.NetworkMessage;
+import com.kuroyale.model.entities.ArenaLayout;
 import com.kuroyale.model.entities.User;
+import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.NetworkService;
 import com.kuroyale.service.NetworkService.ConnectionState;
@@ -338,6 +340,17 @@ public class NetworkLobbyController {
         
         if (!networkService.isHost()) return;
         if (!isReady || !opponentReady) return;
+        
+        // Load and send the host's arena layout to the client
+        // This ensures both players see the same arena design
+        ArenaService arenaService = ServiceFactory.getInstance().getArenaService();
+        User currentUser = ServiceFactory.getInstance().getAuthenticationService().getCurrentUser();
+        if (currentUser != null) {
+            arenaService.setCurrentUser(currentUser);
+        }
+        ArenaLayout hostLayout = arenaService.loadArenaLayout();
+        networkService.sendArenaLayout(hostLayout);
+        System.out.println("[NetworkLobby] Sent host arena layout to client: " + hostLayout.getName());
         
         // Send match start to opponent
         networkService.sendMatchStart();

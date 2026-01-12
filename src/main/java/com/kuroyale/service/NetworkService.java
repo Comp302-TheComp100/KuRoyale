@@ -1,6 +1,7 @@
 package com.kuroyale.service;
 
 import com.kuroyale.model.dto.NetworkMessage;
+import com.kuroyale.model.entities.ArenaLayout;
 import com.kuroyale.util.NetworkConfig;
 
 import java.io.*;
@@ -67,6 +68,9 @@ public class NetworkService {
     private int playerId; // 1 for host, 2 for client
     private String playerName;
     private String opponentName;
+    
+    // Arena layout (received from host for clients)
+    private ArenaLayout hostArenaLayout;
     
     // UPnP support
     private final UPnPService upnpService;
@@ -407,6 +411,15 @@ public class NetworkService {
                 handleDisconnection();
                 break;
                 
+            case ARENA_LAYOUT:
+                // Client receives arena layout from host
+                if (role == Role.CLIENT) {
+                    hostArenaLayout = message.parseArenaLayout();
+                    System.out.println("[NetworkService] Received host arena layout: " + 
+                        (hostArenaLayout != null ? hostArenaLayout.getName() : "null"));
+                }
+                break;
+                
             default:
                 // Forward to callback
                 break;
@@ -522,6 +535,33 @@ public class NetworkService {
         if (role == Role.HOST) {
             send(NetworkMessage.matchStart());
         }
+    }
+    
+    /**
+     * Sends arena layout to the client (host only).
+     * This should be called before sendMatchStart to ensure the client
+     * receives the layout before the battle starts.
+     */
+    public void sendArenaLayout(ArenaLayout layout) {
+        if (role == Role.HOST && layout != null) {
+            send(NetworkMessage.arenaLayout(layout));
+            System.out.println("[NetworkService] Sent arena layout: " + layout.getName());
+        }
+    }
+    
+    /**
+     * Gets the arena layout received from the host.
+     * @return The host's arena layout, or null if not received or if this is the host
+     */
+    public ArenaLayout getHostArenaLayout() {
+        return hostArenaLayout;
+    }
+    
+    /**
+     * Clears the stored host arena layout.
+     */
+    public void clearHostArenaLayout() {
+        this.hostArenaLayout = null;
     }
     
     /**
