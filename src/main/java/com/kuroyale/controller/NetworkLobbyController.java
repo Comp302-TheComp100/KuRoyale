@@ -13,15 +13,19 @@ import com.kuroyale.util.SoundEffectUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Controller for the Network Lobby screen.
@@ -123,22 +127,121 @@ public class NetworkLobbyController {
         
         networkService.setOnError(error -> Platform.runLater(() -> showError(error)));
         
-        // UPnP status callback - updates connection info when port is opened
+        // Connection ready callback - called when ngrok tunnel is created or UPnP port opened
+        networkService.setOnConnectionReady((success, message) -> Platform.runLater(() -> {
+            if (!waitingPane.isVisible()) return;
+            
+            if ("AUTH_TOKEN_REQUIRED".equals(message)) {
+                // Prompt user for ngrok auth token
+                promptForNgrokAuthToken();
+            } else if (success) {
+                // Show shareable address with copy button
+                waitingLabel.setText("✓ Ready for connection!\nShare this address with your friend:");
+                connectionInfoLabel.setText(message);
+                connectionInfoLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #00ff00;");
+                
+                // Copy to clipboard automatically
+                copyToClipboard(message);
+                
+            } else {
+                // Show status update
+                connectionInfoLabel.setText(message);
+            }
+        }));
+        
+        // UPnP status callback (fallback)
         networkService.setOnUPnPStatusChanged((success, message) -> Platform.runLater(() -> {
-            if (connectionInfoLabel != null && waitingPane.isVisible()) {
+            if (connectionInfoLabel != null && waitingPane.isVisible() && !networkService.isNgrokTunnelActive()) {
                 if (success) {
                     String connStr = networkService.getShareableConnectionString();
                     if (connStr != null) {
-                        connectionInfoLabel.setText("✓ Share this address with your friend:\n" + connStr);
-                        waitingLabel.setText("Port opened automatically!\nWaiting for opponent...");
+                        connectionInfoLabel.setText("✓ Share this address:\n" + connStr);
+                        waitingLabel.setText("Port opened!\nWaiting for opponent...");
+                        copyToClipboard(connStr);
                     }
-                } else {
-                    // UPnP failed - show manual instructions
-                    connectionInfoLabel.setText("Local: " + networkService.getLocalIPAddress() + ":" + portField.getText() + 
-                            "\n⚠ Auto port-forward failed. May need manual setup.");
                 }
             }
         }));
+    }
+    
+    /**
+     * Prompts the user for their ngrok auth token (one-time setup).
+     */
+    private void promptForNgrokAuthToken() {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("One-Time Setup Required");
+        dialog.setHeaderText("Free ngrok account needed for internet play");
+        
+        // Create content
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(20));
+        
+        Label instructions = new Label(
+            "To play over the internet, you need a free ngrok account:\n\n" +
+            "1. Go to ngrok.com and create a free account\n" +
+            "2. Go to 'Your Authtoken' in the dashboard\n" +
+            "3. Copy your auth token and paste it below\n\n" +
+            "This is a one-time setup - your token will be saved."
+        );
+        instructions.setWrapText(true);
+        
+        TextField tokenField = new TextField();
+        tokenField.setPromptText("Paste your ngrok auth token here");
+        tokenField.setPrefWidth(400);
+        
+        Hyperlink link = new Hyperlink("Click here to get your free token");
+        link.setOnAction(e -> {
+            try {
+                java.awt.Desktop.getDesktop().browse(new java.net.URI("https://dashboard.ngrok.com/get-started/your-authtoken"));
+            } catch (Exception ex) {
+                // Ignore
+            }
+        });
+        
+        content.getChildren().addAll(instructions, link, tokenField);
+        dialog.getDialogPane().setContent(content);
+        
+        // Add buttons
+        ButtonType saveButton = new ButtonType("Save & Continue", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButton, cancelButton);
+        
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == saveButton) {
+                return tokenField.getText().trim();
+            }
+            return null;
+        });
+        
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(token -> {
+            if (!token.isEmpty()) {
+                // Save token and retry
+                networkService.getNgrokService().saveAuthToken(token);
+                
+                // Retry hosting
+                int port = Integer.parseInt(portField.getText().trim());
+                connectionInfoLabel.setText("Setting up connection...");
+                networkService.getNgrokService().createTunnel(port);
+            } else {
+                showModeSelection();
+            }
+        });
+        
+        if (result.isEmpty()) {
+            showModeSelection();
+        }
+    }
+    
+    /**
+     * Copies text to clipboard.
+     */
+    private void copyToClipboard(String text) {
+        Clipboard clipboard = Clipboard.getSystemClipboard();
+        ClipboardContent content = new ClipboardContent();
+        content.putString(text);
+        clipboard.setContent(content);
+        System.out.println("[NetworkLobby] Copied to clipboard: " + text);
     }
     
     private void handleNetworkMessage(NetworkMessage message) {
@@ -258,26 +361,9 @@ public class NetworkLobbyController {
         
         if (networkService.startHosting(port, playerName)) {
             showPane(waitingPane);
-            waitingLabel.setText("Setting up connection...\n(Attempting automatic port forwarding)");
-            connectionInfoLabel.setText("Local: " + networkService.getLocalIPAddress() + ":" + port + 
-                    "\nConfiguring router...");
-            
-            // Fetch public IP for fallback display
-            networkService.fetchPublicIPAsync(publicIP -> Platform.runLater(() -> {
-                // Only update if UPnP hasn't already updated it
-                if (!networkService.isUPnPPortOpened() && waitingPane.isVisible()) {
-                    if (publicIP != null) {
-                        connectionInfoLabel.setText(
-                                "Local (same network): " + networkService.getLocalIPAddress() + ":" + port +
-                                "\nPublic (internet): " + publicIP + ":" + port +
-                                "\n⚠ If connection fails, enable port forwarding on router");
-                    } else {
-                        connectionInfoLabel.setText(
-                                "Local: " + networkService.getLocalIPAddress() + ":" + port);
-                    }
-                    waitingLabel.setText("Waiting for opponent to connect...");
-                }
-            }));
+            waitingLabel.setText("Creating public game server...");
+            connectionInfoLabel.setText("Please wait...");
+            connectionInfoLabel.setStyle("-fx-font-size: 14px;");
         }
     }
     

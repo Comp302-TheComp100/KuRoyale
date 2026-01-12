@@ -73,13 +73,20 @@ public class NetworkService {
     private boolean upnpPortOpened = false;
     private int hostedPort = -1;
     
-    // Callback for UPnP status updates
+    // Ngrok support (works on ANY network)
+    private final NgrokTunnelService ngrokService;
+    private boolean ngrokTunnelActive = false;
+    private String ngrokPublicUrl = null;
+    
+    // Callback for connection status updates
     private BiConsumer<Boolean, String> onUPnPStatusChanged;
+    private BiConsumer<Boolean, String> onConnectionReady;
     
     public NetworkService() {
         this.config = NetworkConfig.getInstance();
         this.executorService = Executors.newCachedThreadPool();
         this.upnpService = UPnPService.getInstance();
+        this.ngrokService = NgrokTunnelService.getInstance();
         
         // Add shutdown hook to ensure cleanup on JVM exit
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -89,9 +96,13 @@ public class NetworkService {
             if (upnpPortOpened) {
                 upnpService.closeCurrentPort();
             }
+            // Close ngrok tunnel
+            if (ngrokTunnelActive) {
+                ngrokService.closeTunnel();
+            }
         }));
         
-        // Initialize UPnP in the background
+        // Initialize UPnP in the background (as fallback)
         initializeUPnP();
     }
     
@@ -128,7 +139,7 @@ public class NetworkService {
     
     /**
      * Starts hosting a game on the specified port.
-     * Automatically attempts to open the port via UPnP for internet play.
+     * Automatically creates an ngrok tunnel for internet play (works on ANY network).
      * @param port The port to listen on
      * @param playerName The host player's name
      * @return true if hosting started successfully
@@ -149,8 +160,8 @@ public class NetworkService {
             
             System.out.println("[NetworkService] Hosting on port " + port);
             
-            // Try to open port via UPnP for internet play
-            openPortViaUPnP(port);
+            // Create ngrok tunnel for internet play (works on ANY network)
+            createNgrokTunnel(port);
             
             // Accept client connection in background
             executorService.submit(this::waitForClient);
@@ -160,6 +171,43 @@ public class NetworkService {
             handleError("Failed to start hosting: " + e.getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Creates an ngrok tunnel for internet connectivity.
+     * This works on ANY network without any router configuration.
+     */
+    private void createNgrokTunnel(int port) {
+        ngrokService.setOnStatusUpdate(status -> {
+            if (onConnectionReady != null) {
+                onConnectionReady.accept(false, status);
+            }
+        });
+        
+        ngrokService.setOnError(error -> {
+            System.err.println("[NetworkService] Ngrok error: " + error);
+            if ("AUTH_TOKEN_REQUIRED".equals(error)) {
+                if (onConnectionReady != null) {
+                    onConnectionReady.accept(false, "AUTH_TOKEN_REQUIRED");
+                }
+            } else {
+                // Ngrok failed, try UPnP as fallback
+                System.out.println("[NetworkService] Ngrok failed, trying UPnP as fallback...");
+                openPortViaUPnP(port);
+            }
+        });
+        
+        ngrokService.createTunnel(port).thenAccept(publicUrl -> {
+            if (publicUrl != null) {
+                ngrokTunnelActive = true;
+                ngrokPublicUrl = publicUrl;
+                String shareableUrl = ngrokService.getShareableAddress();
+                System.out.println("[NetworkService] Ngrok tunnel created! Share: " + shareableUrl);
+                if (onConnectionReady != null) {
+                    onConnectionReady.accept(true, shareableUrl);
+                }
+            }
+        });
     }
     
     /**
@@ -477,6 +525,14 @@ public class NetworkService {
             }
         }
         
+        // Close ngrok tunnel if active
+        if (ngrokTunnelActive) {
+            System.out.println("[NetworkService] Closing ngrok tunnel...");
+            ngrokService.closeTunnel();
+            ngrokTunnelActive = false;
+            ngrokPublicUrl = null;
+        }
+        
         // Close UPnP port mapping if we opened one
         if (upnpPortOpened && hostedPort > 0) {
             System.out.println("[NetworkService] Closing UPnP port mapping...");
@@ -750,6 +806,37 @@ public class NetworkService {
         this.onUPnPStatusChanged = callback;
     }
     
+    /**
+     * Sets callback for when connection is ready (ngrok tunnel created or UPnP port opened).
+     * @param callback BiConsumer with (success, shareableAddress or status message)
+     */
+    public void setOnConnectionReady(BiConsumer<Boolean, String> callback) {
+        this.onConnectionReady = callback;
+    }
+    
+    // Ngrok related getters
+    
+    /**
+     * Gets the ngrok service for auth token management.
+     */
+    public NgrokTunnelService getNgrokService() {
+        return ngrokService;
+    }
+    
+    /**
+     * Checks if ngrok tunnel is active.
+     */
+    public boolean isNgrokTunnelActive() {
+        return ngrokTunnelActive;
+    }
+    
+    /**
+     * Gets the ngrok public URL.
+     */
+    public String getNgrokPublicUrl() {
+        return ngrokPublicUrl;
+    }
+    
     // UPnP related getters
     
     /**
@@ -768,13 +855,19 @@ public class NetworkService {
     
     /**
      * Gets the shareable connection string for internet play.
-     * @return Connection string like "123.45.67.89:8080" or null
+     * Prioritizes ngrok (works everywhere) over UPnP.
+     * @return Connection string like "0.tcp.ngrok.io:12345" or null
      */
     public String getShareableConnectionString() {
+        // Prefer ngrok as it works on ANY network
+        if (ngrokTunnelActive && ngrokPublicUrl != null) {
+            return ngrokService.getShareableAddress();
+        }
+        // Fallback to UPnP
         if (upnpPortOpened && hostedPort > 0) {
             return upnpService.getConnectionString(hostedPort);
         }
-        // Fallback to fetching public IP
+        // Last resort - public IP (may not work without port forwarding)
         String publicIP = getPublicIPAddress();
         if (publicIP != null && hostedPort > 0) {
             return publicIP + ":" + hostedPort;
