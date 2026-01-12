@@ -45,21 +45,18 @@
 
         <!-- Host Setup Pane - Hidden initially -->
         <VBox fx:id="hostSetupPane" alignment="CENTER" spacing="15" visible="false" managed="false">
-            <Label text="HOSTING GAME" styleClass="subtitle-label"/>
+            <Label text="HOST A GAME" styleClass="subtitle-label"/>
             
-            <HBox alignment="CENTER" spacing="10">
-                <Label text="Port:" prefWidth="80"/>
-                <TextField fx:id="portField" text="8080" prefWidth="100"/>
-            </HBox>
+            <!-- Hidden port field for compatibility -->
+            <TextField fx:id="portField" text="8080" visible="false" managed="false"/>
+            <Label fx:id="hostIpLabel" visible="false" managed="false"/>
+            <Label fx:id="publicIpLabel" visible="false" managed="false"/>
             
-            <Label fx:id="hostIpLabel" text="Local IP: Loading..." styleClass="info-label"/>
-            <Label fx:id="publicIpLabel" text="Public IP: Loading..." styleClass="info-label"/>
-            
-            <Label text="Share these IPs with your opponent. Use Local IP for same network, Public IP for internet play." 
-                   styleClass="info-label" style="-fx-font-size: 10px; -fx-text-fill: #888888;" wrapText="true"/>
+            <Label text="Click START to create a room and get a code to share with your friend." 
+                   styleClass="info-label" style="-fx-font-size: 14px;" wrapText="true"/>
             
             <HBox alignment="CENTER" spacing="20">
-                <Button text="START HOSTING" onAction="#handleStartHosting" 
+                <Button text="START" onAction="#handleStartHosting" 
                         prefWidth="180" prefHeight="50" styleClass="menu-button"/>
                 <Button text="CANCEL" onAction="#handleCancelSetup" 
                         prefWidth="120" prefHeight="50" styleClass="back-button"/>
@@ -68,20 +65,19 @@
 
         <!-- Join Setup Pane - Hidden initially -->
         <VBox fx:id="joinSetupPane" alignment="CENTER" spacing="15" visible="false" managed="false">
-            <Label text="JOIN GAME" styleClass="subtitle-label"/>
+            <Label text="JOIN A GAME" styleClass="subtitle-label"/>
             
-            <HBox alignment="CENTER" spacing="10">
-                <Label text="Host IP:" prefWidth="80"/>
-                <TextField fx:id="hostIpField" promptText="e.g., 192.168.1.100" prefWidth="200"/>
-            </HBox>
+            <Label text="Enter the 6-character room code from your friend:" 
+                   styleClass="info-label" style="-fx-font-size: 14px;"/>
             
-            <HBox alignment="CENTER" spacing="10">
-                <Label text="Port:" prefWidth="80"/>
-                <TextField fx:id="joinPortField" text="8080" prefWidth="100"/>
-            </HBox>
+            <TextField fx:id="hostIpField" promptText="e.g., ABC123" prefWidth="200" 
+                       style="-fx-font-size: 24px; -fx-font-family: monospace; -fx-alignment: center;"/>
+            
+            <!-- Hidden port field for compatibility -->
+            <TextField fx:id="joinPortField" text="8080" visible="false" managed="false"/>
             
             <HBox alignment="CENTER" spacing="20">
-                <Button text="CONNECT" onAction="#handleConnect" 
+                <Button text="JOIN" onAction="#handleConnect" 
                         prefWidth="150" prefHeight="50" styleClass="menu-button"/>
                 <Button text="CANCEL" onAction="#handleCancelSetup" 
                         prefWidth="120" prefHeight="50" styleClass="back-button"/>
