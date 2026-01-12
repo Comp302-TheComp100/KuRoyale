@@ -2,11 +2,11 @@ package com.kuroyale.view.battle;
 
 import com.kuroyale.model.logic.GameState;
 import com.kuroyale.model.entities.Troop;
-import com.kuroyale.model.entities.GridPosition;
+
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
-import javafx.geometry.Bounds;
+
 import javafx.geometry.Point2D;
 
 import java.util.HashMap;
@@ -15,13 +15,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 public class TroopRenderer {
     private static final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
 
     private final Pane unitLayer;
-    private final BiFunction<Integer, Integer, Node> gridCellProvider;
 
     // Tracking maps
     private final Map<Troop, Node> activeTroopVisuals = new HashMap<>();
@@ -32,9 +30,8 @@ public class TroopRenderer {
     // Reusable set to avoid per-frame allocation
     private final Set<Troop> currentTroops = new HashSet<>();
 
-    public TroopRenderer(Pane unitLayer, BiFunction<Integer, Integer, Node> gridCellProvider) {
+    public TroopRenderer(Pane unitLayer) {
         this.unitLayer = unitLayer;
-        this.gridCellProvider = gridCellProvider;
     }
 
     public void render(GameState gameState) {
@@ -81,11 +78,6 @@ public class TroopRenderer {
         // Center sprite on world position
         double visualX = worldPos.getX() * TILE_SIZE - spriteW / 2;
         double visualY = worldPos.getY() * TILE_SIZE - spriteH / 2;
-
-        GridPosition gridPos = troop.getPosition();
-        Node cellNode = gridPos != null ? gridCellProvider.apply(gridPos.getX(), gridPos.getY()) : null;
-        Bounds cellBounds = cellNode != null ? cellNode.getBoundsInParent()
-                : new javafx.geometry.BoundingBox(visualX, visualY, spriteW, spriteH);
 
         lastTroopPositions.put(troop, new Point2D(visualX, visualY));
 
@@ -169,12 +161,6 @@ public class TroopRenderer {
         // Center sprite on world position
         double visualX = worldPos.getX() * TILE_SIZE - spriteW / 2;
         double visualY = worldPos.getY() * TILE_SIZE - spriteH / 2;
-
-        // Get cell bounds or default bounds for HUD alignment
-        GridPosition gridPos = troop.getPosition();
-        Node cellNode = gridPos != null ? gridCellProvider.apply(gridPos.getX(), gridPos.getY()) : null;
-        Bounds cellBounds = cellNode != null ? cellNode.getBoundsInParent()
-                : new javafx.geometry.BoundingBox(visualX, visualY, spriteW, spriteH);
 
         lastTroopPositions.put(troop, new Point2D(visualX, visualY));
 

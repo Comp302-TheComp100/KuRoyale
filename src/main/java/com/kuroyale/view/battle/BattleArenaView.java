@@ -84,7 +84,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.setCenter(centerContainer);
 
         // Initialize renderers - create a minimal proxy for rendering
-        this.troopRenderer = new TroopRenderer(unitLayer, this::getGridCell);
+        this.troopRenderer = new TroopRenderer(unitLayer);
         this.projectileRenderer = new ProjectileRenderer(unitLayer, TILE_SIZE);
         this.towerRenderer = new TowerRenderer(grid, TILE_SIZE, this::indexCellNode);
         this.buildingRenderer = new BuildingRenderer(unitLayer, TILE_SIZE, this::getGridCell);
@@ -162,7 +162,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.setCenter(centerContainer);
 
         // Initialize renderers
-        this.troopRenderer = new TroopRenderer(unitLayer, this::getGridCell);
+        this.troopRenderer = new TroopRenderer(unitLayer);
         this.projectileRenderer = new ProjectileRenderer(unitLayer, TILE_SIZE);
         this.towerRenderer = new TowerRenderer(grid, TILE_SIZE, this::indexCellNode); // requires CellIndexer or
                                                                                       // compatible lambda
