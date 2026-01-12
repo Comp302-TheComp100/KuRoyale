@@ -25,26 +25,19 @@ public class TroopMovementService {
                 continue;
             }
 
-            // Update pathfinding cooldown
-            troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
-
-            // Force retarget if current target is dead or null (sync with CombatService)
+            // retarget if current target is dead or null
             ICombatant currentTarget = troop.getTarget();
             boolean targetIsDead = (currentTarget != null && !currentTarget.isAlive());
             boolean hasNoTargetPos = (troop.getTargetWorldPosition() == null);
-            boolean cooldownReady = (troop.getPathfindingCooldown() <= 0);
 
-            // Instant reaction if target is dead: clear path and reset state
             if (targetIsDead) {
                 troop.setTarget(null);
                 troop.setTargetWorldPosition(null);
                 troop.clearPath();
                 troop.setUnitState(UnitState.IDLE);
-                // Force immediate retargeting logic below
             }
 
-            // Check for retargeting if forced (dead/null) or periodic cooldown ready
-            if (targetIsDead || hasNoTargetPos || (cooldownReady && shouldRetarget(state, troop))) {
+            if (targetIsDead || hasNoTargetPos || shouldRetarget(state, troop)) {
                 GridPosition newTargetGrid = targetingService.findNearestEnemyOrObjective(state, troop);
 
                 // If target hasn't changed significantly, don't recompute path
@@ -58,8 +51,6 @@ public class TroopMovementService {
                     troop.setPath(worldPath);
                 }
 
-                // Reset cooldown (randomize slightly to distribute load)
-                troop.setPathfindingCooldown(0.25 + Math.random() * 0.1);
             }
 
             // Apply movement and/or separation
@@ -86,7 +77,7 @@ public class TroopMovementService {
             return true;
 
         // 3. Opportunistic Targeting:
-        // If we are just moving (not attacking), check if a NEW enemy has entered our
+        // If we are moving check if a NEW enemy has entered our
         // immediate attack range.
         GridPosition nearestGrid = targetingService.findNearestEnemyOrObjective(state, troop);
         if (nearestGrid == null)
@@ -94,20 +85,12 @@ public class TroopMovementService {
 
         Vector2 nearestPos = Vector2.fromGridPosition(nearestGrid);
         double distToNearest = troop.getWorldPosition().distanceTo(nearestPos);
+        double distToCurrentTarget = troop.getTargetWorldPosition().distanceTo(nearestPos);
 
-        // Define a "trigger range" slightly larger than attack range to be responsive
-        // Melee units (range ~0.8-1.0) need a bit of buffer (1.5) to snap to targets
-        double attackRange = troop.getRange();
-        double triggerRange = Math.max(attackRange, CombatService.MELEE_ATTACK_BUFFER);
-
-        if (distToNearest <= triggerRange) {
-            // We have a valid target in immediate range.
-            // Only switch if it is DIFFERENT from our current long-distance goal.
-            Vector2 currentTarget = troop.getTargetWorldPosition();
-            if (currentTarget == null || currentTarget.distanceTo(nearestPos) > 1.0) {
-                // It's a different, closer target! Engage!
-                return true;
-            }
+        // If the nearest enemy is closer than our current target, switch
+        // 0.5 is a buffer to avoid switching targets too often
+        if (distToCurrentTarget > distToNearest + 0.5) {
+            return true;
         }
 
         return false;

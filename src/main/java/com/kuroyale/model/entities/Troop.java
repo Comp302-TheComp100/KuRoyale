@@ -208,17 +208,6 @@ public class Troop implements ICombatant {
         return true;
     }
 
-    // Pathfinding optimization
-    private double pathfindingCooldown = 0.0;
-
-    public double getPathfindingCooldown() {
-        return pathfindingCooldown;
-    }
-
-    public void setPathfindingCooldown(double val) {
-        this.pathfindingCooldown = val;
-    }
-
     @Override
     public void setTarget(ICombatant target) {
         this.currentTarget = target;
