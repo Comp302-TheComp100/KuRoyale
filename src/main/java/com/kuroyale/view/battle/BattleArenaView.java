@@ -315,7 +315,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         java.util.List<com.kuroyale.model.entities.ICombatant> combatants = new java.util.ArrayList<>();
         combatants.addAll(gameState.getArena().getAllTowers());
         combatants.addAll(gameState.getActiveBuildings());
-        projectileRenderer.render(combatants);
+        combatants.addAll(gameState.getActiveTroops());
+        projectileRenderer.render(combatants, deltaTime);
 
         // Spell Effects
         updateSpellEffects(deltaTime);
@@ -344,7 +345,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         java.util.List<com.kuroyale.model.entities.ICombatant> combatants = new java.util.ArrayList<>();
         combatants.addAll(arena.getAllTowers());
         combatants.addAll(pvpGameState.getActiveBuildings());
-        projectileRenderer.render(combatants);
+        combatants.addAll(pvpGameState.getActiveTroops());
+        projectileRenderer.render(combatants, deltaTime);
 
         // Spell Effects
         updateSpellEffects(deltaTime);
