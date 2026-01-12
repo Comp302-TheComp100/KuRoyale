@@ -24,7 +24,7 @@
     -fx-pref-height: 150;
     -fx-alignment: center;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0.2, 0, 3);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0.2, 0, 3);
 }
 
 .deck-slot:hover {
@@ -76,4 +76,72 @@
 
 .back-button:hover {
     -fx-background-color: #5b76b2;
+}
+
+/* Combo Panel Styles - Modern Card Design */
+.combo-entry {
+    -fx-background-color: linear-gradient(to bottom, rgba(70, 55, 45, 0.95), rgba(50, 40, 30, 0.95));
+    -fx-background-radius: 12;
+    -fx-padding: 12 10 12 10;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 6, 0.3, 0, 2);
+}
+
+.combo-available {
+    -fx-background-color: linear-gradient(to bottom, rgba(90, 70, 50, 1), rgba(70, 55, 40, 1));
+    -fx-border-color: #f7b32b;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(247, 179, 43, 0.8), 15, 0.5, 0, 0);
+}
+
+.combo-unavailable {
+    -fx-background-color: linear-gradient(to bottom, rgba(45, 40, 35, 0.7), rgba(35, 30, 25, 0.7));
+    -fx-opacity: 0.5;
+}
+
+.combo-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ddd;
+    -fx-font-family: "System Bold";
+}
+
+.combo-name-available {
+    -fx-text-fill: #FFD700;
+    -fx-effect: dropshadow(gaussian, rgba(255, 215, 0, 0.6), 4, 0.6, 0, 0);
+}
+
+.combo-effect {
+    -fx-font-size: 12px;
+    -fx-text-fill: #bbb;
+    -fx-font-style: italic;
+}
+
+.combo-effect-available {
+    -fx-text-fill: #90EE90;
+    -fx-font-weight: bold;
+    -fx-font-style: normal;
+}
+
+.combo-requirements {
+    -fx-font-size: 10px;
+    -fx-text-fill: #999;
+    -fx-wrap-text: true;
+    -fx-padding: 4 0 0 0;
+}
+
+.combo-badge {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 8;
+}
+
+.combo-badge-available {
+    -fx-background-color: rgba(144, 238, 144, 0.3);
+    -fx-text-fill: #90EE90;
+    -fx-border-color: #90EE90;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
 }

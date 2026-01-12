@@ -129,7 +129,7 @@ public class CardInfoDialog extends StackPane {
         // Card image
         ImageView imageView = createLargeCardImage();
 
-        // Card name
+        // Card name - wrapped in HBox for centering
         Label nameLabel = new Label(card.getName());
         nameLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; " +
                 "-fx-font-family: '" + StyleHelper.FONT_FAMILY + "', Arial; " +
@@ -137,6 +137,10 @@ public class CardInfoDialog extends StackPane {
         nameLabel.setWrapText(true);
         nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setMaxWidth(300);
+        
+        HBox nameContainer = new HBox();
+        nameContainer.setAlignment(Pos.CENTER);
+        nameContainer.getChildren().add(nameLabel);
 
         // Elixir cost
         HBox costBox = new HBox(8);
@@ -183,7 +187,7 @@ public class CardInfoDialog extends StackPane {
                 "-fx-font-size: 24px; -fx-font-weight: bold; " + "-fx-font-family: '" + StyleHelper.FONT_FAMILY +
                         "', Arial; " + "-fx-text-fill: #fbbf24;");
 
-        page.getChildren().addAll(imageView, nameLabel, costBox, typeLabel, rarityLabel, levelLabel);
+        page.getChildren().addAll(imageView, nameContainer, costBox, typeLabel, rarityLabel, levelLabel);
         return page;
     }
 
@@ -192,11 +196,16 @@ public class CardInfoDialog extends StackPane {
         page.setAlignment(Pos.TOP_LEFT);
         page.setPadding(new Insets(15));
 
-        // Card name header
+        // Card name header - wrapped in HBox for centering
         Label nameLabel = new Label(card.getName());
         nameLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
         nameLabel.setWrapText(true);
+        nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setMaxWidth(300);
+        
+        HBox nameContainer = new HBox();
+        nameContainer.setAlignment(Pos.CENTER);
+        nameContainer.getChildren().add(nameLabel);
 
         // Stats
         VBox statsBox = new VBox(5);
@@ -243,7 +252,7 @@ public class CardInfoDialog extends StackPane {
         descLabel.setWrapText(true);
         descLabel.setMaxWidth(300);
 
-        page.getChildren().addAll(nameLabel, statsBox, descLabel);
+        page.getChildren().addAll(nameContainer, statsBox, descLabel);
         return page;
     }
 

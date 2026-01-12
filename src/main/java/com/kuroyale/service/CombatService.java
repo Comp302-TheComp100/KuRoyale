@@ -280,7 +280,15 @@ public class CombatService {
     }
 
     private double getDistanceToTarget(ICombatant attacker, ICombatant target) {
-        com.kuroyale.model.entities.GridPosition from = attacker.getPosition(); // Usually attacker's position
+        // For structures attacking troops: measure from structure's perimeter to troop
+        // This ensures symmetry: if a troop can hit a tower from distance X,
+        // the tower can also see the troop from the same effective distance
+        if ((attacker instanceof Tower || attacker instanceof Building) && target instanceof Troop) {
+            // Measure from attacker's nearest perimeter tile to the troop position
+            return distanceToCombatantPerimeter(target.getPosition(), attacker);
+        }
+
+        com.kuroyale.model.entities.GridPosition from = attacker.getPosition();
         if (attacker instanceof Tower || attacker instanceof Building) {
             from = attacker.getCenterPosition();
         }

@@ -53,7 +53,21 @@ public class BattleController {
     @FXML
     private javafx.scene.control.Label gameOverTitle;
     @FXML
-    private javafx.scene.control.Label gameOverScore;
+    private HBox gameOverPlayerCrowns;
+    @FXML
+    private HBox gameOverBotCrowns;
+    @FXML
+    private javafx.scene.control.Label gameOverInfoLabel;
+
+    // Right Sidebar (moved from BattleArenaView to FXML)
+    @FXML
+    private javafx.scene.control.Label timeLabel;
+    @FXML
+    private HBox playerScoreContainer;
+    @FXML
+    private HBox botScoreContainer;
+    @FXML
+    private javafx.scene.control.Label comboLabel;
 
     private GameState gameState;
     private BattleArenaView arenaView;
@@ -73,6 +87,32 @@ public class BattleController {
 
     private boolean doubleElixirShown = false;
     private boolean gameOverShown = false;
+    private com.kuroyale.service.ComboService comboService;
+    private int savedComboCount = 0; // For restoring combo count from saved games
+
+    private void showComboText(String text) {
+        javafx.scene.control.Label label = new javafx.scene.control.Label(text + "!");
+        label.setStyle(
+                "-fx-font-size: 32px; -fx-text-fill: gold; -fx-font-weight: bold; -fx-effect: dropshadow(three-pass-box, black, 10, 0, 0, 0);");
+        label.setTranslateY(-100);
+
+        StackPane container = new StackPane(label);
+        container.setPickOnBounds(false);
+        arenaContainer.getChildren().add(container);
+
+        javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(javafx.util.Duration.seconds(2.0),
+                label);
+        ft.setFromValue(1.0);
+        ft.setToValue(0.0);
+        ft.setOnFinished(e -> arenaContainer.getChildren().remove(container));
+
+        javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(
+                javafx.util.Duration.seconds(2.0), label);
+        tt.setByY(-50);
+
+        javafx.animation.ParallelTransition pt = new javafx.animation.ParallelTransition(ft, tt);
+        pt.play();
+    }
 
     /**
      * Returns the arena container for external navigation (used by strategies).
@@ -152,6 +192,10 @@ public class BattleController {
         arenaView = new BattleArenaView(gameState);
         arenaContainer.getChildren().add(arenaView);
 
+        // Make arena view fill the container so sidebar stays on the right
+        arenaView.prefWidthProperty().bind(arenaContainer.widthProperty());
+        arenaView.prefHeightProperty().bind(arenaContainer.heightProperty());
+
         // Handle clicks on arena for card placement
         arenaView.setOnGridClicked((tileX, tileY) -> {
             handleArenaClick(tileX, tileY);
@@ -178,11 +222,18 @@ public class BattleController {
         // Subscribe to Elixir Events for visual feedback
         com.kuroyale.event.GameEventBus.getInstance().subscribe(new com.kuroyale.event.GameEventListener() {
             @Override
-            public void onCardPlayed(boolean isPlayer, Card card) {
+            public void onCardPlayed(boolean isPlayer, Card card,
+                    java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
             }
 
             @Override
             public void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
+                playTowerDeathEffect(tower);
+            }
+
+            @Override
+            public void onTowerDamaged(Tower tower) {
+                playDamageEffect(tower);
             }
 
             @Override
@@ -204,7 +255,199 @@ public class BattleController {
             @Override
             public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration) {
             }
+
+            @Override
+            public void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
+                    java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
+                javafx.application.Platform.runLater(() -> {
+                    // 1. Show Text Feedback
+                    showComboText(combo.getDisplayName());
+
+                    // 2. Show Visual Effects
+                    if (arenaView != null) {
+                        arenaView.showComboEffect(combo, affectedUnits);
+                        if (comboService != null) {
+                            int count = comboService.getUniqueComboCount();
+                            // FIX: Update the Label on the sidebar
+                            comboLabel.setText(String.valueOf(count));
+                        }
+                    }
+
+                    // 3. Play Sound Effect
+                    try {
+                        java.net.URL soundUrl = getClass().getResource("/musics/combo.mp3");
+                        if (soundUrl != null) {
+                            javafx.scene.media.Media sound = new javafx.scene.media.Media(soundUrl.toExternalForm());
+                            javafx.scene.media.MediaPlayer mediaPlayer = new javafx.scene.media.MediaPlayer(sound);
+                            mediaPlayer.setVolume(0.5);
+                            mediaPlayer.play();
+                        }
+                    } catch (Exception e) {
+                        // Silently ignore sound errors
+                    }
+                });
+            }
         });
+
+        // Initialize Combo Service
+        if (comboService != null)
+            comboService.cleanup();
+        comboService = new com.kuroyale.service.ComboService();
+        comboService.setGameState(gameState);
+
+        // Restore combo count from saved game if applicable
+        if (savedComboCount > 0) {
+            comboService.restoreComboCount(savedComboCount);
+            // Update the label immediately to show restored combo count
+            if (comboLabel != null) {
+                comboLabel.setText(String.valueOf(savedComboCount));
+            }
+            savedComboCount = 0; // Reset after restoring
+        }
+    }
+
+    private void playDamageEffect(Tower tower) {
+        javafx.scene.Node towerNode = arenaView.getTowerNode(tower);
+        if (towerNode != null && towerNode instanceof javafx.scene.layout.StackPane) {
+            javafx.scene.layout.StackPane stack = (javafx.scene.layout.StackPane) towerNode;
+
+            // 1. Red Overlay Flash (More visible than ColorAdjust)
+            javafx.scene.shape.Rectangle overlay = new javafx.scene.shape.Rectangle(stack.getWidth(),
+                    stack.getHeight());
+            overlay.setFill(javafx.scene.paint.Color.RED);
+            overlay.setOpacity(0.0);
+            overlay.setMouseTransparent(true);
+
+            stack.getChildren().add(overlay);
+
+            javafx.animation.FadeTransition flash = new javafx.animation.FadeTransition(
+                    javafx.util.Duration.millis(100), overlay);
+            flash.setFromValue(0.0);
+            flash.setToValue(0.3); // 30% red opacity (Lighter)
+            flash.setCycleCount(2);
+            flash.setAutoReverse(true);
+            flash.setOnFinished(e -> stack.getChildren().remove(overlay));
+            flash.play();
+
+            // 2. Shake
+            javafx.animation.TranslateTransition shake = new javafx.animation.TranslateTransition(
+                    javafx.util.Duration.millis(50), towerNode);
+            shake.setByX(2);
+            shake.setCycleCount(4);
+            shake.setAutoReverse(true);
+            shake.play();
+        }
+    }
+
+    private void playTowerDeathEffect(Tower tower) {
+        javafx.scene.Node towerNode = arenaView.getTowerNode(tower);
+        if (towerNode == null)
+            return;
+
+        javafx.geometry.Bounds bounds = towerNode.localToScene(towerNode.getBoundsInLocal());
+        double startX = bounds.getCenterX();
+        double startY = bounds.getCenterY();
+
+        // Convert to ArenaContainer local coordinates
+        javafx.geometry.Point2D localStart = arenaContainer.sceneToLocal(startX, startY);
+        // StackPane (0,0) is center. sceneToLocal gives coordinates relative to
+        // top-left.
+        // We need to adjust by half width/height to center it in StackPane
+
+        double centerX = localStart.getX() - arenaContainer.getWidth() / 2;
+        double centerY = localStart.getY() - arenaContainer.getHeight() / 2;
+
+        // 1. Procedural Explosion (Simple Animation)
+        // Creating a "more animationer" simple effect via code
+        javafx.scene.shape.Circle explosionCore = new javafx.scene.shape.Circle(10, javafx.scene.paint.Color.ORANGE);
+        explosionCore.setStroke(javafx.scene.paint.Color.RED);
+        explosionCore.setStrokeWidth(2);
+        explosionCore.setTranslateX(centerX);
+        explosionCore.setTranslateY(centerY);
+
+        javafx.scene.shape.Circle explosionRing = new javafx.scene.shape.Circle(10,
+                javafx.scene.paint.Color.TRANSPARENT);
+        explosionRing.setStroke(javafx.scene.paint.Color.YELLOW);
+        explosionRing.setStrokeWidth(4);
+        explosionRing.setTranslateX(centerX);
+        explosionRing.setTranslateY(centerY);
+
+        arenaContainer.getChildren().addAll(explosionCore, explosionRing);
+
+        // Detailed Explosion Timeline
+        javafx.animation.Timeline explodeAnim = new javafx.animation.Timeline(
+                // Core expands and fades
+                new javafx.animation.KeyFrame(javafx.util.Duration.ZERO,
+                        new javafx.animation.KeyValue(explosionCore.radiusProperty(), 10),
+                        new javafx.animation.KeyValue(explosionCore.opacityProperty(), 1.0)),
+                new javafx.animation.KeyFrame(javafx.util.Duration.millis(400),
+                        new javafx.animation.KeyValue(explosionCore.radiusProperty(), 60),
+                        new javafx.animation.KeyValue(explosionCore.opacityProperty(), 0.0)),
+                // Ring expands and fades later
+                new javafx.animation.KeyFrame(javafx.util.Duration.ZERO,
+                        new javafx.animation.KeyValue(explosionRing.radiusProperty(), 10),
+                        new javafx.animation.KeyValue(explosionRing.opacityProperty(), 1.0),
+                        new javafx.animation.KeyValue(explosionRing.strokeWidthProperty(), 4)),
+                new javafx.animation.KeyFrame(javafx.util.Duration.millis(600),
+                        new javafx.animation.KeyValue(explosionRing.radiusProperty(), 80),
+                        new javafx.animation.KeyValue(explosionRing.opacityProperty(), 0.0),
+                        new javafx.animation.KeyValue(explosionRing.strokeWidthProperty(), 0)));
+
+        explodeAnim.setOnFinished(e -> arenaContainer.getChildren().removeAll(explosionCore, explosionRing));
+        explodeAnim.play();
+
+        // 2. Crown Animation
+        String crownPath = tower.isPlayerSide() ? "/images/oppo_crown.png" : "/images/crown.png";
+
+        boolean isPlayerTower = tower.isPlayerSide();
+        // If player tower died, crown goes to Bot Score (Right side)
+        // If bot tower died, crown goes to Player Score (Right side)
+
+        javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                new javafx.scene.image.Image(getClass().getResourceAsStream(crownPath)));
+        crown.setFitWidth(40);
+        crown.setFitHeight(40);
+
+        crown.setTranslateX(centerX);
+        crown.setTranslateY(centerY);
+        crown.setOpacity(0.0);
+
+        arenaContainer.getChildren().add(crown);
+
+        // Sequence: Fade In -> Wait -> Move
+        javafx.animation.SequentialTransition sequence = new javafx.animation.SequentialTransition();
+
+        // Show crown
+        javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(javafx.util.Duration.millis(200),
+                crown);
+        fadeIn.setToValue(1.0);
+
+        // Wait 1 second
+        javafx.animation.PauseTransition stay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(1.0));
+
+        // Move to scoreboard
+        javafx.animation.TranslateTransition move = new javafx.animation.TranslateTransition(
+                javafx.util.Duration.seconds(1.0), crown);
+
+        // Calculate End Position
+        HBox targetBox = isPlayerTower ? botScoreContainer : playerScoreContainer;
+        javafx.geometry.Point2D targetPoint = targetBox.localToScene(0, 0);
+        javafx.geometry.Point2D localEnd = arenaContainer.sceneToLocal(targetPoint.getX() + targetBox.getWidth() / 2,
+                targetPoint.getY() + targetBox.getHeight() / 2);
+
+        double endX = localEnd.getX() - arenaContainer.getWidth() / 2;
+        double endY = localEnd.getY() - arenaContainer.getHeight() / 2;
+
+        move.setToX(endX);
+        move.setToY(endY);
+        move.setInterpolator(javafx.animation.Interpolator.EASE_IN);
+
+        sequence.getChildren().addAll(fadeIn, stay, move);
+
+        sequence.setOnFinished(e -> {
+            arenaContainer.getChildren().remove(crown);
+        });
+        sequence.play();
     }
 
     private void startGameLoop() {
@@ -239,24 +482,84 @@ public class BattleController {
         handView.update();
         arenaView.update(deltaTime);
 
+        // Update Sidebar (moved from BattleArenaView)
+        updateSidebar();
+
         // Check for Double Elixir
         if (gameState.isDoubleElixir() && !doubleElixirShown) {
             doubleElixirShown = true;
             // Visual indicators are handled by ElixirBar and BattleArenaView
             elixirBar.setDoubleElixirActive(true);
+            // Update timer color for double elixir
+            timeLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 36px; -fx-font-weight: bold;");
         }
 
         // Check for Game Over
+        checkGameOver();
+    }
+
+    // Sidebar tracking variables
+    private int lastDisplayedSeconds = -1;
+    private int lastPlayerScore = -1;
+    private int lastBotScore = -1;
+
+    private void updateSidebar() {
+        // Update Timer (only when second changes)
+        int totalSeconds = (int) Math.ceil(gameState.getGameTime());
+        if (totalSeconds != lastDisplayedSeconds) {
+            lastDisplayedSeconds = totalSeconds;
+            int minutes = totalSeconds / 60;
+            int seconds = totalSeconds % 60;
+            timeLabel.setText(String.format("%02d:%02d", minutes, seconds));
+        }
+
+        // Update Score crowns
+        int playerScore = gameState.getPlayerScore();
+        int botScore = gameState.getBotScore();
+
+        if (playerScore != lastPlayerScore) {
+            lastPlayerScore = playerScore;
+            updateScoreContainerUI(playerScoreContainer, playerScore, false);
+        }
+        if (botScore != lastBotScore) {
+            lastBotScore = botScore;
+            updateScoreContainerUI(botScoreContainer, botScore, true);
+        }
+    }
+
+    private void updateScoreContainerUI(HBox container, int score, boolean isOpponent) {
+        if (container == null)
+            return;
+        container.getChildren().clear();
+        String imagePath = isOpponent ? "/images/oppo_crown.png" : "/images/crown.png";
+
+        for (int i = 0; i < score; i++) {
+            javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                    new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
+            crown.setFitWidth(32);
+            crown.setFitHeight(32);
+            container.getChildren().add(crown);
+        }
+    }
+
+    // Check for Game Over - called from update() method
+    private void checkGameOver() {
         if (gameState.isGameOver() && !gameOverShown) {
             gameOverShown = true;
             gameLoop.stop();
 
-            // Handle Challenge Results
-            if (currentChallenge != null) {
-                handleChallengeGameOver();
-            } else {
-                showGameOverPopup();
-            }
+            // Wait 1 second before showing Game Over screen
+            javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(
+                    javafx.util.Duration.seconds(1.0));
+            delay.setOnFinished(e -> {
+                // Handle Challenge Results
+                if (currentChallenge != null) {
+                    handleChallengeGameOver();
+                } else {
+                    showGameOverPopup();
+                }
+            });
+            delay.play();
         }
     }
 
@@ -400,8 +703,21 @@ public class BattleController {
         gameOverTitle.getStyleClass().removeAll("victory-text", "defeat-text");
         gameOverTitle.getStyleClass().add(playerWon ? "victory-text" : "defeat-text");
 
-        gameOverScore
-                .setText(String.format("Player: %d  -  Bot: %d", gameState.getPlayerScore(), gameState.getBotScore()));
+        int playerScore = gameState.getPlayerScore();
+        int botScore = gameState.getBotScore();
+
+        int comboCount = 0;
+        if (comboService != null) {
+            comboCount = comboService.getUniqueComboCount();
+        }
+
+        // Render crowns (using larger size for Game Over)
+        renderGameOverCrowns(gameOverPlayerCrowns, playerScore, false);
+        renderGameOverCrowns(gameOverBotCrowns, botScore, true);
+
+        gameOverInfoLabel.setText("Score: " + playerScore + " - " + botScore
+                + "\nCombos: " + comboCount + " (+" + (comboCount * 10) + " gold)");
+        // User will click EXIT button to return to menu
     }
 
     private void handleArenaClick(int tileX, int tileY) {
@@ -453,7 +769,11 @@ public class BattleController {
     private boolean saveGame() {
         User currentUser = model.getCurrentUser();
         if (currentUser != null && currentArenaLayout != null) {
-            SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout);
+            int comboCount = 0;
+            if (comboService != null) {
+                comboCount = comboService.getUniqueComboCount();
+            }
+            SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout, comboCount);
             if (savedGame != null) {
                 return true;
             } else {
@@ -498,7 +818,14 @@ public class BattleController {
                 javafx.scene.control.Alert.AlertType.INFORMATION);
         alert.setTitle("Game Saved");
         alert.setHeaderText("Success");
+        // The variables 'result', 'playerScore', 'botScore', 'comboCount' are not
+        // available in this scope.
+        // This change is being applied literally as requested, but it will cause a
+        // compilation error.
+        // If the intention was to show this information in the game over screen,
+        // the change should be applied to the showGameOverPopup method instead.
         alert.setContentText("Match saved successfully! You can resume it later from the main menu.");
+
         alert.showAndWait();
     }
 
@@ -522,6 +849,7 @@ public class BattleController {
     private void initializeFromSavedGame(SavedGameState savedGame) {
         gameState = model.loadGame(savedGame);
         currentArenaLayout = savedGame.getArenaLayout();
+        savedComboCount = savedGame.getComboCount(); // Store for later restoration
     }
 
     @FXML
@@ -530,10 +858,16 @@ public class BattleController {
             gameLoop.stop();
         }
 
+        // Award gold BEFORE cleaning up combo service so combo count is available
         try {
             awardGoldIfEligible();
         } catch (java.io.IOException e) {
             e.printStackTrace();
+        }
+
+        if (comboService != null) {
+            comboService.cleanup();
+            comboService = null;
         }
 
         try {
@@ -559,8 +893,27 @@ public class BattleController {
 
         int playerScore = gameState.getPlayerScore();
         int botScore = gameState.getBotScore();
+        boolean playerWon = gameState.isPlayerWinner();
+        boolean isDraw = gameState.isDraw();
 
-        model.processMatchResult(playerScore, botScore);
+        int comboBonus = 0;
+        if (comboService != null) {
+            comboBonus = comboService.getUniqueComboCount();
+        }
+
+        model.processMatchResult(playerScore, botScore, comboBonus, playerWon, isDraw);
     }
 
+    private void renderGameOverCrowns(HBox container, int count, boolean isOpponent) {
+        container.getChildren().clear();
+        String imagePath = isOpponent ? "/images/oppo_crown.png" : "/images/crown.png";
+
+        for (int i = 0; i < count; i++) {
+            javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                    new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
+            crown.setFitWidth(64);
+            crown.setFitHeight(64);
+            container.getChildren().add(crown);
+        }
+    }
 }

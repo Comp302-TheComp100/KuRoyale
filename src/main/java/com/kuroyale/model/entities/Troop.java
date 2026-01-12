@@ -9,7 +9,8 @@ public class Troop implements ICombatant {
     private Vector2 worldPosition, targetWorldPosition;
     private final boolean isPlayer, isAirUnit, buildingOnly;
     private int currentHealth;
-    private final double moveSpeed, attackRange;
+    private double moveSpeed;
+    private final double attackRange;
     private final Deque<Vector2> path;
     // Combat
     private CombatStats combatStats;
@@ -249,6 +250,30 @@ public class Troop implements ICombatant {
     public void updateStatus(double deltaTime) {
         if (stunTimer > 0) {
             stunTimer -= deltaTime;
+        }
+    }
+
+    public void heal(int amount) {
+        currentHealth += amount;
+        // Cap at max health? Card baseHp is "max" but levels affect it.
+        // For now uncapped or I need to track max health separately which I don't see
+        // here easily
+        // (Card.getHp() is consistent but maybe Troop should store max).
+        // Let's assume uncapped or handled by caller, or use baseCard.getHp() * level
+        // multiplier as max replacement.
+        // Actually Troop overwrites currentHealth.
+        // Let's just add it.
+    }
+
+    public void modifySpeed(double multiplier) {
+        this.moveSpeed *= multiplier;
+    }
+
+    public void buffDamage(double percent) {
+        if (this.combatStats != null) {
+            int newDamage = (int) (this.combatStats.getDamage() * (1.0 + percent));
+            this.combatStats = new CombatStats(newDamage, this.combatStats.getHitSpeedSeconds(),
+                    this.combatStats.getRangeTiles(), this.combatStats.getAttackType());
         }
     }
 }

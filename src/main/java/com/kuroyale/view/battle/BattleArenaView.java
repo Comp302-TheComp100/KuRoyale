@@ -21,8 +21,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private final Pane arenaPane;
     private final GameState gameState;
     private final com.kuroyale.model.logic.PvPGameState pvpGameState; // For PvP mode
-    private final javafx.scene.control.Label timerLabel;
-    private final javafx.scene.control.Label scoreLabel;
     private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
 
     // Track hovered tile for highlighting
@@ -78,12 +76,10 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         arenaPane.setOnMouseExited(e -> clearHoverHighlight());
 
         // PvP mode: No sidebar (timer/score handled in controller)
-        this.timerLabel = null;
-        this.scoreLabel = null;
 
         StackPane centerContainer = new StackPane(arenaPane);
-        centerContainer.setAlignment(javafx.geometry.Pos.TOP_CENTER);
-        centerContainer.setPadding(new javafx.geometry.Insets(20, 0, 0, 0));
+        centerContainer.setAlignment(javafx.geometry.Pos.CENTER);
+        centerContainer.setPadding(new javafx.geometry.Insets(0, 0, 0, 0));
         this.setCenter(centerContainer);
 
         // Initialize renderers - create a minimal proxy for rendering
@@ -101,31 +97,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.gameState = gameState;
         this.pvpGameState = null;
 
-        // Right Sidebar (Timer and Score)
-        javafx.scene.layout.VBox sidebar = new javafx.scene.layout.VBox(20);
-        sidebar.setAlignment(javafx.geometry.Pos.TOP_CENTER);
-        sidebar.setPadding(new javafx.geometry.Insets(20));
-        sidebar.setStyle("-fx-background-color: rgba(0, 0, 0, 0.5);");
-        sidebar.setPrefWidth(200);
-
-        javafx.scene.control.Label timerTitle = new javafx.scene.control.Label("TIME");
-        timerTitle.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
-
-        timerLabel = new javafx.scene.control.Label("03:00");
-        timerLabel.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
-
-        javafx.scene.control.Label scoreTitle = new javafx.scene.control.Label("SCORE");
-        scoreTitle.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
-
-        scoreLabel = new javafx.scene.control.Label("0 - 0");
-        scoreLabel.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
-
-        javafx.scene.control.Label opponentLabel = new javafx.scene.control.Label("OPPONENT");
-        opponentLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 18px; -fx-font-weight: bold;");
-
-        sidebar.getChildren().addAll(timerTitle, timerLabel, new javafx.scene.control.Separator(), scoreTitle,
-                scoreLabel, new javafx.scene.control.Separator(), opponentLabel);
-        this.setRight(sidebar);
+        // Sidebar is now defined in battle.fxml - no longer created here
 
         // Center Arena
         this.grid = new GridPane();
@@ -177,8 +149,13 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         });
 
         StackPane centerContainer = new StackPane(arenaPane);
-        centerContainer.setAlignment(javafx.geometry.Pos.TOP_CENTER); // Align to top as requested
-        centerContainer.setPadding(new javafx.geometry.Insets(20, 0, 0, 0)); // Add some top padding
+        // Explicitly center the arenaPane within the StackPane
+        StackPane.setAlignment(arenaPane, javafx.geometry.Pos.CENTER);
+        // Constrain arenaPane to its preferred size so it doesn't stretch
+        arenaPane.setMaxSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        arenaPane.setMinSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        // Shift arena 20px to the left
+        arenaPane.setTranslateX(-10);
 
         this.setCenter(centerContainer);
 
@@ -321,44 +298,14 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private BuildingRenderer buildingRenderer;
 
     // Last-value tracking for observer pattern (only update UI when changed)
-    private int lastDisplayedSeconds = -1;
-    private int lastPlayerScore = -1;
-    private int lastBotScore = -1;
-    private boolean lastDoubleElixir = false;
 
     public void update(double deltaTime) {
         // === OBSERVER PATTERN: Only update UI when values change ===
 
-        // Update Timer (only when second changes)
-        int totalSeconds = (int) Math.ceil(gameState.getGameTime());
-        if (totalSeconds != lastDisplayedSeconds) {
-            lastDisplayedSeconds = totalSeconds;
-            int minutes = totalSeconds / 60;
-            int seconds = totalSeconds % 60;
-            timerLabel.setText(String.format("%02d:%02d", minutes, seconds));
-        }
-
-        // Change timer color during double elixir
-        boolean isDoubleElixir = gameState.isDoubleElixir();
-        if (isDoubleElixir != lastDoubleElixir) {
-            lastDoubleElixir = isDoubleElixir;
-            if (isDoubleElixir) {
-                timerLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 24px; -fx-font-weight: bold;");
-            } else {
-                timerLabel.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
-            }
-        }
-
-        // Update Score
-        int playerScore = gameState.getPlayerScore();
-        int botScore = gameState.getBotScore();
-        if (playerScore != lastPlayerScore || botScore != lastBotScore) {
-            lastPlayerScore = playerScore;
-            lastBotScore = botScore;
-            scoreLabel.setText(String.format("%d - %d", playerScore, botScore));
-        }
+        // === OBSERVER PATTERN: Only update UI when values change ===
 
         // Delegate to Renderers
+
         towerRenderer.cleanupDestroyedTowers(gameState.getArena());
         towerRenderer.updateHealthBars(gameState.getArena());
         troopRenderer.render(gameState);
@@ -557,7 +504,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         overlay.setStrokeType(javafx.scene.shape.StrokeType.INSIDE); // Stroke inside to avoid gaps
 
         // Position overlay
-        overlay.setLayoutX(cellX);
+        overlay.setLayoutX(cellX + TILE_SIZE / 2.0 - TILE_SIZE / 2.0);
         overlay.setLayoutY(cellY);
 
         // Make overlay transparent to mouse events so clicks pass through
@@ -618,5 +565,51 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
                 it.remove();
             }
         }
+    }
+
+    public void showComboEffect(com.kuroyale.model.enums.ComboType combo,
+            java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
+        if (affectedUnits == null || affectedUnits.isEmpty())
+            return;
+
+        // Visual duration
+        double duration = 2.0;
+
+        for (com.kuroyale.model.entities.ICombatant unit : affectedUnits) {
+            com.kuroyale.model.entities.GridPosition pos = unit.getCenterPosition();
+            if (pos == null)
+                continue;
+
+            double cx = pos.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
+            double cy = pos.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
+
+            // Draw a gold star or ring
+            javafx.scene.shape.Circle ring = new javafx.scene.shape.Circle(cx, cy, TILE_SIZE * 0.8);
+            ring.setFill(null);
+            ring.setStroke(Color.GOLD);
+            ring.setStrokeWidth(3.0);
+            ring.setEffect(new javafx.scene.effect.Glow(0.8));
+
+            unitLayer.getChildren().add(ring);
+            activeSpellVisuals.add(new ActiveSpellVisual(ring, duration));
+
+            // Add a scaling animation for pop
+            javafx.animation.ScaleTransition st = new javafx.animation.ScaleTransition(
+                    javafx.util.Duration.seconds(0.5), ring);
+            st.setFromX(0.5);
+            st.setFromY(0.5);
+            st.setToX(1.2);
+            st.setToY(1.2);
+            st.setAutoReverse(true);
+            st.setCycleCount(2);
+            st.play();
+        }
+    }
+
+    public javafx.scene.Node getTowerNode(com.kuroyale.model.entities.Tower tower) {
+        if (tower == null || tower.getPosition() == null || towerRenderer == null) {
+            return null;
+        }
+        return towerRenderer.getTowerVisual(tower.getPosition());
     }
 }

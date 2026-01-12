@@ -189,4 +189,8 @@ public class TowerRenderer {
             textNode.setText(String.format("%.0f", currentHealth));
         }
     }
+
+    public Node getTowerVisual(GridPosition pos) {
+        return activeTowerVisuals.get(pos);
+    }
 }

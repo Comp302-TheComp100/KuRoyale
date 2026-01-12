@@ -64,8 +64,10 @@ public class AchievementService implements GameEventListener {
         return new ArrayList<>(achievements.values());
     }
 
-    //Gets a specific achievement.
-    public Achievement getAchievement(AchievementType type) {return achievements.get(type);}
+    // Gets a specific achievement.
+    public Achievement getAchievement(AchievementType type) {
+        return achievements.get(type);
+    }
 
     // Updates progress for a specific achievement.
     public void updateProgress(AchievementType type, int amount) {
@@ -171,7 +173,8 @@ public class AchievementService implements GameEventListener {
     }
 
     @Override
-    public void onCardPlayed(boolean isPlayer, Card card) {
+    public void onCardPlayed(boolean isPlayer, Card card,
+            java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
         if (!isPlayer)
             return;
 

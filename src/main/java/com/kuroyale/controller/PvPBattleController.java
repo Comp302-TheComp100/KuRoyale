@@ -41,7 +41,9 @@ public class PvPBattleController {
     @FXML
     private Label timeLabel;
     @FXML
-    private Label scoreLabel;
+    private HBox player1ScoreContainer;
+    @FXML
+    private HBox player2ScoreContainer;
     @FXML
     private Label turnIndicatorLabel;
     @FXML
@@ -53,7 +55,11 @@ public class PvPBattleController {
     @FXML
     private Label gameOverTitle;
     @FXML
-    private Label gameOverScore;
+    private HBox gameOverP1Crowns;
+    @FXML
+    private HBox gameOverP2Crowns;
+    @FXML
+    private Label gameOverInfoLabel;
     @FXML
     private VBox infoPanel;
 
@@ -80,7 +86,13 @@ public class PvPBattleController {
      * Called from PvPDeckSelectionController after deck selection.
      */
     public void initializeGame(Deck player1Deck, Deck player2Deck) {
-        // Load arena layout (use default for PvP)
+        // Set current user in arena service to load their saved layout
+        User currentUser = model.getCurrentUser();
+        if (currentUser != null) {
+            model.setCurrentUserInArenaService(currentUser);
+        }
+
+        // Load arena layout (loads saved layout if available)
         ArenaLayout arenaLayout = model.loadArenaLayout();
         Arena arena = model.createArena(arenaLayout);
 
@@ -91,6 +103,11 @@ public class PvPBattleController {
         // Initialize arena view
         arenaView = new BattleArenaView(gameState);
         arenaContainer.getChildren().add(arenaView);
+
+        // Center the arena view within the container
+        StackPane.setAlignment(arenaView, javafx.geometry.Pos.CENTER);
+        arenaView.setMaxWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        arenaView.setMaxHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
 
         // Set up arena click handlers for both players
         setupArenaClickHandler();
@@ -120,6 +137,244 @@ public class PvPBattleController {
 
         // Start game loop
         startGameLoop();
+
+        // Subscribe to Game Events for effects
+        com.kuroyale.event.GameEventBus.getInstance().subscribe(new com.kuroyale.event.GameEventListener() {
+            @Override
+            public void onCardPlayed(boolean isPlayer, Card card,
+                    java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
+            }
+
+            @Override
+            public void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
+                playTowerDeathEffect(tower);
+            }
+
+            @Override
+            public void onTowerDamaged(Tower tower) {
+                playDamageEffect(tower);
+            }
+
+            @Override
+            public void onElixirSpent(boolean isPlayer, int amount) {
+            }
+
+            @Override
+            public void onBuildingProduction(Building building, String resource, int amount) {
+                // Handle production visuals if needed (similar to SP)
+                if ("ELIXIR".equals(resource)) {
+                    javafx.application.Platform.runLater(() -> {
+                        if (building.isPlayerSide()) {
+                            player1ElixirBar.showProductionIndicator(amount);
+                        } else {
+                            player2ElixirBar.showProductionIndicator(amount);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration) {
+            }
+
+            @Override
+            public void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
+                    java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
+                javafx.application.Platform.runLater(() -> {
+                    // 1. Show Text Feedback
+                    try {
+                        showComboText(combo.getDisplayName());
+                    } catch (Exception e) {
+                        // Ignore UI errors if controller is dying
+                    }
+
+                    // 2. Show Visual Effects
+                    if (arenaView != null) {
+                        arenaView.showComboEffect(combo, affectedUnits);
+                    }
+
+                    // 3. Play Sound Effect
+                    try {
+                        java.net.URL soundUrl = getClass().getResource("/musics/combo.mp3");
+                        if (soundUrl != null) {
+                            javafx.scene.media.Media sound = new javafx.scene.media.Media(soundUrl.toExternalForm());
+                            javafx.scene.media.MediaPlayer mediaPlayer = new javafx.scene.media.MediaPlayer(sound);
+                            mediaPlayer.setVolume(0.5);
+                            mediaPlayer.play();
+                        }
+                    } catch (Exception e) {
+                        // Silently ignore sound errors
+                    }
+                });
+            }
+        });
+    }
+
+    private void showComboText(String text) {
+        javafx.scene.control.Label label = new javafx.scene.control.Label(text + "!");
+        label.setStyle(
+                "-fx-font-size: 32px; -fx-text-fill: gold; -fx-font-weight: bold; -fx-effect: dropshadow(three-pass-box, black, 10, 0, 0, 0);");
+        label.setTranslateY(-100);
+
+        StackPane container = new StackPane(label);
+        container.setPickOnBounds(false);
+        if (arenaContainer != null) {
+            arenaContainer.getChildren().add(container);
+
+            javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(javafx.util.Duration.seconds(2.0),
+                    label);
+            ft.setFromValue(1.0);
+            ft.setToValue(0.0);
+            ft.setOnFinished(e -> {
+                if (arenaContainer != null)
+                    arenaContainer.getChildren().remove(container);
+            });
+
+            javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(
+                    javafx.util.Duration.seconds(2.0), label);
+            tt.setByY(-50);
+
+            javafx.animation.ParallelTransition pt = new javafx.animation.ParallelTransition(ft, tt);
+            pt.play();
+        }
+    }
+
+    private void playDamageEffect(Tower tower) {
+        javafx.scene.Node towerNode = arenaView.getTowerNode(tower);
+        if (towerNode != null && towerNode instanceof javafx.scene.layout.StackPane) {
+            javafx.scene.layout.StackPane stack = (javafx.scene.layout.StackPane) towerNode;
+
+            // 1. Red Overlay Flash
+            javafx.scene.shape.Rectangle overlay = new javafx.scene.shape.Rectangle(stack.getWidth(),
+                    stack.getHeight());
+            overlay.setFill(javafx.scene.paint.Color.RED);
+            overlay.setOpacity(0.0);
+            overlay.setMouseTransparent(true);
+
+            stack.getChildren().add(overlay);
+
+            javafx.animation.FadeTransition flash = new javafx.animation.FadeTransition(
+                    javafx.util.Duration.millis(100), overlay);
+            flash.setFromValue(0.0);
+            flash.setToValue(0.3);
+            flash.setCycleCount(2);
+            flash.setAutoReverse(true);
+            flash.setOnFinished(e -> stack.getChildren().remove(overlay));
+            flash.play();
+
+            // 2. Shake
+            javafx.animation.TranslateTransition shake = new javafx.animation.TranslateTransition(
+                    javafx.util.Duration.millis(50), towerNode);
+            shake.setByX(2);
+            shake.setCycleCount(4);
+            shake.setAutoReverse(true);
+            shake.play();
+        }
+    }
+
+    private void playTowerDeathEffect(Tower tower) {
+        javafx.scene.Node towerNode = arenaView.getTowerNode(tower);
+        if (towerNode == null)
+            return;
+
+        javafx.geometry.Bounds bounds = towerNode.localToScene(towerNode.getBoundsInLocal());
+        double startX = bounds.getCenterX();
+        double startY = bounds.getCenterY();
+
+        javafx.geometry.Point2D localStart = arenaContainer.sceneToLocal(startX, startY);
+        double centerX = localStart.getX() - arenaContainer.getWidth() / 2;
+        double centerY = localStart.getY() - arenaContainer.getHeight() / 2;
+
+        // 1. Procedural Explosion
+        javafx.scene.shape.Circle explosionCore = new javafx.scene.shape.Circle(10, javafx.scene.paint.Color.ORANGE);
+        explosionCore.setStroke(javafx.scene.paint.Color.RED);
+        explosionCore.setStrokeWidth(2);
+        explosionCore.setTranslateX(centerX);
+        explosionCore.setTranslateY(centerY);
+
+        javafx.scene.shape.Circle explosionRing = new javafx.scene.shape.Circle(10,
+                javafx.scene.paint.Color.TRANSPARENT);
+        explosionRing.setStroke(javafx.scene.paint.Color.YELLOW);
+        explosionRing.setStrokeWidth(4);
+        explosionRing.setTranslateX(centerX);
+        explosionRing.setTranslateY(centerY);
+
+        arenaContainer.getChildren().addAll(explosionCore, explosionRing);
+
+        javafx.animation.Timeline explodeAnim = new javafx.animation.Timeline(
+                new javafx.animation.KeyFrame(javafx.util.Duration.ZERO,
+                        new javafx.animation.KeyValue(explosionCore.radiusProperty(), 10),
+                        new javafx.animation.KeyValue(explosionCore.opacityProperty(), 1.0)),
+                new javafx.animation.KeyFrame(javafx.util.Duration.millis(400),
+                        new javafx.animation.KeyValue(explosionCore.radiusProperty(), 60),
+                        new javafx.animation.KeyValue(explosionCore.opacityProperty(), 0.0)),
+                new javafx.animation.KeyFrame(javafx.util.Duration.ZERO,
+                        new javafx.animation.KeyValue(explosionRing.radiusProperty(), 10),
+                        new javafx.animation.KeyValue(explosionRing.opacityProperty(), 1.0),
+                        new javafx.animation.KeyValue(explosionRing.strokeWidthProperty(), 4)),
+                new javafx.animation.KeyFrame(javafx.util.Duration.millis(600),
+                        new javafx.animation.KeyValue(explosionRing.radiusProperty(), 80),
+                        new javafx.animation.KeyValue(explosionRing.opacityProperty(), 0.0),
+                        new javafx.animation.KeyValue(explosionRing.strokeWidthProperty(), 0)));
+
+        explodeAnim.setOnFinished(e -> arenaContainer.getChildren().removeAll(explosionCore, explosionRing));
+        explodeAnim.play();
+
+        // 2. Crown Animation
+        // Player 1 (Bottom) uses "crown.png" isPlayerSide=true
+        // Player 2 (Top) uses "oppo_crown.png" isPlayerSide=false
+        // If P1 tower dies, P2 gets a point. We want P2 Crown (oppo_crown/RED) to fly
+        // to P2 Score (Right).
+        // If P2 tower dies, P1 gets a point. We want P1 Crown (crown/BLUE) to fly to P1
+        // Score (Left).
+        boolean isPlayer1Tower = tower.isPlayerSide();
+        String crownPath = isPlayer1Tower ? "/images/oppo_crown.png" : "/images/crown.png";
+
+        javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                new javafx.scene.image.Image(getClass().getResourceAsStream(crownPath)));
+        crown.setFitWidth(40);
+        crown.setFitHeight(40);
+
+        crown.setTranslateX(centerX);
+        crown.setTranslateY(centerY);
+        crown.setOpacity(0.0);
+
+        arenaContainer.getChildren().add(crown);
+
+        javafx.animation.SequentialTransition sequence = new javafx.animation.SequentialTransition();
+
+        javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(javafx.util.Duration.millis(200),
+                crown);
+        fadeIn.setToValue(1.0);
+
+        javafx.animation.PauseTransition stay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(1.0));
+
+        javafx.animation.TranslateTransition move = new javafx.animation.TranslateTransition(
+                javafx.util.Duration.seconds(1.0), crown);
+
+        // Determine target box
+        HBox targetBox = isPlayer1Tower ? player2ScoreContainer : player1ScoreContainer;
+
+        javafx.geometry.Point2D targetPoint = targetBox.localToScene(0, 0);
+        javafx.geometry.Point2D localEnd = arenaContainer.sceneToLocal(targetPoint.getX() + targetBox.getWidth() / 2,
+                targetPoint.getY() + targetBox.getHeight() / 2);
+
+        double endX = localEnd.getX() - arenaContainer.getWidth() / 2;
+        double endY = localEnd.getY() - arenaContainer.getHeight() / 2;
+
+        move.setToX(endX);
+        move.setToY(endY);
+        move.setInterpolator(javafx.animation.Interpolator.EASE_IN);
+
+        sequence.getChildren().addAll(fadeIn, stay, move);
+
+        sequence.setOnFinished(e -> {
+            arenaContainer.getChildren().remove(crown);
+            // Score UI update handled by update() loop reading gameState, but animation
+            // adds
+            // flavor
+        });
+        sequence.play();
     }
 
     private void setupArenaClickHandler() {
@@ -261,7 +516,12 @@ public class PvPBattleController {
         if (gameState.isGameOver() && !gameOverShown) {
             gameOverShown = true;
             gameLoop.stop();
-            showGameOverPopup();
+
+            // Wait 1 second before showing Game Over screen
+            javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(
+                    javafx.util.Duration.seconds(1.0));
+            delay.setOnFinished(e -> showGameOverPopup());
+            delay.play();
         }
     }
 
@@ -284,14 +544,41 @@ public class PvPBattleController {
         int secs = seconds % 60;
         timeLabel.setText(String.format("%02d:%02d", mins, secs));
 
-        // Update score display
-        scoreLabel.setText(String.format("%d - %d", gameState.getPlayer1Score(), gameState.getPlayer2Score()));
+        // Update score display with crowns
+        updateScoreCrowns(gameState.getPlayer1Score(), gameState.getPlayer2Score());
 
         // Update double elixir indicators
         if (gameState.isDoubleElixir()) {
             player1ElixirBar.setDoubleElixirActive(true);
             player2ElixirBar.setDoubleElixirActive(true);
         }
+    }
+
+    private void updateScoreCrowns(int p1Score, int p2Score) {
+        // Only update if child count differs (simple check) to avoid clearing/re-adding
+        // every frame
+        if (player1ScoreContainer.getChildren().size() != p1Score) {
+            player1ScoreContainer.getChildren().clear();
+            for (int i = 0; i < p1Score; i++) {
+                addCrown(player1ScoreContainer, false);
+            }
+        }
+
+        if (player2ScoreContainer.getChildren().size() != p2Score) {
+            player2ScoreContainer.getChildren().clear();
+            for (int i = 0; i < p2Score; i++) {
+                addCrown(player2ScoreContainer, true);
+            }
+        }
+    }
+
+    private void addCrown(HBox container, boolean isOpponent) {
+        String imagePath = isOpponent ? "/images/oppo_crown.png" : "/images/crown.png";
+        javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
+        crown.setFitWidth(32);
+        crown.setFitHeight(32);
+        container.getChildren().add(crown);
     }
 
     private void showGameOverPopup() {
@@ -309,8 +596,26 @@ public class PvPBattleController {
             gameOverTitle.setStyle("-fx-text-fill: white; -fx-font-size: 48px; -fx-font-weight: bold;");
         }
 
-        gameOverScore.setText(String.format("Player 1: %d - Player 2: %d",
-                gameState.getPlayer1Score(), gameState.getPlayer2Score()));
+        renderGameOverCrowns(gameOverP1Crowns, gameState.getPlayer1Score(), false);
+        renderGameOverCrowns(gameOverP2Crowns, gameState.getPlayer2Score(), true);
+
+        if (gameOverInfoLabel != null) {
+            gameOverInfoLabel.setText(String.format("Final Score\nPlayer 1: %d  -  Player 2: %d",
+                    gameState.getPlayer1Score(), gameState.getPlayer2Score()));
+        }
+    }
+
+    private void renderGameOverCrowns(HBox container, int count, boolean isOpponent) {
+        container.getChildren().clear();
+        String imagePath = isOpponent ? "/images/oppo_crown.png" : "/images/crown.png";
+
+        for (int i = 0; i < count; i++) {
+            javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                    new javafx.scene.image.Image(getClass().getResourceAsStream(imagePath)));
+            crown.setFitWidth(64);
+            crown.setFitHeight(64);
+            container.getChildren().add(crown);
+        }
     }
 
     @FXML
@@ -359,6 +664,10 @@ public class PvPBattleController {
 
     @FXML
     public void handleExit() {
+        if (gameState != null) {
+            gameState.cleanup();
+        }
+
         if (gameLoop != null) {
             gameLoop.stop();
         }

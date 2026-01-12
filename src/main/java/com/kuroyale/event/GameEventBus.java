@@ -32,10 +32,11 @@ public class GameEventBus {
         listeners.remove(listener);
     }
 
-    public void publishCardPlayed(boolean isPlayer, Card card) {
+    public void publishCardPlayed(boolean isPlayer, Card card,
+            java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
         // Create a copy to avoid ConcurrentModificationException if a listener
         // unsubscribes during notify
-        new ArrayList<>(listeners).forEach(l -> l.onCardPlayed(isPlayer, card));
+        new ArrayList<>(listeners).forEach(l -> l.onCardPlayed(isPlayer, card, spawnedUnits));
     }
 
     public void publishTowerDestroyed(boolean isPlayerTower, Tower tower) {
@@ -54,5 +55,14 @@ public class GameEventBus {
             double radius, double duration) {
 
         new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration));
+    }
+
+    public void publishComboTriggered(com.kuroyale.model.enums.ComboType combo,
+            java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
+        new ArrayList<>(listeners).forEach(l -> l.onComboTriggered(combo, affectedUnits));
+    }
+
+    public void publishTowerDamaged(Tower tower) {
+        new ArrayList<>(listeners).forEach(l -> l.onTowerDamaged(tower));
     }
 }

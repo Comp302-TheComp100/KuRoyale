@@ -99,6 +99,8 @@ public class CardCatalog {
         copy.setMinRange(base.getMinRange());
         // Copy stunDuration (for Zap)
         copy.setStunDuration(base.getStunDuration());
+        // Copy sprite size (for visual rendering)
+        copy.setSpriteTiles(base.getSpriteWidthTiles(), base.getSpriteHeightTiles());
         copy.setLevel(level);
         return copy;
     }

@@ -65,6 +65,22 @@
             </VBox>
         </ScrollPane>
         
+        <!-- Combo Panel - Right side -->
+        <VBox fx:id="comboPanel" 
+              layoutX="960" layoutY="70"
+              prefWidth="300" prefHeight="340"
+              spacing="10"
+              style="-fx-background-color: rgba(50, 35, 25, 0.95); -fx-background-radius: 15; -fx-padding: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0.3, 0, 3);">
+            <Label text="Available Combos" 
+                   style="-fx-text-fill: #f7b32b; -fx-font-size: 18px; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, rgba(247,179,43,0.4), 3, 0.5, 0, 0);"/>
+            <ScrollPane fx:id="comboScrollPane" 
+                        prefHeight="290" 
+                        fitToWidth="true"
+                        style="-fx-background: transparent; -fx-background-color: transparent;">
+                <VBox fx:id="comboList" spacing="10" style="-fx-padding: 5;"/>
+            </ScrollPane>
+        </VBox>
+        
         <!-- Back Button -->
         <Button fx:id="backButton" 
                 layoutX="50" layoutY="670"

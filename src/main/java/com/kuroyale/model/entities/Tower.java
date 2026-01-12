@@ -42,9 +42,13 @@ public class Tower implements ICombatant {
 
     @Override
     public void takeDamage(int amount) {
-        this.currentHealth -= amount;
-        if (this.currentHealth < 0) {
-            this.currentHealth = 0;
+        if (amount > 0 && currentHealth > 0) {
+            this.currentHealth -= amount;
+            if (this.currentHealth < 0) {
+                this.currentHealth = 0;
+            }
+            // Publish damage event
+            com.kuroyale.event.GameEventBus.getInstance().publishTowerDamaged(this);
         }
     }
 
