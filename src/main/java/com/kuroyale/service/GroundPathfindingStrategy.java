@@ -57,7 +57,17 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
                 if (cell == null || !cell.isWalkable() || cell.isOccupied())
                     continue;
 
-                int tentativeG = gScore.getOrDefault(current, Integer.MAX_VALUE - 1) + 1; // cost 1 per move
+                int moveCost = 1;
+                if (!neighbor.equals(destination) && arena.getSpatialGrid() != null) {
+                    java.util.List<ICombatant> occupants = arena.getSpatialGrid().getAt(neighbor);
+                    for (ICombatant c : occupants) {
+                        if (c instanceof Troop && c != troop && c.isAlive()) {
+                            moveCost += 10; // Penalty for moving through another troop
+                        }
+                    }
+                }
+
+                int tentativeG = gScore.getOrDefault(current, Integer.MAX_VALUE - 100) + moveCost;
 
                 boolean isBetter = tentativeG < gScore.getOrDefault(neighbor, Integer.MAX_VALUE);
                 if (isBetter) {

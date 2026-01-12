@@ -53,7 +53,7 @@ public class TroopMovementService {
 
             }
 
-            // Apply movement and/or separation
+            // Apply movement
             if (troop.getUnitState() != UnitState.ATTACKING) {
                 troop.setUnitState(UnitState.MOVING);
             }
@@ -224,9 +224,9 @@ public class TroopMovementService {
         Vector2 proposedPos = currentPos.add(movement);
 
         // Apply separation (Always applies, even if stationary/attacking)
-        SpatialGrid spatialGrid = (state != null && state.getArena() != null) ? state.getArena().getSpatialGrid()
-                : null;
-        Vector2 finalPos = applySeparation(proposedPos, troop, spatialGrid);
+        Arena arena = (state != null) ? state.getArena() : null;
+        SpatialGrid spatialGrid = (arena != null) ? arena.getSpatialGrid() : null;
+        Vector2 finalPos = applySeparation(proposedPos, troop, spatialGrid, deltaTime, arena);
 
         troop.setWorldPosition(finalPos);
 
@@ -237,7 +237,7 @@ public class TroopMovementService {
     }
 
     // Simple separation steering to prevent troops from overlapping.
-    private Vector2 applySeparation(Vector2 proposedPos, Troop self, SpatialGrid grid) {
+    private Vector2 applySeparation(Vector2 proposedPos, Troop self, SpatialGrid grid, double deltaTime, Arena arena) {
         if (grid == null)
             return proposedPos;
 
@@ -287,14 +287,36 @@ public class TroopMovementService {
 
                 // Strength increases as they get closer
                 double strength = (SEPARATION_RADIUS - dist) / SEPARATION_RADIUS;
-                // Increased push force (0.5) to effectively separate clustered units
-                separation = separation.add(away.multiply(strength * 0.5));
+                separation = separation.add(away.multiply(strength));
                 count++;
             }
         }
 
         if (count > 0) {
-            return proposedPos.add(separation);
+            // Normalize separation to prevent it from growing too large with many neighbors
+            // And scale by deltaTime to treat it as a velocity/force rather than
+            // instantaneous offset
+            separation = separation.multiply(1.0 / count); // Average direction/strength
+
+            // Separation speed: how fast they push apart.
+            // Should be high enough to resolve overlaps but not crazy.
+            // 2.0 is comparable to fast unit speed.
+            double separationSpeed = 2.0;
+            Vector2 push = separation.normalize().multiply(separationSpeed * deltaTime);
+
+            Vector2 newPos = proposedPos.add(push);
+
+            // Ensure we don't push into a wall/water
+            if (arena != null) {
+                GridPosition gp = newPos.toGridPosition();
+                if (isWalkable(arena, gp.getX(), gp.getY())) {
+                    return newPos;
+                }
+                // If blocked, try ignoring the push or reducing it?
+                // For now, just discard separation if it pushes into a wall to avoid sticking
+                return proposedPos;
+            }
+            return newPos;
         }
         return proposedPos;
     }

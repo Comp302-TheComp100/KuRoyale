@@ -50,7 +50,7 @@ public class SpatialGrid {
         }
     }
 
-    //Removes an entity from the grid.
+    // Removes an entity from the grid.
     public void remove(ICombatant entity) {
         if (entity == null)
             return;
@@ -61,8 +61,10 @@ public class SpatialGrid {
         }
     }
 
-    /* Updates an entity's position in the grid.
-     * Should be called whenever an entity moves significantly (changes buckets).*/
+    /*
+     * Updates an entity's position in the grid.
+     * Should be called whenever an entity moves significantly (changes buckets).
+     */
     public void update(ICombatant entity) {
         if (entity == null || entity.getPosition() == null)
             return;
@@ -89,7 +91,8 @@ public class SpatialGrid {
         }
     }
 
-    // Retrieves all entities in the buckets overlapping the query radius around the center.
+    // Retrieves all entities in the buckets overlapping the query radius around the
+    // center.
     public List<ICombatant> getNearby(GridPosition center, double radius) {
         List<ICombatant> results = new ArrayList<>();
         if (center == null)
@@ -134,5 +137,25 @@ public class SpatialGrid {
             bucket.clear();
         }
         entityBucketMap.clear();
+    }
+
+    /**
+     * Retrieves all entities at a specific grid position.
+     * This is faster than getNearby for single-tile checks.
+     */
+    public List<ICombatant> getAt(GridPosition pos) {
+        List<ICombatant> results = new ArrayList<>();
+        if (pos == null)
+            return results;
+
+        int bucketIndex = getBucketIndex(pos);
+        if (bucketIndex != -1) {
+            for (ICombatant entity : buckets.get(bucketIndex)) {
+                if (entity.getPosition().equals(pos)) {
+                    results.add(entity);
+                }
+            }
+        }
+        return results;
     }
 }
