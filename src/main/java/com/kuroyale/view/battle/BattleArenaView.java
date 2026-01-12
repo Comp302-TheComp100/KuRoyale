@@ -504,7 +504,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         overlay.setStrokeType(javafx.scene.shape.StrokeType.INSIDE); // Stroke inside to avoid gaps
 
         // Position overlay
-        overlay.setLayoutX(cellX);
+        overlay.setLayoutX(cellX + TILE_SIZE / 2.0 - TILE_SIZE / 2.0);
         overlay.setLayoutY(cellY);
 
         // Make overlay transparent to mouse events so clicks pass through

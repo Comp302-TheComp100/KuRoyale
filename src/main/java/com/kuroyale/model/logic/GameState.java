@@ -393,20 +393,24 @@ public class GameState implements IBattleState {
         int bw = Math.max(1, card.getFootprintWidthTiles());
         int bh = Math.max(1, card.getFootprintHeightTiles());
 
-        if (x < 0 || y < 0 || (x + bw) > Arena.WIDTH || (y + bh) > Arena.HEIGHT) {
+        // Center the building on the clicked tile by offsetting top-left position
+        int topLeftX = x - (bw / 2);
+        int topLeftY = y - (bh / 2);
+
+        if (topLeftX < 0 || topLeftY < 0 || (topLeftX + bw) > Arena.WIDTH || (topLeftY + bh) > Arena.HEIGHT) {
             return null;
         }
 
         for (int dx = 0; dx < bw; dx++) {
             for (int dy = 0; dy < bh; dy++) {
-                GridCell c = arena.getCell(x + dx, y + dy);
+                GridCell c = arena.getCell(topLeftX + dx, topLeftY + dy);
                 if (c == null || c.isOccupied() || !c.isWalkable()) {
                     return null;
                 }
             }
         }
 
-        GridPosition topLeft = GridPosition.tryCreate(x, y);
+        GridPosition topLeft = GridPosition.tryCreate(topLeftX, topLeftY);
         if (topLeft != null) {
             Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
                     card.getLifetime());

@@ -44,6 +44,10 @@ public class Card {
     // Effect properties
     private double stunDuration;
 
+    // Sprite size for visual rendering (in tiles). Default 1.0 for standard units.
+    private double spriteWidthTiles = 1.0;
+    private double spriteHeightTiles = 1.0;
+
     public Card(String name, int cost, CardType type, Rarity rarity, int hp, int damage, double hitSpeed,
             double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
             String description, int count, int lifetime) {
@@ -176,6 +180,22 @@ public class Card {
             this.footprintWidthTiles = width;
         if (height > 0)
             this.footprintHeightTiles = height;
+    }
+
+    // Sprite size accessors (visual rendering size in tiles)
+    public double getSpriteWidthTiles() {
+        return spriteWidthTiles;
+    }
+
+    public double getSpriteHeightTiles() {
+        return spriteHeightTiles;
+    }
+
+    public void setSpriteTiles(double width, double height) {
+        if (width > 0)
+            this.spriteWidthTiles = width;
+        if (height > 0)
+            this.spriteHeightTiles = height;
     }
 
     public String getSpawnUnitName() {
