@@ -316,8 +316,9 @@ public class NetworkBattleController implements GameEventListener {
                 break;
                 
             case DEFEAT:
+                // Opponent sent defeat message (they forfeited/left)
                 if (message.getPlayerId() != networkService.getPlayerId()) {
-                    showVictory("Opponent forfeited!");
+                    handleOpponentForfeit();
                 }
                 break;
                 
@@ -386,20 +387,36 @@ public class NetworkBattleController implements GameEventListener {
     private void handleOpponentDisconnected() {
         if (gameEnded) return;
         
+        System.out.println("[NetworkBattle] Opponent disconnected - awaiting reconnection or awarding victory");
         showDisconnectionOverlay();
         
-        // Start countdown
+        // Start countdown - if opponent doesn't reconnect, award victory
         final int[] countdown = {5};
         Timeline countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             countdown[0]--;
-            reconnectCountdownLabel.setText(String.valueOf(countdown[0]));
+            if (reconnectCountdownLabel != null) {
+                reconnectCountdownLabel.setText(String.valueOf(countdown[0]));
+            }
             
-            if (countdown[0] <= 0 && !networkService.isConnected()) {
-                showVictory("Opponent disconnected - Victory awarded!");
+            if (countdown[0] <= 0) {
+                hideDisconnectionOverlay();
+                showVictory("Opponent left the game - Victory!");
             }
         }));
         countdownTimer.setCycleCount(5);
         countdownTimer.play();
+    }
+    
+    /**
+     * Called when opponent explicitly forfeits (sends DEFEAT message).
+     * Awards immediate victory without waiting.
+     */
+    private void handleOpponentForfeit() {
+        if (gameEnded) return;
+        
+        System.out.println("[NetworkBattle] Opponent forfeited - awarding victory!");
+        hideDisconnectionOverlay();
+        showVictory("Opponent forfeited - Victory!");
     }
     
     private void handleArenaClick(int tileX, int tileY) {
@@ -487,15 +504,14 @@ public class NetworkBattleController implements GameEventListener {
             
             @Override
             public void onSaveAndExit() {
-                // Network games can't be saved
-                handleBackToMenu();
+                // Network games can't be saved - treat as forfeit
+                forfeitAndExit();
             }
             
             @Override
             public void onExitWithoutSaving() {
-                // Send defeat message before exiting
-                networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
-                handleBackToMenu();
+                // Player is forfeiting the match
+                forfeitAndExit();
             }
         });
         
@@ -508,15 +524,44 @@ public class NetworkBattleController implements GameEventListener {
         pauseMenuContainer.getChildren().clear();
     }
     
-    @FXML
-    private void handleBackToMenu() {
-        SoundEffectUtil.playButtonClick();
+    /**
+     * Called when a player forfeits/leaves the match.
+     * Sends defeat message to opponent (giving them the win) before exiting.
+     */
+    private void forfeitAndExit() {
+        if (!gameEnded && networkService != null && networkService.isConnected()) {
+            // Send defeat message so opponent wins
+            System.out.println("[NetworkBattle] Player forfeiting - sending DEFEAT to opponent");
+            networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
+            
+            // Small delay to ensure message is sent before disconnecting
+            Timeline exitDelay = new Timeline(new KeyFrame(Duration.millis(200), e -> {
+                navigateToMenu();
+            }));
+            exitDelay.play();
+        } else {
+            navigateToMenu();
+        }
+    }
+    
+    private void navigateToMenu() {
         cleanup();
-        
         try {
             sceneLoader.load(arenaContainer, "/fxml/main-menu.fxml", "KU Royale - Main Menu", null);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    
+    @FXML
+    private void handleBackToMenu() {
+        SoundEffectUtil.playButtonClick();
+        
+        // If game is still ongoing, treat as forfeit
+        if (!gameEnded && networkService != null && networkService.isConnected()) {
+            forfeitAndExit();
+        } else {
+            navigateToMenu();
         }
     }
     
