@@ -418,7 +418,7 @@ public class NetworkBattleController implements GameEventListener {
     // ==================== Game Event Listener ====================
     
     @Override
-    public void onCardPlayed(boolean isPlayer, Card card) {
+    public void onCardPlayed(boolean isPlayer, Card card, java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
         // Card played events are handled by arena click
     }
     
