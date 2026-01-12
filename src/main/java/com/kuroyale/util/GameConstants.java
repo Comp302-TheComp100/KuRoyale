@@ -26,6 +26,19 @@ public class GameConstants {
 
     // Colors (can be used if needed, though often in view)
 
+    // Combat
+    public static final double MELEE_ATTACK_BUFFER = 1.5;
+    public static final double MELEE_MIN_RANGE = 1.0;
+
+    // Targeting
+    public static final double BASE_DETECTION_RADIUS = 5.0; // tiles
+
+    // Movement
+    public static final double SEPARATION_RADIUS = 0.5;
+
+    // Pathfinding
+    public static final double WAYPOINT_THRESHOLD = 0.1;
+
     private GameConstants() {
         // Prevent instantiation
     }

@@ -186,8 +186,8 @@ public class TroopMovementService {
         return cell != null && cell.isWalkable();
     }
 
-    private static final double WAYPOINT_THRESHOLD = 0.1; // How close to waypoint before moving to next
-    private static final double SEPARATION_RADIUS = 0.5;
+    private static final double WAYPOINT_THRESHOLD = com.kuroyale.util.GameConstants.WAYPOINT_THRESHOLD;
+    private static final double SEPARATION_RADIUS = com.kuroyale.util.GameConstants.SEPARATION_RADIUS;
 
     private void updateTroopPosition(double deltaTime, Troop troop, IBattleState state) {
         Vector2 currentPos = troop.getWorldPosition();
