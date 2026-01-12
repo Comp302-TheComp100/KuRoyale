@@ -86,7 +86,9 @@ public class CardCatalog {
                 base.isAreaEffect(),
                 base.getDescription(),
                 base.getCount(),
-                base.getLifetime());
+                base.getLifetime(),
+                base.getWidth(),
+                base.getHeight());
         copy.setSpawnUnitName(base.getSpawnUnitName());
         copy.setSpawnUnitCount(base.getSpawnUnitCount());
         copy.setDeathSpawnUnitName(base.getDeathSpawnUnitName());
@@ -99,8 +101,6 @@ public class CardCatalog {
         copy.setMinRange(base.getMinRange());
         // Copy stunDuration (for Zap)
         copy.setStunDuration(base.getStunDuration());
-        // Copy sprite size (for visual rendering)
-        copy.setSpriteTiles(base.getSpriteWidthTiles(), base.getSpriteHeightTiles());
         copy.setLevel(level);
         return copy;
     }

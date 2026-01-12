@@ -29,19 +29,15 @@ public class CardFactory {
     }
 
     public Card createGiant() {
-        Card card = new Card("Giant", 5, CardType.TROOP, Rarity.EPIC, 2000, 126, 1.5, 0,
+        return new Card("Giant", 5, CardType.TROOP, Rarity.EPIC, 2000, 126, 1.5, 0,
                 SpeedType.VERY_SLOW, TargetType.BUILDINGS, false, false,
-                "A huge tank unit. Ignores soldiers and attacks buildings/towers only.", 1, 0);
-        card.setSpriteTiles(1.8, 1.8); // Large tank unit
-        return card;
+                "A huge tank unit. Ignores soldiers and attacks buildings/towers only.", 1, 0, 1.8, 1.8);
     }
 
     public Card createHogRider() {
-        Card card = new Card("Hog Rider", 4, CardType.TROOP, Rarity.LEGENDARY, 800, 160, 1.5, 0,
+        return new Card("Hog Rider", 4, CardType.TROOP, Rarity.LEGENDARY, 800, 160, 1.5, 0,
                 SpeedType.FAST, TargetType.BUILDINGS, false, false,
-                "Fast unit that rushes toward buildings. Ignores soldiers.", 1, 0);
-        card.setSpriteTiles(1.4, 1.4); // Medium-large
-        return card;
+                "Fast unit that rushes toward buildings. Ignores soldiers.", 1, 0, 1.4, 1.4);
     }
 
     public Card createBomber() {
@@ -51,11 +47,9 @@ public class CardFactory {
     }
 
     public Card createValkyrie() {
-        Card card = new Card("Valkyrie", 4, CardType.TROOP, Rarity.RARE, 880, 120, 1.5, 0,
+        return new Card("Valkyrie", 4, CardType.TROOP, Rarity.RARE, 880, 120, 1.5, 0,
                 SpeedType.MEDIUM, TargetType.GROUND, false, true,
-                "Spins and damages all nearby enemies.", 1, 0);
-        card.setSpriteTiles(1.2, 1.2); // Bulky warrior
-        return card;
+                "Spins and damages all nearby enemies.", 1, 0, 1.2, 1.2);
     }
 
     public Card createWizard() {
@@ -65,51 +59,39 @@ public class CardFactory {
     }
 
     public Card createSkeletons() {
-        Card card = new Card("Skeletons", 1, CardType.TROOP, Rarity.COMMON, 30, 30, 1.0, 0,
+        return new Card("Skeletons", 1, CardType.TROOP, Rarity.COMMON, 30, 30, 1.0, 0,
                 SpeedType.VERY_FAST, TargetType.GROUND, false, false,
-                "Spawns 4 very weak but very fast soldiers.", 4, 0);
-        card.setSpriteTiles(0.6, 0.6); // Very small
-        return card;
+                "Spawns 4 very weak but very fast soldiers.", 4, 0, 0.6, 0.6);
     }
 
     public Card createGoblins() {
-        Card card = new Card("Goblins", 2, CardType.TROOP, Rarity.COMMON, 80, 50, 1.1, 0,
+        return new Card("Goblins", 2, CardType.TROOP, Rarity.COMMON, 80, 50, 1.1, 0,
                 SpeedType.FAST, TargetType.GROUND, false, false,
-                "Spawns 3 fast, weak melee fighters.", 3, 0);
-        card.setSpriteTiles(0.7, 0.7); // Small
-        return card;
+                "Spawns 3 fast, weak melee fighters.", 3, 0, 0.7, 0.7);
     }
 
     public Card createSpearGoblins() {
-        Card card = new Card("Spear Goblins", 2, CardType.TROOP, Rarity.COMMON, 52, 24, 1.3, 5.5,
+        return new Card("Spear Goblins", 2, CardType.TROOP, Rarity.COMMON, 52, 24, 1.3, 5.5,
                 SpeedType.FAST, TargetType.BOTH, false, false,
-                "Spawns 3 ranged goblins (can hit air).", 3, 0);
-        card.setSpriteTiles(0.7, 0.7); // Small
-        return card;
+                "Spawns 3 ranged goblins (can hit air).", 3, 0, 0.7, 0.7);
     }
 
     public Card createArchers() {
-        Card card = new Card("Archers", 3, CardType.TROOP, Rarity.COMMON, 125, 40, 1.2, 5.5,
+        return new Card("Archers", 3, CardType.TROOP, Rarity.COMMON, 125, 40, 1.2, 5.5,
                 SpeedType.MEDIUM, TargetType.BOTH, false, false,
-                "Spawns 2 ranged soldiers (can hit air).", 2, 0);
-        card.setSpriteTiles(0.85, 0.85); // Medium-small
-        return card;
+                "Spawns 2 ranged soldiers (can hit air).", 2, 0, 0.85, 0.85);
     }
 
     public Card createMinions() {
-        Card card = new Card("Minions", 3, CardType.TROOP, Rarity.RARE, 90, 40, 1.0, 2.5,
+        return new Card("Minions", 3, CardType.TROOP, Rarity.RARE, 90, 40, 1.0, 2.5,
                 SpeedType.VERY_FAST, TargetType.BOTH, true, false,
-                "Spawns 3 flying units that attack from the air.", 3, 0);
-        card.setSpriteTiles(0.8, 0.8); // Small flying
-        return card;
+                "Spawns 3 flying units that attack from the air.", 3, 0, 0.8, 0.8);
     }
 
     public Card createMinionHorde() {
-        Card card = new Card("Minion Horde", 5, CardType.TROOP, Rarity.LEGENDARY, 90, 40, 1.0, 2.5,
+        return new Card("Minion Horde", 5, CardType.TROOP, Rarity.LEGENDARY, 90, 40, 1.0, 2.5,
                 SpeedType.VERY_FAST, TargetType.BOTH, true, false,
-                "Spawns 6 flying units (double the Minions).", 6, 0);
-        card.setSpriteTiles(0.8, 0.8); // Small flying
-        return card;
+                "Spawns 6 flying units (double the Minions).", 6, 0, 0.8, 0.8);
     }
 
     public Card createBarbarians() {

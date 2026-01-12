@@ -351,7 +351,7 @@ public class GameState implements IBattleState {
             spawnCard = new Card(card.getName(), card.getCost(), card.getType(), card.getRarity(),
                     card.getBaseHp(), card.getBaseDamage(), card.getHitSpeed(), card.getRange(),
                     card.getSpeed(), card.getTarget(), card.isAirUnit(), card.isAreaEffect(),
-                    card.getDescription(), count, card.getLifetime());
+                    card.getDescription(), count, card.getLifetime(), card.getWidth(), card.getHeight());
             spawnCard.setLevel(card.getLevel());
         }
 

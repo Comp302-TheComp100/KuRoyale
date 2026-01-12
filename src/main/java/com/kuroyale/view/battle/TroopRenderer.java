@@ -75,8 +75,8 @@ public class TroopRenderer {
             return;
 
         // Get sprite size from card
-        double spriteW = troop.getBaseCard().getSpriteWidthTiles() * TILE_SIZE;
-        double spriteH = troop.getBaseCard().getSpriteHeightTiles() * TILE_SIZE;
+        double spriteW = troop.getBaseCard().getWidth() * TILE_SIZE;
+        double spriteH = troop.getBaseCard().getHeight() * TILE_SIZE;
 
         // Center sprite on world position
         double visualX = worldPos.getX() * TILE_SIZE - spriteW / 2;
@@ -107,8 +107,8 @@ public class TroopRenderer {
 
     private Node createTroopVisualPvP(Troop troop, String cardName) {
         // Get sprite size from card
-        double spriteW = troop.getBaseCard().getSpriteWidthTiles() * TILE_SIZE;
-        double spriteH = troop.getBaseCard().getSpriteHeightTiles() * TILE_SIZE;
+        double spriteW = troop.getBaseCard().getWidth() * TILE_SIZE;
+        double spriteH = troop.getBaseCard().getHeight() * TILE_SIZE;
 
         try {
             String imgPath = troop.getBaseCard().getImagePath();
@@ -163,8 +163,8 @@ public class TroopRenderer {
             return;
 
         // Get sprite size from card
-        double spriteW = troop.getBaseCard().getSpriteWidthTiles() * TILE_SIZE;
-        double spriteH = troop.getBaseCard().getSpriteHeightTiles() * TILE_SIZE;
+        double spriteW = troop.getBaseCard().getWidth() * TILE_SIZE;
+        double spriteH = troop.getBaseCard().getHeight() * TILE_SIZE;
 
         // Center sprite on world position
         double visualX = worldPos.getX() * TILE_SIZE - spriteW / 2;
@@ -197,8 +197,8 @@ public class TroopRenderer {
 
     private Node createTroopVisual(Troop troop, String cardName, GameState gameState) {
         // Get sprite size from card
-        double spriteW = troop.getBaseCard().getSpriteWidthTiles() * TILE_SIZE;
-        double spriteH = troop.getBaseCard().getSpriteHeightTiles() * TILE_SIZE;
+        double spriteW = troop.getBaseCard().getWidth() * TILE_SIZE;
+        double spriteH = troop.getBaseCard().getHeight() * TILE_SIZE;
 
         try {
             String imgPath = troop.getBaseCard().getImagePath();

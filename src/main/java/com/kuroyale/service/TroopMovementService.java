@@ -10,6 +10,8 @@ public class TroopMovementService {
     private final PathfindingStrategy groundStrategy = new GroundPathfindingStrategy();
     private final PathfindingStrategy airStrategy = new AirDirectPathfindingStrategy();
 
+    private static final double WAYPOINT_THRESHOLD = com.kuroyale.util.GameConstants.WAYPOINT_THRESHOLD;
+
     public void updateTroops(double deltaTime, IBattleState state, List<Troop> troops) {
         Arena arena = state.getArena();
         java.util.List<Troop> toRemove = new java.util.ArrayList<>();
@@ -186,9 +188,6 @@ public class TroopMovementService {
         return cell != null && cell.isWalkable();
     }
 
-    private static final double WAYPOINT_THRESHOLD = com.kuroyale.util.GameConstants.WAYPOINT_THRESHOLD;
-    private static final double SEPARATION_RADIUS = com.kuroyale.util.GameConstants.SEPARATION_RADIUS;
-
     private void updateTroopPosition(double deltaTime, Troop troop, IBattleState state) {
         Vector2 currentPos = troop.getWorldPosition();
         Vector2 movement = Vector2.ZERO;
@@ -244,8 +243,11 @@ public class TroopMovementService {
         Vector2 separation = Vector2.ZERO;
         int count = 0;
 
-        // Query only nearby entities using SpatialGrid (O(k) instead of O(N))
-        List<ICombatant> nearby = grid.getNearby(proposedPos.toGridPosition(), SEPARATION_RADIUS + 1.0);
+        // Query nearby entities using SpatialGrid
+        // Use a safe search radius (max possible combined radius is roughly 1.8 for 2
+        // giants, plus buffer)
+        double searchRadius = 3.0;
+        List<ICombatant> nearby = grid.getNearby(proposedPos.toGridPosition(), searchRadius);
 
         for (ICombatant candidate : nearby) {
             if (!(candidate instanceof Troop other))
@@ -258,8 +260,14 @@ public class TroopMovementService {
                 continue;
 
             double dist = proposedPos.distanceTo(otherPos);
+            double combinedRadius = self.getCollisionRadius() + other.getCollisionRadius();
 
-            if (dist < SEPARATION_RADIUS) {
+            // Use a slight buffer (e.g., 80% of radius) to allow some visual overlap but
+            // prevent stacking
+            // or stick to 100% for hard collision. Let's use 90%.
+            double separationThreshold = combinedRadius * 0.9;
+
+            if (dist < separationThreshold) {
                 Vector2 away;
                 if (dist < 1e-3) {
                     // Exact overlap or very close: random push
@@ -283,7 +291,7 @@ public class TroopMovementService {
                 }
 
                 // Strength increases as they get closer (0.0 to 1.0)
-                double strength = (SEPARATION_RADIUS - dist) / SEPARATION_RADIUS;
+                double strength = (separationThreshold - dist) / separationThreshold;
                 separation = separation.add(away.multiply(strength));
                 count++;
             }
@@ -293,9 +301,6 @@ public class TroopMovementService {
             // Average the direction
             separation = separation.multiply(1.0 / count);
 
-            // Speed logic:
-            // Previous code normalized result, which threw away the 'strength' urgency.
-            // Here we keep the magnitude (0 to 1) representing how "crowded" it is.
             double urgency = separation.length();
             if (urgency > 1.0)
                 urgency = 1.0;
@@ -329,7 +334,6 @@ public class TroopMovementService {
                     return posYOnly;
                 }
 
-                // 4. Blocked globally -> cannot separate in this direction
                 return proposedPos;
             }
             return finalPos;

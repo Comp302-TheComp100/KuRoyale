@@ -45,12 +45,19 @@ public class Card {
     private double stunDuration;
 
     // Sprite size for visual rendering (in tiles). Default 1.0 for standard units.
-    private double spriteWidthTiles = 1.0;
-    private double spriteHeightTiles = 1.0;
+    private double width;
+    private double height;
 
     public Card(String name, int cost, CardType type, Rarity rarity, int hp, int damage, double hitSpeed,
             double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
             String description, int count, int lifetime) {
+        this(name, cost, type, rarity, hp, damage, hitSpeed, range, speed, target, airUnit, areaEffect, description,
+                count, lifetime, 1.0, 1.0);
+    }
+
+    public Card(String name, int cost, CardType type, Rarity rarity, int hp, int damage, double hitSpeed,
+            double range, SpeedType speed, TargetType target, boolean airUnit, boolean areaEffect,
+            String description, int count, int lifetime, double width, double height) {
         this.name = name;
         this.cost = cost;
         this.type = type;
@@ -66,6 +73,8 @@ public class Card {
         this.description = description;
         this.count = count;
         this.lifetime = lifetime;
+        this.width = width;
+        this.height = height;
     }
 
     // Builder-like setters for optional properties
@@ -183,19 +192,12 @@ public class Card {
     }
 
     // Sprite size accessors (visual rendering size in tiles)
-    public double getSpriteWidthTiles() {
-        return spriteWidthTiles;
+    public double getWidth() {
+        return width;
     }
 
-    public double getSpriteHeightTiles() {
-        return spriteHeightTiles;
-    }
-
-    public void setSpriteTiles(double width, double height) {
-        if (width > 0)
-            this.spriteWidthTiles = width;
-        if (height > 0)
-            this.spriteHeightTiles = height;
+    public double getHeight() {
+        return height;
     }
 
     public String getSpawnUnitName() {

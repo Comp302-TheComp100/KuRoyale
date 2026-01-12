@@ -158,6 +158,10 @@ public class Troop implements ICombatant {
         this.unitState = unitState;
     }
 
+    public double getCollisionRadius() {
+        return baseCard != null ? baseCard.getWidth() / 2.0 : 0.5;
+    }
+
     // ICombatant Implementation
 
     public GridPosition getCenterPosition() {
