@@ -127,25 +127,28 @@ public class NetworkLobbyController {
         
         networkService.setOnError(error -> Platform.runLater(() -> showError(error)));
         
-        // Connection ready callback - called when ngrok tunnel is created or UPnP port opened
-        networkService.setOnConnectionReady((success, message) -> Platform.runLater(() -> {
+        // Connection ready callback - shows shareable address or prompts for auth
+        networkService.setOnConnectionReady((success, status) -> Platform.runLater(() -> {
             if (!waitingPane.isVisible()) return;
             
-            if ("AUTH_TOKEN_REQUIRED".equals(message)) {
-                // Prompt user for ngrok auth token
-                promptForNgrokAuthToken();
-            } else if (success) {
-                // Show shareable address with copy button
-                waitingLabel.setText("✓ Ready for connection!\nShare this address with your friend:");
-                connectionInfoLabel.setText(message);
-                connectionInfoLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #00ff00;");
+            if (success) {
+                // Success! Show the shareable address
+                waitingLabel.setText("✓ Ready! Share this with your friend:");
+                connectionInfoLabel.setText(status);
+                connectionInfoLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #00ff00;");
+                copyToClipboard(status);
                 
-                // Copy to clipboard automatically
-                copyToClipboard(message);
+            } else if ("AUTH_TOKEN_REQUIRED".equals(status)) {
+                // Need auth token - show quick setup dialog
+                promptForNgrokAuthToken();
                 
             } else {
-                // Show status update
-                connectionInfoLabel.setText(message);
+                // Fallback info
+                String localIP = networkService.getLocalIPAddress();
+                int port = Integer.parseInt(portField.getText().trim());
+                waitingLabel.setText("Waiting for opponent...");
+                connectionInfoLabel.setText("Address: " + localIP + ":" + port);
+                connectionInfoLabel.setStyle("-fx-font-size: 16px;");
             }
         }));
         
@@ -165,75 +168,6 @@ public class NetworkLobbyController {
     }
     
     /**
-     * Prompts the user for their ngrok auth token (one-time setup).
-     */
-    private void promptForNgrokAuthToken() {
-        Dialog<String> dialog = new Dialog<>();
-        dialog.setTitle("One-Time Setup Required");
-        dialog.setHeaderText("Free ngrok account needed for internet play");
-        
-        // Create content
-        VBox content = new VBox(10);
-        content.setPadding(new Insets(20));
-        
-        Label instructions = new Label(
-            "To play over the internet, you need a free ngrok account:\n\n" +
-            "1. Go to ngrok.com and create a free account\n" +
-            "2. Go to 'Your Authtoken' in the dashboard\n" +
-            "3. Copy your auth token and paste it below\n\n" +
-            "This is a one-time setup - your token will be saved."
-        );
-        instructions.setWrapText(true);
-        
-        TextField tokenField = new TextField();
-        tokenField.setPromptText("Paste your ngrok auth token here");
-        tokenField.setPrefWidth(400);
-        
-        Hyperlink link = new Hyperlink("Click here to get your free token");
-        link.setOnAction(e -> {
-            try {
-                java.awt.Desktop.getDesktop().browse(new java.net.URI("https://dashboard.ngrok.com/get-started/your-authtoken"));
-            } catch (Exception ex) {
-                // Ignore
-            }
-        });
-        
-        content.getChildren().addAll(instructions, link, tokenField);
-        dialog.getDialogPane().setContent(content);
-        
-        // Add buttons
-        ButtonType saveButton = new ButtonType("Save & Continue", ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveButton, cancelButton);
-        
-        dialog.setResultConverter(buttonType -> {
-            if (buttonType == saveButton) {
-                return tokenField.getText().trim();
-            }
-            return null;
-        });
-        
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(token -> {
-            if (!token.isEmpty()) {
-                // Save token and retry
-                networkService.getNgrokService().saveAuthToken(token);
-                
-                // Retry hosting
-                int port = Integer.parseInt(portField.getText().trim());
-                connectionInfoLabel.setText("Setting up connection...");
-                networkService.getNgrokService().createTunnel(port);
-            } else {
-                showModeSelection();
-            }
-        });
-        
-        if (result.isEmpty()) {
-            showModeSelection();
-        }
-    }
-    
-    /**
      * Copies text to clipboard.
      */
     private void copyToClipboard(String text) {
@@ -242,6 +176,58 @@ public class NetworkLobbyController {
         content.putString(text);
         clipboard.setContent(content);
         System.out.println("[NetworkLobby] Copied to clipboard: " + text);
+    }
+    
+    /**
+     * Quick dialog to get ngrok auth token (one-time setup).
+     */
+    private void promptForNgrokAuthToken() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("One-Time Setup (30 seconds)");
+        dialog.setHeaderText("Get your free token from ngrok.com");
+        dialog.setContentText("Auth Token:");
+        
+        // Add a hyperlink hint in the dialog
+        dialog.setContentText("1. Go to ngrok.com → Sign up (free)\n" +
+                              "2. Copy your authtoken from dashboard\n" +
+                              "3. Paste here:");
+        
+        // Try to open the ngrok dashboard
+        try {
+            java.awt.Desktop.getDesktop().browse(new java.net.URI("https://dashboard.ngrok.com/get-started/your-authtoken"));
+        } catch (Exception e) {
+            // Ignore - user can navigate manually
+        }
+        
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(token -> {
+            token = token.trim();
+            if (!token.isEmpty()) {
+                // Save token
+                networkService.getNgrokService().saveAuthToken(token);
+                
+                // Retry hosting with the new token
+                connectionInfoLabel.setText("Connecting...");
+                int port = Integer.parseInt(portField.getText().trim());
+                networkService.getNgrokService().createTunnel(port).thenAccept(url -> {
+                    if (url != null) {
+                        Platform.runLater(() -> {
+                            String shareableUrl = networkService.getNgrokService().getShareableAddress();
+                            waitingLabel.setText("✓ Ready! Share this with your friend:");
+                            connectionInfoLabel.setText(shareableUrl);
+                            connectionInfoLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #00ff00;");
+                            copyToClipboard(shareableUrl);
+                        });
+                    }
+                });
+            } else {
+                showModeSelection();
+            }
+        });
+        
+        if (result.isEmpty()) {
+            showModeSelection();
+        }
     }
     
     private void handleNetworkMessage(NetworkMessage message) {
