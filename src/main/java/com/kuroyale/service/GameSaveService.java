@@ -32,10 +32,10 @@ public class GameSaveService {
     }
 
     // Saves the current game state to disk
-    public SavedGameState saveGame(GameState gameState, User user, ArenaLayout layout) {
+    public SavedGameState saveGame(GameState gameState, User user, ArenaLayout layout, int comboCount) {
         try {
             // Capture current game state
-            SavedGameState savedGame = captureGameState(gameState, user, layout);
+            SavedGameState savedGame = captureGameState(gameState, user, layout, comboCount);
 
             // Write to file
             String fileName = generateFileName(savedGame);
@@ -138,7 +138,7 @@ public class GameSaveService {
     }
 
     // Captures the current game state into a SavedGameState object
-    private SavedGameState captureGameState(GameState gameState, User user, ArenaLayout layout) {
+    private SavedGameState captureGameState(GameState gameState, User user, ArenaLayout layout, int comboCount) {
         // Capture player hand and deck
         Hand playerHand = gameState.getPlayerHand();
         List<String> playerHandCards = playerHand.getCards().stream().map(Card::getName).collect(Collectors.toList());
@@ -234,7 +234,8 @@ public class GameSaveService {
                 10.0, // Bot elixir - would need to expose from GameState
                 botDeckCards, botHandCards, botDrawPileCards,
                 layout,
-                savedTowers, savedTroops, savedBuildings);
+                savedTowers, savedTroops, savedBuildings,
+                comboCount);
     }
 
     // Generates a unique filename for a saved game

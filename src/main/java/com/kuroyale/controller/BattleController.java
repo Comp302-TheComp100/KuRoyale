@@ -88,6 +88,7 @@ public class BattleController {
     private boolean doubleElixirShown = false;
     private boolean gameOverShown = false;
     private com.kuroyale.service.ComboService comboService;
+    private int savedComboCount = 0; // For restoring combo count from saved games
 
     private void showComboText(String text) {
         javafx.scene.control.Label label = new javafx.scene.control.Label(text + "!");
@@ -293,6 +294,16 @@ public class BattleController {
             comboService.cleanup();
         comboService = new com.kuroyale.service.ComboService();
         comboService.setGameState(gameState);
+
+        // Restore combo count from saved game if applicable
+        if (savedComboCount > 0) {
+            comboService.restoreComboCount(savedComboCount);
+            // Update the label immediately to show restored combo count
+            if (comboLabel != null) {
+                comboLabel.setText(String.valueOf(savedComboCount));
+            }
+            savedComboCount = 0; // Reset after restoring
+        }
     }
 
     private void playDamageEffect(Tower tower) {
@@ -758,7 +769,11 @@ public class BattleController {
     private boolean saveGame() {
         User currentUser = model.getCurrentUser();
         if (currentUser != null && currentArenaLayout != null) {
-            SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout);
+            int comboCount = 0;
+            if (comboService != null) {
+                comboCount = comboService.getUniqueComboCount();
+            }
+            SavedGameState savedGame = model.saveGame(gameState, currentUser, currentArenaLayout, comboCount);
             if (savedGame != null) {
                 return true;
             } else {
@@ -834,6 +849,7 @@ public class BattleController {
     private void initializeFromSavedGame(SavedGameState savedGame) {
         gameState = model.loadGame(savedGame);
         currentArenaLayout = savedGame.getArenaLayout();
+        savedComboCount = savedGame.getComboCount(); // Store for later restoration
     }
 
     @FXML
@@ -842,15 +858,16 @@ public class BattleController {
             gameLoop.stop();
         }
 
-        if (comboService != null) {
-            comboService.cleanup();
-            comboService = null;
-        }
-
+        // Award gold BEFORE cleaning up combo service so combo count is available
         try {
             awardGoldIfEligible();
         } catch (java.io.IOException e) {
             e.printStackTrace();
+        }
+
+        if (comboService != null) {
+            comboService.cleanup();
+            comboService = null;
         }
 
         try {
@@ -876,13 +893,15 @@ public class BattleController {
 
         int playerScore = gameState.getPlayerScore();
         int botScore = gameState.getBotScore();
+        boolean playerWon = gameState.isPlayerWinner();
+        boolean isDraw = gameState.isDraw();
 
         int comboBonus = 0;
         if (comboService != null) {
             comboBonus = comboService.getUniqueComboCount();
         }
 
-        model.processMatchResult(playerScore, botScore, comboBonus);
+        model.processMatchResult(playerScore, botScore, comboBonus, playerWon, isDraw);
     }
 
     private void renderGameOverCrowns(HBox container, int count, boolean isOpponent) {

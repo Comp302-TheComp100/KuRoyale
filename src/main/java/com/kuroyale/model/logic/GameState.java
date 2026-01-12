@@ -25,7 +25,7 @@ public class GameState implements IBattleState {
     private double gameTime = 180.0; // 3 minutes
     private int playerScore = 0, botScore = 0;
 
-    private boolean isDoubleElixir = false, isGameOver = false, playerWon = false;
+    private boolean isDoubleElixir = false, isGameOver = false, playerWon = false, isDraw = false;
 
     // Track towers that have already been scored to avoid double-counting
     private java.util.Set<Tower> scoredTowers = new java.util.HashSet<>();
@@ -152,7 +152,8 @@ public class GameState implements IBattleState {
                             // Bot has the weakest tower -> Player wins
                             playerWon = true;
                         } else {
-                            // Equal lowest HP -> Draw (very rare)
+                            // Equal lowest HP -> True Draw (very rare)
+                            isDraw = true;
                             playerWon = false;
                         }
                     }
@@ -241,6 +242,10 @@ public class GameState implements IBattleState {
 
     public boolean isPlayerWinner() {
         return playerWon;
+    }
+
+    public boolean isDraw() {
+        return isDraw;
     }
 
     public int getPlayerDamageTaken() {

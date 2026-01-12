@@ -124,7 +124,7 @@ public class PvPGameState implements IBattleState {
                 .filter(t -> t.isPlayerSide() == isPlayer1Side && t.isAlive())
                 .mapToDouble(Tower::getCurrentHealth)
                 .min()
-                .orElse(0.0);
+                .orElse(Double.MAX_VALUE); // If no towers alive, return max so opponent wins tiebreaker
     }
 
     private void updateEntities(double deltaTime) {
