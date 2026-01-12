@@ -73,10 +73,9 @@ public class NetworkService {
     private boolean upnpPortOpened = false;
     private int hostedPort = -1;
     
-    // Ngrok support (works on ANY network)
-    private final NgrokTunnelService ngrokService;
-    private boolean ngrokTunnelActive = false;
-    private String ngrokPublicUrl = null;
+    // Relay support (works on ANY network, NO setup needed)
+    private final RelayService relayService;
+    private boolean usingRelay = false;
     
     // Callback for connection status updates
     private BiConsumer<Boolean, String> onUPnPStatusChanged;
@@ -86,42 +85,53 @@ public class NetworkService {
         this.config = NetworkConfig.getInstance();
         this.executorService = Executors.newCachedThreadPool();
         this.upnpService = UPnPService.getInstance();
-        this.ngrokService = NgrokTunnelService.getInstance();
+        this.relayService = RelayService.getInstance();
         
         // Add shutdown hook to ensure cleanup on JVM exit
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("[NetworkService] Shutdown hook triggered");
             forceCloseAllSockets();
+            // Close relay connection
+            if (usingRelay) {
+                relayService.disconnect();
+            }
             // Close UPnP port mapping
             if (upnpPortOpened) {
                 upnpService.closeCurrentPort();
             }
-            // Close ngrok tunnel
-            if (ngrokTunnelActive) {
-                ngrokService.closeTunnel();
-            }
         }));
         
-        // Initialize UPnP in the background (as fallback)
-        initializeUPnP();
+        // Setup relay callbacks
+        setupRelayCallbacks();
     }
     
     /**
-     * Initializes UPnP discovery in the background.
+     * Sets up callbacks for the relay service.
      */
-    private void initializeUPnP() {
-        upnpService.initialize().thenAccept(available -> {
-            if (available) {
-                System.out.println("[NetworkService] UPnP is available - automatic port forwarding enabled");
-                if (onUPnPStatusChanged != null) {
-                    onUPnPStatusChanged.accept(true, "UPnP available: " + upnpService.getGatewayName());
-                }
-            } else {
-                System.out.println("[NetworkService] UPnP not available - manual port forwarding may be required");
-                if (onUPnPStatusChanged != null) {
-                    onUPnPStatusChanged.accept(false, "UPnP not available");
-                }
+    private void setupRelayCallbacks() {
+        relayService.setOnMessageReceived(message -> {
+            System.out.println("[NetworkService] Relay message: " + message);
+            NetworkMessage netMsg = NetworkMessage.fromProtocolString(message);
+            if (netMsg != null) {
+                handleMessage(netMsg);
             }
+        });
+        
+        relayService.setOnPlayerJoined(joinedPlayerId -> {
+            System.out.println("[NetworkService] Player joined: " + joinedPlayerId);
+            setState(ConnectionState.CONNECTED);
+            // Send our info to the new player
+            send(NetworkMessage.connectAck(playerName));
+        });
+        
+        relayService.setOnConnectionChanged(connected -> {
+            if (!connected && state != ConnectionState.DISCONNECTED) {
+                handleDisconnection();
+            }
+        });
+        
+        relayService.setOnError(error -> {
+            handleError(error);
         });
     }
     
@@ -138,9 +148,9 @@ public class NetworkService {
     }
     
     /**
-     * Starts hosting a game on the specified port.
-     * Automatically creates an ngrok tunnel for internet play (works on ANY network).
-     * @param port The port to listen on
+     * Starts hosting a game using the FREE relay service.
+     * Works on ANY network without any setup!
+     * @param port Unused (kept for compatibility)
      * @param playerName The host player's name
      * @return true if hosting started successfully
      */
@@ -149,74 +159,25 @@ public class NetworkService {
         this.playerId = 1;
         this.playerName = playerName;
         this.hostedPort = port;
+        this.usingRelay = true;
         
-        try {
-            serverSocket = new ServerSocket();
-            // Allow port reuse - fixes "Address already in use" after restart
-            serverSocket.setReuseAddress(true);
-            serverSocket.bind(new InetSocketAddress("0.0.0.0", port));
-            serverSocket.setSoTimeout(0); // No timeout for accepting connections
-            setState(ConnectionState.CONNECTING);
-            
-            System.out.println("[NetworkService] Hosting on port " + port);
-            
-            // Use ngrok for guaranteed internet connectivity
-            // Falls back to UPnP if ngrok fails
-            createNgrokTunnel(port);
-            
-            // Accept client connection in background
-            executorService.submit(this::waitForClient);
-            return true;
-            
-        } catch (IOException e) {
-            handleError("Failed to start hosting: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Creates an ngrok tunnel for internet connectivity.
-     * This works on ANY network without any router configuration.
-     */
-    private void createNgrokTunnel(int port) {
-        // Check if auth token exists first
-        if (!ngrokService.hasAuthToken()) {
-            System.out.println("[NetworkService] No ngrok auth token - requesting from user");
-            if (onConnectionReady != null) {
-                onConnectionReady.accept(false, "AUTH_TOKEN_REQUIRED");
-            }
-            return;
-        }
+        setState(ConnectionState.CONNECTING);
+        System.out.println("[NetworkService] Creating game room via relay...");
         
-        ngrokService.setOnStatusUpdate(status -> {
-            // Don't spam UI with status updates
-        });
-        
-        ngrokService.setOnError(error -> {
-            System.err.println("[NetworkService] Ngrok error: " + error);
-            if ("AUTH_TOKEN_REQUIRED".equals(error)) {
+        // Create room using the FREE relay service
+        relayService.createRoom().thenAccept(roomCode -> {
+            if (roomCode != null) {
+                System.out.println("[NetworkService] Room created! Code: " + roomCode);
                 if (onConnectionReady != null) {
-                    onConnectionReady.accept(false, "AUTH_TOKEN_REQUIRED");
+                    onConnectionReady.accept(true, roomCode);
                 }
             } else {
-                // Ngrok failed, try UPnP as fallback
-                System.out.println("[NetworkService] Ngrok failed, trying UPnP as fallback...");
-                openPortViaUPnP(port);
+                handleError("Failed to create room");
+                setState(ConnectionState.DISCONNECTED);
             }
         });
         
-        // Create tunnel - this is fast if ngrok is already installed
-        ngrokService.createTunnel(port).thenAccept(publicUrl -> {
-            if (publicUrl != null) {
-                ngrokTunnelActive = true;
-                ngrokPublicUrl = publicUrl;
-                String shareableUrl = ngrokService.getShareableAddress();
-                System.out.println("[NetworkService] Ngrok tunnel created! Share: " + shareableUrl);
-                if (onConnectionReady != null) {
-                    onConnectionReady.accept(true, shareableUrl);
-                }
-            }
-        });
+        return true;
     }
     
     /**
@@ -320,39 +281,32 @@ public class NetworkService {
     }
     
     /**
-     * Connects to a host as a client.
-     * @param hostAddress The host's IP address
-     * @param port The port to connect to
+     * Connects to a host using a room code via the FREE relay service.
+     * @param roomCode The room code shared by the host
+     * @param port Unused (kept for compatibility)
      * @param playerName The client player's name
      * @return true if connection started
      */
-    public boolean connectToHost(String hostAddress, int port, String playerName) {
+    public boolean connectToHost(String roomCode, int port, String playerName) {
         this.role = Role.CLIENT;
         this.playerId = 2;
         this.playerName = playerName;
+        this.usingRelay = true;
         
         setState(ConnectionState.CONNECTING);
+        System.out.println("[NetworkService] Joining room: " + roomCode);
         
-        // Connect in background
-        executorService.submit(() -> {
-            try {
-                socket = new Socket();
-                socket.connect(new InetSocketAddress(hostAddress, port), config.getConnectionTimeout());
-                
-                setupStreams(socket);
+        // Join room using the FREE relay service
+        relayService.joinRoom(roomCode).thenAccept(success -> {
+            if (success) {
+                System.out.println("[NetworkService] Joined room successfully!");
                 setState(ConnectionState.CONNECTED);
                 
-                // Send connection message
+                // Send connection message via relay
                 send(NetworkMessage.connect(playerName));
                 
-                // Start receiving messages
-                startReceiving();
-                startHeartbeat();
-                
-                System.out.println("[NetworkService] Connected to host at " + hostAddress + ":" + port);
-                
-            } catch (IOException e) {
-                handleError("Failed to connect: " + e.getMessage());
+            } else {
+                handleError("Failed to join room. Check the code and try again.");
                 setState(ConnectionState.DISCONNECTED);
             }
         });
@@ -517,13 +471,19 @@ public class NetworkService {
      * @param message The message to send
      */
     public void send(NetworkMessage message) {
-        if (writer != null && state == ConnectionState.CONNECTED) {
-            String protocolStr = message.toProtocolString();
+        String protocolStr = message.toProtocolString();
+        
+        if (usingRelay) {
+            // Send via relay service
+            relayService.send(protocolStr);
+            System.out.println("[NetworkService] SENT via relay: " + protocolStr);
+        } else if (writer != null && state == ConnectionState.CONNECTED) {
+            // Send via direct socket
             writer.println(protocolStr);
-            writer.flush(); // Ensure message is sent immediately
+            writer.flush();
             System.out.println("[NetworkService] SENT: " + protocolStr);
         } else {
-            System.err.println("[NetworkService] Cannot send - writer=" + (writer != null) + ", state=" + state);
+            System.err.println("[NetworkService] Cannot send - not connected");
         }
     }
     
@@ -583,12 +543,11 @@ public class NetworkService {
             }
         }
         
-        // Close ngrok tunnel if active
-        if (ngrokTunnelActive) {
-            System.out.println("[NetworkService] Closing ngrok tunnel...");
-            ngrokService.closeTunnel();
-            ngrokTunnelActive = false;
-            ngrokPublicUrl = null;
+        // Close relay connection if active
+        if (usingRelay) {
+            System.out.println("[NetworkService] Closing relay connection...");
+            relayService.disconnect();
+            usingRelay = false;
         }
         
         // Close UPnP port mapping if we opened one
@@ -872,27 +831,27 @@ public class NetworkService {
         this.onConnectionReady = callback;
     }
     
-    // Ngrok related getters
+    // Relay related getters
     
     /**
-     * Gets the ngrok service for auth token management.
+     * Gets the relay service.
      */
-    public NgrokTunnelService getNgrokService() {
-        return ngrokService;
+    public RelayService getRelayService() {
+        return relayService;
     }
     
     /**
-     * Checks if ngrok tunnel is active.
+     * Checks if using relay for communication.
      */
-    public boolean isNgrokTunnelActive() {
-        return ngrokTunnelActive;
+    public boolean isUsingRelay() {
+        return usingRelay;
     }
     
     /**
-     * Gets the ngrok public URL.
+     * Gets the current room code.
      */
-    public String getNgrokPublicUrl() {
-        return ngrokPublicUrl;
+    public String getRoomCode() {
+        return relayService.getRoomCode();
     }
     
     // UPnP related getters
@@ -912,23 +871,12 @@ public class NetworkService {
     }
     
     /**
-     * Gets the shareable connection string for internet play.
-     * Prioritizes ngrok (works everywhere) over UPnP.
-     * @return Connection string like "0.tcp.ngrok.io:12345" or null
+     * Gets the shareable room code for multiplayer.
+     * @return Room code like "ABC123" or null
      */
     public String getShareableConnectionString() {
-        // Prefer ngrok as it works on ANY network
-        if (ngrokTunnelActive && ngrokPublicUrl != null) {
-            return ngrokService.getShareableAddress();
-        }
-        // Fallback to UPnP
-        if (upnpPortOpened && hostedPort > 0) {
-            return upnpService.getConnectionString(hostedPort);
-        }
-        // Last resort - public IP (may not work without port forwarding)
-        String publicIP = getPublicIPAddress();
-        if (publicIP != null && hostedPort > 0) {
-            return publicIP + ":" + hostedPort;
+        if (usingRelay) {
+            return relayService.getRoomCode();
         }
         return null;
     }

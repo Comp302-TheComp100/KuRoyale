@@ -127,44 +127,22 @@ public class NetworkLobbyController {
         
         networkService.setOnError(error -> Platform.runLater(() -> showError(error)));
         
-        // Connection ready callback - shows shareable address or prompts for auth
-        networkService.setOnConnectionReady((success, status) -> Platform.runLater(() -> {
+        // Connection ready callback - shows room code when ready
+        networkService.setOnConnectionReady((success, roomCode) -> Platform.runLater(() -> {
             if (!waitingPane.isVisible()) return;
             
-            if (success) {
-                // Success! Show the shareable address
-                waitingLabel.setText("✓ Ready! Share this with your friend:");
-                connectionInfoLabel.setText(status);
-                connectionInfoLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #00ff00;");
-                copyToClipboard(status);
-                
-            } else if ("AUTH_TOKEN_REQUIRED".equals(status)) {
-                // Need auth token - show quick setup dialog
-                promptForNgrokAuthToken();
-                
+            if (success && roomCode != null) {
+                // Success! Show the room code
+                waitingLabel.setText("✓ Ready! Share this code with your friend:");
+                connectionInfoLabel.setText(roomCode);
+                connectionInfoLabel.setStyle("-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #00ff00; -fx-font-family: monospace;");
+                copyToClipboard(roomCode);
             } else {
-                // Fallback info
-                String localIP = networkService.getLocalIPAddress();
-                int port = Integer.parseInt(portField.getText().trim());
-                waitingLabel.setText("Waiting for opponent...");
-                connectionInfoLabel.setText("Address: " + localIP + ":" + port);
-                connectionInfoLabel.setStyle("-fx-font-size: 16px;");
+                waitingLabel.setText("Connection failed. Please try again.");
+                connectionInfoLabel.setText("");
             }
         }));
         
-        // UPnP status callback (fallback)
-        networkService.setOnUPnPStatusChanged((success, message) -> Platform.runLater(() -> {
-            if (connectionInfoLabel != null && waitingPane.isVisible() && !networkService.isNgrokTunnelActive()) {
-                if (success) {
-                    String connStr = networkService.getShareableConnectionString();
-                    if (connStr != null) {
-                        connectionInfoLabel.setText("✓ Share this address:\n" + connStr);
-                        waitingLabel.setText("Port opened!\nWaiting for opponent...");
-                        copyToClipboard(connStr);
-                    }
-                }
-            }
-        }));
     }
     
     /**
@@ -178,57 +156,6 @@ public class NetworkLobbyController {
         System.out.println("[NetworkLobby] Copied to clipboard: " + text);
     }
     
-    /**
-     * Quick dialog to get ngrok auth token (one-time setup).
-     */
-    private void promptForNgrokAuthToken() {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("One-Time Setup (30 seconds)");
-        dialog.setHeaderText("Get your free token from ngrok.com");
-        dialog.setContentText("Auth Token:");
-        
-        // Add a hyperlink hint in the dialog
-        dialog.setContentText("1. Go to ngrok.com → Sign up (free)\n" +
-                              "2. Copy your authtoken from dashboard\n" +
-                              "3. Paste here:");
-        
-        // Try to open the ngrok dashboard
-        try {
-            java.awt.Desktop.getDesktop().browse(new java.net.URI("https://dashboard.ngrok.com/get-started/your-authtoken"));
-        } catch (Exception e) {
-            // Ignore - user can navigate manually
-        }
-        
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(token -> {
-            token = token.trim();
-            if (!token.isEmpty()) {
-                // Save token
-                networkService.getNgrokService().saveAuthToken(token);
-                
-                // Retry hosting with the new token
-                connectionInfoLabel.setText("Connecting...");
-                int port = Integer.parseInt(portField.getText().trim());
-                networkService.getNgrokService().createTunnel(port).thenAccept(url -> {
-                    if (url != null) {
-                        Platform.runLater(() -> {
-                            String shareableUrl = networkService.getNgrokService().getShareableAddress();
-                            waitingLabel.setText("✓ Ready! Share this with your friend:");
-                            connectionInfoLabel.setText(shareableUrl);
-                            connectionInfoLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #00ff00;");
-                            copyToClipboard(shareableUrl);
-                        });
-                    }
-                });
-            } else {
-                showModeSelection();
-            }
-        });
-        
-        if (result.isEmpty()) {
-            showModeSelection();
-        }
-    }
     
     private void handleNetworkMessage(NetworkMessage message) {
         switch (message.getType()) {
@@ -357,25 +284,23 @@ public class NetworkLobbyController {
     private void handleConnect() {
         SoundEffectUtil.playButtonClick();
         
-        String hostIp = hostIpField.getText().trim();
-        if (hostIp.isEmpty()) {
-            showError("Please enter the host IP address");
+        String roomCode = hostIpField.getText().trim().toUpperCase();
+        if (roomCode.isEmpty()) {
+            showError("Please enter the room code");
             return;
         }
         
-        int port;
-        try {
-            port = Integer.parseInt(joinPortField.getText().trim());
-        } catch (NumberFormatException e) {
-            showError("Invalid port number");
+        if (roomCode.length() != 6) {
+            showError("Room code should be 6 characters");
             return;
         }
         
         showPane(waitingPane);
-        waitingLabel.setText("Connecting to host...");
-        connectionInfoLabel.setText("Host: " + hostIp + ":" + port);
+        waitingLabel.setText("Joining room...");
+        connectionInfoLabel.setText("Room: " + roomCode);
+        connectionInfoLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
         
-        networkService.connectToHost(hostIp, port, playerName);
+        networkService.connectToHost(roomCode, 0, playerName);
     }
     
     @FXML
