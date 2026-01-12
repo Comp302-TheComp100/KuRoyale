@@ -48,16 +48,8 @@ public class ArenaRenderer {
                 Rectangle rect = new Rectangle(GameConstants.TILE_SIZE, GameConstants.TILE_SIZE);
 
                 // For towers, render underlying terrain (grass)
-                if (isTower(cell.getTileType())) {
-                    // Use checkered pattern for grass under towers
-                    if ((x + y) % 2 == 0) {
-                        rect.setFill(Color.rgb(124, 252, 0)); // LawnGreen
-                    } else {
-                        rect.setFill(Color.rgb(50, 205, 50)); // LimeGreen
-                    }
-                } else {
-                    updateTileStyle(rect, cell.getTileType(), x, y);
-                }
+                // Use ViewUtils for consistent coloring
+                rect.setFill(com.kuroyale.view.battle.ViewUtils.getTileColor(cell.getTileType(), x, y));
 
                 // Remove borders for seamless appearance
                 rect.setStroke(Color.TRANSPARENT);
@@ -133,79 +125,32 @@ public class ArenaRenderer {
 
     private void addHealthBar(int x, int y, double currentHealth, double maxHealth, int colSpan) {
         // Health bar dimensions
-        double width = 40;
-        if (colSpan == 4)
-            width = 50; // Wider for King Tower
-        double height = 12; // Height for text visibility
+        double width = (colSpan == 4) ? GameConstants.HEALTH_BAR_WIDTH_LARGE : GameConstants.HEALTH_BAR_WIDTH_STANDARD;
+        double height = GameConstants.HEALTH_BAR_HEIGHT_TEXT;
 
-        // Background (Dark Blue)
         Rectangle bg = new Rectangle(width, height);
-        bg.setFill(Color.DARKBLUE);
-        bg.setStroke(Color.BLACK);
+        bg.setFill(com.kuroyale.util.GameColors.HEALTH_BAR_BG);
+        bg.setStroke(com.kuroyale.util.GameColors.HEALTH_BAR_STROKE);
         bg.setStrokeWidth(0.5);
 
-        // Foreground (Royal Blue)
         double healthPercentage = currentHealth / maxHealth;
         Rectangle fg = new Rectangle(width * healthPercentage, height);
-        fg.setFill(Color.ROYALBLUE);
+        fg.setFill(com.kuroyale.util.GameColors.PLAYER_TEAM);
 
-        // Health Text: "1400"
         Text healthText = new Text(String.format("%.0f", currentHealth));
-        // Font like Clash Royale
         healthText.setFont(Font.font("Arial Black", FontWeight.BOLD, 10));
-        healthText.setFill(Color.WHITE);
-        healthText.setStroke(Color.BLACK);
+        healthText.setFill(com.kuroyale.util.GameColors.TEXT_FILL);
+        healthText.setStroke(com.kuroyale.util.GameColors.TEXT_STROKE);
         healthText.setStrokeWidth(0.5);
 
         StackPane healthBarContainer = new StackPane();
-        // Align foreground to left
         StackPane.setAlignment(fg, Pos.CENTER_LEFT);
 
         healthBarContainer.getChildren().addAll(bg, fg, healthText);
         healthBarContainer.setAlignment(Pos.CENTER);
         healthBarContainer.setTranslateY(-10);
 
-        // Add to grid, spanning colSpan cols, 1 row
         arenaGrid.add(healthBarContainer, x, y, colSpan, 1);
     }
 
-    private void updateTileStyle(Rectangle rect, TileType type, int x, int y) {
-        switch (type) {
-            case GRASS:
-                if ((x + y) % 2 == 0) {
-                    rect.setFill(Color.rgb(124, 252, 0)); // LawnGreen
-                } else {
-                    rect.setFill(Color.rgb(50, 205, 50)); // LimeGreen
-                }
-                break;
-            case WATER:
-                rect.setFill(Color.LIGHTBLUE);
-                break;
-            case BRIDGE:
-                rect.setFill(Color.SADDLEBROWN);
-                break;
-            case ROAD:
-                rect.setFill(Color.SANDYBROWN);
-                break;
-            case PRINCESS_TOWER_USER:
-                rect.setFill(Color.HOTPINK);
-                break;
-            case PRINCESS_TOWER_COMPUTER:
-                rect.setFill(Color.DEEPPINK);
-                break;
-            case KING_TOWER_USER:
-                rect.setFill(Color.GOLD);
-                break;
-            case KING_TOWER_COMPUTER:
-                rect.setFill(Color.ORANGE);
-                break;
-        }
-    }
-
-    private boolean isTower(TileType type) {
-        return type == TileType.PRINCESS_TOWER_USER ||
-                type == TileType.PRINCESS_TOWER_COMPUTER ||
-                type == TileType.KING_TOWER_USER ||
-                type == TileType.KING_TOWER_COMPUTER;
-    }
 }

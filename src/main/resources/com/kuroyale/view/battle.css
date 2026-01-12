@@ -1,0 +1,157 @@
+/* Battle View Styles */
+
+.elixir-bar-container {
+    -fx-alignment: center;
+    -fx-spacing: 5;
+    -fx-padding: 5;
+    padding: 5px;
+}
+
+.elixir-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-effect: dropshadow(one-pass-box, black, 2, 0.5, 0, 0);
+    font-weight: bold;
+    color: white;
+    font-size: 16px;
+}
+
+.elixir-progress-bar {
+    -fx-pref-width: 200;
+    -fx-pref-height: 20;
+    -fx-accent: #FF00FF;
+    /* Magenta */
+    width: 200px;
+    height: 20px;
+}
+
+.double-elixir-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-font-size: 24px;
+    -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);
+    font-weight: bold;
+    color: white;
+    font-size: 24px;
+}
+
+.double-elixir-active {
+    -fx-text-fill: #FF00FF;
+    color: #FF00FF;
+}
+
+.production-indicator {
+    -fx-font-weight: bold;
+    -fx-text-fill: #9932CC;
+    -fx-font-size: 20px;
+    -fx-effect: dropshadow(one-pass-box, black, 2, 0.8, 0, 0);
+    font-weight: bold;
+    color: #9932CC;
+    font-size: 20px;
+}
+
+/* Hand View */
+.hand-container {
+    -fx-alignment: center;
+    -fx-spacing: 10;
+    -fx-padding: 10;
+    -fx-background-color: rgba(243, 8, 8, 0.3);
+    -fx-background-radius: 10;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+
+
+.card-common {
+    -fx-border-color: #9ca3af;
+    -fx-border-width: 3;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    border-color: #9ca3af;
+    border-width: 3px;
+    border-radius: 8px;
+}
+
+.card-rare {
+    -fx-border-color: #3b82f6;
+    -fx-border-width: 3;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    border-color: #3b82f6;
+    border-width: 3px;
+    border-radius: 8px;
+}
+
+.card-epic {
+    -fx-border-color: #8b5cf6;
+    -fx-border-width: 3;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    border-color: #8b5cf6;
+    border-width: 3px;
+    border-radius: 8px;
+}
+
+.card-legendary {
+    -fx-border-color: #f59e0b;
+    -fx-border-width: 3;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    border-color: #f59e0b;
+    border-width: 3px;
+    border-radius: 8px;
+}
+
+.card-default {
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 3;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    border-color: #cbd5e1;
+    border-width: 3px;
+    border-radius: 8px;
+}
+
+/* Pause Menu */
+.pause-menu {
+    -fx-background-color: #2a2a2a;
+    -fx-padding: 50;
+    -fx-background-radius: 20;
+    -fx-border-color: white;
+    -fx-border-width: 3;
+    background-color: #2a2a2a;
+    padding: 50px;
+    border-radius: 20px;
+    border-color: white;
+    border-width: 3px;
+}
+
+.pause-menu-title {
+    -fx-font-size: 42px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    font-size: 42px;
+    color: white;
+    font-weight: bold;
+}
+
+.pause-menu-button {
+    -fx-font-size: 20px;
+    -fx-padding: 15 50;
+    -fx-min-width: 300;
+    font-size: 20px;
+    padding: 15px 50px;
+    min-width: 300px;
+}
+
+.pause-menu-button-small {
+    -fx-font-size: 18px;
+    -fx-padding: 10 30;
+    -fx-min-width: 300;
+    font-size: 18px;
+    padding: 10px 30px;
+    min-width: 300px;
+}

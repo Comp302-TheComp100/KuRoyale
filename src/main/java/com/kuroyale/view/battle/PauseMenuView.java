@@ -22,13 +22,13 @@ public class PauseMenuView extends VBox {
 
     public PauseMenuView(PauseMenuListener listener) {
         super(30);
+        this.getStylesheets().add(getClass().getResource("/com/kuroyale/view/battle.css").toExternalForm());
         this.setAlignment(Pos.CENTER);
-        this.setStyle(
-                "-fx-background-color: #2a2a2a; -fx-padding: 50; -fx-background-radius: 20; -fx-border-color: white; -fx-border-width: 3;");
+        this.getStyleClass().add("pause-menu");
         this.setMaxSize(500, 400);
 
         Label title = new Label("PAUSED");
-        title.setStyle("-fx-font-size: 42px; -fx-text-fill: white; -fx-font-weight: bold;");
+        title.getStyleClass().add("pause-menu-title");
 
         Button resumeBtn = createMenuButton("RESUME", () -> {
             if (listener != null)
@@ -48,14 +48,14 @@ public class PauseMenuView extends VBox {
         });
 
         // Slightly smaller style for exit without saving
-        exitBtn.setStyle("-fx-font-size: 18px; -fx-padding: 10 30; -fx-min-width: 300;");
+        exitBtn.getStyleClass().add("pause-menu-button-small");
 
         this.getChildren().addAll(title, resumeBtn, saveResumeBtn, saveExitBtn, exitBtn);
     }
 
     private Button createMenuButton(String text, Runnable action) {
         Button btn = new Button(text);
-        btn.setStyle("-fx-font-size: 20px; -fx-padding: 15 50; -fx-min-width: 300;");
+        btn.getStyleClass().add("pause-menu-button");
         btn.setOnAction(e -> action.run());
         return btn;
     }

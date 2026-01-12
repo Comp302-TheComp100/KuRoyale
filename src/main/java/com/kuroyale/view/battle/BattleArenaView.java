@@ -28,12 +28,13 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private int currentHoveredTileY = -1;
     private javafx.scene.Node currentHoveredOverlay = null;
 
-    private static final int TILE_SIZE = 18; // Matches ArenaDesignController
+    private static final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
 
     /**
      * Constructor for PvP mode.
      */
     public BattleArenaView(com.kuroyale.model.logic.PvPGameState pvpGameState) {
+        this.getStylesheets().add(getClass().getResource("/com/kuroyale/view/battle.css").toExternalForm());
         this.gameState = null;
         this.pvpGameState = pvpGameState;
 
@@ -94,6 +95,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     }
 
     public BattleArenaView(GameState gameState) {
+        this.getStylesheets().add(getClass().getResource("/com/kuroyale/view/battle.css").toExternalForm());
         this.gameState = gameState;
         this.pvpGameState = null;
 
@@ -189,33 +191,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
                 TileType type = cell.getTileType();
 
                 // Treat towers as grass for the base tile so they look right when destroyed
-                if (type == TileType.PRINCESS_TOWER_USER || type == TileType.PRINCESS_TOWER_COMPUTER
-                        || type == TileType.KING_TOWER_USER || type == TileType.KING_TOWER_COMPUTER) {
-                    type = TileType.GRASS;
-                }
+                // Use ViewUtils for consistent coloring
+                rect.setFill(com.kuroyale.view.battle.ViewUtils.getTileColor(type, x, y));
 
-                switch (type) {
-                    case GRASS:
-                        // Checkered pattern
-                        if ((x + y) % 2 == 0) {
-                            rect.setFill(Color.rgb(124, 252, 0)); // LawnGreen
-                        } else {
-                            rect.setFill(Color.rgb(50, 205, 50)); // LimeGreen
-                        }
-                        break;
-                    case WATER:
-                        rect.setFill(Color.LIGHTBLUE);
-                        break;
-                    case BRIDGE:
-                        rect.setFill(Color.SADDLEBROWN);
-                        break;
-                    case ROAD:
-                        rect.setFill(Color.SANDYBROWN);
-                        break;
-                    default:
-                        rect.setFill(Color.GRAY);
-                        break;
-                }
                 // Remove stroke for seamless look
                 rect.setStroke(Color.TRANSPARENT);
                 rect.setStrokeWidth(0.0);
@@ -243,32 +221,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
                 TileType type = cell.getTileType();
 
                 // Treat towers as grass for base tile
-                if (type == TileType.PRINCESS_TOWER_USER || type == TileType.PRINCESS_TOWER_COMPUTER
-                        || type == TileType.KING_TOWER_USER || type == TileType.KING_TOWER_COMPUTER) {
-                    type = TileType.GRASS;
-                }
+                // Use ViewUtils for consistent coloring
+                rect.setFill(com.kuroyale.view.battle.ViewUtils.getTileColor(type, x, y));
 
-                switch (type) {
-                    case GRASS:
-                        if ((x + y) % 2 == 0) {
-                            rect.setFill(Color.rgb(124, 252, 0));
-                        } else {
-                            rect.setFill(Color.rgb(50, 205, 50));
-                        }
-                        break;
-                    case WATER:
-                        rect.setFill(Color.LIGHTBLUE);
-                        break;
-                    case BRIDGE:
-                        rect.setFill(Color.SADDLEBROWN);
-                        break;
-                    case ROAD:
-                        rect.setFill(Color.SANDYBROWN);
-                        break;
-                    default:
-                        rect.setFill(Color.GRAY);
-                        break;
-                }
                 rect.setStroke(Color.TRANSPARENT);
                 rect.setStrokeWidth(0.0);
                 grid.add(rect, x, y);
@@ -402,7 +357,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             return;
 
         // Use semi-transparent yellow/gold for simple highlight
-        gc.setFill(Color.rgb(255, 215, 0, 0.3));
+        gc.setFill(com.kuroyale.util.GameColors.HIGHLIGHT_VALID);
 
         if (isSpell) {
             // Spells can be placed anywhere - highlight full arena
@@ -437,7 +392,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             return;
 
         // Use semi-transparent red for Player 2
-        gc.setFill(Color.rgb(255, 100, 100, 0.3));
+        gc.setFill(com.kuroyale.util.GameColors.HIGHLIGHT_VALID_P2);
 
         if (isSpell) {
             // Spells can be placed anywhere - highlight full arena
@@ -492,8 +447,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         Rectangle overlay = new Rectangle(TILE_SIZE, TILE_SIZE);
 
         // Clash Royale style: semi-transparent cyan fill with bright border
-        overlay.setFill(Color.color(0.0, 0.8, 1.0, 0.25)); // Cyan with 25% opacity
-        overlay.setStroke(Color.CYAN);
+        overlay.setFill(com.kuroyale.util.GameColors.HOVER_FILL);
+        overlay.setStroke(com.kuroyale.util.GameColors.HOVER_STROKE);
         overlay.setStrokeWidth(2.0);
         overlay.setStrokeType(javafx.scene.shape.StrokeType.INSIDE); // Stroke inside to avoid gaps
 
@@ -540,9 +495,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             double cy = center.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
             double rPixels = radius * TILE_SIZE;
             javafx.scene.shape.Circle aoe = new javafx.scene.shape.Circle(cx, cy, rPixels);
-            aoe.setFill(isPlayerSource ? javafx.scene.paint.Color.color(0.2, 0.6, 1.0, 0.18)
-                    : javafx.scene.paint.Color.color(1.0, 0.3, 0.2, 0.18));
-            aoe.setStroke(javafx.scene.paint.Color.color(1, 1, 1, 0.6));
+            aoe.setFill(isPlayerSource ? com.kuroyale.util.GameColors.AOE_PLAYER
+                    : com.kuroyale.util.GameColors.AOE_ENEMY);
+            aoe.setStroke(com.kuroyale.util.GameColors.AOE_STROKE);
             aoe.setStrokeWidth(1.2);
             unitLayer.getChildren().add(aoe);
             activeSpellVisuals.add(new ActiveSpellVisual(aoe, duration));

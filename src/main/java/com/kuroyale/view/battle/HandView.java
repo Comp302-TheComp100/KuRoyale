@@ -23,16 +23,15 @@ public class HandView extends VBox {
     private Consumer<Integer> onCardSelected;
 
     public HandView(Hand hand, ElixirManager elixirManager) {
+        this.getStylesheets().add(getClass().getResource("/com/kuroyale/view/battle.css").toExternalForm());
         this.hand = hand;
         this.elixirManager = elixirManager;
         this.cardViews = new ArrayList<>();
 
         this.setAlignment(Pos.CENTER);
         this.setSpacing(10);
+        this.setSpacing(10);
         this.getStyleClass().add("hand-container");
-        // Make background semi-transparent and compact
-        // Background style is now handled in CSS (.hand-container)
-
         initializeCards();
     }
 
@@ -114,20 +113,25 @@ public class HandView extends VBox {
             if (!currentStateSig.equals(lastStateObj)) {
                 view.setUserData(currentStateSig);
 
-                String rarityBorder = getRarityBorderStyle(card);
+                // clear old rarity classes
+                view.getStyleClass().removeAll("card-common", "card-rare", "card-epic", "card-legendary",
+                        "card-default");
+                String rarityClass = getRarityStyleClass(card);
+                if (!rarityClass.isEmpty()) {
+                    view.getStyleClass().add(rarityClass);
+                }
 
                 if (selected) {
-                    view.setStyle(rarityBorder
-                            + "-fx-effect: dropshadow(three-pass-box, gold, 10, 0, 0, 0); -fx-translate-y: -10;");
+                    view.setStyle("-fx-effect: dropshadow(three-pass-box, gold, 10, 0, 0, 0); -fx-translate-y: -10;");
                     view.setEffect(null);
                     view.setDimmed(false);
                 } else if (affordable) {
-                    view.setStyle(rarityBorder);
+                    view.setStyle("");
                     view.setEffect(null);
                     view.setDimmed(false);
                 } else {
                     // Dim unavailable cards
-                    view.setStyle(rarityBorder);
+                    view.setStyle("");
                     view.setEffect(null);
                     view.setDimmed(true);
                 }
@@ -144,32 +148,22 @@ public class HandView extends VBox {
         update();
     }
 
-    private String getRarityBorderStyle(Card card) {
+    private String getRarityStyleClass(Card card) {
         if (card == null) {
             return "";
         }
 
-        String rarityColor;
         switch (card.getRarity()) {
             case COMMON:
-                rarityColor = "#9ca3af"; // Gray
-                break;
+                return "card-common";
             case RARE:
-                rarityColor = "#3b82f6"; // Blue
-                break;
+                return "card-rare";
             case EPIC:
-                rarityColor = "#8b5cf6"; // Purple
-                break;
+                return "card-epic";
             case LEGENDARY:
-                rarityColor = "#f59e0b"; // Orange/Gold
-                break;
+                return "card-legendary";
             default:
-                rarityColor = "#cbd5e1"; // Default gray
+                return "card-default";
         }
-
-        return "-fx-border-color: " + rarityColor + "; " +
-                "-fx-border-width: 3; " +
-                "-fx-border-radius: 8; " +
-                "-fx-background-radius: 8; ";
     }
 }

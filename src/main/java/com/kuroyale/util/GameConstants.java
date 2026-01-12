@@ -39,6 +39,16 @@ public class GameConstants {
     // Pathfinding
     public static final double WAYPOINT_THRESHOLD = 0.1;
 
+    // UI Dimensions
+    public static final double HEALTH_BAR_WIDTH_STANDARD = 40.0;
+    public static final double HEALTH_BAR_WIDTH_LARGE = 50.0; // King Tower
+    public static final double HEALTH_BAR_HEIGHT = 4.0;
+    public static final double HEALTH_BAR_HEIGHT_TEXT = 12.0; // With text
+
+    // Hand View
+    public static final double CARD_WIDTH_HAND = 60.0;
+    public static final double CARD_HEIGHT_HAND = 80.0;
+
     private GameConstants() {
         // Prevent instantiation
     }

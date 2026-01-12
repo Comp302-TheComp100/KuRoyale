@@ -9,10 +9,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 import java.util.HashMap;
@@ -20,7 +17,7 @@ import java.util.Map;
 
 public class TowerRenderer {
     private final GridPane grid;
-    private final int TILE_SIZE;
+    private final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
     private final Map<String, Rectangle> towerHpForegrounds = new HashMap<>();
     private final Map<String, Text> towerHpTexts = new HashMap<>();
     private final Map<GridPosition, Node> activeTowerVisuals = new HashMap<>();
@@ -33,7 +30,7 @@ public class TowerRenderer {
 
     public TowerRenderer(GridPane grid, int tileSize, CellIndexer cellIndexer) {
         this.grid = grid;
-        this.TILE_SIZE = tileSize;
+        // this.TILE_SIZE = tileSize; // Ignored, using constant
         this.cellIndexer = cellIndexer;
     }
 
@@ -103,51 +100,36 @@ public class TowerRenderer {
             towerStack.getChildren().add(imageView);
         } else {
             Rectangle rect = new Rectangle(TILE_SIZE * size, TILE_SIZE * size);
-            rect.setFill(Color.MAGENTA);
+            rect.setFill(com.kuroyale.util.GameColors.DEFAULT);
             towerStack.getChildren().add(rect);
         }
 
         // Health Bar
         Tower tower = arena.getTowerAt(x, y);
         double currentHealth = (tower != null) ? tower.getCurrentHealth() : 1.0;
-        double maxHealth = (tower != null) ? tower.getMaxHealth() : 1.0;
 
-        double width = (size == 4) ? 50 : 40;
-        double height = 10;
+        double width = (size == 4) ? com.kuroyale.util.GameConstants.HEALTH_BAR_WIDTH_LARGE
+                : com.kuroyale.util.GameConstants.HEALTH_BAR_WIDTH_STANDARD;
 
-        Rectangle bg = new Rectangle(width, height);
-        bg.setFill(Color.DARKBLUE);
-        bg.setStroke(Color.BLACK);
-        bg.setStrokeWidth(0.5);
+        HealthBarRenderer.HealthBarNodes hpNodes = HealthBarRenderer.createDetailedHealthBar(
+                width, com.kuroyale.util.GameConstants.HEALTH_BAR_HEIGHT_TEXT, currentHealth);
 
-        double healthPercentage = currentHealth / maxHealth;
-        Rectangle fg = new Rectangle(width * healthPercentage, height);
-        fg.setFill((tower != null && !tower.isPlayerSide()) ? Color.CRIMSON : Color.ROYALBLUE);
-
+        // Store foreground and text references for updates
         String towerKey = x + "_" + y;
-        towerHpForegrounds.put(towerKey, fg);
-
-        Text healthText = new Text(String.format("%.0f", currentHealth));
-        towerHpTexts.put(towerKey, healthText);
-        healthText.setFont(Font.font("Arial Black", FontWeight.BOLD, 10));
-        healthText.setFill(Color.WHITE);
-        healthText.setStroke(Color.BLACK);
-        healthText.setStrokeWidth(0.5);
-
-        StackPane healthBarContainer = new StackPane(bg, fg, healthText);
-        StackPane.setAlignment(fg, javafx.geometry.Pos.CENTER_LEFT);
+        towerHpForegrounds.put(towerKey, hpNodes.foreground);
+        towerHpTexts.put(towerKey, hpNodes.text);
 
         if (tower != null && tower.isPlayerSide()) {
             // Player Tower: Bottom
-            StackPane.setAlignment(healthBarContainer, javafx.geometry.Pos.BOTTOM_CENTER);
-            StackPane.setMargin(healthBarContainer, new javafx.geometry.Insets(0, 0, -15, 0));
+            StackPane.setAlignment(hpNodes.root, javafx.geometry.Pos.BOTTOM_CENTER);
+            StackPane.setMargin(hpNodes.root, new javafx.geometry.Insets(0, 0, -15, 0));
         } else {
             // Computer (Component) Tower: Top
-            StackPane.setAlignment(healthBarContainer, javafx.geometry.Pos.TOP_CENTER);
-            StackPane.setMargin(healthBarContainer, new javafx.geometry.Insets(-75, 0, 0, 0));
+            StackPane.setAlignment(hpNodes.root, javafx.geometry.Pos.TOP_CENTER);
+            StackPane.setMargin(hpNodes.root, new javafx.geometry.Insets(-75, 0, 0, 0));
         }
 
-        towerStack.getChildren().add(healthBarContainer);
+        towerStack.getChildren().add(hpNodes.root);
 
         grid.add(towerStack, x, y, size, size);
         GridPane.setHalignment(towerStack, javafx.geometry.HPos.CENTER);

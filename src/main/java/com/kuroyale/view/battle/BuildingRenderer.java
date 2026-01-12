@@ -11,6 +11,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
+import com.kuroyale.util.GameConstants;
+import com.kuroyale.util.GameColors;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,12 +24,12 @@ public class BuildingRenderer {
 
     private static class BuildingVisual {
         final StackPane root;
-        final Rectangle hpForeground;
-        final Rectangle elixirForeground; // New field for elixir bar
+        final HealthBarRenderer.HealthBarNodes hpNodes;
+        final Rectangle elixirForeground; // Keep simple for now or refactor too. Let's keep simple.
 
-        BuildingVisual(StackPane root, Rectangle hpForeground, Rectangle elixirForeground) {
+        BuildingVisual(StackPane root, HealthBarRenderer.HealthBarNodes hpNodes, Rectangle elixirForeground) {
             this.root = root;
-            this.hpForeground = hpForeground;
+            this.hpNodes = hpNodes;
             this.elixirForeground = elixirForeground;
         }
     }
@@ -142,7 +144,13 @@ public class BuildingRenderer {
         }
 
         // Add Health Bar
-        Rectangle hpFg = createHealthBar(b, w, buildingStack);
+        HealthBarRenderer.HealthBarNodes hpNodes = HealthBarRenderer.createDetailedHealthBar(
+                Math.max(40, TILE_SIZE * w - 6),
+                GameConstants.HEALTH_BAR_HEIGHT_TEXT,
+                b.getCurrentHealth());
+
+        StackPane.setMargin(hpNodes.root, new javafx.geometry.Insets(-35, 0, 0, 0));
+        buildingStack.getChildren().add(hpNodes.root);
 
         // Add Elixir Bar if applicable
         Rectangle elixirFg = null;
@@ -150,42 +158,18 @@ public class BuildingRenderer {
             elixirFg = createElixirBar(b, w, buildingStack);
         }
 
-        return new BuildingVisual(buildingStack, hpFg, elixirFg);
+        return new BuildingVisual(buildingStack, hpNodes, elixirFg);
     }
 
     private Rectangle createFallbackRect(Building b, int w, int h) {
         Rectangle fallback = new Rectangle(TILE_SIZE * w, TILE_SIZE * h);
-        fallback.setFill(b.isPlayerSide() ? Color.DARKBLUE : Color.DARKRED);
+        fallback.setFill(b.isPlayerSide() ? GameColors.PLAYER_TEAM : GameColors.ENEMY_TEAM); // shades maybe
         fallback.setStroke(Color.BLACK);
         fallback.setStrokeWidth(0.5);
         return fallback;
     }
 
-    private Rectangle createHealthBar(Building b, int wPixelsTiles, StackPane container) {
-        double maxHp = b.getMaxHealth();
-        double curHp = Math.max(0, b.getCurrentHealth());
-        double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
-
-        double hbWidth = Math.max(40, TILE_SIZE * wPixelsTiles - 6);
-        double hbHeight = 6;
-
-        Rectangle bg = new Rectangle(hbWidth, hbHeight);
-        bg.setFill(Color.DARKBLUE);
-        bg.setStroke(Color.BLACK);
-        bg.setStrokeWidth(0.5);
-
-        Rectangle fg = new Rectangle(hbWidth * pct, hbHeight);
-        fg.setFill(b.isPlayerSide() ? Color.ROYALBLUE : Color.CRIMSON);
-
-        StackPane hbPane = new StackPane(bg, fg);
-        hbPane.setAlignment(Pos.CENTER_LEFT);
-        StackPane.setAlignment(hbPane, Pos.TOP_CENTER);
-        StackPane.setMargin(hbPane, new javafx.geometry.Insets(-35, 0, 0, 0));
-
-        container.getChildren().add(hbPane);
-
-        return fg;
-    }
+    // Previous createHealthBar removed as it is replaced by HealthBarRenderer
 
     private Rectangle createElixirBar(Building b, int wTiles, StackPane container) {
         double interval = b.getProductionInterval();
@@ -193,15 +177,15 @@ public class BuildingRenderer {
         double pct = interval > 0 ? (1.0 - (timer / interval)) : 0.0;
 
         double hbWidth = Math.max(40, TILE_SIZE * wTiles - 6);
-        double hbHeight = 4; // Slightly thinner than HP bar
+        double hbHeight = GameConstants.HEALTH_BAR_HEIGHT;
 
         Rectangle bg = new Rectangle(hbWidth, hbHeight);
-        bg.setFill(Color.BLACK);
+        bg.setFill(Color.BLACK); // Elixir bar bg
         bg.setStroke(Color.BLACK);
         bg.setStrokeWidth(0.5);
 
         Rectangle fg = new Rectangle(hbWidth * pct, hbHeight);
-        fg.setFill(Color.MAGENTA); // Elixir color
+        fg.setFill(GameColors.ELIXIR_BAR);
 
         StackPane elPane = new StackPane(bg, fg);
         elPane.setAlignment(Pos.CENTER_LEFT);
@@ -220,12 +204,7 @@ public class BuildingRenderer {
 
     private void updateBuildingBars(Building b, BuildingVisual visual, double totalWidthPixels) {
         // Update Health Bar
-        double maxHp = b.getMaxHealth();
-        double curHp = Math.max(0, b.getCurrentHealth());
-        double hpPct = maxHp > 0 ? (curHp / maxHp) : 0.0;
-        double barWidth = Math.max(40, totalWidthPixels - 6);
-
-        visual.hpForeground.setWidth(barWidth * hpPct);
+        HealthBarRenderer.updateHealthBar(visual.hpNodes, b.getCurrentHealth(), b.getMaxHealth(), b.isPlayerSide());
 
         // Update Elixir Bar
         if (visual.elixirForeground != null && "ELIXIR".equals(b.getProductionResource())) {
@@ -235,6 +214,8 @@ public class BuildingRenderer {
             double elPct = interval > 0 ? (1.0 - (timer / interval)) : 0.0;
             // Clamp between 0 and 1 just in case
             elPct = Math.max(0.0, Math.min(1.0, elPct));
+
+            double barWidth = Math.max(40, totalWidthPixels - 6);
 
             visual.elixirForeground.setWidth(barWidth * elPct);
         }
