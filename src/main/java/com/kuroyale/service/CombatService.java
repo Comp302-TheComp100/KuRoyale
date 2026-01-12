@@ -60,6 +60,30 @@ public class CombatService {
         for (Tower tower : towers) {
             processCombatant(tower, state, deltaTime);
         }
+
+        // 4. Projectiles (Orphaned or Active)
+        java.util.List<com.kuroyale.model.entities.Projectile> projectiles = state.getProjectiles();
+        java.util.Iterator<com.kuroyale.model.entities.Projectile> it = projectiles.iterator();
+        while (it.hasNext()) {
+            com.kuroyale.model.entities.Projectile p = it.next();
+            p.update(deltaTime);
+            if (!p.isActive()) {
+                // Hit target
+                if (p.isAreaEffect()) {
+                    com.kuroyale.model.entities.GridPosition impactPos = com.kuroyale.model.entities.GridPosition
+                            .tryCreate((int) p.getPosition().getX(), (int) p.getPosition().getY());
+                    if (impactPos != null) {
+                        applyAreaDamage(state, impactPos, 1.0, p.getDamage(),
+                                p.getTargetType(), p.isPlayerSide(), false, 0.0);
+                    }
+                } else {
+                    if (p.getTarget() != null && p.getTarget().isAlive()) {
+                        p.getTarget().takeDamage(p.getDamage());
+                    }
+                }
+                it.remove();
+            }
+        }
     }
 
     private void processBuildingProduction(Building b, com.kuroyale.model.logic.IBattleState state, double deltaTime) {
@@ -174,17 +198,37 @@ public class CombatService {
     }
 
     private void performAttack(ICombatant attacker, ICombatant target, com.kuroyale.model.logic.IBattleState state) {
-        if (attacker.isAreaEffect()) {
-            // Splash radius is usually 1.0 tiles for units/buildings unless specified
-            com.kuroyale.model.entities.GridPosition targetPos = target.getPosition();
-            if (target instanceof Tower || target instanceof Building) {
-                targetPos = target.getCenterPosition();
-            }
+        boolean isMelee = false;
 
-            applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
-                    attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0);
+        if (attacker instanceof Troop t) {
+            if (t.getCombatStats() != null
+                    && t.getCombatStats().getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
+                isMelee = true;
+            }
+        }
+
+        // Buildings like Tesla/Cannon are projectiles?
+        // Towers are projectiles.
+        // Usually only "Troops with MELEE attack type" are instant.
+        // Inferno Tower? (Has cooldown but continuous). Treating as instant for now
+        // unless I add Beam logic.
+
+        if (isMelee) {
+            // Instant Damage
+            if (attacker.isAreaEffect()) {
+                com.kuroyale.model.entities.GridPosition targetPos = target.getPosition();
+                if (target instanceof Tower || target instanceof Building) {
+                    targetPos = target.getCenterPosition();
+                }
+
+                applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
+                        attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0);
+            } else {
+                applyDamage(attacker, target);
+            }
         } else {
-            applyDamage(attacker, target);
+            // Ranged / Projectile
+            state.addProjectile(new com.kuroyale.model.entities.Projectile(attacker, target));
         }
     }
 

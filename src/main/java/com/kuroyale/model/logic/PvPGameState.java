@@ -24,6 +24,7 @@ public class PvPGameState implements IBattleState {
     private final List<PlacedCard> placedCards;
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
+    private final List<Projectile> activeProjectiles;
     private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
     private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
 
@@ -48,9 +49,20 @@ public class PvPGameState implements IBattleState {
         this.placedCards = new ArrayList<>();
         this.activeTroops = new ArrayList<>();
         this.activeBuildings = new ArrayList<>();
+        this.activeProjectiles = new ArrayList<>();
 
         // Initialize Combo Service
         this.comboService.setGameState(this);
+    }
+
+    @Override
+    public List<Projectile> getProjectiles() {
+        return activeProjectiles;
+    }
+
+    @Override
+    public void addProjectile(Projectile p) {
+        activeProjectiles.add(p);
     }
 
     private final com.kuroyale.service.ComboService comboService = new com.kuroyale.service.ComboService();

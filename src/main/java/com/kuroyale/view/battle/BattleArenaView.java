@@ -311,12 +311,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         troopRenderer.render(gameState);
         buildingRenderer.render(gameState);
 
-        // Render projectiles for all combatants
-        java.util.List<com.kuroyale.model.entities.ICombatant> combatants = new java.util.ArrayList<>();
-        combatants.addAll(gameState.getArena().getAllTowers());
-        combatants.addAll(gameState.getActiveBuildings());
-        combatants.addAll(gameState.getActiveTroops());
-        projectileRenderer.render(combatants, deltaTime);
+        // Render projectiles from state
+        projectileRenderer.render(gameState.getProjectiles(), deltaTime);
 
         // Spell Effects
         updateSpellEffects(deltaTime);
@@ -341,12 +337,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         troopRenderer.renderPvP(pvpGameState);
         buildingRenderer.renderPvP(pvpGameState);
 
-        // Render projectiles for all combatants
-        java.util.List<com.kuroyale.model.entities.ICombatant> combatants = new java.util.ArrayList<>();
-        combatants.addAll(arena.getAllTowers());
-        combatants.addAll(pvpGameState.getActiveBuildings());
-        combatants.addAll(pvpGameState.getActiveTroops());
-        projectileRenderer.render(combatants, deltaTime);
+        // Render projectiles from state
+        projectileRenderer.render(pvpGameState.getProjectiles(), deltaTime);
 
         // Spell Effects
         updateSpellEffects(deltaTime);
