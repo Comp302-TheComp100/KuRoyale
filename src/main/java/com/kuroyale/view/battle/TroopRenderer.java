@@ -83,13 +83,18 @@ public class TroopRenderer {
         if (worldPos == null)
             return;
 
-        double visualX = (worldPos.getX() - 0.5) * TILE_SIZE;
-        double visualY = (worldPos.getY() - 0.5) * TILE_SIZE;
+        // Get sprite size from card
+        double spriteW = troop.getBaseCard().getSpriteWidthTiles() * TILE_SIZE;
+        double spriteH = troop.getBaseCard().getSpriteHeightTiles() * TILE_SIZE;
+
+        // Center sprite on world position
+        double visualX = worldPos.getX() * TILE_SIZE - spriteW / 2;
+        double visualY = worldPos.getY() * TILE_SIZE - spriteH / 2;
 
         GridPosition gridPos = troop.getPosition();
         Node cellNode = gridPos != null ? gridCellProvider.apply(gridPos.getX(), gridPos.getY()) : null;
         Bounds cellBounds = cellNode != null ? cellNode.getBoundsInParent()
-                : new javafx.geometry.BoundingBox(visualX, visualY, TILE_SIZE, TILE_SIZE);
+                : new javafx.geometry.BoundingBox(visualX, visualY, spriteW, spriteH);
 
         lastTroopPositions.put(troop, new Point2D(visualX, visualY));
 
@@ -106,22 +111,27 @@ public class TroopRenderer {
         unitNode.setLayoutX(visualX);
         unitNode.setLayoutY(visualY);
 
-        renderHealthBar(troop, visualX, visualY, cellBounds);
+        renderHealthBar(troop, visualX, visualY, spriteW, spriteH);
         renderProjectilePvP(troop, visualX, visualY, cellBounds, pvpGameState);
     }
 
     private Node createTroopVisualPvP(Troop troop, String cardName) {
+        // Get sprite size from card
+        double spriteW = troop.getBaseCard().getSpriteWidthTiles() * TILE_SIZE;
+        double spriteH = troop.getBaseCard().getSpriteHeightTiles() * TILE_SIZE;
+
         try {
             String imgPath = troop.getBaseCard().getImagePath();
             javafx.scene.image.Image img = new javafx.scene.image.Image(getClass().getResourceAsStream(imgPath));
             javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(img);
-            iv.setFitWidth(TILE_SIZE);
-            iv.setFitHeight(TILE_SIZE);
+            iv.setFitWidth(spriteW);
+            iv.setFitHeight(spriteH);
             iv.setPreserveRatio(true);
             iv.setSmooth(true);
             return iv;
         } catch (Exception e) {
-            Circle fallback = new Circle(TILE_SIZE / 2.5);
+            double radius = Math.min(spriteW, spriteH) / 2.5;
+            Circle fallback = new Circle(radius);
             fallback.setFill(troop.isPlayerSide() ? (troop.isAirUnit() ? Color.DODGERBLUE : Color.BLUE)
                     : (troop.isAirUnit() ? Color.ORANGERED : Color.RED));
             return fallback;
@@ -224,16 +234,19 @@ public class TroopRenderer {
         if (worldPos == null)
             return;
 
-        // Calculate visual position (subtract 0.5 to get top-left as Vector2 is
-        // centered)
-        double visualX = (worldPos.getX() - 0.5) * TILE_SIZE;
-        double visualY = (worldPos.getY() - 0.5) * TILE_SIZE;
+        // Get sprite size from card
+        double spriteW = troop.getBaseCard().getSpriteWidthTiles() * TILE_SIZE;
+        double spriteH = troop.getBaseCard().getSpriteHeightTiles() * TILE_SIZE;
+
+        // Center sprite on world position
+        double visualX = worldPos.getX() * TILE_SIZE - spriteW / 2;
+        double visualY = worldPos.getY() * TILE_SIZE - spriteH / 2;
 
         // Get cell bounds or default bounds for HUD alignment
         GridPosition gridPos = troop.getPosition();
         Node cellNode = gridPos != null ? gridCellProvider.apply(gridPos.getX(), gridPos.getY()) : null;
         Bounds cellBounds = cellNode != null ? cellNode.getBoundsInParent()
-                : new javafx.geometry.BoundingBox(visualX, visualY, TILE_SIZE, TILE_SIZE);
+                : new javafx.geometry.BoundingBox(visualX, visualY, spriteW, spriteH);
 
         lastTroopPositions.put(troop, new Point2D(visualX, visualY));
 
@@ -251,30 +264,34 @@ public class TroopRenderer {
         unitNode.setLayoutX(visualX);
         unitNode.setLayoutY(visualY);
 
-        renderHealthBar(troop, visualX, visualY, cellBounds);
+        renderHealthBar(troop, visualX, visualY, spriteW, spriteH);
         renderProjectile(troop, visualX, visualY, cellBounds, gameState);
     }
 
     private Node createTroopVisual(Troop troop, String cardName, GameState gameState) {
+        // Get sprite size from card
+        double spriteW = troop.getBaseCard().getSpriteWidthTiles() * TILE_SIZE;
+        double spriteH = troop.getBaseCard().getSpriteHeightTiles() * TILE_SIZE;
 
         try {
             String imgPath = troop.getBaseCard().getImagePath();
             javafx.scene.image.Image img = new javafx.scene.image.Image(getClass().getResourceAsStream(imgPath));
             javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(img);
-            iv.setFitWidth(TILE_SIZE);
-            iv.setFitHeight(TILE_SIZE);
+            iv.setFitWidth(spriteW);
+            iv.setFitHeight(spriteH);
             iv.setPreserveRatio(true);
             iv.setSmooth(true);
             return iv;
         } catch (Exception e) {
-            Circle fallback = new Circle(TILE_SIZE / 2.5);
+            double radius = Math.min(spriteW, spriteH) / 2.5;
+            Circle fallback = new Circle(radius);
             fallback.setFill(troop.isPlayerSide() ? (troop.isAirUnit() ? Color.DODGERBLUE : Color.BLUE)
                     : (troop.isAirUnit() ? Color.ORANGERED : Color.RED));
             return fallback;
         }
     }
 
-    private void renderHealthBar(Troop troop, double visualX, double visualY, Bounds cellBounds) {
+    private void renderHealthBar(Troop troop, double visualX, double visualY, double spriteW, double spriteH) {
         double maxHp = troop.getBaseCard().getHp();
         double curHp = Math.max(0, troop.getCurrentHealth());
         double pct = maxHp > 0 ? (curHp / maxHp) : 0.0;
@@ -285,7 +302,7 @@ public class TroopRenderer {
             troopHealthBars.put(troop, hpBar);
             unitLayer.getChildren().addAll(hpBar.background, hpBar.foreground);
         }
-        hpBar.update(visualX, visualY, cellBounds.getWidth(), cellBounds.getHeight(), pct, troop.isPlayerSide());
+        hpBar.update(visualX, visualY, spriteW, spriteH, pct, troop.isPlayerSide());
     }
 
     private void renderProjectile(Troop troop, double visualX, double visualY, Bounds cellBounds, GameState gameState) {

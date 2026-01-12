@@ -12,10 +12,13 @@ import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.Deck;
 import com.kuroyale.model.logic.DeckBuilderModel;
 import com.kuroyale.model.entities.User;
+import com.kuroyale.model.enums.ComboType;
+import com.kuroyale.service.DeckComboAnalyzer;
 import com.kuroyale.util.ButtonFactory;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.util.StyleHelper;
+import com.kuroyale.model.state.PvPDeckBuilderSession;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Bounds;
@@ -56,19 +59,36 @@ public class DeckBuilderController {
     private static final int SLOT_CONTAINER_HEIGHT = 280;
     private static final int RECESSED_RECT_OFFSET_Y = 20; // Deck slots are 20px lower than brown background
 
-    @FXML private AnchorPane deckSlotsBackground;
-    @FXML private AnchorPane deckSlotsContainer;
-    @FXML private AnchorPane cardsGridBackground;
-    @FXML private GridPane cardsGrid;
-    @FXML private ScrollPane cardsScrollPane;
-    @FXML private StackPane rootPane;
-    @FXML private Button backButton;
-    @FXML private Label averageElixirValue;
-    @FXML private Label battleDeckTitle;
-    @FXML private HBox averageElixirContainer;
+    @FXML
+    private AnchorPane deckSlotsBackground;
+    @FXML
+    private AnchorPane deckSlotsContainer;
+    @FXML
+    private AnchorPane cardsGridBackground;
+    @FXML
+    private GridPane cardsGrid;
+    @FXML
+    private ScrollPane cardsScrollPane;
+    @FXML
+    private StackPane rootPane;
+    @FXML
+    private Button backButton;
+    @FXML
+    private Label averageElixirValue;
+    @FXML
+    private Label battleDeckTitle;
+    @FXML
+    private HBox averageElixirContainer;
+    @FXML
+    private VBox comboPanel;
+    @FXML
+    private VBox comboList;
+    @FXML
+    private ScrollPane comboScrollPane;
 
     private final DeckBuilderModel model = new DeckBuilderModel();
     private final SceneLoader sceneLoader = new SceneLoader();
+    private final DeckComboAnalyzer comboAnalyzer = new DeckComboAnalyzer();
 
     private Deck deck;
     private List<DeckSlotView> deckSlots;
@@ -79,6 +99,15 @@ public class DeckBuilderController {
     private HBox deckSlotButtonsBox;
     private boolean replaceMode; // Track if in replace mode
     private Card cardToReplace; // Card selected for replacement
+    private boolean pvpMode = false; // Track if in PvP deck building mode
+
+    /**
+     * Set PvP mode - when true, deck is saved to session and navigates back to PvP
+     * selection.
+     */
+    public void setPvPMode(boolean pvpMode) {
+        this.pvpMode = pvpMode;
+    }
 
     @FXML
     private void initialize() {
@@ -113,6 +142,9 @@ public class DeckBuilderController {
         cardsScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
             removeCardButtons();
         });
+
+        // Initialize combo panel display
+        updateComboPanel();
     }
 
     // Apply styles to deck builder components
@@ -241,9 +273,11 @@ public class DeckBuilderController {
         reorganizeCardGrid();
     }
 
-    /* Reorganizes the bottom card grid so visible cards fill rows of 4
+    /*
+     * Reorganizes the bottom card grid so visible cards fill rows of 4
      * Cards are always shown in the same consistent order
-     * Only cards NOT in the deck are displayed*/
+     * Only cards NOT in the deck are displayed
+     */
     private void reorganizeCardGrid() {
         // Clear the grid
         cardsGrid.getChildren().clear();
@@ -546,6 +580,9 @@ public class DeckBuilderController {
 
             // Auto-save deck
             saveDeck();
+
+            // Update combo panel
+            updateComboPanel();
         }
     }
 
@@ -573,6 +610,9 @@ public class DeckBuilderController {
 
             // Auto-save deck
             saveDeck();
+
+            // Update combo panel
+            updateComboPanel();
         }
     }
 
@@ -630,6 +670,9 @@ public class DeckBuilderController {
 
             // Auto-save deck
             saveDeck();
+
+            // Update combo panel
+            updateComboPanel();
         }
     }
 
@@ -686,7 +729,8 @@ public class DeckBuilderController {
         }
     }
 
-    // Loads the user's saved deck from their account with exact slot positions of cards
+    // Loads the user's saved deck from their account with exact slot positions of
+    // cards
     private void loadUserDeck() {
         Map<Integer, Card> deckMap = model.loadUserDeckWithPositions();
 
@@ -733,10 +777,125 @@ public class DeckBuilderController {
             return;
         }
 
-        try {
-            sceneLoader.load(backButton, "/fxml/main-menu.fxml", "KU Royale", null);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (pvpMode) {
+            // Save deck to PvP session and return to PvP selection
+            PvPDeckBuilderSession session = PvPDeckBuilderSession.getInstance();
+            session.saveBuiltDeck(deck);
+            try {
+                sceneLoader.load(backButton, "/fxml/pvp-deck-selection.fxml", "KU Royale - PvP Deck Selection", null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                sceneLoader.load(backButton, "/fxml/main-menu.fxml", "KU Royale", null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+    }
+
+    // Updates the combo panel to show available combos based on current deck
+    private void updateComboPanel() {
+        if (comboList == null)
+            return;
+
+        comboList.getChildren().clear();
+
+        // Get available combos from deck
+        List<ComboType> availableCombos = comboAnalyzer.getAvailableCombos(deck);
+
+        // Get near-complete combos (missing 1 card)
+        List<DeckComboAnalyzer.NearComboInfo> nearComplete = comboAnalyzer.getNearCompleteCombos(deck, availableCombos);
+
+        // Show achieved combos at top (green styling)
+        for (ComboType combo : availableCombos) {
+            VBox comboEntry = createAchievedComboEntry(combo);
+            comboList.getChildren().add(comboEntry);
+        }
+
+        // Add separator if there are both achieved and near-complete combos
+        if (!availableCombos.isEmpty() && !nearComplete.isEmpty()) {
+            javafx.scene.control.Separator separator = new javafx.scene.control.Separator();
+            separator.setStyle("-fx-background-color: #555; -fx-padding: 5 0 5 0;");
+            comboList.getChildren().add(separator);
+
+            Label nearLabel = new Label("Almost Complete");
+            nearLabel.setStyle(
+                    "-fx-text-fill: #999; -fx-font-size: 11px; -fx-font-style: italic; -fx-padding: 0 0 5 0;");
+            comboList.getChildren().add(nearLabel);
+        }
+
+        // Show near-complete combos (grey styling with what's needed)
+        for (DeckComboAnalyzer.NearComboInfo info : nearComplete) {
+            VBox comboEntry = createNearComboEntry(info);
+            comboList.getChildren().add(comboEntry);
+        }
+
+        // Style the scroll pane
+        if (comboScrollPane != null) {
+            comboScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            comboScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        }
+    }
+
+    // Creates a visual entry for an achieved combo (green styling)
+    private VBox createAchievedComboEntry(ComboType combo) {
+        VBox entry = new VBox(4);
+        entry.setStyle(
+                "-fx-background-color: linear-gradient(to right, rgba(40, 80, 40, 0.9), rgba(30, 60, 30, 0.9)); " +
+                        "-fx-background-radius: 10; -fx-padding: 10 12; " +
+                        "-fx-border-color: #4CAF50; -fx-border-width: 1.5; -fx-border-radius: 10; " +
+                        "-fx-effect: dropshadow(gaussian, rgba(76, 175, 80, 0.5), 8, 0.4, 0, 0);");
+
+        // Header row with name and checkmark
+        HBox headerRow = new HBox(8);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        Label checkMark = new Label("✓");
+        checkMark.setStyle("-fx-text-fill: #4CAF50; -fx-font-size: 16px; -fx-font-weight: bold;");
+
+        Label nameLabel = new Label(combo.getDisplayName());
+        nameLabel.setStyle("-fx-text-fill: #4CAF50; -fx-font-size: 14px; -fx-font-weight: bold;");
+
+        headerRow.getChildren().addAll(checkMark, nameLabel);
+
+        // Effect description
+        Label effectLabel = new Label("⚡ " + combo.getEffectDescription());
+        effectLabel.setStyle("-fx-text-fill: #90EE90; -fx-font-size: 12px;");
+
+        entry.getChildren().addAll(headerRow, effectLabel);
+        return entry;
+    }
+
+    // Creates a visual entry for a near-complete combo (grey styling)
+    private VBox createNearComboEntry(DeckComboAnalyzer.NearComboInfo info) {
+        VBox entry = new VBox(4);
+        entry.setStyle(
+                "-fx-background-color: linear-gradient(to right, rgba(50, 50, 50, 0.8), rgba(40, 40, 40, 0.8)); " +
+                        "-fx-background-radius: 10; -fx-padding: 10 12; " +
+                        "-fx-border-color: #666; -fx-border-width: 1; -fx-border-radius: 10;");
+
+        // Header row with name
+        HBox headerRow = new HBox(8);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        Label nameLabel = new Label(info.combo.getDisplayName());
+        nameLabel.setStyle("-fx-text-fill: #bbb; -fx-font-size: 13px; -fx-font-weight: bold;");
+
+        headerRow.getChildren().add(nameLabel);
+
+        // Effect description
+        Label effectLabel = new Label("⚡ " + info.combo.getEffectDescription());
+        effectLabel.setStyle("-fx-text-fill: #888; -fx-font-size: 11px;");
+
+        // What's needed
+        Label needLabel = new Label("➕ " + info.missingCard);
+        needLabel.setStyle("-fx-text-fill: #f7b32b; -fx-font-size: 11px; -fx-font-weight: bold;");
+        needLabel.setWrapText(true);
+        needLabel.setMaxWidth(250);
+
+        entry.getChildren().addAll(headerRow, effectLabel, needLabel);
+        return entry;
     }
 }

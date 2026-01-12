@@ -24,6 +24,7 @@ public class ElixirBar extends VBox {
         this.setMinWidth(220); // Ensure it has a minimum width
         this.setMaxWidth(220); // Ensure it does not stretch beyond minimum width
         this.setMinHeight(60); // Ensure it has a minimum height
+        this.setMaxHeight(60); // Ensure it does not stretch beyond minimum height
 
         // HBox to contain label and x2 indicator
         HBox labelContainer = new HBox(10);

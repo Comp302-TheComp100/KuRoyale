@@ -25,7 +25,7 @@ public class GameState implements IBattleState {
     private double gameTime = 180.0; // 3 minutes
     private int playerScore = 0, botScore = 0;
 
-    private boolean isDoubleElixir = false, isGameOver = false, playerWon = false;
+    private boolean isDoubleElixir = false, isGameOver = false, playerWon = false, isDraw = false;
 
     // Track towers that have already been scored to avoid double-counting
     private java.util.Set<Tower> scoredTowers = new java.util.HashSet<>();
@@ -152,7 +152,8 @@ public class GameState implements IBattleState {
                             // Bot has the weakest tower -> Player wins
                             playerWon = true;
                         } else {
-                            // Equal lowest HP -> Draw (very rare)
+                            // Equal lowest HP -> True Draw (very rare)
+                            isDraw = true;
                             playerWon = false;
                         }
                     }
@@ -243,6 +244,10 @@ public class GameState implements IBattleState {
         return playerWon;
     }
 
+    public boolean isDraw() {
+        return isDraw;
+    }
+
     public int getPlayerDamageTaken() {
         int damage = 0;
         // Optimization: Use getAllTowers() which is O(1-6) instead of scanning the grid
@@ -292,9 +297,9 @@ public class GameState implements IBattleState {
             }
 
             if (playerElixir.getCurrentElixir() >= cost) {
-                boolean success = spawnUnit(true, card, x, y);
+                java.util.List<ICombatant> spawnedUnits = spawnUnit(true, card, x, y);
 
-                if (success) {
+                if (spawnedUnits != null) {
                     playerElixir.spend(cost);
                     playerHand.playCard(handIndex);
 
@@ -302,7 +307,7 @@ public class GameState implements IBattleState {
                     GameEventBus.getInstance().publishElixirSpent(true, cost);
                 }
 
-                return success;
+                return spawnedUnits != null;
             } else {
                 // Yetersiz iksir
                 return false;
@@ -338,7 +343,7 @@ public class GameState implements IBattleState {
             spawnCard.setLevel(card.getLevel());
         }
 
-        return spawnTroopGroup(isPlayer, spawnCard, x, y);
+        return spawnTroopGroup(isPlayer, spawnCard, x, y) != null;
     }
 
     public GridPosition getFrontPosition(Building b) {
@@ -362,51 +367,55 @@ public class GameState implements IBattleState {
         spawnUnit(isPlayer, card, x, y);
     }
 
-    private boolean spawnUnit(boolean isPlayer, Card card, int x, int y) {
+    private java.util.List<ICombatant> spawnUnit(boolean isPlayer, Card card, int x, int y) {
         if (card == null)
-            return false;
+            return null;
 
-        boolean success = false;
+        java.util.List<ICombatant> spawnedUnits = null;
         if (card.getType() == CardType.BUILDING) {
-            success = spawnBuilding(isPlayer, card, x, y);
+            spawnedUnits = spawnBuilding(isPlayer, card, x, y);
         } else if (card.getType() == CardType.TROOP) {
-            success = spawnTroopGroup(isPlayer, card, x, y);
+            spawnedUnits = spawnTroopGroup(isPlayer, card, x, y);
         } else if (card.getType() == CardType.SPELL) {
             applySpellEffect(isPlayer, card, x, y);
-            success = true;
+            spawnedUnits = new java.util.ArrayList<>();
         }
 
-        if (success) {
+        if (spawnedUnits != null) {
             // 2. Add to Placed History
             placedCards.add(new PlacedCard(card, x, y, isPlayer));
 
-            // 3. Quests & Achievements (Player Only)
-            if (isPlayer) {
-                GameEventBus.getInstance().publishCardPlayed(true, card);
-            }
+            // 3. Quests & Achievements (Player Only - listeners will filter)
+            // Correction: ComboService needs this for Bot too.
+            // Quests should filter by isPlayer themselves if needed.
+            GameEventBus.getInstance().publishCardPlayed(isPlayer, card, spawnedUnits);
         }
 
-        return success;
+        return spawnedUnits;
     }
 
-    private boolean spawnBuilding(boolean isPlayer, Card card, int x, int y) {
+    private java.util.List<ICombatant> spawnBuilding(boolean isPlayer, Card card, int x, int y) {
         int bw = Math.max(1, card.getFootprintWidthTiles());
         int bh = Math.max(1, card.getFootprintHeightTiles());
 
-        if (x < 0 || y < 0 || (x + bw) > Arena.WIDTH || (y + bh) > Arena.HEIGHT) {
-            return false;
+        // Center the building on the clicked tile by offsetting top-left position
+        int topLeftX = x - (bw / 2);
+        int topLeftY = y - (bh / 2);
+
+        if (topLeftX < 0 || topLeftY < 0 || (topLeftX + bw) > Arena.WIDTH || (topLeftY + bh) > Arena.HEIGHT) {
+            return null;
         }
 
         for (int dx = 0; dx < bw; dx++) {
             for (int dy = 0; dy < bh; dy++) {
-                GridCell c = arena.getCell(x + dx, y + dy);
+                GridCell c = arena.getCell(topLeftX + dx, topLeftY + dy);
                 if (c == null || c.isOccupied() || !c.isWalkable()) {
-                    return false;
+                    return null;
                 }
             }
         }
 
-        GridPosition topLeft = GridPosition.tryCreate(x, y);
+        GridPosition topLeft = GridPosition.tryCreate(topLeftX, topLeftY);
         if (topLeft != null) {
             Building building = new Building(topLeft, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
                     card.getLifetime());
@@ -420,12 +429,15 @@ public class GameState implements IBattleState {
             arena.occupyFootprint(building);
             activeBuildings.add(building);
             arena.getSpatialGrid().add(building);
-            return true;
+
+            java.util.List<ICombatant> result = new java.util.ArrayList<>();
+            result.add(building);
+            return result;
         }
-        return false;
+        return null;
     }
 
-    private boolean spawnTroopGroup(boolean isPlayer, Card card, int x, int y) {
+    private java.util.List<ICombatant> spawnTroopGroup(boolean isPlayer, Card card, int x, int y) {
         final int[][] OFFSETS = {
                 { 0, 0 }, { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 },
                 { 1, 1 }, { -1, -1 }, { 1, -1 }, { -1, 1 },
@@ -433,6 +445,8 @@ public class GameState implements IBattleState {
         };
 
         int count = Math.max(1, card.getCount());
+        java.util.List<ICombatant> spawned = new java.util.ArrayList<>();
+
         for (int i = 0; i < count; i++) {
             int[] offset = (i < OFFSETS.length) ? OFFSETS[i] : OFFSETS[0];
             int spawnX = x + offset[0];
@@ -456,9 +470,10 @@ public class GameState implements IBattleState {
                 Troop troop = new Troop(card, spawn, isPlayer);
                 activeTroops.add(troop);
                 arena.getSpatialGrid().add(troop);
+                spawned.add(troop);
             }
         }
-        return true;
+        return spawned;
     }
 
     public Hand getPlayerHand() {

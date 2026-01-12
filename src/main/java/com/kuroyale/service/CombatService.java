@@ -83,29 +83,7 @@ public class CombatService {
         }
     }
 
-    /**
-     * Processes combat logic for a single combatant (Troop, Building, or Tower).
-     * Handles status effects, cooldown management, target acquisition, state
-     * transitions, and attack execution.
-     *
-     * @requires attacker != null && state != null
-     * @modifies attacker, state
-     * @effects
-     * 
-     *          <pre>
-     *          - If attacker is not alive, does nothing.
-     *          - Updates attacker's status effects (e.g., stun duration).
-     *          - If attacker is stunned, sets unit state to STUNNED (if Troop) and returns.
-     *          - Decrements attack cooldown.
-     *          - If current target is invalid (dead, out of range, null), attempts to find a new nearest target.
-     *          - If a new target is found and attacker is a Troop, sets state to ATTACKING.
-     *          - If target is lost and was ATTACKING, resets Troop state to MOVING.
-     *          - If target is valid and cooldown is ready, performs attack and resets cooldown.
-     *          - If no target, tick down cooldown and handles building periodic spawning.
-     *          </pre>
-     */
-    protected void processCombatant(ICombatant attacker, com.kuroyale.model.logic.IBattleState state,
-            double deltaTime) {
+    private void processCombatant(ICombatant attacker, com.kuroyale.model.logic.IBattleState state, double deltaTime) {
         if (!attacker.isAlive())
             return;
 
@@ -302,7 +280,15 @@ public class CombatService {
     }
 
     private double getDistanceToTarget(ICombatant attacker, ICombatant target) {
-        com.kuroyale.model.entities.GridPosition from = attacker.getPosition(); // Usually attacker's position
+        // For structures attacking troops: measure from structure's perimeter to troop
+        // This ensures symmetry: if a troop can hit a tower from distance X,
+        // the tower can also see the troop from the same effective distance
+        if ((attacker instanceof Tower || attacker instanceof Building) && target instanceof Troop) {
+            // Measure from attacker's nearest perimeter tile to the troop position
+            return distanceToCombatantPerimeter(target.getPosition(), attacker);
+        }
+
+        com.kuroyale.model.entities.GridPosition from = attacker.getPosition();
         if (attacker instanceof Tower || attacker instanceof Building) {
             from = attacker.getCenterPosition();
         }
