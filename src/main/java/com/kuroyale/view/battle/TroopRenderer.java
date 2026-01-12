@@ -3,8 +3,6 @@ package com.kuroyale.view.battle;
 import com.kuroyale.model.logic.GameState;
 import com.kuroyale.model.entities.Troop;
 import com.kuroyale.model.entities.GridPosition;
-import com.kuroyale.model.enums.UnitState;
-import com.kuroyale.model.entities.CombatStats;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;

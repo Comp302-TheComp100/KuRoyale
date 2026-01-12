@@ -1,6 +1,5 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.entities.ICombatant;
 import com.kuroyale.model.entities.Projectile;
 import com.kuroyale.model.entities.Vector2;
 import javafx.scene.Node;

@@ -265,4 +265,8 @@ public class Troop implements ICombatant {
                     this.combatStats.getRangeTiles(), this.combatStats.getAttackType());
         }
     }
+
+    public boolean isMelee() {
+        return combatStats != null && combatStats.getAttackType() == CombatStats.AttackType.MELEE;
+    }
 }

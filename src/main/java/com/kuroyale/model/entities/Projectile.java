@@ -59,12 +59,6 @@ public class Projectile {
         if (target == null)
             return;
         GridPosition p = target.getCenterPosition();
-        // Fallback for buildings/large units to aim for center
-        if (target instanceof Building || target instanceof Tower) {
-            // For structures, we might want to aim at the *nearest edge* or just center?
-            // Center is safer for visuals.
-            // p is already Center from getCenterPosition()
-        }
 
         if (p != null) {
             this.targetPosSnapshot = new Vector2(p.getX() + 0.5, p.getY() + 0.5);

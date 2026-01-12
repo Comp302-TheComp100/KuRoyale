@@ -201,17 +201,10 @@ public class CombatService {
         boolean isMelee = false;
 
         if (attacker instanceof Troop t) {
-            if (t.getCombatStats() != null
-                    && t.getCombatStats().getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
+            if (t.isMelee()) {
                 isMelee = true;
             }
         }
-
-        // Buildings like Tesla/Cannon are projectiles?
-        // Towers are projectiles.
-        // Usually only "Troops with MELEE attack type" are instant.
-        // Inferno Tower? (Has cooldown but continuous). Treating as instant for now
-        // unless I add Beam logic.
 
         if (isMelee) {
             // Instant Damage
