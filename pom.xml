@@ -53,6 +53,13 @@
             <version>20240303</version>
         </dependency>
         
+        <!-- UPnP library for automatic port forwarding -->
+        <dependency>
+            <groupId>org.bitlet</groupId>
+            <artifactId>weupnp</artifactId>
+            <version>0.1.4</version>
+        </dependency>
+        
         <!-- JUnit 5 for testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

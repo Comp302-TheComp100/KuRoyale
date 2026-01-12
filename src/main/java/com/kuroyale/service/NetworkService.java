@@ -8,6 +8,7 @@ import java.net.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.Enumeration;
+import java.util.function.BiConsumer;
 
 /**
  * Service for handling network multiplayer connections.
@@ -67,15 +68,50 @@ public class NetworkService {
     private String playerName;
     private String opponentName;
     
+    // UPnP support
+    private final UPnPService upnpService;
+    private boolean upnpPortOpened = false;
+    private int hostedPort = -1;
+    
+    // Callback for UPnP status updates
+    private BiConsumer<Boolean, String> onUPnPStatusChanged;
+    
     public NetworkService() {
         this.config = NetworkConfig.getInstance();
         this.executorService = Executors.newCachedThreadPool();
+        this.upnpService = UPnPService.getInstance();
         
         // Add shutdown hook to ensure cleanup on JVM exit
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("[NetworkService] Shutdown hook triggered");
             forceCloseAllSockets();
+            // Close UPnP port mapping
+            if (upnpPortOpened) {
+                upnpService.closeCurrentPort();
+            }
         }));
+        
+        // Initialize UPnP in the background
+        initializeUPnP();
+    }
+    
+    /**
+     * Initializes UPnP discovery in the background.
+     */
+    private void initializeUPnP() {
+        upnpService.initialize().thenAccept(available -> {
+            if (available) {
+                System.out.println("[NetworkService] UPnP is available - automatic port forwarding enabled");
+                if (onUPnPStatusChanged != null) {
+                    onUPnPStatusChanged.accept(true, "UPnP available: " + upnpService.getGatewayName());
+                }
+            } else {
+                System.out.println("[NetworkService] UPnP not available - manual port forwarding may be required");
+                if (onUPnPStatusChanged != null) {
+                    onUPnPStatusChanged.accept(false, "UPnP not available");
+                }
+            }
+        });
     }
     
     /**
@@ -92,6 +128,7 @@ public class NetworkService {
     
     /**
      * Starts hosting a game on the specified port.
+     * Automatically attempts to open the port via UPnP for internet play.
      * @param port The port to listen on
      * @param playerName The host player's name
      * @return true if hosting started successfully
@@ -100,6 +137,7 @@ public class NetworkService {
         this.role = Role.HOST;
         this.playerId = 1;
         this.playerName = playerName;
+        this.hostedPort = port;
         
         try {
             serverSocket = new ServerSocket();
@@ -111,6 +149,9 @@ public class NetworkService {
             
             System.out.println("[NetworkService] Hosting on port " + port);
             
+            // Try to open port via UPnP for internet play
+            openPortViaUPnP(port);
+            
             // Accept client connection in background
             executorService.submit(this::waitForClient);
             return true;
@@ -118,6 +159,57 @@ public class NetworkService {
         } catch (IOException e) {
             handleError("Failed to start hosting: " + e.getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Attempts to open a port via UPnP for internet connectivity.
+     * This runs asynchronously and updates the UI when complete.
+     */
+    private void openPortViaUPnP(int port) {
+        if (!upnpService.isInitialized()) {
+            // Wait for UPnP initialization then try
+            upnpService.initialize().thenCompose(available -> {
+                if (available) {
+                    return upnpService.openPort(port);
+                }
+                return CompletableFuture.completedFuture(false);
+            }).thenAccept(success -> {
+                upnpPortOpened = success;
+                if (success) {
+                    String connStr = upnpService.getConnectionString(port);
+                    System.out.println("[NetworkService] UPnP port opened! Share this address: " + connStr);
+                    if (onUPnPStatusChanged != null) {
+                        onUPnPStatusChanged.accept(true, "Port opened! Share: " + connStr);
+                    }
+                } else {
+                    System.out.println("[NetworkService] UPnP port opening failed - manual port forwarding may be required");
+                    if (onUPnPStatusChanged != null) {
+                        onUPnPStatusChanged.accept(false, "UPnP failed - manual port forwarding needed");
+                    }
+                }
+            });
+        } else if (upnpService.isUPnPAvailable()) {
+            upnpService.openPort(port).thenAccept(success -> {
+                upnpPortOpened = success;
+                if (success) {
+                    String connStr = upnpService.getConnectionString(port);
+                    System.out.println("[NetworkService] UPnP port opened! Share this address: " + connStr);
+                    if (onUPnPStatusChanged != null) {
+                        onUPnPStatusChanged.accept(true, "Port opened! Share: " + connStr);
+                    }
+                } else {
+                    System.out.println("[NetworkService] UPnP port opening failed");
+                    if (onUPnPStatusChanged != null) {
+                        onUPnPStatusChanged.accept(false, "UPnP failed - manual port forwarding needed");
+                    }
+                }
+            });
+        } else {
+            System.out.println("[NetworkService] UPnP not available on this network");
+            if (onUPnPStatusChanged != null) {
+                onUPnPStatusChanged.accept(false, "UPnP not available");
+            }
         }
     }
     
@@ -385,6 +477,13 @@ public class NetworkService {
             }
         }
         
+        // Close UPnP port mapping if we opened one
+        if (upnpPortOpened && hostedPort > 0) {
+            System.out.println("[NetworkService] Closing UPnP port mapping...");
+            upnpService.closePort(hostedPort);
+            upnpPortOpened = false;
+        }
+        
         // Shutdown heartbeat scheduler
         if (heartbeatScheduler != null) {
             heartbeatScheduler.shutdownNow();
@@ -436,6 +535,7 @@ public class NetworkService {
             executorService = Executors.newCachedThreadPool(); // Create fresh one for next use
         }
         
+        hostedPort = -1;
         setState(ConnectionState.DISCONNECTED);
         System.out.println("[NetworkService] Disconnected successfully");
     }
@@ -640,6 +740,53 @@ public class NetworkService {
     
     public void setOnError(Consumer<String> callback) {
         this.onError = callback;
+    }
+    
+    /**
+     * Sets callback for UPnP status changes.
+     * @param callback BiConsumer with (success, message)
+     */
+    public void setOnUPnPStatusChanged(BiConsumer<Boolean, String> callback) {
+        this.onUPnPStatusChanged = callback;
+    }
+    
+    // UPnP related getters
+    
+    /**
+     * Checks if UPnP is available on this network.
+     */
+    public boolean isUPnPAvailable() {
+        return upnpService.isUPnPAvailable();
+    }
+    
+    /**
+     * Checks if a port was successfully opened via UPnP.
+     */
+    public boolean isUPnPPortOpened() {
+        return upnpPortOpened;
+    }
+    
+    /**
+     * Gets the shareable connection string for internet play.
+     * @return Connection string like "123.45.67.89:8080" or null
+     */
+    public String getShareableConnectionString() {
+        if (upnpPortOpened && hostedPort > 0) {
+            return upnpService.getConnectionString(hostedPort);
+        }
+        // Fallback to fetching public IP
+        String publicIP = getPublicIPAddress();
+        if (publicIP != null && hostedPort > 0) {
+            return publicIP + ":" + hostedPort;
+        }
+        return null;
+    }
+    
+    /**
+     * Gets the UPnP service instance for advanced usage.
+     */
+    public UPnPService getUPnPService() {
+        return upnpService;
     }
 }
 

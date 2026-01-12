@@ -122,6 +122,23 @@ public class NetworkLobbyController {
         networkService.setOnMessageReceived(message -> Platform.runLater(() -> handleNetworkMessage(message)));
         
         networkService.setOnError(error -> Platform.runLater(() -> showError(error)));
+        
+        // UPnP status callback - updates connection info when port is opened
+        networkService.setOnUPnPStatusChanged((success, message) -> Platform.runLater(() -> {
+            if (connectionInfoLabel != null && waitingPane.isVisible()) {
+                if (success) {
+                    String connStr = networkService.getShareableConnectionString();
+                    if (connStr != null) {
+                        connectionInfoLabel.setText("✓ Share this address with your friend:\n" + connStr);
+                        waitingLabel.setText("Port opened automatically!\nWaiting for opponent...");
+                    }
+                } else {
+                    // UPnP failed - show manual instructions
+                    connectionInfoLabel.setText("Local: " + networkService.getLocalIPAddress() + ":" + portField.getText() + 
+                            "\n⚠ Auto port-forward failed. May need manual setup.");
+                }
+            }
+        }));
     }
     
     private void handleNetworkMessage(NetworkMessage message) {
@@ -241,8 +258,26 @@ public class NetworkLobbyController {
         
         if (networkService.startHosting(port, playerName)) {
             showPane(waitingPane);
-            waitingLabel.setText("Waiting for opponent to connect...");
-            connectionInfoLabel.setText("IP: " + networkService.getLocalIPAddress() + "  Port: " + port);
+            waitingLabel.setText("Setting up connection...\n(Attempting automatic port forwarding)");
+            connectionInfoLabel.setText("Local: " + networkService.getLocalIPAddress() + ":" + port + 
+                    "\nConfiguring router...");
+            
+            // Fetch public IP for fallback display
+            networkService.fetchPublicIPAsync(publicIP -> Platform.runLater(() -> {
+                // Only update if UPnP hasn't already updated it
+                if (!networkService.isUPnPPortOpened() && waitingPane.isVisible()) {
+                    if (publicIP != null) {
+                        connectionInfoLabel.setText(
+                                "Local (same network): " + networkService.getLocalIPAddress() + ":" + port +
+                                "\nPublic (internet): " + publicIP + ":" + port +
+                                "\n⚠ If connection fails, enable port forwarding on router");
+                    } else {
+                        connectionInfoLabel.setText(
+                                "Local: " + networkService.getLocalIPAddress() + ":" + port);
+                    }
+                    waitingLabel.setText("Waiting for opponent to connect...");
+                }
+            }));
         }
     }
     

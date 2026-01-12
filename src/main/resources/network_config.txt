@@ -15,7 +15,7 @@ DEFAULT_PORT=8080
 # How long to wait when attempting to connect to a host
 # Valid range: 1000-30000
 # Default: 5000 (5 seconds)
-CONNECTION_TIMEOUT=5000
+CONNECTION_TIMEOUT=15000
 
 # Number of reconnection attempts if connection is lost during a match
 # Valid range: 1-10
