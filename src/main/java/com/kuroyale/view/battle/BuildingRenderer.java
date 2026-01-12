@@ -152,6 +152,9 @@ public class BuildingRenderer {
         StackPane.setMargin(hpNodes.root, new javafx.geometry.Insets(-35, 0, 0, 0));
         buildingStack.getChildren().add(hpNodes.root);
 
+        // Apply initial color and width
+        HealthBarRenderer.updateHealthBar(hpNodes, b.getCurrentHealth(), b.getMaxHealth(), b.isPlayerSide());
+
         // Add Elixir Bar if applicable
         Rectangle elixirFg = null;
         if ("ELIXIR".equals(b.getProductionResource())) {

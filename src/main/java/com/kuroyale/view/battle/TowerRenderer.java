@@ -10,7 +10,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,8 +17,7 @@ import java.util.Map;
 public class TowerRenderer {
     private final GridPane grid;
     private final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
-    private final Map<String, Rectangle> towerHpForegrounds = new HashMap<>();
-    private final Map<String, Text> towerHpTexts = new HashMap<>();
+    private final Map<String, HealthBarRenderer.HealthBarNodes> towerHpNodes = new HashMap<>();
     private final Map<GridPosition, Node> activeTowerVisuals = new HashMap<>();
 
     public interface CellIndexer {
@@ -114,10 +112,12 @@ public class TowerRenderer {
         HealthBarRenderer.HealthBarNodes hpNodes = HealthBarRenderer.createDetailedHealthBar(
                 width, com.kuroyale.util.GameConstants.HEALTH_BAR_HEIGHT_TEXT, currentHealth);
 
-        // Store foreground and text references for updates
-        String towerKey = x + "_" + y;
-        towerHpForegrounds.put(towerKey, hpNodes.foreground);
-        towerHpTexts.put(towerKey, hpNodes.text);
+        // Store nodes for updates
+        towerHpNodes.put(x + "_" + y, hpNodes);
+
+        // Set initial color and width
+        HealthBarRenderer.updateHealthBar(hpNodes, currentHealth, (tower != null) ? tower.getMaxHealth() : 1.0,
+                (tower != null) && tower.isPlayerSide());
 
         if (tower != null && tower.isPlayerSide()) {
             // Player Tower: Bottom
@@ -156,19 +156,11 @@ public class TowerRenderer {
         if (tower == null)
             return;
 
-        double currentHealth = tower.getCurrentHealth();
-        double maxHealth = tower.getMaxHealth();
-        double width = size == 4 ? 50 : 40;
-        double pct = maxHealth > 0 ? Math.max(0, currentHealth) / maxHealth : 0.0;
-
         String towerKey = x + "_" + y;
-        Rectangle fgNode = towerHpForegrounds.get(towerKey);
-        if (fgNode != null) {
-            fgNode.setWidth(width * pct);
-        }
-        Text textNode = towerHpTexts.get(towerKey);
-        if (textNode != null) {
-            textNode.setText(String.format("%.0f", currentHealth));
+        HealthBarRenderer.HealthBarNodes nodes = towerHpNodes.get(towerKey);
+        if (nodes != null) {
+            HealthBarRenderer.updateHealthBar(nodes, tower.getCurrentHealth(), tower.getMaxHealth(),
+                    tower.isPlayerSide());
         }
     }
 
