@@ -269,23 +269,20 @@ public class TroopMovementService {
                     // Push away from other troop (radial)
                     away = proposedPos.subtract(otherPos).normalize();
 
-                    // Tangential force to encourage sliding but avoid swirling (Parallel Slide)
-                    // Standard perpendicular vector
+                    // Tangential force (Parallel Slide)
+                    // We reduce this slightly to rely more on the new Wall Sliding logic below
                     Vector2 tangential = new Vector2(-away.getY(), away.getX());
 
-                    // We want both units to slide in the SAME world direction to avoid
-                    // rotation/swirling.
-                    // Since 'away' vectors are opposite for the two units, the default tangential
-                    // vectors are also opposite (causing rotation).
+                    // Consistent slide direction
                     if (System.identityHashCode(self) < System.identityHashCode(other)) {
                         tangential = tangential.multiply(-1);
                     }
 
-                    // Add tangential component (weighted) -> Mix 70% Push, 30% Slide
-                    away = away.add(tangential.multiply(0.3)).normalize();
+                    // weighted: 80% Push, 20% Slide
+                    away = away.add(tangential.multiply(0.2)).normalize();
                 }
 
-                // Strength increases as they get closer
+                // Strength increases as they get closer (0.0 to 1.0)
                 double strength = (SEPARATION_RADIUS - dist) / SEPARATION_RADIUS;
                 separation = separation.add(away.multiply(strength));
                 count++;
@@ -293,30 +290,49 @@ public class TroopMovementService {
         }
 
         if (count > 0) {
-            // Normalize separation to prevent it from growing too large with many neighbors
-            // And scale by deltaTime to treat it as a velocity/force rather than
-            // instantaneous offset
-            separation = separation.multiply(1.0 / count); // Average direction/strength
+            // Average the direction
+            separation = separation.multiply(1.0 / count);
 
-            // Separation speed: how fast they push apart.
-            // Should be high enough to resolve overlaps but not crazy.
-            // 2.0 is comparable to fast unit speed.
+            // Speed logic:
+            // Previous code normalized result, which threw away the 'strength' urgency.
+            // Here we keep the magnitude (0 to 1) representing how "crowded" it is.
+            double urgency = separation.length();
+            if (urgency > 1.0)
+                urgency = 1.0;
+
+            // Normalize direction but scale speed by urgency
+            Vector2 pushDir = separation.normalize();
             double separationSpeed = 2.0;
-            Vector2 push = separation.normalize().multiply(separationSpeed * deltaTime);
+            Vector2 push = pushDir.multiply(separationSpeed * urgency * deltaTime);
 
-            Vector2 newPos = proposedPos.add(push);
+            Vector2 finalPos = proposedPos.add(push);
 
-            // Ensure we don't push into a wall/water
+            // WALL SLIDING / COLLISION CHECK
             if (arena != null) {
-                GridPosition gp = newPos.toGridPosition();
-                if (isWalkable(arena, gp.getX(), gp.getY())) {
-                    return newPos;
+                // 1. Try full move
+                GridPosition gpFixed = finalPos.toGridPosition();
+                if (isWalkable(arena, gpFixed.getX(), gpFixed.getY())) {
+                    return finalPos;
                 }
-                // If blocked, try ignoring the push or reducing it?
-                // For now, just discard separation if it pushes into a wall to avoid sticking
+
+                // 2. Try moving X only (Side-to-side slide)
+                Vector2 posXOnly = new Vector2(finalPos.getX(), proposedPos.getY());
+                GridPosition gpX = posXOnly.toGridPosition();
+                if (isWalkable(arena, gpX.getX(), gpX.getY())) {
+                    return posXOnly;
+                }
+
+                // 3. Try moving Y only (Up-down slide)
+                Vector2 posYOnly = new Vector2(proposedPos.getX(), finalPos.getY());
+                GridPosition gpY = posYOnly.toGridPosition();
+                if (isWalkable(arena, gpY.getX(), gpY.getY())) {
+                    return posYOnly;
+                }
+
+                // 4. Blocked globally -> cannot separate in this direction
                 return proposedPos;
             }
-            return newPos;
+            return finalPos;
         }
         return proposedPos;
     }
