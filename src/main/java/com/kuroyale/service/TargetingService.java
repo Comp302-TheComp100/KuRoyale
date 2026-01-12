@@ -149,7 +149,7 @@ public class TargetingService {
         if (candidate == null)
             return currentBest;
         GridCell cell = arena.getCell(candidate);
-        if (cell == null || !cell.canPlaceUnit() || cell.isOccupied())
+        if (cell == null)
             return currentBest;
         double dist = from.getEuclideanDistanceTo(candidate);
         if (currentBest == null || dist < currentBestDist) {

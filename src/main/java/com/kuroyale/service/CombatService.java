@@ -112,7 +112,7 @@ public class CombatService {
             attacker.setTarget(target);
 
             // Fix: Troops should wait for attack speed before first attack
-            if (previousTarget == null && target != null && attacker instanceof Troop && cd <= 0) {
+            if (previousTarget == null && target != null && cd <= 0) {
                 cd = attacker.getHitSpeed();
                 attacker.setAttackCooldown(cd);
             }
