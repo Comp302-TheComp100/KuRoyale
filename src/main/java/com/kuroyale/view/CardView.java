@@ -8,7 +8,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 
-//Simple card view component showing only image, name, and cost
 public class CardView extends StackPane {
     private final Card card;
     private final javafx.scene.shape.Rectangle dimmer;

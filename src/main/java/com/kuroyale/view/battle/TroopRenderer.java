@@ -3,13 +3,9 @@ package com.kuroyale.view.battle;
 import com.kuroyale.model.logic.GameState;
 import com.kuroyale.model.entities.Troop;
 import com.kuroyale.model.entities.GridPosition;
-import com.kuroyale.model.enums.UnitState;
-import com.kuroyale.model.entities.CombatStats;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.Rectangle;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 
@@ -22,7 +18,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 public class TroopRenderer {
-    private static final int TILE_SIZE = 18;
+    private static final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
 
     private final Pane unitLayer;
     private final BiFunction<Integer, Integer, Node> gridCellProvider;
@@ -30,7 +26,6 @@ public class TroopRenderer {
     // Tracking maps
     private final Map<Troop, Node> activeTroopVisuals = new HashMap<>();
     private final Map<Troop, HealthBarVisual> troopHealthBars = new HashMap<>(); // Pooled health bars
-    private final Map<Troop, Node> activeProjectiles = new HashMap<>();
     private final Map<Troop, Point2D> lastTroopPositions = new HashMap<>();
     private final Map<Troop, String> lastTroopState = new HashMap<>();
 
@@ -52,9 +47,6 @@ public class TroopRenderer {
         // Cleanup dead troops
         cleanupDeadTroops(currentTroops);
 
-        // Cleanup stale projectiles
-        cleanupStaleProjectiles(currentTroops);
-
         // Render active troops
         for (Troop troop : troops) {
             renderTroop(troop, gameState);
@@ -71,7 +63,6 @@ public class TroopRenderer {
         currentTroops.addAll(troops);
 
         cleanupDeadTroops(currentTroops);
-        cleanupStaleProjectiles(currentTroops);
 
         for (Troop troop : troops) {
             renderTroopPvP(troop, pvpGameState);
@@ -112,7 +103,6 @@ public class TroopRenderer {
         unitNode.setLayoutY(visualY);
 
         renderHealthBar(troop, visualX, visualY, spriteW, spriteH);
-        renderProjectilePvP(troop, visualX, visualY, cellBounds, pvpGameState);
     }
 
     private Node createTroopVisualPvP(Troop troop, String cardName) {
@@ -132,55 +122,12 @@ public class TroopRenderer {
         } catch (Exception e) {
             double radius = Math.min(spriteW, spriteH) / 2.5;
             Circle fallback = new Circle(radius);
-            fallback.setFill(troop.isPlayerSide() ? (troop.isAirUnit() ? Color.DODGERBLUE : Color.BLUE)
-                    : (troop.isAirUnit() ? Color.ORANGERED : Color.RED));
+            fallback.setFill(troop.isPlayerSide()
+                    ? (troop.isAirUnit() ? com.kuroyale.util.GameColors.PROJECTILE_USER
+                            : com.kuroyale.util.GameColors.PLAYER_TEAM)
+                    : (troop.isAirUnit() ? com.kuroyale.util.GameColors.PROJECTILE_ENEMY
+                            : com.kuroyale.util.GameColors.ENEMY_TEAM));
             return fallback;
-        }
-    }
-
-    private void renderProjectilePvP(Troop troop, double visualX, double visualY, Bounds cellBounds,
-            com.kuroyale.model.logic.PvPGameState pvpGameState) {
-        double centerX = visualX + cellBounds.getWidth() / 2.0;
-        double centerY = visualY + cellBounds.getHeight() / 2.0;
-
-        if (troop.getUnitState() == UnitState.ATTACKING &&
-                troop.getCombatStats() != null &&
-                troop.getCombatStats().getAttackType() == CombatStats.AttackType.RANGED) {
-
-            com.kuroyale.model.entities.ICombatant target = troop.getTarget();
-            if (target != null && target.isAlive()) {
-                GridPosition targetPos = target.getCenterPosition();
-                Node targetNode = targetPos != null ? gridCellProvider.apply(targetPos.getX(), targetPos.getY()) : null;
-
-                if (targetNode != null) {
-                    Bounds tb = targetNode.getBoundsInParent();
-                    double tx = tb.getMinX() + tb.getWidth() / 2.0;
-                    double ty = tb.getMinY() + tb.getHeight() / 2.0;
-
-                    double duration = Math.max(0.15, troop.getCombatStats().getHitSpeedSeconds());
-                    double cooldown = troop.getAttackCooldown();
-                    double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration));
-
-                    double px = centerX + (tx - centerX) * phase;
-                    double py = centerY + (ty - centerY) * phase;
-
-                    Node projNode = activeProjectiles.get(troop);
-                    if (projNode == null) {
-                        Circle dot = new Circle(2.5);
-                        dot.setFill(troop.isPlayerSide() ? Color.YELLOW : Color.ORANGE);
-                        dot.setStroke(Color.color(0, 0, 0, 0.35));
-                        dot.setStrokeWidth(0.8);
-                        projNode = dot;
-                        unitLayer.getChildren().add(projNode);
-                        activeProjectiles.put(troop, projNode);
-                    }
-                    projNode.setLayoutX(px);
-                    projNode.setLayoutY(py);
-                    if (!unitLayer.getChildren().contains(projNode)) {
-                        unitLayer.getChildren().add(projNode);
-                    }
-                }
-            }
         }
     }
 
@@ -200,31 +147,12 @@ public class TroopRenderer {
                 // Remove pooled health bar
                 HealthBarVisual hpBar = troopHealthBars.remove(t);
                 if (hpBar != null) {
-                    unitLayer.getChildren().remove(hpBar.background);
-                    unitLayer.getChildren().remove(hpBar.foreground);
-                }
-
-                // Remove projectile
-                if (activeProjectiles.containsKey(t)) {
-                    unitLayer.getChildren().remove(activeProjectiles.get(t));
-                    activeProjectiles.remove(t);
+                    unitLayer.getChildren().remove(hpBar.getRoot());
                 }
 
                 troopIt.remove();
                 lastTroopPositions.remove(t);
                 lastTroopState.remove(t);
-            }
-        }
-    }
-
-    private void cleanupStaleProjectiles(Set<Troop> currentTroops) {
-        Iterator<Map.Entry<Troop, Node>> projIt = activeProjectiles.entrySet().iterator();
-        while (projIt.hasNext()) {
-            Map.Entry<Troop, Node> entry = projIt.next();
-            Troop t = entry.getKey();
-            if (!currentTroops.contains(t) || t.getUnitState() != UnitState.ATTACKING) {
-                unitLayer.getChildren().remove(entry.getValue());
-                projIt.remove();
             }
         }
     }
@@ -265,7 +193,6 @@ public class TroopRenderer {
         unitNode.setLayoutY(visualY);
 
         renderHealthBar(troop, visualX, visualY, spriteW, spriteH);
-        renderProjectile(troop, visualX, visualY, cellBounds, gameState);
     }
 
     private Node createTroopVisual(Troop troop, String cardName, GameState gameState) {
@@ -285,8 +212,11 @@ public class TroopRenderer {
         } catch (Exception e) {
             double radius = Math.min(spriteW, spriteH) / 2.5;
             Circle fallback = new Circle(radius);
-            fallback.setFill(troop.isPlayerSide() ? (troop.isAirUnit() ? Color.DODGERBLUE : Color.BLUE)
-                    : (troop.isAirUnit() ? Color.ORANGERED : Color.RED));
+            fallback.setFill(troop.isPlayerSide()
+                    ? (troop.isAirUnit() ? com.kuroyale.util.GameColors.PROJECTILE_USER
+                            : com.kuroyale.util.GameColors.PLAYER_TEAM)
+                    : (troop.isAirUnit() ? com.kuroyale.util.GameColors.PROJECTILE_ENEMY
+                            : com.kuroyale.util.GameColors.ENEMY_TEAM));
             return fallback;
         }
     }
@@ -300,90 +230,38 @@ public class TroopRenderer {
         if (hpBar == null) {
             hpBar = new HealthBarVisual();
             troopHealthBars.put(troop, hpBar);
-            unitLayer.getChildren().addAll(hpBar.background, hpBar.foreground);
+            unitLayer.getChildren().add(hpBar.getRoot());
         }
         hpBar.update(visualX, visualY, spriteW, spriteH, pct, troop.isPlayerSide());
     }
 
-    private void renderProjectile(Troop troop, double visualX, double visualY, Bounds cellBounds, GameState gameState) {
-        double centerX = visualX + cellBounds.getWidth() / 2.0;
-        double centerY = visualY + cellBounds.getHeight() / 2.0;
-
-        if (troop.getUnitState() == UnitState.ATTACKING &&
-                troop.getCombatStats() != null &&
-                troop.getCombatStats().getAttackType() == CombatStats.AttackType.RANGED) {
-
-            com.kuroyale.model.entities.ICombatant target = troop.getTarget();
-            if (target != null && target.isAlive()) {
-                GridPosition targetPos = target.getPosition(); // Use top-left anchor
-                if (targetPos != null) {
-                    // Calculate precise center based on tile coordinates and size
-                    double tx = (targetPos.getX() + target.getWidth() / 2.0) * TILE_SIZE;
-                    double ty = (targetPos.getY() + target.getHeight() / 2.0) * TILE_SIZE;
-
-                    double duration = Math.max(0.15, troop.getCombatStats().getHitSpeedSeconds());
-                    double cooldown = troop.getAttackCooldown();
-                    double phase = 1.0 - Math.max(0.0, Math.min(1.0, cooldown / duration));
-
-                    double px = centerX + (tx - centerX) * phase;
-                    double py = centerY + (ty - centerY) * phase;
-
-                    Node projNode = activeProjectiles.get(troop);
-                    if (projNode == null) {
-                        Circle dot = new Circle(2.5);
-                        dot.setFill(troop.isPlayerSide() ? Color.YELLOW : Color.ORANGE);
-                        dot.setStroke(Color.color(0, 0, 0, 0.35));
-                        dot.setStrokeWidth(0.8);
-                        projNode = dot;
-                        unitLayer.getChildren().add(projNode);
-                        activeProjectiles.put(troop, projNode);
-                    }
-                    projNode.setLayoutX(px);
-                    projNode.setLayoutY(py);
-                    if (!unitLayer.getChildren().contains(projNode)) {
-                        unitLayer.getChildren().add(projNode);
-                    }
-                }
-            }
-        }
-    }
-
     // Inner class for pooled health bar visuals
     private static class HealthBarVisual {
-        final Rectangle background;
-        final Rectangle foreground;
+        final HealthBarRenderer.HealthBarNodes nodes;
 
         HealthBarVisual() {
-            double barWidth = TILE_SIZE * 0.9;
-            double barHeight = 4;
+            double barWidth = com.kuroyale.util.GameConstants.TILE_SIZE * 0.9;
+            double barHeight = com.kuroyale.util.GameConstants.HEALTH_BAR_HEIGHT;
 
-            background = new Rectangle(barWidth, barHeight);
-            background.setFill(Color.color(0.2, 0.2, 0.2, 0.8));
-            background.setStroke(Color.BLACK);
-            background.setStrokeWidth(0.3);
+            this.nodes = HealthBarRenderer.createSimpleHealthBar(barWidth, barHeight);
+        }
 
-            foreground = new Rectangle(barWidth, barHeight);
-            foreground.setFill(Color.LIMEGREEN);
+        // Expose underlying nodes for addition/removal
+        public Node getRoot() {
+            return nodes.root;
         }
 
         void update(double visualX, double visualY, double cellWidth, double cellHeight,
                 double healthPct, boolean isPlayerSide) {
-            double barWidth = TILE_SIZE * 0.9;
+
+            double barWidth = com.kuroyale.util.GameConstants.TILE_SIZE * 0.9;
             double centerX = visualX + cellWidth / 2.0;
             double centerY = visualY + cellHeight / 2.0;
 
-            background.setX(centerX - barWidth / 2.0);
-            background.setY(centerY - (TILE_SIZE / 2.5) - 6);
+            nodes.root.setLayoutX(centerX - barWidth / 2.0);
+            nodes.root.setLayoutY(centerY - (com.kuroyale.util.GameConstants.TILE_SIZE / 2.5) - 6);
 
-            foreground.setWidth(barWidth * healthPct);
-            foreground.setX(background.getX());
-            foreground.setY(background.getY());
-
-            if (isPlayerSide) {
-                foreground.setFill(Color.ROYALBLUE);
-            } else {
-                foreground.setFill(Color.CRIMSON);
-            }
+            HealthBarRenderer.updateHealthBar(nodes, healthPct, 1.0, isPlayerSide);
         }
     }
 }

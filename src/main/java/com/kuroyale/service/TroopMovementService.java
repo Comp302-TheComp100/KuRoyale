@@ -25,26 +25,19 @@ public class TroopMovementService {
                 continue;
             }
 
-            // Update pathfinding cooldown
-            troop.setPathfindingCooldown(troop.getPathfindingCooldown() - deltaTime);
-
-            // Force retarget if current target is dead or null (sync with CombatService)
+            // retarget if current target is dead or null
             ICombatant currentTarget = troop.getTarget();
             boolean targetIsDead = (currentTarget != null && !currentTarget.isAlive());
             boolean hasNoTargetPos = (troop.getTargetWorldPosition() == null);
-            boolean cooldownReady = (troop.getPathfindingCooldown() <= 0);
 
-            // Instant reaction if target is dead: clear path and reset state
             if (targetIsDead) {
                 troop.setTarget(null);
                 troop.setTargetWorldPosition(null);
                 troop.clearPath();
                 troop.setUnitState(UnitState.IDLE);
-                // Force immediate retargeting logic below
             }
 
-            // Check for retargeting if forced (dead/null) or periodic cooldown ready
-            if (targetIsDead || hasNoTargetPos || (cooldownReady && shouldRetarget(state, troop))) {
+            if (targetIsDead || hasNoTargetPos || shouldRetarget(state, troop)) {
                 GridPosition newTargetGrid = targetingService.findNearestEnemyOrObjective(state, troop);
 
                 // If target hasn't changed significantly, don't recompute path
@@ -58,11 +51,9 @@ public class TroopMovementService {
                     troop.setPath(worldPath);
                 }
 
-                // Reset cooldown (randomize slightly to distribute load)
-                troop.setPathfindingCooldown(0.25 + Math.random() * 0.1);
             }
 
-            // Apply movement and/or separation
+            // Apply movement
             if (troop.getUnitState() != UnitState.ATTACKING) {
                 troop.setUnitState(UnitState.MOVING);
             }
@@ -86,7 +77,7 @@ public class TroopMovementService {
             return true;
 
         // 3. Opportunistic Targeting:
-        // If we are just moving (not attacking), check if a NEW enemy has entered our
+        // If we are moving check if a NEW enemy has entered our
         // immediate attack range.
         GridPosition nearestGrid = targetingService.findNearestEnemyOrObjective(state, troop);
         if (nearestGrid == null)
@@ -94,20 +85,12 @@ public class TroopMovementService {
 
         Vector2 nearestPos = Vector2.fromGridPosition(nearestGrid);
         double distToNearest = troop.getWorldPosition().distanceTo(nearestPos);
+        double distToCurrentTarget = troop.getTargetWorldPosition().distanceTo(nearestPos);
 
-        // Define a "trigger range" slightly larger than attack range to be responsive
-        // Melee units (range ~0.8-1.0) need a bit of buffer (1.5) to snap to targets
-        double attackRange = troop.getRange();
-        double triggerRange = Math.max(attackRange, CombatService.MELEE_ATTACK_BUFFER);
-
-        if (distToNearest <= triggerRange) {
-            // We have a valid target in immediate range.
-            // Only switch if it is DIFFERENT from our current long-distance goal.
-            Vector2 currentTarget = troop.getTargetWorldPosition();
-            if (currentTarget == null || currentTarget.distanceTo(nearestPos) > 1.0) {
-                // It's a different, closer target! Engage!
-                return true;
-            }
+        // If the nearest enemy is closer than our current target, switch
+        // 0.5 is a buffer to avoid switching targets too often
+        if (distToCurrentTarget > distToNearest + 0.5) {
+            return true;
         }
 
         return false;
@@ -203,8 +186,8 @@ public class TroopMovementService {
         return cell != null && cell.isWalkable();
     }
 
-    private static final double WAYPOINT_THRESHOLD = 0.1; // How close to waypoint before moving to next
-    private static final double SEPARATION_RADIUS = 0.5;
+    private static final double WAYPOINT_THRESHOLD = com.kuroyale.util.GameConstants.WAYPOINT_THRESHOLD;
+    private static final double SEPARATION_RADIUS = com.kuroyale.util.GameConstants.SEPARATION_RADIUS;
 
     private void updateTroopPosition(double deltaTime, Troop troop, IBattleState state) {
         Vector2 currentPos = troop.getWorldPosition();
@@ -241,9 +224,9 @@ public class TroopMovementService {
         Vector2 proposedPos = currentPos.add(movement);
 
         // Apply separation (Always applies, even if stationary/attacking)
-        SpatialGrid spatialGrid = (state != null && state.getArena() != null) ? state.getArena().getSpatialGrid()
-                : null;
-        Vector2 finalPos = applySeparation(proposedPos, troop, spatialGrid);
+        Arena arena = (state != null) ? state.getArena() : null;
+        SpatialGrid spatialGrid = (arena != null) ? arena.getSpatialGrid() : null;
+        Vector2 finalPos = applySeparation(proposedPos, troop, spatialGrid, deltaTime, arena);
 
         troop.setWorldPosition(finalPos);
 
@@ -254,7 +237,7 @@ public class TroopMovementService {
     }
 
     // Simple separation steering to prevent troops from overlapping.
-    private Vector2 applySeparation(Vector2 proposedPos, Troop self, SpatialGrid grid) {
+    private Vector2 applySeparation(Vector2 proposedPos, Troop self, SpatialGrid grid, double deltaTime, Arena arena) {
         if (grid == null)
             return proposedPos;
 
@@ -286,32 +269,70 @@ public class TroopMovementService {
                     // Push away from other troop (radial)
                     away = proposedPos.subtract(otherPos).normalize();
 
-                    // Tangential force to encourage sliding but avoid swirling (Parallel Slide)
-                    // Standard perpendicular vector
+                    // Tangential force (Parallel Slide)
+                    // We reduce this slightly to rely more on the new Wall Sliding logic below
                     Vector2 tangential = new Vector2(-away.getY(), away.getX());
 
-                    // We want both units to slide in the SAME world direction to avoid
-                    // rotation/swirling.
-                    // Since 'away' vectors are opposite for the two units, the default tangential
-                    // vectors are also opposite (causing rotation).
+                    // Consistent slide direction
                     if (System.identityHashCode(self) < System.identityHashCode(other)) {
                         tangential = tangential.multiply(-1);
                     }
 
-                    // Add tangential component (weighted) -> Mix 70% Push, 30% Slide
-                    away = away.add(tangential.multiply(0.3)).normalize();
+                    // weighted: 80% Push, 20% Slide
+                    away = away.add(tangential.multiply(0.2)).normalize();
                 }
 
-                // Strength increases as they get closer
+                // Strength increases as they get closer (0.0 to 1.0)
                 double strength = (SEPARATION_RADIUS - dist) / SEPARATION_RADIUS;
-                // Increased push force (0.5) to effectively separate clustered units
-                separation = separation.add(away.multiply(strength * 0.5));
+                separation = separation.add(away.multiply(strength));
                 count++;
             }
         }
 
         if (count > 0) {
-            return proposedPos.add(separation);
+            // Average the direction
+            separation = separation.multiply(1.0 / count);
+
+            // Speed logic:
+            // Previous code normalized result, which threw away the 'strength' urgency.
+            // Here we keep the magnitude (0 to 1) representing how "crowded" it is.
+            double urgency = separation.length();
+            if (urgency > 1.0)
+                urgency = 1.0;
+
+            // Normalize direction but scale speed by urgency
+            Vector2 pushDir = separation.normalize();
+            double separationSpeed = 2.0;
+            Vector2 push = pushDir.multiply(separationSpeed * urgency * deltaTime);
+
+            Vector2 finalPos = proposedPos.add(push);
+
+            // WALL SLIDING / COLLISION CHECK
+            if (arena != null) {
+                // 1. Try full move
+                GridPosition gpFixed = finalPos.toGridPosition();
+                if (isWalkable(arena, gpFixed.getX(), gpFixed.getY())) {
+                    return finalPos;
+                }
+
+                // 2. Try moving X only (Side-to-side slide)
+                Vector2 posXOnly = new Vector2(finalPos.getX(), proposedPos.getY());
+                GridPosition gpX = posXOnly.toGridPosition();
+                if (isWalkable(arena, gpX.getX(), gpX.getY())) {
+                    return posXOnly;
+                }
+
+                // 3. Try moving Y only (Up-down slide)
+                Vector2 posYOnly = new Vector2(proposedPos.getX(), finalPos.getY());
+                GridPosition gpY = posYOnly.toGridPosition();
+                if (isWalkable(arena, gpY.getX(), gpY.getY())) {
+                    return posYOnly;
+                }
+
+                // 4. Blocked globally -> cannot separate in this direction
+                return proposedPos;
+            }
+            return finalPos;
         }
         return proposedPos;
     }

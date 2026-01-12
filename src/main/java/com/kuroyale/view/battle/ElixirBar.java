@@ -16,6 +16,7 @@ public class ElixirBar extends VBox {
     private final ElixirManager elixirManager;
 
     public ElixirBar(ElixirManager elixirManager) {
+        this.getStylesheets().add(getClass().getResource("/com/kuroyale/view/battle.css").toExternalForm());
         this.elixirManager = elixirManager;
 
         this.setAlignment(Pos.CENTER);
@@ -33,24 +34,17 @@ public class ElixirBar extends VBox {
         // Elixir Label
         this.elixirLabel = new Label();
         this.elixirLabel.getStyleClass().add("elixir-label");
-        this.elixirLabel.setStyle(
-                "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 16px; -fx-effect: dropshadow(one-pass-box, black, 2, 0.5, 0, 0);");
 
         // x2 indicator
         this.doubleElixirLabel = new Label("x1");
-        this.doubleElixirLabel.setStyle(
-                "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+        this.doubleElixirLabel.getStyleClass().add("double-elixir-label");
         this.doubleElixirLabel.setVisible(true);
 
         labelContainer.getChildren().addAll(elixirLabel, doubleElixirLabel);
 
         // Progress Bar
         this.progressBar = new ProgressBar(0);
-        this.progressBar.setPrefWidth(200);
-        this.progressBar.setPrefHeight(20);
         this.progressBar.getStyleClass().add("elixir-progress-bar");
-        // Remove inline style that might conflict with CSS class
-        // this.progressBar.setStyle("-fx-accent: #FF00FF;");
 
         this.getChildren().addAll(labelContainer, progressBar);
         update();
@@ -67,12 +61,6 @@ public class ElixirBar extends VBox {
         double max = ElixirManager.MAX_ELIXIR;
         boolean isDoubleElixir = elixirManager.isDoubleElixir();
 
-        // Optimized: Only update text if value changed integer-wise (simplification for
-        // display)
-        // or just update label text always (cheap), but style is expensive.
-        // Let's update text always for smooth float changes, but style only on state
-        // change.
-
         elixirLabel.setText(String.format("%d / %d", (int) current, (int) max));
         progressBar.setProgress(current / max);
 
@@ -81,12 +69,12 @@ public class ElixirBar extends VBox {
             lastDoubleElixirState = isDoubleElixir;
             if (isDoubleElixir) {
                 doubleElixirLabel.setText("x2");
-                doubleElixirLabel.setStyle(
-                        "-fx-font-weight: bold; -fx-text-fill: #FF00FF; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+                if (!doubleElixirLabel.getStyleClass().contains("double-elixir-active")) {
+                    doubleElixirLabel.getStyleClass().add("double-elixir-active");
+                }
             } else {
                 doubleElixirLabel.setText("x1");
-                doubleElixirLabel.setStyle(
-                        "-fx-font-weight: bold; -fx-text-fill: white; -fx-font-size: 24px; -fx-effect: dropshadow(one-pass-box, black, 3, 0.8, 0, 0);");
+                doubleElixirLabel.getStyleClass().remove("double-elixir-active");
             }
         }
     }
@@ -95,8 +83,7 @@ public class ElixirBar extends VBox {
     // Elixir Collector)
     public void showProductionIndicator(int amount) {
         Label indicator = new Label("+" + amount);
-        indicator.setStyle(
-                "-fx-font-weight: bold; -fx-text-fill: #9932CC; -fx-font-size: 20px; -fx-effect: dropshadow(one-pass-box, black, 2, 0.8, 0, 0);");
+        indicator.getStyleClass().add("production-indicator");
 
         // Add to progressBar parent (this VBox)
         this.getChildren().add(indicator);

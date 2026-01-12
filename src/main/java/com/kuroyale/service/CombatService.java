@@ -7,7 +7,6 @@ import com.kuroyale.model.entities.ICombatant;
 import com.kuroyale.model.entities.Card;
 
 public class CombatService {
-    public static final double MELEE_ATTACK_BUFFER = 1.5;
 
     // Core single-target damage methods
     public void applyDamage(ICombatant attacker, ICombatant target) {
@@ -59,6 +58,30 @@ public class CombatService {
         java.util.Set<Tower> towers = state.getArena().getAllTowers();
         for (Tower tower : towers) {
             processCombatant(tower, state, deltaTime);
+        }
+
+        // 4. Projectiles (Orphaned or Active)
+        java.util.List<com.kuroyale.model.entities.Projectile> projectiles = state.getProjectiles();
+        java.util.Iterator<com.kuroyale.model.entities.Projectile> it = projectiles.iterator();
+        while (it.hasNext()) {
+            com.kuroyale.model.entities.Projectile p = it.next();
+            p.update(deltaTime);
+            if (!p.isActive()) {
+                // Hit target
+                if (p.isAreaEffect()) {
+                    com.kuroyale.model.entities.GridPosition impactPos = com.kuroyale.model.entities.GridPosition
+                            .tryCreate((int) p.getPosition().getX(), (int) p.getPosition().getY());
+                    if (impactPos != null) {
+                        applyAreaDamage(state, impactPos, 1.0, p.getDamage(),
+                                p.getTargetType(), p.isPlayerSide(), false, 0.0);
+                    }
+                } else {
+                    if (p.getTarget() != null && p.getTarget().isAlive()) {
+                        p.getTarget().takeDamage(p.getDamage());
+                    }
+                }
+                it.remove();
+            }
         }
     }
 
@@ -174,17 +197,30 @@ public class CombatService {
     }
 
     private void performAttack(ICombatant attacker, ICombatant target, com.kuroyale.model.logic.IBattleState state) {
-        if (attacker.isAreaEffect()) {
-            // Splash radius is usually 1.0 tiles for units/buildings unless specified
-            com.kuroyale.model.entities.GridPosition targetPos = target.getPosition();
-            if (target instanceof Tower || target instanceof Building) {
-                targetPos = target.getCenterPosition();
-            }
+        boolean isMelee = false;
 
-            applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
-                    attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0);
+        if (attacker instanceof Troop t) {
+            if (t.isMelee()) {
+                isMelee = true;
+            }
+        }
+
+        if (isMelee) {
+            // Instant Damage
+            if (attacker.isAreaEffect()) {
+                com.kuroyale.model.entities.GridPosition targetPos = target.getPosition();
+                if (target instanceof Tower || target instanceof Building) {
+                    targetPos = target.getCenterPosition();
+                }
+
+                applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
+                        attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0);
+            } else {
+                applyDamage(attacker, target);
+            }
         } else {
-            applyDamage(attacker, target);
+            // Ranged / Projectile
+            state.addProjectile(new com.kuroyale.model.entities.Projectile(attacker, target));
         }
     }
 
@@ -200,12 +236,9 @@ public class CombatService {
         if (attacker instanceof Troop troop) {
             com.kuroyale.model.entities.CombatStats stats = troop.getCombatStats();
             if (stats != null && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
-                range = Math.max(range, MELEE_ATTACK_BUFFER);
+                range = Math.max(range, com.kuroyale.util.GameConstants.MELEE_ATTACK_BUFFER);
             }
         }
-
-        // Structures (Towers/Buildings) only target Troops
-        // Troops target Troops, Buildings, and Towers
 
         // Optimize with SpatialGrid
         com.kuroyale.model.logic.SpatialGrid grid = state.getArena().getSpatialGrid();
@@ -245,95 +278,11 @@ public class CombatService {
     }
 
     private boolean isInAttackRange(ICombatant attacker, ICombatant target) {
-        if (attacker == null || target == null)
-            return false;
-        double range = attacker.getRange();
-
-        // Special Melee handling (copied from TroopMovementService)
-        if (attacker instanceof Troop troop) {
-            com.kuroyale.model.entities.CombatStats stats = troop.getCombatStats();
-            if (stats != null && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
-                range = Math.max(range, 1.0);
-                double threshold = Math.max(MELEE_ATTACK_BUFFER, range);
-                return getDistanceToTarget(attacker, target) <= threshold;
-            }
-        }
-
-        double dist = getDistanceToTarget(attacker, target); // Renaming for clarity
-
-        // Check Min Range (Blind Spot)
-        double minRange = 0;
-        if (attacker instanceof Building) {
-            minRange = ((Building) attacker).getMinRange();
-        } else if (attacker instanceof Troop) {
-            Troop t = (Troop) attacker;
-            if (t.getBaseCard() != null) {
-                minRange = t.getBaseCard().getMinRange();
-            }
-        }
-
-        if (dist < minRange) {
-            return false;
-        }
-
-        return dist <= range;
+        return com.kuroyale.model.logic.CombatUtils.isInRange(attacker, target);
     }
 
     private double getDistanceToTarget(ICombatant attacker, ICombatant target) {
-        // For structures attacking troops: measure from structure's perimeter to troop
-        // This ensures symmetry: if a troop can hit a tower from distance X,
-        // the tower can also see the troop from the same effective distance
-        if ((attacker instanceof Tower || attacker instanceof Building) && target instanceof Troop) {
-            // Measure from attacker's nearest perimeter tile to the troop position
-            return distanceToCombatantPerimeter(target.getPosition(), attacker);
-        }
-
-        com.kuroyale.model.entities.GridPosition from = attacker.getPosition();
-        if (attacker instanceof Tower || attacker instanceof Building) {
-            from = attacker.getCenterPosition();
-        }
-
-        if (target instanceof Tower || target instanceof Building) {
-            // For structures, calculate distance to their perimeter
-            return distanceToCombatantPerimeter(from, target);
-        } else {
-            // For troops, standard euclidean distance
-            return from.getEuclideanDistanceTo(target.getPosition());
-        }
-    }
-
-    private double distanceToCombatantPerimeter(com.kuroyale.model.entities.GridPosition from, ICombatant combatant) {
-        com.kuroyale.model.entities.GridPosition pos = combatant.getPosition();
-        if (pos == null)
-            return Double.MAX_VALUE;
-
-        int x0 = pos.getX();
-        int y0 = pos.getY();
-        int w = Math.max(1, combatant.getWidth());
-        int h = Math.max(1, combatant.getHeight());
-
-        double best = Double.MAX_VALUE;
-        for (int dx = 0; dx < w; dx++) {
-            com.kuroyale.model.entities.GridPosition top = com.kuroyale.model.entities.GridPosition.tryCreate(x0 + dx,
-                    y0);
-            com.kuroyale.model.entities.GridPosition bottom = com.kuroyale.model.entities.GridPosition
-                    .tryCreate(x0 + dx, y0 + h - 1);
-            if (top != null)
-                best = Math.min(best, from.getEuclideanDistanceTo(top));
-            if (bottom != null)
-                best = Math.min(best, from.getEuclideanDistanceTo(bottom));
-        }
-        for (int dy = 0; dy < h; dy++) {
-            com.kuroyale.model.entities.GridPosition left = com.kuroyale.model.entities.GridPosition.tryCreate(x0,
-                    y0 + dy);
-            com.kuroyale.model.entities.GridPosition right = com.kuroyale.model.entities.GridPosition
-                    .tryCreate(x0 + w - 1, y0 + dy);
-            if (left != null)
-                best = Math.min(best, from.getEuclideanDistanceTo(left));
-            if (right != null)
-                best = Math.min(best, from.getEuclideanDistanceTo(right));
-        }
-        return best;
+        return com.kuroyale.model.logic.CombatUtils.getDistance(attacker, target);
     }
 
     // Centralized Area Damage logic.

@@ -26,4 +26,8 @@ public interface IBattleState {
     boolean spawnTroopDirectly(boolean isPlayerSide, Card card, int x, int y, int count);
 
     ElixirManager getElixirManager(boolean isPlayerSide);
+
+    List<com.kuroyale.model.entities.Projectile> getProjectiles();
+
+    void addProjectile(com.kuroyale.model.entities.Projectile p);
 }
