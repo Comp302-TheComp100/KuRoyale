@@ -244,14 +244,6 @@ public class Troop implements ICombatant {
 
     public void heal(int amount) {
         currentHealth += amount;
-        // Cap at max health? Card baseHp is "max" but levels affect it.
-        // For now uncapped or I need to track max health separately which I don't see
-        // here easily
-        // (Card.getHp() is consistent but maybe Troop should store max).
-        // Let's assume uncapped or handled by caller, or use baseCard.getHp() * level
-        // multiplier as max replacement.
-        // Actually Troop overwrites currentHealth.
-        // Let's just add it.
     }
 
     public void modifySpeed(double multiplier) {

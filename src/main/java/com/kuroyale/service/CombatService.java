@@ -126,7 +126,6 @@ public class CombatService {
 
         // 2. Target Handling
         ICombatant target = attacker.getTarget();
-        ICombatant previousTarget = target;
         boolean targetValid = (target != null && target.isAlive() && isInAttackRange(attacker, target));
 
         // STICKY TARGETING: Only search for new target if current is invalid
@@ -134,11 +133,6 @@ public class CombatService {
             target = findNearestTarget(attacker, state);
             attacker.setTarget(target);
 
-            // Fix: Troops should wait for attack speed before first attack
-            if (previousTarget == null && target != null && cd <= 0) {
-                cd = attacker.getHitSpeed();
-                attacker.setAttackCooldown(cd);
-            }
         }
 
         // 3. State Management (for Troops)

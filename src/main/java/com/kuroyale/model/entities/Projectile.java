@@ -12,7 +12,7 @@ public class Projectile {
 
     private Vector2 position;
     private Vector2 targetPosSnapshot; // Where it's going (in case target moves/dies)
-    private final double speed = 15.0; // Tiles per second (FASTER than before to feel responsive)
+    private final double speed;
     private boolean active = true;
 
     public Projectile(ICombatant owner, ICombatant target) {
@@ -31,6 +31,12 @@ public class Projectile {
             this.position = new Vector2(0, 0);
         }
         updateTargetSnapshot();
+
+        // Calculate speed such that travel time = owner's hit speed
+        // Speed = Distance / Time
+        double dist = (position != null && targetPosSnapshot != null) ? position.distanceTo(targetPosSnapshot) : 0;
+        double hitSpeed = Math.max(0.1, owner.getHitSpeed()); // Sanity check: min 0.1s
+        this.speed = Math.max(1.0, dist / hitSpeed); // Ensure it actually moves (min speed 1.0)
     }
 
     public void update(double deltaTime) {
