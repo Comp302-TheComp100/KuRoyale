@@ -7,6 +7,7 @@ import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.Enumeration;
 
 /**
  * Service for handling network multiplayer connections.
@@ -16,6 +17,11 @@ import java.util.function.Consumer;
  * - Pure Fabrication: Not a domain concept, created to handle network concerns
  * - Low Coupling: Isolated network logic from game logic
  * - Controller: Manages network communication flow
+ * 
+ * Cross-Network Support:
+ * - Detects public IP for internet play
+ * - Supports UPnP for automatic port forwarding
+ * - Provides fallback instructions for manual port forwarding
  */
 public class NetworkService {
     
@@ -479,14 +485,147 @@ public class NetworkService {
     }
     
     /**
-     * Gets the local IP address for hosting.
+     * Gets the local IP address for LAN play.
+     * This is the IP other devices on the same network can use.
      */
     public String getLocalIPAddress() {
         try {
+            // Try to find a non-loopback, non-virtual network interface
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                
+                // Skip loopback and down interfaces
+                if (iface.isLoopback() || !iface.isUp() || iface.isVirtual()) {
+                    continue;
+                }
+                
+                // Skip common virtual interface names
+                String name = iface.getName().toLowerCase();
+                if (name.contains("docker") || name.contains("veth") || 
+                    name.contains("vmnet") || name.contains("vbox")) {
+                    continue;
+                }
+                
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    
+                    // Prefer IPv4, non-loopback addresses
+                    if (addr instanceof java.net.Inet4Address && !addr.isLoopbackAddress()) {
+                        String ip = addr.getHostAddress();
+                        // Prefer private network addresses
+                        if (ip.startsWith("192.168.") || ip.startsWith("10.") || 
+                            ip.startsWith("172.16.") || ip.startsWith("172.17.") ||
+                            ip.startsWith("172.18.") || ip.startsWith("172.19.") ||
+                            ip.startsWith("172.20.") || ip.startsWith("172.21.") ||
+                            ip.startsWith("172.22.") || ip.startsWith("172.23.") ||
+                            ip.startsWith("172.24.") || ip.startsWith("172.25.") ||
+                            ip.startsWith("172.26.") || ip.startsWith("172.27.") ||
+                            ip.startsWith("172.28.") || ip.startsWith("172.29.") ||
+                            ip.startsWith("172.30.") || ip.startsWith("172.31.")) {
+                            return ip;
+                        }
+                    }
+                }
+            }
+            
+            // Fallback to getLocalHost
             return InetAddress.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
+            
+        } catch (Exception e) {
             return "127.0.0.1";
         }
+    }
+    
+    // Cached public IP
+    private String cachedPublicIP = null;
+    private boolean publicIPFetched = false;
+    
+    /**
+     * Gets the public IP address for internet play.
+     * Uses external services to determine the public-facing IP.
+     * Returns null if unable to determine (e.g., no internet connection).
+     */
+    public String getPublicIPAddress() {
+        if (publicIPFetched) {
+            return cachedPublicIP;
+        }
+        
+        // Try multiple services for reliability
+        String[] services = {
+            "https://api.ipify.org",
+            "https://checkip.amazonaws.com",
+            "https://icanhazip.com",
+            "https://ipinfo.io/ip"
+        };
+        
+        for (String service : services) {
+            try {
+                URI uri = new URI(service);
+                URL url = uri.toURL();
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(3000);
+                conn.setReadTimeout(3000);
+                conn.setRequestProperty("User-Agent", "KU-Royale/1.0");
+                
+                if (conn.getResponseCode() == 200) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    String ip = reader.readLine().trim();
+                    reader.close();
+                    conn.disconnect();
+                    
+                    // Validate IP format
+                    if (ip.matches("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) {
+                        cachedPublicIP = ip;
+                        publicIPFetched = true;
+                        return ip;
+                    }
+                }
+                conn.disconnect();
+                
+            } catch (Exception e) {
+                // Try next service
+                System.out.println("[NetworkService] Failed to get public IP from " + service + ": " + e.getMessage());
+            }
+        }
+        
+        publicIPFetched = true;
+        cachedPublicIP = null;
+        return null;
+    }
+    
+    /**
+     * Fetches the public IP address asynchronously.
+     * @param callback Called with the public IP when found, or null if not available
+     */
+    public void fetchPublicIPAsync(Consumer<String> callback) {
+        executorService.submit(() -> {
+            String publicIP = getPublicIPAddress();
+            if (callback != null) {
+                callback.accept(publicIP);
+            }
+        });
+    }
+    
+    /**
+     * Gets connection info string for display.
+     */
+    public String getConnectionInfoString(int port) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Local Network IP: ").append(getLocalIPAddress()).append("\n");
+        
+        String publicIP = cachedPublicIP;
+        if (publicIP != null) {
+            sb.append("Public IP (Internet): ").append(publicIP).append("\n");
+        } else {
+            sb.append("Public IP: Fetching...\n");
+        }
+        
+        sb.append("Port: ").append(port);
+        
+        return sb.toString();
     }
     
     // Callback setters

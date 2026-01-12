@@ -47,6 +47,7 @@ public class NetworkLobbyController {
     @FXML private VBox hostSetupPane;
     @FXML private TextField portField;
     @FXML private Label hostIpLabel;
+    @FXML private Label publicIpLabel;
     
     // Join Setup
     @FXML private VBox joinSetupPane;
@@ -203,7 +204,21 @@ public class NetworkLobbyController {
     private void handleHostGame() {
         SoundEffectUtil.playButtonClick();
         showPane(hostSetupPane);
-        hostIpLabel.setText("Your IP: " + networkService.getLocalIPAddress());
+        
+        // Show local IP immediately
+        hostIpLabel.setText("Local IP (same network): " + networkService.getLocalIPAddress());
+        
+        // Fetch public IP asynchronously
+        if (publicIpLabel != null) {
+            publicIpLabel.setText("Public IP (internet): Fetching...");
+            networkService.fetchPublicIPAsync(publicIP -> Platform.runLater(() -> {
+                if (publicIP != null) {
+                    publicIpLabel.setText("Public IP (internet): " + publicIP);
+                } else {
+                    publicIpLabel.setText("Public IP: Unable to detect (no internet?)");
+                }
+            }));
+        }
     }
     
     @FXML
