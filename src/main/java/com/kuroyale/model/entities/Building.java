@@ -22,6 +22,13 @@ public class Building implements ICombatant {
     // Advanced Combat
     private double minRange = 0;
 
+    // Inferno Tower Logic
+    private boolean isInfernoTower = false;
+    private double currentAttackDuration = 0.0;
+    private int minDamage = 20;
+    private int maxDamage = 400;
+    private static final double RAMP_UP_TIME = 4.0; // Seconds to reach max damage
+
     // Production
     private String productionResource;
     private int productionAmount;
@@ -56,6 +63,14 @@ public class Building implements ICombatant {
         this.baseCard = card;
         this.cardName = card.getName();
         this.damage = card.getDamage();
+
+        if ("Inferno Tower".equals(cardName)) {
+            this.isInfernoTower = true;
+            this.maxDamage = card.getDamage(); // 400
+            this.minDamage = 20;
+            this.damage = minDamage; // Start at low damage
+        }
+
         this.hitSpeedSeconds = card.getHitSpeed();
         this.rangeTiles = card.getRange();
         this.targetType = card.getTarget();
@@ -227,6 +242,13 @@ public class Building implements ICombatant {
     private ICombatant target;
 
     public void setTarget(ICombatant target) {
+        if (this.target != target) {
+            // Target changed or lost, reset ramp
+            if (isInfernoTower) {
+                this.currentAttackDuration = 0;
+                this.damage = minDamage;
+            }
+        }
         this.target = target;
     }
 
@@ -271,6 +293,38 @@ public class Building implements ICombatant {
     public void updateStatus(double deltaTime) {
         if (stunTimer > 0) {
             stunTimer -= deltaTime;
+        }
+
+        // Inferno Ramping Logic
+        if (isInfernoTower && target != null && target.isAlive()) {
+            // Only ramp if actually engaging (within range)
+            // We can check range loosely here, or rely on CombatService calling this only
+            // when relevant?
+            // Actually CombatService calls updateStatus every frame for alive buildings.
+            // But we only want to ramp if we are ATTACKING.
+            // CombatService sets target if found.
+            // We assume if we have a target, we are attacking or trying to.
+
+            // Check distance to be sure we are locked on?
+            // Ideally simply having a target means we are "locked on" for the Inferno.
+
+            currentAttackDuration += deltaTime;
+
+            if (currentAttackDuration > 0.5) { // Small buffer before ramping starts effectively
+                double progress = Math.min(1.0, currentAttackDuration / RAMP_UP_TIME);
+                // Linear ramp
+                // int ramped = (int) (minDamage + (maxDamage - minDamage) * progress);
+
+                // Exponential/Tiered-like ramp feels better for Inferno
+                // Let's stick to linear for now as requested "increases by time"
+                this.damage = (int) (minDamage + (maxDamage - minDamage) * progress);
+            } else {
+                this.damage = minDamage;
+            }
+        } else if (isInfernoTower) {
+            // No target, reset
+            currentAttackDuration = 0;
+            this.damage = minDamage;
         }
     }
 
