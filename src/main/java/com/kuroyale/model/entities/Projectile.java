@@ -34,7 +34,7 @@ public class Projectile {
 
         // Calculate speed such that travel time = owner's hit speed
         // Speed = Distance / Time
-        double dist = (position != null && targetPosSnapshot != null) ? position.distanceTo(targetPosSnapshot) : 0;
+        double dist = owner.getRange();
         double hitSpeed = Math.max(0.1, owner.getHitSpeed()); // Sanity check: min 0.1s
         this.speed = Math.max(1.0, dist / hitSpeed); // Ensure it actually moves (min speed 1.0)
     }

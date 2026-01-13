@@ -197,6 +197,11 @@ public class CombatService {
             if (t.isMelee()) {
                 isMelee = true;
             }
+        } else if (attacker instanceof Building b) {
+            // Inferno Tower uses a beam (instant damage), not projectiles
+            if ("Inferno Tower".equals(b.getCardName())) {
+                isMelee = true;
+            }
         }
 
         if (isMelee) {

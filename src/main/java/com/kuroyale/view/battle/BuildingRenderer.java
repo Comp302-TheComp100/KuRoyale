@@ -25,12 +25,15 @@ public class BuildingRenderer {
     private static class BuildingVisual {
         final StackPane root;
         final HealthBarRenderer.HealthBarNodes hpNodes;
-        final Rectangle elixirForeground; // Keep simple for now or refactor too. Let's keep simple.
+        final Rectangle elixirForeground;
+        final javafx.scene.shape.Line laserBeam;
 
-        BuildingVisual(StackPane root, HealthBarRenderer.HealthBarNodes hpNodes, Rectangle elixirForeground) {
+        BuildingVisual(StackPane root, HealthBarRenderer.HealthBarNodes hpNodes, Rectangle elixirForeground,
+                javafx.scene.shape.Line laserBeam) {
             this.root = root;
             this.hpNodes = hpNodes;
             this.elixirForeground = elixirForeground;
+            this.laserBeam = laserBeam;
         }
     }
 
@@ -57,6 +60,9 @@ public class BuildingRenderer {
             Building b = entry.getKey();
             if (!currentBuildings.contains(b) || !b.isAlive()) {
                 unitLayer.getChildren().remove(entry.getValue().root);
+                if (entry.getValue().laserBeam != null) {
+                    unitLayer.getChildren().remove(entry.getValue().laserBeam);
+                }
                 buildingIt.remove();
             }
         }
@@ -81,6 +87,9 @@ public class BuildingRenderer {
             Building b = entry.getKey();
             if (!currentBuildings.contains(b) || !b.isAlive()) {
                 unitLayer.getChildren().remove(entry.getValue().root);
+                if (entry.getValue().laserBeam != null) {
+                    unitLayer.getChildren().remove(entry.getValue().laserBeam);
+                }
                 buildingIt.remove();
             }
         }
@@ -161,7 +170,20 @@ public class BuildingRenderer {
             elixirFg = createElixirBar(b, w, buildingStack);
         }
 
-        return new BuildingVisual(buildingStack, hpNodes, elixirFg);
+        // Create Laser Beam for Inferno Tower
+        javafx.scene.shape.Line laser = null;
+        if ("Inferno Tower".equals(b.getCardName())) {
+            laser = new javafx.scene.shape.Line();
+            laser.setStroke(Color.ORANGE);
+            laser.setStrokeWidth(2.0);
+            laser.setVisible(false);
+            // Add to unitLayer so it can span across the arena
+            unitLayer.getChildren().add(laser);
+            // Ensure laser is behind the building itself? Or on top? Usually on top.
+            laser.toBack();
+        }
+
+        return new BuildingVisual(buildingStack, hpNodes, elixirFg, laser);
     }
 
     private Rectangle createFallbackRect(Building b, int w, int h) {
@@ -221,6 +243,41 @@ public class BuildingRenderer {
             double barWidth = Math.max(40, totalWidthPixels - 6);
 
             visual.elixirForeground.setWidth(barWidth * elPct);
+        }
+
+        // Update Laser Beam
+        if (visual.laserBeam != null) {
+            com.kuroyale.model.entities.ICombatant target = b.getTarget();
+            if (target != null && target.isAlive()) {
+                com.kuroyale.model.entities.GridPosition myPos = b.getCenterPosition();
+                com.kuroyale.model.entities.GridPosition targetPos = target.getCenterPosition();
+
+                if (myPos != null && targetPos != null) {
+                    double sx = myPos.getX() * TILE_SIZE + TILE_SIZE / 2.0;
+                    double sy = myPos.getY() * TILE_SIZE + TILE_SIZE / 2.0;
+                    double ex = targetPos.getX() * TILE_SIZE + TILE_SIZE / 2.0;
+                    double ey = targetPos.getY() * TILE_SIZE + TILE_SIZE / 2.0;
+
+                    visual.laserBeam.setStartX(sx);
+                    visual.laserBeam.setStartY(sy);
+                    visual.laserBeam.setEndX(ex);
+                    visual.laserBeam.setEndY(ey);
+                    visual.laserBeam.setVisible(true);
+
+                    // Scale width and color based on damage
+                    // 20 to 400
+                    int damage = b.getDamage();
+                    double intensity = (damage - 20) / 380.0; // 0.0 to 1.0
+                    visual.laserBeam.setStrokeWidth(2.0 + (intensity * 6.0)); // 2.0 to 8.0
+
+                    // Color from Orange to Red/Magenta
+                    visual.laserBeam.setStroke(Color.ORANGE.interpolate(Color.MAGENTA, intensity));
+                } else {
+                    visual.laserBeam.setVisible(false);
+                }
+            } else {
+                visual.laserBeam.setVisible(false);
+            }
         }
     }
 }
