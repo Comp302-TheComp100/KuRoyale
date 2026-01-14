@@ -106,7 +106,7 @@
     </VBox>
     
     <!-- Standard Game Over Overlay -->
-    <VBox fx:id="gameOverRoot" alignment="CENTER" visible="false" spacing="20" maxWidth="500" maxHeight="500" styleClass="game-over-popup">
+    <VBox fx:id="gameOverRoot" alignment="CENTER" visible="false" spacing="20" maxWidth="500" maxHeight="500" styleClass="game-over-popup" style="-fx-background-color: black;">
         <Label fx:id="gameOverTitle" text="VICTORY" styleClass="game-over-title"/>
         <HBox alignment="CENTER" spacing="40">
             <VBox alignment="CENTER" spacing="10">
@@ -120,8 +120,8 @@
             </VBox>
         </HBox>
 
-        <Label fx:id="gameOverInfoLabel" text="Combos: 0 (+0 gold)" style="-fx-text-fill: white; -fx-font-size: 24px; -fx-text-alignment: center; -fx-font-weight: bold;" wrapText="true"/>
-        <Button text="EXIT" onAction="#handleExit" styleClass="menu-button-generic"/>
+        <javafx.scene.text.TextFlow fx:id="gameOverInfoTextFlow" textAlignment="CENTER" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.5); -fx-padding: 10; -fx-background-radius: 10;" maxWidth="450"/>
+        <Button text="RETURN TO MENU" onAction="#handleExit" styleClass="menu-button-gold"/>
     </VBox>
     
 </StackPane>

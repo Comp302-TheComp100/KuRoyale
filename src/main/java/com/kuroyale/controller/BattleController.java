@@ -57,7 +57,7 @@ public class BattleController {
     @FXML
     private HBox gameOverBotCrowns;
     @FXML
-    private javafx.scene.control.Label gameOverInfoLabel;
+    private javafx.scene.text.TextFlow gameOverInfoTextFlow;
 
     // Right Sidebar (moved from BattleArenaView to FXML)
     @FXML
@@ -668,17 +668,36 @@ public class BattleController {
         }
     }
 
+    private javafx.scene.text.Text createText(String content, javafx.scene.paint.Color color) {
+        javafx.scene.text.Text text = new javafx.scene.text.Text(content);
+        text.setFill(color);
+        return text;
+    }
+
     private void showGameOverPopup() {
         // Clear overlay and make it visible
         overlayContainer.setVisible(false);
         gameOverRoot.setVisible(true);
 
         boolean playerWon = gameState.isPlayerWinner();
+        boolean isDraw = false;
+        if (gameState.getPlayerScore() == gameState.getBotScore()) {
+            isDraw = true;
+        }
+
         // Track Matches Played (Veteran Player Achievement)
         com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
                 .updateProgress(com.kuroyale.model.enums.AchievementType.VETERAN_PLAYER, 1);
 
+        int baseGold = 0;
+        String titleText = "";
+        String titleStyle = "";
+
         if (playerWon) {
+            baseGold = 150;
+            titleText = "VICTORY";
+            titleStyle = "victory-text";
+
             // Track Win Quests
             com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
                     .updateProgress(com.kuroyale.model.enums.QuestType.WIN_MATCHES, 1);
@@ -696,12 +715,19 @@ public class BattleController {
                     .updateProgress(com.kuroyale.model.enums.AchievementType.FIRST_BLOOD, 1);
             com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
                     .updateProgress(com.kuroyale.model.enums.AchievementType.UNDEFEATED, 1);
+        } else if (isDraw) {
+            baseGold = 75;
+            titleText = "DRAW";
+            titleStyle = "victory-text"; // Or neutral style if available
+        } else {
+            baseGold = 50;
+            titleText = "DEFEAT";
+            titleStyle = "defeat-text";
         }
 
-        gameOverTitle.setText(playerWon ? "VICTORY" : "DEFEAT");
-
+        gameOverTitle.setText(titleText);
         gameOverTitle.getStyleClass().removeAll("victory-text", "defeat-text");
-        gameOverTitle.getStyleClass().add(playerWon ? "victory-text" : "defeat-text");
+        gameOverTitle.getStyleClass().add(titleStyle);
 
         int playerScore = gameState.getPlayerScore();
         int botScore = gameState.getBotScore();
@@ -711,12 +737,44 @@ public class BattleController {
             comboCount = comboService.getUniqueComboCount();
         }
 
+        int comboGold = comboCount * 10;
+        int totalGold = baseGold + comboGold;
+
         // Render crowns (using larger size for Game Over)
         renderGameOverCrowns(gameOverPlayerCrowns, playerScore, false);
         renderGameOverCrowns(gameOverBotCrowns, botScore, true);
 
-        gameOverInfoLabel.setText("Score: " + playerScore + " - " + botScore
-                + "\nCombos: " + comboCount + " (+" + (comboCount * 10) + " gold)");
+        gameOverInfoTextFlow.getChildren().clear();
+
+        javafx.scene.paint.Color highlightColor = javafx.scene.paint.Color.web("#00BFFF"); // Deep Sky Blue for emphasis
+        javafx.scene.paint.Color goldColor = javafx.scene.paint.Color.GOLD;
+        javafx.scene.paint.Color whiteColor = javafx.scene.paint.Color.WHITE;
+
+        // Line 1: Score
+        gameOverInfoTextFlow.getChildren().addAll(
+                createText("Score: ", highlightColor),
+                createText(playerScore + " - " + botScore + "\n", whiteColor));
+
+        // Line 2: Combos
+        gameOverInfoTextFlow.getChildren().addAll(
+                createText("Combos Triggered: ", highlightColor),
+                createText(String.valueOf(comboCount), whiteColor),
+                createText(" (+" + comboGold + " ", whiteColor),
+                createText("gold", goldColor),
+                createText(")\n", whiteColor));
+
+        // Line 3: Result Gold
+        gameOverInfoTextFlow.getChildren().addAll(
+                createText(titleText + " Gold: ", highlightColor),
+                createText(String.valueOf(baseGold) + " ", whiteColor),
+                createText("gold", goldColor),
+                createText("\n", whiteColor));
+
+        // Line 4: Total
+        gameOverInfoTextFlow.getChildren().addAll(
+                createText("Total: ", highlightColor),
+                createText(String.valueOf(totalGold) + " ", whiteColor),
+                createText("gold", goldColor));
         // User will click EXIT button to return to menu
     }
 

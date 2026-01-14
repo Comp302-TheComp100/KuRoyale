@@ -585,23 +585,31 @@ public class PvPBattleController {
         gameOverRoot.setVisible(true);
 
         TurnManager.Turn winner = gameState.getWinner();
+        int baseGold = 0;
+
         if (winner == TurnManager.Turn.PLAYER_1) {
             gameOverTitle.setText("PLAYER 1 WINS!");
             gameOverTitle.setStyle("-fx-text-fill: #3b82f6; -fx-font-size: 48px; -fx-font-weight: bold;");
+            baseGold = 150;
         } else if (winner == TurnManager.Turn.PLAYER_2) {
             gameOverTitle.setText("PLAYER 2 WINS!");
             gameOverTitle.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 48px; -fx-font-weight: bold;");
+            baseGold = 150;
         } else {
             gameOverTitle.setText("DRAW!");
             gameOverTitle.setStyle("-fx-text-fill: white; -fx-font-size: 48px; -fx-font-weight: bold;");
+            baseGold = 75;
         }
 
         renderGameOverCrowns(gameOverP1Crowns, gameState.getPlayer1Score(), false);
         renderGameOverCrowns(gameOverP2Crowns, gameState.getPlayer2Score(), true);
 
         if (gameOverInfoLabel != null) {
-            gameOverInfoLabel.setText(String.format("Final Score\nPlayer 1: %d  -  Player 2: %d",
-                    gameState.getPlayer1Score(), gameState.getPlayer2Score()));
+            String goldInfo = "\nRewards:\nVictory: " + baseGold + " Gold\nDraw: " + baseGold / 2 + " Gold\nDefeat: "
+                    + baseGold / 4 + " Gold";
+
+            gameOverInfoLabel.setText(String.format("Final Score\nPlayer 1: %d  -  Player 2: %d%s",
+                    gameState.getPlayer1Score(), gameState.getPlayer2Score(), goldInfo));
         }
     }
 

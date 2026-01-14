@@ -96,7 +96,7 @@
     </VBox>
 
     <!-- Game Over Overlay -->
-    <VBox fx:id="gameOverRoot" alignment="CENTER" visible="false" spacing="20" maxWidth="500" maxHeight="500" styleClass="game-over-popup">
+    <VBox fx:id="gameOverRoot" alignment="CENTER" visible="false" spacing="20" maxWidth="500" maxHeight="500" styleClass="game-over-popup" style="-fx-background-color: black;">
         <Label fx:id="gameOverTitle" text="PLAYER 1 WINS!" styleClass="game-over-title"/>
         <HBox alignment="CENTER" spacing="40">
             <VBox alignment="CENTER" spacing="10">
