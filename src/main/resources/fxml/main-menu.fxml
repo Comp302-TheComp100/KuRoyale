@@ -101,24 +101,26 @@
         </HBox>
     </VBox>
 
-    <!-- Right Side Circular Button -->
-    <VBox spacing="15" alignment="TOP_CENTER"
-          AnchorPane.topAnchor="200.0"
+    <!-- Right Side Save/Load Section -->
+    <HBox spacing="10" alignment="CENTER_RIGHT"
+          AnchorPane.topAnchor="250.0"
           AnchorPane.rightAnchor="20.0">
+        
+        <Label text="SAVE &amp; LOAD"
+               style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-font-family: 'Clash', Arial; -fx-text-fill: white; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 5, 0, 0, 2);"/>
         
         <Button fx:id="resumeGameButton"
                 onAction="#handleResumeGame"
-                styleClass="menu-button"
-                style="-fx-background-radius: 50; -fx-pref-width: 80; -fx-pref-height: 80; -fx-font-size: 0;">
+                style="-fx-background-color: transparent; -fx-border-width: 0; -fx-background-radius: 0; -fx-pref-width: 95; -fx-pref-height: 95; -fx-font-size: 0;">
             <graphic>
-                <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
+                <ImageView fitHeight="140.0" fitWidth="140.0" pickOnBounds="true" preserveRatio="true">
                     <image>
-                        <Image url="@../images/battle_icon.png"/>
+                        <Image url="@../images/save_load_icon.png"/>
                     </image>
                 </ImageView>
             </graphic>
         </Button>
-    </VBox>
+    </HBox>
 
     <!-- Central Large Arena Design Button -->
     <Button fx:id="arenaDesignButton"

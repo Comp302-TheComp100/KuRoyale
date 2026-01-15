@@ -11,7 +11,8 @@ import java.util.List;
  * 
  * Design Pattern: Strategy Pattern
  * validateDeck() method is the strategy that varies per challenge type
- * Each concrete challenge provides its own validation logic*/
+ * Each concrete challenge provides its own validation logic
+ */
 public abstract class Challenge {
     private final int id;
     private final ChallengeType type;
@@ -41,18 +42,41 @@ public abstract class Challenge {
         this.completions = 0;
     }
 
-    /*Strategy Pattern: Validates if the given deck meets the challenge requirements.
-     * Each concrete challenge implements its own validation logic.  */
+    /*
+     * Strategy Pattern: Validates if the given deck meets the challenge
+     * requirements.
+     * Each concrete challenge implements its own validation logic.
+     */
     public abstract List<String> validateDeck(List<Card> deck);
 
-    /*Gets the list of allowed cards for this challenge (for UI display).
+    /*
+     * Gets the current progress text for display (e.g., "Swarm cards: 2/5").
+     * Default implementation returns empty string. Subclasses override for specific
+     * display.
+     */
+    public String getProgressText(List<Card> deck) {
+        return "";
+    }
+
+    /*
+     * Checks if the challenge-specific requirement is met (not counting the 8-card
+     * requirement).
+     * Default returns true if no errors. Subclasses can override for custom logic.
+     */
+    public boolean isRequirementMet(List<Card> deck) {
+        return validateDeck(deck).isEmpty();
+    }
+
+    /*
+     * Gets the list of allowed cards for this challenge (for UI display).
      * Default implementation returns null (all cards allowed).
-     * Subclasses override to restrict card selection.*/
+     * Subclasses override to restrict card selection.
+     */
     public List<String> getAllowedCardNames() {
         return null;
     }
 
-    //Calculates stars earned based on completion time and damage taken.
+    // Calculates stars earned based on completion time and damage taken.
     public int calculateStars(int completionTimeSeconds, int damageTaken) {
         if (damageTaken == 0 || completionTimeSeconds <= threeStarTimeSeconds) {
             return 3;

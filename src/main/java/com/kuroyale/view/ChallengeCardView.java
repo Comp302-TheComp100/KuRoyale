@@ -127,13 +127,12 @@ public class ChallengeCardView extends VBox {
     private HBox createRewardDisplay(int goldReward, boolean isLocked) {
         HBox rewardBox = new HBox(5);
         rewardBox.setAlignment(Pos.CENTER);
-        Label coinLabel = new Label("🪙");
-        coinLabel.setStyle("-fx-font-size: 20px;");
+        // Coin unicode removed
         Label rewardLabel = new Label(goldReward + " Gold");
         rewardLabel.getStyleClass().add("challenge-reward");
         if (isLocked)
             rewardLabel.setOpacity(0.5);
-        rewardBox.getChildren().addAll(coinLabel, rewardLabel);
+        rewardBox.getChildren().addAll(rewardLabel);
         return rewardBox;
     }
 

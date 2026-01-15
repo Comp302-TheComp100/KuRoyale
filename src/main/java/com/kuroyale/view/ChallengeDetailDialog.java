@@ -7,8 +7,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -82,11 +84,25 @@ public class ChallengeDetailDialog extends StackPane {
         // Star rating (if completed)
         HBox starBox = createStarRating();
 
+        // Content Container for ScrollPane (everything except title/badge/buttons)
+        VBox contentBox = new VBox(15);
+        contentBox.setAlignment(Pos.CENTER);
+        contentBox.getChildren().addAll(descLabel, rulesBox, statsBox, rewardBox, conditionsBox, starBox);
+
+        ScrollPane scrollPane = new ScrollPane(contentBox);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0;");
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.getStyleClass().add("scroll-pane-transparent"); // Ensure transparency
+
+        // Allow ScrollPane to grow
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+
         // Action buttons
         HBox buttonsBox = createActionButtons();
 
-        mainContainer.getChildren().addAll(
-                badge, nameLabel, descLabel, rulesBox, statsBox, rewardBox, conditionsBox, starBox, buttonsBox);
+        mainContainer.getChildren().addAll(badge, nameLabel, scrollPane, buttonsBox);
 
         getChildren().add(mainContainer);
 
@@ -197,17 +213,16 @@ public class ChallengeDetailDialog extends StackPane {
         HBox rewardBox = new HBox(8);
         rewardBox.setAlignment(Pos.CENTER);
 
-        Label coinLabel = new Label("🪙");
-        coinLabel.setStyle("-fx-font-size: 24px;");
+        // Grid/Coin glitched character removed
 
-        Label rewardLabel = new Label(challenge.getGoldReward() + " Gold Reward");
+        Label rewardLabel = new Label(challenge.getGoldReward() + " Gold");
         rewardLabel.setStyle(
                 "-fx-font-size: 18px;" +
                         "-fx-font-weight: bold;" +
                         "-fx-font-family: 'Clash', Arial;" +
                         "-fx-text-fill: #fbbf24;");
 
-        rewardBox.getChildren().addAll(coinLabel, rewardLabel);
+        rewardBox.getChildren().addAll(rewardLabel);
         return rewardBox;
     }
 
@@ -253,8 +268,10 @@ public class ChallengeDetailDialog extends StackPane {
         starBox.setAlignment(Pos.CENTER);
 
         for (int i = 0; i < 3; i++) {
-            Label star = new Label(i < challenge.getStarsEarned() ? "⭐" : "☆");
-            star.setStyle("-fx-font-size: 28px;");
+            Label star = new Label("★"); // Always filled star
+            star.setStyle("-fx-font-size: 36px; -fx-text-fill: " +
+                    (i < challenge.getStarsEarned() ? "#ffd700" : "#555555") + // Yellow for earned, Dark Gray for empty
+                    "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 5, 0, 0, 0);");
             starBox.getChildren().add(star);
         }
 
@@ -286,7 +303,7 @@ public class ChallengeDetailDialog extends StackPane {
         addButtonHoverEffects(closeButton);
 
         // Try Challenge button
-        Button tryButton = new Button("⚔️ TRY CHALLENGE");
+        Button tryButton = new Button("TRY CHALLENGE");
         tryButton.setStyle(
                 "-fx-background-color: linear-gradient(to bottom, #10b981 0%, #059669 100%);" +
                         "-fx-text-fill: white;" +

@@ -21,30 +21,35 @@
     <AnchorPane fx:id="root"
                 prefWidth="1280" prefHeight="720">
 
-        <!-- Title -->
-        <VBox alignment="CENTER" spacing="10"
+        <!-- Main Content VBox -->
+        <VBox alignment="TOP_CENTER" spacing="30"
               AnchorPane.topAnchor="30.0"
+              AnchorPane.bottomAnchor="80.0"
               AnchorPane.leftAnchor="0.0"
               AnchorPane.rightAnchor="0.0">
-            <Label fx:id="titleLabel" text="CHALLENGES" styleClass="title-label"/>
-            <Label text="Complete challenges in order to unlock the next!" styleClass="challenge-subtitle"/>
-        </VBox>
-
-        <!-- Challenge Ladder Container -->
-        <ScrollPane fx:id="challengeScrollPane"
-                    AnchorPane.topAnchor="120.0"
-                    AnchorPane.bottomAnchor="80.0"
-                    AnchorPane.leftAnchor="200.0"
-                    AnchorPane.rightAnchor="200.0"
-                    fitToWidth="true"
-                    styleClass="scroll-pane-transparent">
-            <VBox fx:id="challengeLadderContainer" alignment="CENTER" spacing="0">
-                <padding>
-                    <Insets top="20" right="20" bottom="20" left="20"/>
-                </padding>
-                <!-- Challenge cards will be added programmatically -->
+            
+            <!-- Title -->
+            <VBox alignment="CENTER" spacing="10">
+                <Label fx:id="titleLabel" text="CHALLENGES" styleClass="title-label"/>
+                <Label text="Complete challenges in order to unlock the next!" styleClass="challenge-subtitle"/>
             </VBox>
-        </ScrollPane>
+
+            <!-- Challenge Ladder Container -->
+            <ScrollPane fx:id="challengeScrollPane"
+                        fitToWidth="true"
+                        styleClass="scroll-pane-transparent"
+                        VBox.vgrow="ALWAYS">
+                <VBox.margin>
+                    <Insets left="200" right="200"/>
+                </VBox.margin>
+                <VBox fx:id="challengeLadderContainer" alignment="CENTER" spacing="0">
+                    <padding>
+                        <Insets top="20" right="20" bottom="20" left="20"/>
+                    </padding>
+                    <!-- Challenge cards will be added programmatically -->
+                </VBox>
+            </ScrollPane>
+        </VBox>
 
         <!-- Back Button -->
         <Button fx:id="backButton"

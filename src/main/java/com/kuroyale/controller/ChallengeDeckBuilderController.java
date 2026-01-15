@@ -53,23 +53,38 @@ public class ChallengeDeckBuilderController {
     private static final int SLOT_CONTAINER_HEIGHT = 280;
     private static final int RECESSED_RECT_OFFSET_Y = 20;
 
-    @FXML private AnchorPane deckSlotsBackground;
-    @FXML private AnchorPane deckSlotsContainer;
-    @FXML private AnchorPane cardsGridBackground;
-    @FXML private GridPane cardsGrid;
-    @FXML private ScrollPane cardsScrollPane;
-    @FXML private StackPane rootPane;
-    @FXML private Button backButton;
-    @FXML private Button startChallengeButton;
-    @FXML private Label averageElixirValue;
-    @FXML private Label battleDeckTitle;
-    @FXML private HBox averageElixirContainer;
-    @FXML private HBox challengeBanner;
-    @FXML private Label challengeNameLabel;
-    @FXML private Label challengeRulesLabel;
-    @FXML private HBox validationBox;
-    @FXML private Label validationIcon;
-    @FXML private Label validationLabel;
+    @FXML
+    private AnchorPane deckSlotsBackground;
+    @FXML
+    private AnchorPane deckSlotsContainer;
+    @FXML
+    private AnchorPane cardsGridBackground;
+    @FXML
+    private GridPane cardsGrid;
+    @FXML
+    private ScrollPane cardsScrollPane;
+    @FXML
+    private StackPane rootPane;
+    @FXML
+    private Button backButton;
+    @FXML
+    private Button startChallengeButton;
+    @FXML
+    private Label averageElixirValue;
+    @FXML
+    private Label battleDeckTitle;
+    @FXML
+    private HBox averageElixirContainer;
+    @FXML
+    private HBox challengeBanner;
+    @FXML
+    private Label challengeNameLabel;
+    @FXML
+    private Label challengeRulesLabel;
+    @FXML
+    private HBox validationBox;
+    @FXML
+    private Label validationLabel;
 
     private final DeckBuilderModel model = new DeckBuilderModel();
     private final SceneLoader sceneLoader = new SceneLoader();
@@ -86,8 +101,10 @@ public class ChallengeDeckBuilderController {
     private boolean replaceMode;
     private Card cardToReplace;
 
-    /* Sets the challenge for this deck builder.
-     * Must be called before the scene is shown. */
+    /*
+     * Sets the challenge for this deck builder.
+     * Must be called before the scene is shown.
+     */
     public void setChallenge(Challenge challenge) {
         this.currentChallenge = challenge;
 
@@ -304,27 +321,47 @@ public class ChallengeDeckBuilderController {
 
         List<Card> deckCards = deck.getCards();
         List<String> errors = currentChallenge.validateDeck(deckCards);
-
         boolean isValid = errors.isEmpty() && deck.isFull();
 
+        // Get progress text from challenge
+        String progressText = currentChallenge.getProgressText(deckCards);
+        boolean requirementMet = currentChallenge.isRequirementMet(deckCards);
+
         // Update validation UI
-        if (validationIcon != null && validationLabel != null) {
+        if (validationLabel != null) {
             if (deck.getCards().isEmpty()) {
-                validationIcon.setText("ℹ️");
                 validationLabel.setText("Select 8 cards to build your deck");
-                validationIcon.setStyle("-fx-font-size: 18px;");
                 validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(255,255,255,0.7);");
             } else if (isValid) {
-                validationIcon.setText("✅");
                 validationLabel.setText("Deck is valid! Ready to start challenge.");
-                validationIcon.setStyle("-fx-font-size: 18px;");
-                validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #10b981;");
+                validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #10b981; -fx-font-weight: bold;");
             } else {
-                validationIcon.setText("❌");
-                String errorMsg = !errors.isEmpty() ? errors.get(0) : "Need " + (8 - deckCards.size()) + " more cards";
-                validationLabel.setText(errorMsg);
-                validationIcon.setStyle("-fx-font-size: 18px;");
-                validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ef4444;");
+                // Show progress text with requirement status
+                String message;
+                if (!progressText.isEmpty()) {
+                    message = progressText;
+                    if (!requirementMet) {
+                        // Add how many more cards needed if deck not full
+                        int cardsNeeded = 8 - deckCards.size();
+                        if (cardsNeeded > 0) {
+                            message += " | Need " + cardsNeeded + " more cards";
+                        }
+                    } else if (!deck.isFull()) {
+                        int cardsNeeded = 8 - deckCards.size();
+                        message += " | Need " + cardsNeeded + " more cards";
+                    }
+                } else if (!errors.isEmpty()) {
+                    message = errors.get(0);
+                } else {
+                    message = "Need " + (8 - deckCards.size()) + " more cards";
+                }
+
+                validationLabel.setText(message);
+                if (requirementMet) {
+                    validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #10b981;");
+                } else {
+                    validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #fbbf24;");
+                }
             }
         }
 
