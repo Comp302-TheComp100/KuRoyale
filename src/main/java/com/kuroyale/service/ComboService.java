@@ -21,11 +21,13 @@ public class ComboService implements GameEventListener {
         final Card card;
         final long timestamp;
         final List<ICombatant> spawnedUnits;
+        final boolean isPlayer; // Track which side played this card
 
-        PlayedCardEvent(Card card, long timestamp, List<ICombatant> spawnedUnits) {
+        PlayedCardEvent(Card card, long timestamp, List<ICombatant> spawnedUnits, boolean isPlayer) {
             this.card = card;
             this.timestamp = timestamp;
             this.spawnedUnits = spawnedUnits;
+            this.isPlayer = isPlayer;
         }
     }
 
@@ -103,7 +105,7 @@ public class ComboService implements GameEventListener {
         checkCombos(isPlayer, card, spawnedUnits, targetList, now);
 
         // Add current event
-        targetList.addLast(new PlayedCardEvent(card, now, spawnedUnits));
+        targetList.addLast(new PlayedCardEvent(card, now, spawnedUnits, isPlayer));
     }
 
     private void pruneOldEvents(Deque<PlayedCardEvent> list, long now) {
@@ -119,6 +121,12 @@ public class ComboService implements GameEventListener {
 
         while (it.hasNext()) {
             PlayedCardEvent prevEvent = it.next();
+
+            // CRITICAL: Skip if previous event was from a different player
+            // This prevents cross-player combo triggering
+            if (prevEvent.isPlayer != isPlayer) {
+                continue;
+            }
 
             // Priority 1: Siege Mode & Air Assault
             if (checkSiegeMode(isPlayer, prevEvent, currentCard, currentUnits, now))
