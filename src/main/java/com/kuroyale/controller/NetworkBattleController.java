@@ -91,6 +91,9 @@ public class NetworkBattleController implements GameEventListener {
     private long lastPingTime = 0;
     private long currentPing = 0;
     
+    // Authoritative host model - only host runs game logic
+    private boolean isHost = false;
+    
     @FXML
     private void initialize() {
         // Initial setup - network service will be set via setter
@@ -102,6 +105,10 @@ public class NetworkBattleController implements GameEventListener {
      */
     public void setNetworkService(NetworkService networkService) {
         this.networkService = networkService;
+        this.isHost = networkService.isHost();
+        
+        System.out.println("[NetworkBattle] Initializing as " + (isHost ? "HOST (authoritative)" : "CLIENT (receives state)"));
+        
         setupNetworkCallbacks();
         initializeGame();
         startGameLoop();
@@ -232,8 +239,16 @@ public class NetworkBattleController implements GameEventListener {
     }
     
     private void update(double deltaTime) {
-        // Update Game Logic and UI
-        gameState.update(deltaTime);
+        if (isHost) {
+            // HOST: Run full authoritative game logic
+            gameState.update(deltaTime);
+        } else {
+            // CLIENT: Only update local elixir for responsive UI
+            // Full game state comes from host via GAME_STATE_SYNC messages
+            gameState.updateClientOnly(deltaTime);
+        }
+        
+        // Update UI elements (both host and client)
         elixirBar.update();
         handView.update();
         arenaView.update(deltaTime);
@@ -247,8 +262,8 @@ public class NetworkBattleController implements GameEventListener {
             elixirBar.setDoubleElixirActive(true);
         }
         
-        // Check for Game Over
-        if (gameState.isGameOver() && !gameEnded) {
+        // Check for Game Over (host determines this)
+        if (isHost && gameState.isGameOver() && !gameEnded) {
             endGame();
         }
     }
@@ -256,12 +271,26 @@ public class NetworkBattleController implements GameEventListener {
     private void syncGameState() {
         if (gameEnded || !networkService.isConnected()) return;
         
-        // Host syncs timer
-        if (networkService.isHost()) {
-            networkService.send(NetworkMessage.timerSync(gameState.getGameTime()));
+        if (isHost) {
+            // HOST: Send authoritative game state to client
+            // This includes timer, elixir, scores, and game state flags
+            networkService.send(NetworkMessage.gameStateSync(
+                gameState.getGameTime(),
+                gameState.getPlayerElixir().getCurrentElixir(),
+                gameState.getBotElixir().getCurrentElixir(),
+                gameState.getPlayerScore(),
+                gameState.getBotScore(),
+                gameState.isDoubleElixir()
+            ));
+            
+            // Also send score sync for redundancy
+            networkService.send(NetworkMessage.scoreSync(
+                gameState.getPlayerScore(),
+                gameState.getBotScore()
+            ));
         }
         
-        // Both sync elixir
+        // Both send elixir update (for UI responsiveness on both sides)
         networkService.sendElixirUpdate(gameState.getPlayerElixir().getCurrentElixir());
         
         // Measure ping
@@ -288,16 +317,29 @@ public class NetworkBattleController implements GameEventListener {
                 
             case TIMER_SYNC:
                 // Client syncs timer with host (host is authoritative)
-                if (!networkService.isHost()) {
+                if (!isHost) {
                     try {
                         double hostTime = Double.parseDouble(message.getData());
-                        // Sync game timer with host
                         if (gameState != null) {
                             gameState.setGameTime(hostTime);
                         }
                     } catch (NumberFormatException e) {
                         // Ignore invalid timer data
                     }
+                }
+                break;
+                
+            case GAME_STATE_SYNC:
+                // CLIENT: Apply authoritative game state from host
+                if (!isHost) {
+                    handleGameStateSync(message);
+                }
+                break;
+                
+            case SCORE_SYNC:
+                // CLIENT: Sync scores from host
+                if (!isHost) {
+                    handleScoreSync(message);
                 }
                 break;
                 
@@ -329,6 +371,55 @@ public class NetworkBattleController implements GameEventListener {
             default:
                 break;
         }
+    }
+    
+    /**
+     * Handles authoritative game state sync from host.
+     * The client applies this state to stay in sync with the host's game.
+     */
+    private void handleGameStateSync(NetworkMessage message) {
+        double[] stateData = message.parseGameStateSync();
+        if (stateData == null || gameState == null) return;
+        
+        double hostGameTime = stateData[0];
+        double hostPlayerElixir = stateData[1];  // Host's player = our opponent
+        double hostBotElixir = stateData[2];     // Host's bot = us (the client)
+        int hostPlayerScore = (int) stateData[3];
+        int hostBotScore = (int) stateData[4];
+        boolean hostDoubleElixir = stateData[5] > 0.5;
+        
+        // Apply the host's authoritative state
+        // Note: From client's perspective, scores are inverted
+        // Host's playerScore = towers WE lost, Host's botScore = towers OPPONENT lost
+        gameState.applyHostStateSync(
+            hostGameTime,
+            hostPlayerElixir,
+            hostBotElixir,
+            hostBotScore,      // Client's score = Host's botScore (towers client destroyed)
+            hostPlayerScore,   // Opponent's score = Host's playerScore (towers host destroyed)
+            hostDoubleElixir
+        );
+        
+        // Update double elixir UI
+        if (hostDoubleElixir && !doubleElixirShown) {
+            doubleElixirShown = true;
+            elixirBar.setDoubleElixirActive(true);
+        }
+        
+        System.out.println("[NetworkBattle] Applied host state: time=" + hostGameTime + 
+            ", scores=" + hostBotScore + "-" + hostPlayerScore);
+    }
+    
+    /**
+     * Handles score sync from host.
+     */
+    private void handleScoreSync(NetworkMessage message) {
+        int[] scores = message.parseScoreSync();
+        if (scores == null || gameState == null) return;
+        
+        // From client's perspective: host's playerScore = opponent's score, host's botScore = our score
+        gameState.setScores(scores[1], scores[0]);
+        updateScoreDisplay();
     }
     
     private void handleOpponentCardPlaced(NetworkMessage message) {

@@ -354,6 +354,100 @@ public class GameState implements IBattleState {
     public void setGameTime(double gameTime) {
         this.gameTime = Math.max(0, gameTime);
     }
+    
+    /**
+     * Sets the scores (used for network sync where host is authoritative).
+     */
+    public void setScores(int playerScore, int botScore) {
+        this.playerScore = playerScore;
+        this.botScore = botScore;
+    }
+    
+    /**
+     * Sets the double elixir state (used for network sync).
+     */
+    public void setDoubleElixir(boolean isDoubleElixir) {
+        this.isDoubleElixir = isDoubleElixir;
+        if (isDoubleElixir) {
+            playerElixir.setDoubleElixir(true);
+            botElixir.setDoubleElixir(true);
+        }
+    }
+    
+    /**
+     * Applies a full game state sync from the authoritative host.
+     * Used by the client to update its local state.
+     */
+    public void applyHostStateSync(double gameTime, double playerElixirValue, double botElixirValue,
+            int playerScore, int botScore, boolean isDoubleElixir) {
+        this.gameTime = Math.max(0, gameTime);
+        this.playerScore = playerScore;
+        this.botScore = botScore;
+        
+        // Sync elixir values - client sees these inverted (their elixir is the "bot" from host's perspective)
+        // The client's "player" elixir should match the host's "bot" elixir (since client is the opponent)
+        this.playerElixir.setCurrentElixir(botElixirValue);  // Client's elixir = Host's opponent elixir
+        this.botElixir.setCurrentElixir(playerElixirValue);  // Client's opponent = Host's player
+        
+        if (isDoubleElixir && !this.isDoubleElixir) {
+            this.isDoubleElixir = true;
+            this.playerElixir.setDoubleElixir(true);
+            this.botElixir.setDoubleElixir(true);
+        }
+    }
+    
+    /**
+     * Light update for client - updates movement and visuals but NOT scoring.
+     * The authoritative scores and game state come from the host.
+     * This keeps the game visually smooth while ensuring consistent outcomes.
+     */
+    public void updateClientOnly(double deltaTime) {
+        // Update elixir regeneration for responsive UI
+        playerElixir.update(deltaTime);
+        botElixir.update(deltaTime);
+        
+        // Update timer locally (will be corrected by host sync)
+        if (gameTime > 0) {
+            gameTime -= deltaTime;
+            
+            // Check for Double Elixir locally (host will confirm)
+            if (gameTime <= 60.0 && !isDoubleElixir) {
+                isDoubleElixir = true;
+                playerElixir.setDoubleElixir(true);
+                botElixir.setDoubleElixir(true);
+            }
+        }
+        
+        // Update troop movement for visual smoothness
+        troopMovementService.updateTroops(deltaTime, this, activeTroops);
+        
+        // Update buildings (lifetime, animations)
+        for (Building b : activeBuildings) {
+            if (b.isAlive()) {
+                b.update(deltaTime);
+            }
+        }
+        
+        // Run combat for visual effects (damage numbers, animations)
+        // But do NOT calculate scores - those come from host
+        combatService.update(deltaTime, this);
+        
+        // Remove dead troops (visual cleanup)
+        activeTroops.removeIf(t -> !t.isAlive());
+        
+        // Cleanup dead buildings
+        java.util.Iterator<Building> it = activeBuildings.iterator();
+        while (it.hasNext()) {
+            Building b = it.next();
+            if (!b.isAlive()) {
+                arena.getSpatialGrid().remove(b);
+                it.remove();
+            }
+        }
+        
+        // NOTE: Do NOT update scores or check win conditions here
+        // Those are authoritative from the host
+    }
 
     public int getPlayerScore() {
         return playerScore;

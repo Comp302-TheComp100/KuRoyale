@@ -29,6 +29,9 @@ public enum NetworkMessageType {
     TOWER_DESTROYED("Tower was destroyed"),
     ELIXIR_UPDATE("Elixir level changed"),
     TIMER_SYNC("Game timer synchronization"),
+    GAME_STATE_SYNC("Full game state sync from authoritative host"),
+    TROOP_SYNC("Troop positions and health sync from host"),
+    SCORE_SYNC("Score synchronization from host"),
     
     // Match End Messages
     VICTORY("Player won the match"),
