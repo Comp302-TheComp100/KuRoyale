@@ -316,21 +316,21 @@ public class TroopMovementService {
             if (arena != null) {
                 // 1. Try full move
                 GridPosition gpFixed = finalPos.toGridPosition();
-                if (isWalkable(arena, gpFixed.getX(), gpFixed.getY())) {
+                if (gpFixed != null && isWalkable(arena, gpFixed.getX(), gpFixed.getY())) {
                     return finalPos;
                 }
 
                 // 2. Try moving X only (Side-to-side slide)
                 Vector2 posXOnly = new Vector2(finalPos.getX(), proposedPos.getY());
                 GridPosition gpX = posXOnly.toGridPosition();
-                if (isWalkable(arena, gpX.getX(), gpX.getY())) {
+                if (gpX != null && isWalkable(arena, gpX.getX(), gpX.getY())) {
                     return posXOnly;
                 }
 
                 // 3. Try moving Y only (Up-down slide)
                 Vector2 posYOnly = new Vector2(proposedPos.getX(), finalPos.getY());
                 GridPosition gpY = posYOnly.toGridPosition();
-                if (isWalkable(arena, gpY.getX(), gpY.getY())) {
+                if (gpY != null && isWalkable(arena, gpY.getX(), gpY.getY())) {
                     return posYOnly;
                 }
 

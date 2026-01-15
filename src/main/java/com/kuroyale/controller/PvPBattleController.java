@@ -59,7 +59,7 @@ public class PvPBattleController {
     @FXML
     private HBox gameOverP2Crowns;
     @FXML
-    private Label gameOverInfoLabel;
+    private javafx.scene.text.TextFlow gameOverInfoTextFlow;
     @FXML
     private VBox infoPanel;
 
@@ -147,12 +147,19 @@ public class PvPBattleController {
 
             @Override
             public void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
-                playTowerDeathEffect(tower);
+                if (arenaView != null) {
+                    javafx.application.Platform.runLater(() -> {
+                        arenaView.playTowerDeathEffect(tower);
+                        PvPBattleController.this.playCrownFlyingEffect(tower);
+                    });
+                }
             }
 
             @Override
             public void onTowerDamaged(Tower tower) {
-                playDamageEffect(tower);
+                if (arenaView != null) {
+                    javafx.application.Platform.runLater(() -> arenaView.playDamageEffect(tower));
+                }
             }
 
             @Override
@@ -161,7 +168,6 @@ public class PvPBattleController {
 
             @Override
             public void onBuildingProduction(Building building, String resource, int amount) {
-                // Handle production visuals if needed (similar to SP)
                 if ("ELIXIR".equals(resource)) {
                     javafx.application.Platform.runLater(() -> {
                         if (building.isPlayerSide()) {
@@ -181,200 +187,17 @@ public class PvPBattleController {
             public void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
                     java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
                 javafx.application.Platform.runLater(() -> {
-                    // 1. Show Text Feedback
-                    try {
-                        showComboText(combo.getDisplayName());
-                    } catch (Exception e) {
-                        // Ignore UI errors if controller is dying
-                    }
-
-                    // 2. Show Visual Effects
+                    // 1. Show Text Feedback & Visuals via View
                     if (arenaView != null) {
+                        arenaView.showComboText(combo.getDisplayName());
                         arenaView.showComboEffect(combo, affectedUnits);
                     }
 
-                    // 3. Play Sound Effect
-                    try {
-                        java.net.URL soundUrl = getClass().getResource("/musics/combo.mp3");
-                        if (soundUrl != null) {
-                            javafx.scene.media.Media sound = new javafx.scene.media.Media(soundUrl.toExternalForm());
-                            javafx.scene.media.MediaPlayer mediaPlayer = new javafx.scene.media.MediaPlayer(sound);
-                            mediaPlayer.setVolume(0.5);
-                            mediaPlayer.play();
-                        }
-                    } catch (Exception e) {
-                        // Silently ignore sound errors
-                    }
+                    // 2. Play Sound Effect via SoundManager
+                    com.kuroyale.util.SoundManager.getInstance().play("combo");
                 });
             }
         });
-    }
-
-    private void showComboText(String text) {
-        javafx.scene.control.Label label = new javafx.scene.control.Label(text + "!");
-        label.setStyle(
-                "-fx-font-size: 32px; -fx-text-fill: gold; -fx-font-weight: bold; -fx-effect: dropshadow(three-pass-box, black, 10, 0, 0, 0);");
-        label.setTranslateY(-100);
-
-        StackPane container = new StackPane(label);
-        container.setPickOnBounds(false);
-        if (arenaContainer != null) {
-            arenaContainer.getChildren().add(container);
-
-            javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(javafx.util.Duration.seconds(2.0),
-                    label);
-            ft.setFromValue(1.0);
-            ft.setToValue(0.0);
-            ft.setOnFinished(e -> {
-                if (arenaContainer != null)
-                    arenaContainer.getChildren().remove(container);
-            });
-
-            javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(
-                    javafx.util.Duration.seconds(2.0), label);
-            tt.setByY(-50);
-
-            javafx.animation.ParallelTransition pt = new javafx.animation.ParallelTransition(ft, tt);
-            pt.play();
-        }
-    }
-
-    private void playDamageEffect(Tower tower) {
-        javafx.scene.Node towerNode = arenaView.getTowerNode(tower);
-        if (towerNode != null && towerNode instanceof javafx.scene.layout.StackPane) {
-            javafx.scene.layout.StackPane stack = (javafx.scene.layout.StackPane) towerNode;
-
-            // 1. Red Overlay Flash
-            javafx.scene.shape.Rectangle overlay = new javafx.scene.shape.Rectangle(stack.getWidth(),
-                    stack.getHeight());
-            overlay.setFill(javafx.scene.paint.Color.RED);
-            overlay.setOpacity(0.0);
-            overlay.setMouseTransparent(true);
-
-            stack.getChildren().add(overlay);
-
-            javafx.animation.FadeTransition flash = new javafx.animation.FadeTransition(
-                    javafx.util.Duration.millis(100), overlay);
-            flash.setFromValue(0.0);
-            flash.setToValue(0.3);
-            flash.setCycleCount(2);
-            flash.setAutoReverse(true);
-            flash.setOnFinished(e -> stack.getChildren().remove(overlay));
-            flash.play();
-
-            // 2. Shake
-            javafx.animation.TranslateTransition shake = new javafx.animation.TranslateTransition(
-                    javafx.util.Duration.millis(50), towerNode);
-            shake.setByX(2);
-            shake.setCycleCount(4);
-            shake.setAutoReverse(true);
-            shake.play();
-        }
-    }
-
-    private void playTowerDeathEffect(Tower tower) {
-        javafx.scene.Node towerNode = arenaView.getTowerNode(tower);
-        if (towerNode == null)
-            return;
-
-        javafx.geometry.Bounds bounds = towerNode.localToScene(towerNode.getBoundsInLocal());
-        double startX = bounds.getCenterX();
-        double startY = bounds.getCenterY();
-
-        javafx.geometry.Point2D localStart = arenaContainer.sceneToLocal(startX, startY);
-        double centerX = localStart.getX() - arenaContainer.getWidth() / 2;
-        double centerY = localStart.getY() - arenaContainer.getHeight() / 2;
-
-        // 1. Procedural Explosion
-        javafx.scene.shape.Circle explosionCore = new javafx.scene.shape.Circle(10, javafx.scene.paint.Color.ORANGE);
-        explosionCore.setStroke(javafx.scene.paint.Color.RED);
-        explosionCore.setStrokeWidth(2);
-        explosionCore.setTranslateX(centerX);
-        explosionCore.setTranslateY(centerY);
-
-        javafx.scene.shape.Circle explosionRing = new javafx.scene.shape.Circle(10,
-                javafx.scene.paint.Color.TRANSPARENT);
-        explosionRing.setStroke(javafx.scene.paint.Color.YELLOW);
-        explosionRing.setStrokeWidth(4);
-        explosionRing.setTranslateX(centerX);
-        explosionRing.setTranslateY(centerY);
-
-        arenaContainer.getChildren().addAll(explosionCore, explosionRing);
-
-        javafx.animation.Timeline explodeAnim = new javafx.animation.Timeline(
-                new javafx.animation.KeyFrame(javafx.util.Duration.ZERO,
-                        new javafx.animation.KeyValue(explosionCore.radiusProperty(), 10),
-                        new javafx.animation.KeyValue(explosionCore.opacityProperty(), 1.0)),
-                new javafx.animation.KeyFrame(javafx.util.Duration.millis(400),
-                        new javafx.animation.KeyValue(explosionCore.radiusProperty(), 60),
-                        new javafx.animation.KeyValue(explosionCore.opacityProperty(), 0.0)),
-                new javafx.animation.KeyFrame(javafx.util.Duration.ZERO,
-                        new javafx.animation.KeyValue(explosionRing.radiusProperty(), 10),
-                        new javafx.animation.KeyValue(explosionRing.opacityProperty(), 1.0),
-                        new javafx.animation.KeyValue(explosionRing.strokeWidthProperty(), 4)),
-                new javafx.animation.KeyFrame(javafx.util.Duration.millis(600),
-                        new javafx.animation.KeyValue(explosionRing.radiusProperty(), 80),
-                        new javafx.animation.KeyValue(explosionRing.opacityProperty(), 0.0),
-                        new javafx.animation.KeyValue(explosionRing.strokeWidthProperty(), 0)));
-
-        explodeAnim.setOnFinished(e -> arenaContainer.getChildren().removeAll(explosionCore, explosionRing));
-        explodeAnim.play();
-
-        // 2. Crown Animation
-        // Player 1 (Bottom) uses "crown.png" isPlayerSide=true
-        // Player 2 (Top) uses "oppo_crown.png" isPlayerSide=false
-        // If P1 tower dies, P2 gets a point. We want P2 Crown (oppo_crown/RED) to fly
-        // to P2 Score (Right).
-        // If P2 tower dies, P1 gets a point. We want P1 Crown (crown/BLUE) to fly to P1
-        // Score (Left).
-        boolean isPlayer1Tower = tower.isPlayerSide();
-        String crownPath = isPlayer1Tower ? "/images/oppo_crown.png" : "/images/crown.png";
-
-        javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
-                new javafx.scene.image.Image(getClass().getResourceAsStream(crownPath)));
-        crown.setFitWidth(40);
-        crown.setFitHeight(40);
-
-        crown.setTranslateX(centerX);
-        crown.setTranslateY(centerY);
-        crown.setOpacity(0.0);
-
-        arenaContainer.getChildren().add(crown);
-
-        javafx.animation.SequentialTransition sequence = new javafx.animation.SequentialTransition();
-
-        javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(javafx.util.Duration.millis(200),
-                crown);
-        fadeIn.setToValue(1.0);
-
-        javafx.animation.PauseTransition stay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(1.0));
-
-        javafx.animation.TranslateTransition move = new javafx.animation.TranslateTransition(
-                javafx.util.Duration.seconds(1.0), crown);
-
-        // Determine target box
-        HBox targetBox = isPlayer1Tower ? player2ScoreContainer : player1ScoreContainer;
-
-        javafx.geometry.Point2D targetPoint = targetBox.localToScene(0, 0);
-        javafx.geometry.Point2D localEnd = arenaContainer.sceneToLocal(targetPoint.getX() + targetBox.getWidth() / 2,
-                targetPoint.getY() + targetBox.getHeight() / 2);
-
-        double endX = localEnd.getX() - arenaContainer.getWidth() / 2;
-        double endY = localEnd.getY() - arenaContainer.getHeight() / 2;
-
-        move.setToX(endX);
-        move.setToY(endY);
-        move.setInterpolator(javafx.animation.Interpolator.EASE_IN);
-
-        sequence.getChildren().addAll(fadeIn, stay, move);
-
-        sequence.setOnFinished(e -> {
-            arenaContainer.getChildren().remove(crown);
-            // Score UI update handled by update() loop reading gameState, but animation
-            // adds
-            // flavor
-        });
-        sequence.play();
     }
 
     private void setupArenaClickHandler() {
@@ -383,64 +206,67 @@ public class PvPBattleController {
         });
     }
 
-    private void handlePlayer1CardSelected(int index) {
-        // Only allow Player 1 to select cards during their turn
-        if (gameState.getTurnManager().getCurrentTurn() != TurnManager.Turn.PLAYER_1) {
-            player1HandView.clearSelection();
+    // Parametric handler for card selection
+    private void handleCardSelected(TurnManager.Turn turn, int index, HandView handView) {
+        // Only allow selection during own turn
+        if (gameState.getTurnManager().getCurrentTurn() != turn) {
+            handView.clearSelection();
             return;
         }
 
         if (index != -1) {
-            Card card = gameState.getPlayer1Hand().getCard(index);
+            boolean isPlayer1 = (turn == TurnManager.Turn.PLAYER_1);
+            // Get hand from game state
+            Hand hand = isPlayer1 ? gameState.getPlayer1Hand() : gameState.getPlayer2Hand();
+            Card card = hand.getCard(index);
             boolean isSpell = (card != null && card.getType() == com.kuroyale.model.enums.CardType.SPELL);
-            arenaView.highlightValidCells(true, isSpell);
+
+            if (isPlayer1) {
+                arenaView.highlightValidCells(true, isSpell);
+            } else {
+                arenaView.highlightPlayer2ValidCells(true, isSpell);
+            }
         } else {
-            arenaView.highlightValidCells(false, false);
+            if (turn == TurnManager.Turn.PLAYER_1) {
+                arenaView.highlightValidCells(false, false);
+            } else {
+                arenaView.highlightPlayer2ValidCells(false, false);
+            }
         }
-        // Clear player 2 selection when player 1 selects
-        player2HandView.clearSelection();
+
+        // Clear other player's selection
+        if (turn == TurnManager.Turn.PLAYER_1) {
+            player2HandView.clearSelection();
+        } else {
+            player1HandView.clearSelection();
+        }
+    }
+
+    private void handlePlayer1CardSelected(int index) {
+        handleCardSelected(TurnManager.Turn.PLAYER_1, index, player1HandView);
     }
 
     private void handlePlayer2CardSelected(int index) {
-        // Only allow Player 2 to select cards during their turn
-        if (gameState.getTurnManager().getCurrentTurn() != TurnManager.Turn.PLAYER_2) {
-            player2HandView.clearSelection();
-            return;
-        }
-
-        if (index != -1) {
-            Card card = gameState.getPlayer2Hand().getCard(index);
-            boolean isSpell = (card != null && card.getType() == com.kuroyale.model.enums.CardType.SPELL);
-            // For player 2, highlight top half
-            arenaView.highlightPlayer2ValidCells(true, isSpell);
-        } else {
-            arenaView.highlightPlayer2ValidCells(false, false);
-        }
-        // Clear player 1 selection when player 2 selects
-        player1HandView.clearSelection();
+        handleCardSelected(TurnManager.Turn.PLAYER_2, index, player2HandView);
     }
 
     private void handleArenaClick(int tileX, int tileY) {
         TurnManager.Turn currentTurn = gameState.getTurnManager().getCurrentTurn();
 
-        // Check if Player 1 has a selected card AND it's their turn
-        int p1SelectedIndex = player1HandView.getSelectedIndex();
-        if (p1SelectedIndex != -1 && currentTurn == TurnManager.Turn.PLAYER_1) {
-            if (gameState.placeCard(true, p1SelectedIndex, tileX, tileY)) {
-                player1HandView.clearSelection();
-                arenaView.highlightValidCells(false, false);
-                // Auto-switch turn after successful card deployment
-                gameState.getTurnManager().endTurn();
-            }
-            return;
-        }
+        // Generic handling based on turn
+        HandView currentHandView = (currentTurn == TurnManager.Turn.PLAYER_1) ? player1HandView : player2HandView;
+        boolean isPlayer1 = (currentTurn == TurnManager.Turn.PLAYER_1);
 
-        // Check if Player 2 has a selected card AND it's their turn
-        int p2SelectedIndex = player2HandView.getSelectedIndex();
-        if (p2SelectedIndex != -1 && currentTurn == TurnManager.Turn.PLAYER_2) {
-            if (gameState.placeCard(false, p2SelectedIndex, tileX, tileY)) {
-                player2HandView.clearSelection();
-                arenaView.highlightPlayer2ValidCells(false, false);
+        int selectedIndex = currentHandView.getSelectedIndex();
+
+        if (selectedIndex != -1) {
+            if (gameState.placeCard(isPlayer1, selectedIndex, tileX, tileY)) {
+                currentHandView.clearSelection();
+                if (isPlayer1) {
+                    arenaView.highlightValidCells(false, false);
+                } else {
+                    arenaView.highlightPlayer2ValidCells(false, false);
+                }
                 // Auto-switch turn after successful card deployment
                 gameState.getTurnManager().endTurn();
             }
@@ -581,36 +407,52 @@ public class PvPBattleController {
         container.getChildren().add(crown);
     }
 
+    private javafx.scene.text.Text createText(String content, javafx.scene.paint.Color color) {
+        javafx.scene.text.Text text = new javafx.scene.text.Text(content);
+        text.setFill(color);
+        return text;
+    }
+
     private void showGameOverPopup() {
         gameOverRoot.setVisible(true);
 
         TurnManager.Turn winner = gameState.getWinner();
-        int baseGold = 0;
+
+        String titleText = "";
+        String titleStyle = "";
 
         if (winner == TurnManager.Turn.PLAYER_1) {
-            gameOverTitle.setText("PLAYER 1 WINS!");
-            gameOverTitle.setStyle("-fx-text-fill: #3b82f6; -fx-font-size: 48px; -fx-font-weight: bold;");
-            baseGold = 150;
+            titleText = "PLAYER 1 WINS!";
+            titleStyle = "-fx-text-fill: #3b82f6; -fx-font-size: 48px; -fx-font-weight: bold;";
         } else if (winner == TurnManager.Turn.PLAYER_2) {
-            gameOverTitle.setText("PLAYER 2 WINS!");
-            gameOverTitle.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 48px; -fx-font-weight: bold;");
-            baseGold = 150;
+            titleText = "PLAYER 2 WINS!";
+            titleStyle = "-fx-text-fill: #ef4444; -fx-font-size: 48px; -fx-font-weight: bold;";
         } else {
-            gameOverTitle.setText("DRAW!");
-            gameOverTitle.setStyle("-fx-text-fill: white; -fx-font-size: 48px; -fx-font-weight: bold;");
-            baseGold = 75;
+            titleText = "DRAW!";
+            titleStyle = "-fx-text-fill: white; -fx-font-size: 48px; -fx-font-weight: bold;";
         }
+
+        gameOverTitle.setText(titleText);
+        gameOverTitle.setStyle(titleStyle);
 
         renderGameOverCrowns(gameOverP1Crowns, gameState.getPlayer1Score(), false);
         renderGameOverCrowns(gameOverP2Crowns, gameState.getPlayer2Score(), true);
 
-        if (gameOverInfoLabel != null) {
-            String goldInfo = "\nRewards:\nVictory: " + baseGold + " Gold\nDraw: " + baseGold / 2 + " Gold\nDefeat: "
-                    + baseGold / 4 + " Gold";
+        gameOverInfoTextFlow.getChildren().clear();
 
-            gameOverInfoLabel.setText(String.format("Final Score\nPlayer 1: %d  -  Player 2: %d%s",
-                    gameState.getPlayer1Score(), gameState.getPlayer2Score(), goldInfo));
-        }
+        javafx.scene.paint.Color highlightColor = javafx.scene.paint.Color.web("#00BFFF"); // Cyan
+        javafx.scene.paint.Color whiteColor = javafx.scene.paint.Color.WHITE;
+
+        // Line 1: Score
+        javafx.scene.text.Text p1Score = createText("Player 1: " + gameState.getPlayer1Score(),
+                javafx.scene.paint.Color.web("#3b82f6"));
+        javafx.scene.text.Text vs = createText("  -  ", whiteColor);
+        javafx.scene.text.Text p2Score = createText("Player 2: " + gameState.getPlayer2Score() + "\n",
+                javafx.scene.paint.Color.web("#ef4444"));
+
+        gameOverInfoTextFlow.getChildren().addAll(
+                createText("Final Score\n", highlightColor),
+                p1Score, vs, p2Score);
     }
 
     private void renderGameOverCrowns(HBox container, int count, boolean isOpponent) {
@@ -668,6 +510,70 @@ public class PvPBattleController {
                 });
 
         pauseMenuContainer.getChildren().add(menu);
+    }
+
+    private void playCrownFlyingEffect(Tower tower) {
+        javafx.geometry.Point2D arenaPos = arenaView.getTowerCenterPosition(tower);
+        if (arenaPos == null)
+            return;
+
+        javafx.geometry.Point2D scenePos = arenaView.getGrid().localToScene(arenaPos.getX(), arenaPos.getY());
+        javafx.geometry.Point2D localStart = arenaContainer.sceneToLocal(scenePos);
+
+        double centerX = localStart.getX() - arenaContainer.getWidth() / 2;
+        double centerY = localStart.getY() - arenaContainer.getHeight() / 2;
+
+        boolean isPlayer1Tower = tower.isPlayerSide();
+        boolean p1Scored = !isPlayer1Tower;
+        String crownPath = p1Scored ? "/images/crown.png" : "/images/oppo_crown.png";
+
+        javafx.scene.image.ImageView crown = new javafx.scene.image.ImageView(
+                new javafx.scene.image.Image(getClass().getResourceAsStream(crownPath)));
+        crown.setFitWidth(40);
+        crown.setFitHeight(40);
+
+        crown.setTranslateX(centerX);
+        crown.setTranslateY(centerY);
+        crown.setOpacity(0.0);
+
+        arenaContainer.getChildren().add(crown);
+
+        javafx.animation.SequentialTransition sequence = new javafx.animation.SequentialTransition();
+
+        javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(javafx.util.Duration.millis(200),
+                crown);
+        fadeIn.setToValue(1.0);
+
+        javafx.animation.PauseTransition stay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(1.0));
+
+        // Determine target box
+        HBox targetBox = p1Scored ? player1ScoreContainer : player2ScoreContainer;
+
+        javafx.animation.TranslateTransition move = new javafx.animation.TranslateTransition(
+                javafx.util.Duration.seconds(1.0), crown);
+
+        move.setInterpolator(javafx.animation.Interpolator.EASE_IN);
+
+        if (targetBox != null) {
+            javafx.geometry.Point2D targetPoint = targetBox.localToScene(0, 0);
+            javafx.geometry.Point2D localEnd = arenaContainer.sceneToLocal(
+                    targetPoint.getX() + targetBox.getWidth() / 2,
+                    targetPoint.getY() + targetBox.getHeight() / 2);
+
+            double endX = localEnd.getX() - arenaContainer.getWidth() / 2;
+            double endY = localEnd.getY() - arenaContainer.getHeight() / 2;
+            move.setToX(endX);
+            move.setToY(endY);
+        } else {
+            move.setByY(-200);
+        }
+
+        sequence.getChildren().addAll(fadeIn, stay, move);
+
+        sequence.setOnFinished(e -> {
+            arenaContainer.getChildren().remove(crown);
+        });
+        sequence.play();
     }
 
     @FXML
