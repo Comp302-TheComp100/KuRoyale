@@ -445,6 +445,9 @@ public class GameState implements IBattleState {
             }
         }
         
+        // Remove dead towers (visual cleanup - scores come from host)
+        arena.removeDeadTowers();
+        
         // NOTE: Do NOT update scores or check win conditions here
         // Those are authoritative from the host
     }
