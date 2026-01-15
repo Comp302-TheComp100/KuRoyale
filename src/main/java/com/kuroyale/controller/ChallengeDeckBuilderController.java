@@ -150,12 +150,10 @@ public class ChallengeDeckBuilderController {
                             "-fx-font-family: 'Clash', Arial;" +
                             "-fx-text-fill: #fbbf24;");
 
-            // Show a short version of rules
+            // Show all rules (with newlines for multi-line)
             String rules = currentChallenge.getRules();
-            if (rules.length() > 60) {
-                rules = rules.substring(0, 57) + "...";
-            }
             challengeRulesLabel.setText(rules);
+            challengeRulesLabel.setWrapText(true);
             challengeRulesLabel.setStyle(
                     "-fx-font-size: 12px;" +
                             "-fx-font-family: 'Clash', Arial;" +

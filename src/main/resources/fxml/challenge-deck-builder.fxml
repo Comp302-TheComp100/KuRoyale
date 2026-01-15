@@ -15,14 +15,13 @@
     <AnchorPane prefWidth="1280" prefHeight="720">
         
         <!-- Challenge Banner at Top -->
-        <HBox fx:id="challengeBanner" 
-              layoutY="10"
-              alignment="CENTER"
-              prefWidth="1280"
-              spacing="15">
+        <VBox fx:id="challengeBanner" 
+              layoutX="20" layoutY="5"
+              alignment="CENTER_LEFT"
+              spacing="2">
             <Label fx:id="challengeNameLabel" text="Challenge Name"/>
-            <Label fx:id="challengeRulesLabel" text="Rules preview"/>
-        </HBox>
+            <Label fx:id="challengeRulesLabel" text="Rules preview" wrapText="true" maxWidth="600"/>
+        </VBox>
         
         <!-- Battle Deck Title - Centered -->
         <HBox fx:id="battleDeckTitleContainer" 
