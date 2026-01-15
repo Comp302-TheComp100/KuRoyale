@@ -298,6 +298,7 @@ public class CombatService {
             return;
 
         int intDamage = (int) Math.round(damage);
+        int totalSpellDamage = 0; // Track total damage dealt by spell
 
         // Damage enemy troops
         // Use SpatialGrid to efficiently find all potential targets in the blast area
@@ -350,6 +351,11 @@ public class CombatService {
                     // Apply Damage
                     candidate.takeDamage(finalDamage);
 
+                    // Track spell damage for quest progress
+                    if (isSpell) {
+                        totalSpellDamage += finalDamage;
+                    }
+
                     // Apply Stun
                     if (stunDuration > 0) {
                         candidate.stun(stunDuration);
@@ -365,5 +371,10 @@ public class CombatService {
 
         // Broadcast visual effect via Event Bus
         com.kuroyale.event.GameEventBus.getInstance().publishAreaEffect(isPlayerSource, center, radiusTiles, 0.3);
+
+        // Broadcast spell damage for quest tracking
+        if (isSpell && totalSpellDamage > 0) {
+            com.kuroyale.event.GameEventBus.getInstance().publishSpellDamageDealt(isPlayerSource, totalSpellDamage);
+        }
     }
 }

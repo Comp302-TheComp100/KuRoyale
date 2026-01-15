@@ -65,4 +65,8 @@ public class GameEventBus {
     public void publishTowerDamaged(Tower tower) {
         new ArrayList<>(listeners).forEach(l -> l.onTowerDamaged(tower));
     }
+
+    public void publishSpellDamageDealt(boolean isPlayer, int damage) {
+        new ArrayList<>(listeners).forEach(l -> l.onSpellDamageDealt(isPlayer, damage));
+    }
 }

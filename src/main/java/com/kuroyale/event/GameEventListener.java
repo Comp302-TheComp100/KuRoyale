@@ -27,4 +27,7 @@ public interface GameEventListener {
 
         default void onTowerDamaged(com.kuroyale.model.entities.Tower tower) {
         }
+
+        default void onSpellDamageDealt(boolean isPlayer, int damage) {
+        }
 }

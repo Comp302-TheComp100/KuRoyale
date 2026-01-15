@@ -60,7 +60,7 @@ public class AchievementCardView extends HBox {
         rewardPane.setAlignment(Pos.CENTER);
 
         if (reward > 0) {
-            Label rewardLabel = new Label("🪙 " + reward);
+            Label rewardLabel = new Label(reward + " Gold");
             rewardLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #fbbf24; -fx-font-weight: bold;");
             rewardPane.getChildren().add(rewardLabel);
 

@@ -64,7 +64,7 @@ public class QuestCardView extends VBox {
         HBox rewardBox = new HBox(10);
         rewardBox.setAlignment(Pos.CENTER_LEFT);
 
-        Label rewardLabel = new Label("🪙 " + reward + " Gold");
+        Label rewardLabel = new Label(reward + " Gold");
         rewardLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #fbbf24; -fx-font-weight: bold;");
 
         if (completed && !claimed) {

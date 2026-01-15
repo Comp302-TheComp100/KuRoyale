@@ -229,4 +229,11 @@ public class QuestService implements GameEventListener {
             updateProgress(QuestType.SPEND_ELIXIR, amount);
         }
     }
+
+    @Override
+    public void onSpellDamageDealt(boolean isPlayer, int damage) {
+        if (isPlayer) {
+            updateProgress(QuestType.DEAL_SPELL_DAMAGE, damage);
+        }
+    }
 }
