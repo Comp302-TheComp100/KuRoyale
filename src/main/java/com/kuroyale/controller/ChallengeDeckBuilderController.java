@@ -323,45 +323,25 @@ public class ChallengeDeckBuilderController {
         List<String> errors = currentChallenge.validateDeck(deckCards);
         boolean isValid = errors.isEmpty() && deck.isFull();
 
-        // Get progress text from challenge
-        String progressText = currentChallenge.getProgressText(deckCards);
-        boolean requirementMet = currentChallenge.isRequirementMet(deckCards);
-
         // Update validation UI
         if (validationLabel != null) {
             if (deck.getCards().isEmpty()) {
-                validationLabel.setText("Select 8 cards to build your deck");
+                validationLabel.setText("Select cards to build your deck");
                 validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(255,255,255,0.7);");
             } else if (isValid) {
                 validationLabel.setText("Deck is valid! Ready to start challenge.");
                 validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #10b981; -fx-font-weight: bold;");
             } else {
-                // Show progress text with requirement status
+                // Show error message (e.g., "Must have at least 5 swarm cards (you have 0)")
                 String message;
-                if (!progressText.isEmpty()) {
-                    message = progressText;
-                    if (!requirementMet) {
-                        // Add how many more cards needed if deck not full
-                        int cardsNeeded = 8 - deckCards.size();
-                        if (cardsNeeded > 0) {
-                            message += " | Need " + cardsNeeded + " more cards";
-                        }
-                    } else if (!deck.isFull()) {
-                        int cardsNeeded = 8 - deckCards.size();
-                        message += " | Need " + cardsNeeded + " more cards";
-                    }
-                } else if (!errors.isEmpty()) {
+                if (!errors.isEmpty()) {
                     message = errors.get(0);
                 } else {
                     message = "Need " + (8 - deckCards.size()) + " more cards";
                 }
 
                 validationLabel.setText(message);
-                if (requirementMet) {
-                    validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #10b981;");
-                } else {
-                    validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #fbbf24;");
-                }
+                validationLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ef4444; -fx-font-weight: bold;");
             }
         }
 
