@@ -29,7 +29,7 @@
               layoutY="50"
               alignment="CENTER"
               prefWidth="1280">
-            <Label fx:id="battleDeckTitle" text="Build Your Challenge Deck"/>
+            <Label fx:id="battleDeckTitle" text="BUILD YOUR CHALLENGE DECK"/>
         </HBox>
         
         <!-- Deck Slots Background Area - shows empty rectangles -->
@@ -61,11 +61,10 @@
         
         <!-- Validation Status -->
         <HBox fx:id="validationBox"
-              layoutX="330" layoutY="430"
+              layoutX="330" layoutY="420"
               prefWidth="620"
               alignment="CENTER"
               spacing="10">
-            <Label fx:id="validationIcon" text="❌"/>
             <Label fx:id="validationLabel" text="Select cards to build your deck"/>
         </HBox>
         
@@ -85,16 +84,16 @@
             </VBox>
         </ScrollPane>
         
-        <!-- Back Button -->
+        <!-- Back Button - -->
         <Button fx:id="backButton" 
                 layoutX="50" layoutY="670"
-                text="← BACK" 
+                text="BACK" 
                 onAction="#handleBack"/>
         
-        <!-- Start Challenge Button -->
+        <!-- Start Challenge Button -  -->
         <Button fx:id="startChallengeButton" 
                 layoutX="1050" layoutY="660"
-                text="⚔️ START CHALLENGE" 
+                text="START CHALLENGE" 
                 onAction="#handleStartChallenge"
                 disable="true"/>
     </AnchorPane>

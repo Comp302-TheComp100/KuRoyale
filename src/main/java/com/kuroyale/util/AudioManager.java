@@ -6,13 +6,17 @@ import javafx.scene.media.MediaPlayer;
 public class AudioManager {
     private static AudioManager instance;
 
-    private double musicVolume = 0.5;
-    private double sfxVolume = 0.5;
-    private boolean buttonSoundsEnabled = true;
+    private double musicVolume;
+    private double sfxVolume;
+    private boolean buttonSoundsEnabled;
 
     private MediaPlayer currentMusicPlayer;
 
     private AudioManager() {
+        // Load settings on initialization
+        musicVolume = SettingsManager.getMusicVolume();
+        sfxVolume = SettingsManager.getSFXVolume();
+        buttonSoundsEnabled = SettingsManager.isButtonSoundsEnabled();
     }
 
     public static AudioManager getInstance() {
@@ -28,6 +32,7 @@ public class AudioManager {
 
     public void setMusicVolume(double volume) {
         this.musicVolume = Math.max(0.0, Math.min(1.0, volume));
+        SettingsManager.setMusicVolume(this.musicVolume); // Save
         if (currentMusicPlayer != null) {
             currentMusicPlayer.setVolume(this.musicVolume);
         }
@@ -39,6 +44,7 @@ public class AudioManager {
 
     public void setSFXVolume(double volume) {
         this.sfxVolume = Math.max(0.0, Math.min(1.0, volume));
+        SettingsManager.setSFXVolume(this.sfxVolume); // Save
     }
 
     public boolean isButtonSoundsEnabled() {
@@ -47,12 +53,15 @@ public class AudioManager {
 
     public void setButtonSoundsEnabled(boolean enabled) {
         this.buttonSoundsEnabled = enabled;
+        SettingsManager.setButtonSoundsEnabled(enabled); // Save
     }
 
     public void registerMusicPlayer(MediaPlayer player) {
         this.currentMusicPlayer = player;
         if (player != null) {
             player.setVolume(musicVolume);
+            // Ensure loop
+            player.setCycleCount(MediaPlayer.INDEFINITE);
         }
     }
 }
