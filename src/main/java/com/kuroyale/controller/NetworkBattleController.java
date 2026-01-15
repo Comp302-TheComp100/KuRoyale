@@ -53,6 +53,9 @@ public class NetworkBattleController implements GameEventListener {
     @FXML private Label pingLabel;
     @FXML private Label lagIndicator;
     
+    // Timer display
+    @FXML private Label timerLabel;
+    
     // Score display
     @FXML private Label playerNameLabel;
     @FXML private Label playerScoreLabel;
@@ -253,6 +256,9 @@ public class NetworkBattleController implements GameEventListener {
         handView.update();
         arenaView.update(deltaTime);
         
+        // Update timer display
+        updateTimerDisplay();
+        
         // Update score display
         updateScoreDisplay();
         
@@ -288,6 +294,12 @@ public class NetworkBattleController implements GameEventListener {
                 gameState.getPlayerScore(),
                 gameState.getBotScore()
             ));
+            
+            // Send tower health sync
+            String towerData = buildTowerSyncData();
+            if (towerData != null && !towerData.isEmpty()) {
+                networkService.send(NetworkMessage.towerSync(towerData));
+            }
         }
         
         // Both send elixir update (for UI responsiveness on both sides)
@@ -296,6 +308,33 @@ public class NetworkBattleController implements GameEventListener {
         // Measure ping
         lastPingTime = System.currentTimeMillis();
         networkService.send(NetworkMessage.heartbeat(networkService.getPlayerId()));
+    }
+    
+    /**
+     * Builds tower sync data string for network transmission.
+     * Format: towerType,isPlayerSide,currentHealth,maxHealth,gridX,gridY;...
+     */
+    private String buildTowerSyncData() {
+        if (gameState == null || gameState.getArena() == null) return null;
+        
+        StringBuilder sb = new StringBuilder();
+        java.util.Set<Tower> towers = gameState.getArena().getAllTowers();
+        
+        boolean first = true;
+        for (Tower tower : towers) {
+            if (!first) sb.append(";");
+            first = false;
+            
+            sb.append(tower.getType().name())
+              .append(",").append(tower.isPlayerSide())
+              .append(",").append(tower.getCurrentHealth())
+              .append(",").append(tower.getMaxHealth())
+              .append(",").append(tower.getPosition().getX())
+              .append(",").append(tower.getPosition().getY())
+              .append(",").append(tower.isAlive());
+        }
+        
+        return sb.toString();
     }
     
     private void handleNetworkMessage(NetworkMessage message) {
@@ -340,6 +379,20 @@ public class NetworkBattleController implements GameEventListener {
                 // CLIENT: Sync scores from host
                 if (!isHost) {
                     handleScoreSync(message);
+                }
+                break;
+                
+            case TOWER_SYNC:
+                // CLIENT: Sync tower health from host
+                if (!isHost) {
+                    handleTowerSync(message);
+                }
+                break;
+                
+            case GAME_OVER:
+                // CLIENT: Handle game over from host
+                if (!isHost) {
+                    handleGameOver(message);
                 }
                 break;
                 
@@ -420,6 +473,75 @@ public class NetworkBattleController implements GameEventListener {
         // From client's perspective: host's playerScore = opponent's score, host's botScore = our score
         gameState.setScores(scores[1], scores[0]);
         updateScoreDisplay();
+    }
+    
+    /**
+     * Handles tower health sync from host.
+     * Format: towerType,isPlayerSide,currentHealth,maxHealth,gridX,gridY,isAlive;...
+     */
+    private void handleTowerSync(NetworkMessage message) {
+        String towerData = message.getTowerSyncData();
+        if (towerData == null || towerData.isEmpty() || gameState == null) return;
+        
+        String[] towers = towerData.split(";");
+        Arena arena = gameState.getArena();
+        
+        for (String towerStr : towers) {
+            String[] parts = towerStr.split(",");
+            if (parts.length < 7) continue;
+            
+            try {
+                Tower.TowerType type = Tower.TowerType.valueOf(parts[0]);
+                boolean hostIsPlayerSide = Boolean.parseBoolean(parts[1]);
+                double currentHealth = Double.parseDouble(parts[2]);
+                double maxHealth = Double.parseDouble(parts[3]);
+                int gridX = Integer.parseInt(parts[4]);
+                int gridY = Integer.parseInt(parts[5]);
+                boolean isAlive = Boolean.parseBoolean(parts[6]);
+                
+                // From client's perspective, sides are inverted:
+                // Host's player towers = Client's opponent towers
+                // Host's opponent towers = Client's player towers
+                boolean clientIsPlayerSide = !hostIsPlayerSide;
+                
+                // Mirror Y coordinate for client's view
+                int clientGridY = (Arena.HEIGHT - 1) - gridY;
+                
+                // Find and update the corresponding tower
+                java.util.List<Tower> matchingTowers = arena.getTowersByType(type, clientIsPlayerSide);
+                for (Tower tower : matchingTowers) {
+                    // Update health (cast to int as Tower uses int health)
+                    tower.setCurrentHealth((int) currentHealth);
+                    
+                    // If tower is destroyed, ensure it's marked
+                    if (!isAlive && tower.isAlive()) {
+                        tower.setCurrentHealth(0);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[NetworkBattle] Failed to parse tower sync: " + towerStr);
+            }
+        }
+    }
+    
+    /**
+     * Handles game over message from host.
+     */
+    private void handleGameOver(NetworkMessage message) {
+        if (gameEnded) return;
+        
+        String[] data = message.parseGameOver();
+        if (data == null || data.length < 2) return;
+        
+        boolean hostWon = Boolean.parseBoolean(data[0]);
+        String reason = data[1];
+        
+        // From client's perspective: if host won, client lost (and vice versa)
+        if (hostWon) {
+            showDefeat(reason);
+        } else {
+            showVictory(reason);
+        }
     }
     
     private void handleOpponentCardPlaced(NetworkMessage message) {
@@ -658,6 +780,27 @@ public class NetworkBattleController implements GameEventListener {
     
     // ==================== UI Updates ====================
     
+    /**
+     * Updates the timer display.
+     */
+    private void updateTimerDisplay() {
+        if (gameState == null || timerLabel == null) return;
+        
+        double time = gameState.getGameTime();
+        int minutes = (int) (time / 60);
+        int seconds = (int) (time % 60);
+        
+        String timerText = String.format("%d:%02d", minutes, seconds);
+        timerLabel.setText(timerText);
+        
+        // Change color when in double elixir time (last 60 seconds)
+        if (time <= 60) {
+            timerLabel.setStyle("-fx-text-fill: #ff6600; -fx-font-size: 32px; -fx-font-weight: bold;");
+        } else {
+            timerLabel.setStyle("-fx-text-fill: white; -fx-font-size: 32px; -fx-font-weight: bold;");
+        }
+    }
+    
     private void updateScoreDisplay() {
         if (gameState != null) {
             playerScoreLabel.setText(String.valueOf(gameState.getPlayerScore()));
@@ -709,16 +852,57 @@ public class NetworkBattleController implements GameEventListener {
     private void endGame() {
         gameEnded = true;
         
-        // Determine winner
-        if (gameState.getPlayerScore() > gameState.getBotScore()) {
+        int playerScore = gameState.getPlayerScore();
+        int opponentScore = gameState.getBotScore();
+        
+        // Determine winner based on scores first
+        if (playerScore > opponentScore) {
             showVictory("You destroyed more towers!");
+            networkService.send(NetworkMessage.gameOver(true, "Opponent destroyed more towers!"));
             networkService.send(NetworkMessage.victory(networkService.getPlayerId()));
-        } else if (gameState.getBotScore() > gameState.getPlayerScore()) {
+        } else if (opponentScore > playerScore) {
             showDefeat("Opponent destroyed more towers!");
+            networkService.send(NetworkMessage.gameOver(false, "You destroyed more towers!"));
             networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
         } else {
-            showDraw();
+            // Tiebreaker: Compare lowest HP towers
+            // The player with the single lowest health tower loses
+            double playerLowestHP = getLowestTowerHealth(true);
+            double opponentLowestHP = getLowestTowerHealth(false);
+            
+            System.out.println("[NetworkBattle] Tiebreaker - Player lowest HP: " + playerLowestHP + 
+                ", Opponent lowest HP: " + opponentLowestHP);
+            
+            if (playerLowestHP < opponentLowestHP) {
+                // Host has the weakest tower -> Host loses
+                showDefeat("Your lowest tower had less HP!");
+                networkService.send(NetworkMessage.gameOver(false, "Opponent's lowest tower had less HP!"));
+                networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
+            } else if (opponentLowestHP < playerLowestHP) {
+                // Opponent has the weakest tower -> Host wins
+                showVictory("Opponent's lowest tower had less HP!");
+                networkService.send(NetworkMessage.gameOver(true, "Your lowest tower had less HP!"));
+                networkService.send(NetworkMessage.victory(networkService.getPlayerId()));
+            } else {
+                // True draw - equal lowest HP (very rare)
+                showDraw();
+                // Send draw as neither won
+                networkService.send(NetworkMessage.gameOver(false, "Perfect draw - equal tower HP!"));
+            }
         }
+    }
+    
+    /**
+     * Gets the lowest health among all alive towers for a player.
+     */
+    private double getLowestTowerHealth(boolean isPlayer) {
+        if (gameState == null || gameState.getArena() == null) return Double.MAX_VALUE;
+        
+        return gameState.getArena().getAllTowers().stream()
+                .filter(t -> t.isPlayerSide() == isPlayer && t.isAlive())
+                .mapToDouble(Tower::getCurrentHealth)
+                .min()
+                .orElse(Double.MAX_VALUE);
     }
     
     private void showVictory(String details) {

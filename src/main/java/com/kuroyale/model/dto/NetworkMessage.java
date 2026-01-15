@@ -198,6 +198,24 @@ public class NetworkMessage implements Serializable {
         return new NetworkMessage(NetworkMessageType.SCORE_SYNC, 1, playerScore + DATA_DELIMITER + botScore);
     }
     
+    /**
+     * Creates a tower sync message (sent by host to client).
+     * Format: towerType,isPlayerSide,currentHealth,maxHealth,isAlive;towerType,isPlayerSide,...
+     */
+    public static NetworkMessage towerSync(String towerData) {
+        return new NetworkMessage(NetworkMessageType.TOWER_SYNC, 1, towerData);
+    }
+    
+    /**
+     * Creates a game over message (sent by host to client).
+     * Format: winnerIsHost;reason
+     * winnerIsHost: true if host won, false if client won
+     * reason: description of why (e.g., "King Tower destroyed", "More towers", "Lower HP tower")
+     */
+    public static NetworkMessage gameOver(boolean hostWon, String reason) {
+        return new NetworkMessage(NetworkMessageType.GAME_OVER, 1, hostWon + DATA_DELIMITER + reason);
+    }
+    
     public static NetworkMessage victory(int playerId) {
         return new NetworkMessage(NetworkMessageType.VICTORY, playerId, "");
     }
@@ -344,6 +362,25 @@ public class NetworkMessage implements Serializable {
         } catch (Exception e) {
             return null;
         }
+    }
+    
+    /**
+     * Parses game over data from the message.
+     * @return String array with [hostWon (true/false), reason] or null if invalid
+     */
+    public String[] parseGameOver() {
+        if (type != NetworkMessageType.GAME_OVER) return null;
+        String[] parts = data.split(";", 2);
+        return parts.length >= 2 ? parts : null;
+    }
+    
+    /**
+     * Gets the raw tower sync data string.
+     * @return Tower data string or null
+     */
+    public String getTowerSyncData() {
+        if (type != NetworkMessageType.TOWER_SYNC) return null;
+        return data;
     }
     
     @Override
