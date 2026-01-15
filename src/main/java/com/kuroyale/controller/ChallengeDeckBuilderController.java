@@ -73,10 +73,8 @@ public class ChallengeDeckBuilderController {
     private Label averageElixirValue;
     @FXML
     private Label battleDeckTitle;
-    @FXML
-    private HBox averageElixirContainer;
-    @FXML
-    private HBox challengeBanner;
+    @FXML private HBox averageElixirContainer;
+    @FXML private VBox challengeBanner;
     @FXML
     private Label challengeNameLabel;
     @FXML
