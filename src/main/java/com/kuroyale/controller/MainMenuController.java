@@ -13,7 +13,7 @@ import com.kuroyale.util.SoundEffectUtil;
 
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
+
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
@@ -196,11 +196,7 @@ public class MainMenuController {
     }
 
     private void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText("An error occurred");
-        alert.setContentText(message);
-        alert.showAndWait();
+        com.kuroyale.view.ThemedAlertController.show(root.getScene().getWindow(), "Error", message, null);
     }
 
     private void updateGoldDisplay() {

@@ -9,7 +9,7 @@ import com.kuroyale.view.battle.ArenaRenderer;
 import com.kuroyale.util.SceneLoader;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
+
 import javafx.scene.control.TextField;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
@@ -24,11 +24,16 @@ import java.util.List;
  * Refactored to Orchestrate Model and View (Renderer).*/
 public class ArenaDesignController {
 
-    @FXML private GridPane arenaGrid;
-    @FXML private TextField arenaNameField;
-    @FXML private javafx.scene.shape.Rectangle draggableBridge;
-    @FXML private javafx.scene.shape.Rectangle draggablePrincessTower;
-    @FXML private javafx.scene.shape.Rectangle draggableKingTower;
+    @FXML
+    private GridPane arenaGrid;
+    @FXML
+    private TextField arenaNameField;
+    @FXML
+    private javafx.scene.shape.Rectangle draggableBridge;
+    @FXML
+    private javafx.scene.shape.Rectangle draggablePrincessTower;
+    @FXML
+    private javafx.scene.shape.Rectangle draggableKingTower;
 
     private final ArenaDesignModel model = new ArenaDesignModel();
     private ArenaLayout currentLayout;
@@ -251,7 +256,9 @@ public class ArenaDesignController {
             }
             try {
                 model.saveArenaLayout(currentLayout);
-                showAlert("Success", "Arena layout saved successfully!");
+                com.kuroyale.view.ThemedAlertController.show(arenaGrid.getScene().getWindow(), "Success",
+                        "Arena layout saved successfully!",
+                        this::handleBack);
             } catch (IOException e) {
                 showAlert("Error", "Failed to save arena layout: " + e.getMessage());
                 e.printStackTrace();
@@ -269,14 +276,6 @@ public class ArenaDesignController {
     }
 
     private void showAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        if (title.contains("Error") || title.contains("Invalid") || title.contains("Limit")
-                || title.contains("Cannot")) {
-            alert.setAlertType(Alert.AlertType.WARNING);
-        }
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+        com.kuroyale.view.ThemedAlertController.show(arenaGrid.getScene().getWindow(), title, content, null);
     }
 }

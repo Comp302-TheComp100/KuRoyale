@@ -14,7 +14,7 @@ import com.kuroyale.view.CardView;
 
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
+
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -367,10 +367,6 @@ public class PvPDeckSelectionController {
     }
 
     private void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText("An error occurred");
-        alert.setContentText(message);
-        alert.showAndWait();
+        com.kuroyale.view.ThemedAlertController.show(root.getScene().getWindow(), "Error", message, null);
     }
 }
