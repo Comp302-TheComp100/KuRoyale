@@ -23,9 +23,10 @@
         </GridPane>
     </center>
     <right>
-        <VBox alignment="CENTER" prefWidth="300.0" spacing="20.0" style="-fx-background-color: rgba(0, 0, 0, 0.5); -fx-padding: 20;" BorderPane.alignment="CENTER">
+        <VBox alignment="CENTER" prefWidth="450.0" spacing="20.0" style="-fx-background-color: rgba(0, 0, 0, 0.5); -fx-padding: 20;" BorderPane.alignment="CENTER">
             <children>
-                <Label styleClass="title-label" text="Arena Design" />
+                <Label styleClass="title-label" text="DESIGN"/>
+                <Label styleClass="text-label" style="-fx-text-fill: rgba(255, 255, 255, 0.5);" text="Drag and drop to design your arena"/>
 
                 <VBox spacing="5.0">
                     <children>

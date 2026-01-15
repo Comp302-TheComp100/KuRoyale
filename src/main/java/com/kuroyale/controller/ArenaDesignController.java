@@ -130,26 +130,51 @@ public class ArenaDesignController {
                     String dragType = event.getDragboard().getString();
 
                     // Bridges: river area only
-                    if ("BRIDGE".equals(dragType)
-                            && (y == GameConstants.RIVER_ROW_1 || y == GameConstants.RIVER_ROW_2)) {
-                        event.acceptTransferModes(TransferMode.COPY);
+                    if ("BRIDGE".equals(dragType)) {
+                        if (y == GameConstants.RIVER_ROW_1 || y == GameConstants.RIVER_ROW_2) {
+                            event.acceptTransferModes(TransferMode.COPY);
+                            renderer.highlightRegion(x, y, 1, 1, true);
+                        } else {
+                            renderer.highlightRegion(x, y, 1, 1, false);
+                        }
                     }
                     // Towers: user's bottom half only (y > 16)
-                    else if ("PRINCESS_TOWER".equals(dragType) && y > GameConstants.USER_SIDE_BOUNDARY_Y) {
+                    else if ("PRINCESS_TOWER".equals(dragType)) {
+                        int size = GameConstants.PRINCESS_TOWER_SIZE;
+                        // Center the placement on the cursor if possible, or just use top-left.
                         int startX = x - 1;
                         int startY = y - 1;
-                        if (startX >= 0 && startY >= 0 &&
-                                startX + GameConstants.PRINCESS_TOWER_SIZE < Arena.WIDTH &&
-                                startY + GameConstants.PRINCESS_TOWER_SIZE < Arena.HEIGHT) {
+
+                        boolean validBounds = startX >= 0 && startY >= 0 &&
+                                startX + size <= Arena.WIDTH &&
+                                startY + size <= Arena.HEIGHT;
+
+                        boolean validZone = y > GameConstants.USER_SIDE_BOUNDARY_Y; // Rough check, real check is
+                                                                                    // complex
+
+                        if (validBounds && validZone) {
                             event.acceptTransferModes(TransferMode.COPY);
+                            renderer.highlightRegion(startX, startY, size, size, true);
+                        } else {
+                            // Show invalid highlight at the attempted position
+                            renderer.highlightRegion(startX, startY, size, size, false);
                         }
-                    } else if ("KING_TOWER".equals(dragType) && y > GameConstants.USER_SIDE_BOUNDARY_Y) {
+                    } else if ("KING_TOWER".equals(dragType)) {
+                        int size = GameConstants.KING_TOWER_SIZE;
                         int startX = x - 2;
                         int startY = y - 2;
-                        if (startX >= 0 && startY >= 0 &&
-                                startX + GameConstants.KING_TOWER_SIZE < Arena.WIDTH &&
-                                startY + GameConstants.KING_TOWER_SIZE < Arena.HEIGHT) {
+
+                        boolean validBounds = startX >= 0 && startY >= 0 &&
+                                startX + size <= Arena.WIDTH &&
+                                startY + size <= Arena.HEIGHT;
+
+                        boolean validZone = y > GameConstants.USER_SIDE_BOUNDARY_Y;
+
+                        if (validBounds && validZone) {
                             event.acceptTransferModes(TransferMode.COPY);
+                            renderer.highlightRegion(startX, startY, size, size, true);
+                        } else {
+                            renderer.highlightRegion(startX, startY, size, size, false);
                         }
                     }
                 }
@@ -158,6 +183,7 @@ public class ArenaDesignController {
 
             @Override
             public void onDragDropped(javafx.scene.input.DragEvent event, int x, int y) {
+                renderer.clearHighlight();
                 Dragboard db = event.getDragboard();
                 boolean success = false;
                 if (db.hasString()) {

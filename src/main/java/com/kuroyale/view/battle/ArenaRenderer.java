@@ -153,4 +153,26 @@ public class ArenaRenderer {
         arenaGrid.add(healthBarContainer, x, y, colSpan, 1);
     }
 
+    private java.util.List<javafx.scene.Node> highlightNodes = new java.util.ArrayList<>();
+
+    public void highlightRegion(int x, int y, int width, int height, boolean isValid) {
+        clearHighlight();
+
+        // Create a semi-transparent rectangle for the highlight
+        Rectangle highlight = new Rectangle(width * GameConstants.TILE_SIZE, height * GameConstants.TILE_SIZE);
+        highlight.setFill(isValid ? Color.rgb(0, 255, 0, 0.3) : Color.rgb(255, 0, 0, 0.3));
+        highlight.setStroke(isValid ? Color.GREEN : Color.RED);
+        highlight.setStrokeWidth(2.0);
+
+        // Disable mouse events so it doesn't interfere with drops
+        highlight.setMouseTransparent(true);
+
+        arenaGrid.add(highlight, x, y, width, height);
+        highlightNodes.add(highlight);
+    }
+
+    public void clearHighlight() {
+        arenaGrid.getChildren().removeAll(highlightNodes);
+        highlightNodes.clear();
+    }
 }
