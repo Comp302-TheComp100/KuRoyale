@@ -300,6 +300,11 @@ public class NetworkBattleController implements GameEventListener {
             if (towerData != null && !towerData.isEmpty()) {
                 networkService.send(NetworkMessage.towerSync(towerData));
             }
+            
+            // Check if game should end and notify client immediately
+            if (gameState.isGameOver() && !gameEnded) {
+                endGame();
+            }
         }
         
         // Both send elixir update (for UI responsiveness on both sides)
@@ -494,34 +499,83 @@ public class NetworkBattleController implements GameEventListener {
                 Tower.TowerType type = Tower.TowerType.valueOf(parts[0]);
                 boolean hostIsPlayerSide = Boolean.parseBoolean(parts[1]);
                 double currentHealth = Double.parseDouble(parts[2]);
-                double maxHealth = Double.parseDouble(parts[3]);
                 int gridX = Integer.parseInt(parts[4]);
                 int gridY = Integer.parseInt(parts[5]);
                 boolean isAlive = Boolean.parseBoolean(parts[6]);
                 
                 // From client's perspective, sides are inverted:
-                // Host's player towers = Client's opponent towers
-                // Host's opponent towers = Client's player towers
+                // Host's player towers = Client's opponent towers (at top for client)
+                // Host's opponent towers = Client's player towers (at bottom for client)
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
                 
                 // Mirror Y coordinate for client's view
-                int clientGridY = (Arena.HEIGHT - 1) - gridY;
+                // Tower positions need special handling for 3x3 (princess) and 4x4 (king) footprints
+                int towerHeight = (type == Tower.TowerType.KING) ? 4 : 3;
+                int clientGridY = Arena.HEIGHT - towerHeight - gridY;
                 
-                // Find and update the corresponding tower
-                java.util.List<Tower> matchingTowers = arena.getTowersByType(type, clientIsPlayerSide);
-                for (Tower tower : matchingTowers) {
-                    // Update health (cast to int as Tower uses int health)
-                    tower.setCurrentHealth((int) currentHealth);
+                // Find the tower at this position by iterating all towers
+                Tower targetTower = findTowerAtPosition(arena, type, clientIsPlayerSide, gridX, clientGridY);
+                
+                if (targetTower != null) {
+                    int oldHealth = (int) targetTower.getCurrentHealth();
+                    targetTower.setCurrentHealth((int) currentHealth);
                     
                     // If tower is destroyed, ensure it's marked
-                    if (!isAlive && tower.isAlive()) {
-                        tower.setCurrentHealth(0);
+                    if (!isAlive && targetTower.isAlive()) {
+                        targetTower.setCurrentHealth(0);
+                        System.out.println("[NetworkBattle] Tower destroyed via sync: " + type + " at (" + gridX + "," + clientGridY + ")");
+                        
+                        // If our king tower was destroyed, we lost!
+                        if (type == Tower.TowerType.KING && clientIsPlayerSide && !gameEnded) {
+                            System.out.println("[NetworkBattle] Our KING tower destroyed - we lost!");
+                            showDefeat("Your King Tower was destroyed!");
+                        }
+                        // If opponent's king tower was destroyed, we won!
+                        else if (type == Tower.TowerType.KING && !clientIsPlayerSide && !gameEnded) {
+                            System.out.println("[NetworkBattle] Enemy KING tower destroyed - we won!");
+                            showVictory("You destroyed the enemy King Tower!");
+                        }
                     }
+                    
+                    if (oldHealth != (int) currentHealth) {
+                        System.out.println("[NetworkBattle] Tower health updated: " + type + " " + oldHealth + " -> " + (int) currentHealth);
+                    }
+                } else {
+                    System.err.println("[NetworkBattle] Could not find tower: " + type + " side=" + clientIsPlayerSide + " at (" + gridX + "," + clientGridY + ")");
                 }
             } catch (Exception e) {
-                System.err.println("[NetworkBattle] Failed to parse tower sync: " + towerStr);
+                System.err.println("[NetworkBattle] Failed to parse tower sync: " + towerStr + " - " + e.getMessage());
             }
         }
+    }
+    
+    /**
+     * Finds a tower at the given position.
+     */
+    private Tower findTowerAtPosition(Arena arena, Tower.TowerType type, boolean isPlayerSide, int gridX, int gridY) {
+        java.util.List<Tower> matchingTowers = arena.getTowersByType(type, isPlayerSide);
+        
+        for (Tower tower : matchingTowers) {
+            GridPosition pos = tower.getPosition();
+            if (pos != null) {
+                // Check if position matches (tower position is top-left corner)
+                if (pos.getX() == gridX && pos.getY() == gridY) {
+                    return tower;
+                }
+            }
+        }
+        
+        // Fallback: if only one tower of this type and side, return it
+        if (matchingTowers.size() == 1) {
+            return matchingTowers.get(0);
+        }
+        
+        // For king tower, there's only one per side, so just return first match
+        if (type == Tower.TowerType.KING && !matchingTowers.isEmpty()) {
+            return matchingTowers.get(0);
+        }
+        
+        return null;
     }
     
     /**
