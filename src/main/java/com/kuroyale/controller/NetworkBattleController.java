@@ -243,12 +243,12 @@ public class NetworkBattleController implements GameEventListener {
     
     private void update(double deltaTime) {
         if (isHost) {
-            // HOST: Run full authoritative game logic
+            // HOST: Run full authoritative game logic - this is the ONLY game loop
             gameState.update(deltaTime);
         } else {
-            // CLIENT: Only update local elixir for responsive UI
-            // Full game state comes from host via GAME_STATE_SYNC messages
-            gameState.updateClientOnly(deltaTime);
+            // CLIENT: Render only - NO game logic!
+            // All entity positions and game state come from host via FULL_STATE_SYNC
+            gameState.updateRenderOnly(deltaTime);
         }
         
         // Update UI elements (both host and client)
@@ -278,21 +278,24 @@ public class NetworkBattleController implements GameEventListener {
         if (gameEnded || !networkService.isConnected()) return;
         
         if (isHost) {
-            // HOST: Send authoritative game state to client
-            // This includes timer, elixir, scores, and game state flags
-            networkService.send(NetworkMessage.gameStateSync(
+            // HOST: Send FULL authoritative state to client
+            // This is the single source of truth - client just renders this
+            
+            // Serialize all entities
+            String troopData = gameState.serializeTroops();
+            String buildingData = gameState.serializeBuildings();
+            
+            // Send full state sync with ALL game data
+            networkService.send(NetworkMessage.fullStateSync(
+                troopData,
+                buildingData,
                 gameState.getGameTime(),
                 gameState.getPlayerElixir().getCurrentElixir(),
                 gameState.getBotElixir().getCurrentElixir(),
                 gameState.getPlayerScore(),
                 gameState.getBotScore(),
-                gameState.isDoubleElixir()
-            ));
-            
-            // Also send score sync for redundancy
-            networkService.send(NetworkMessage.scoreSync(
-                gameState.getPlayerScore(),
-                gameState.getBotScore()
+                gameState.isDoubleElixir(),
+                gameState.isGameOver()
             ));
             
             // Send tower health sync
@@ -391,6 +394,13 @@ public class NetworkBattleController implements GameEventListener {
                 // CLIENT: Sync tower health from host
                 if (!isHost) {
                     handleTowerSync(message);
+                }
+                break;
+                
+            case FULL_STATE_SYNC:
+                // CLIENT: Apply complete entity state from host
+                if (!isHost) {
+                    handleFullStateSync(message);
                 }
                 break;
                 
@@ -595,6 +605,178 @@ public class NetworkBattleController implements GameEventListener {
             showDefeat(reason);
         } else {
             showVictory(reason);
+        }
+    }
+    
+    /**
+     * Handles full state sync from host - this is the key synchronization method.
+     * Receives all entity positions and game state from the authoritative host.
+     * Format: TROOPS#troops_data|BUILDINGS#buildings_data|GAME#gameTime,pElixir,bElixir,pScore,bScore,doubleElixir,gameOver
+     */
+    private void handleFullStateSync(NetworkMessage message) {
+        if (gameState == null) return;
+        
+        String data = message.getData();
+        if (data == null || data.isEmpty()) return;
+        
+        try {
+            // Parse sections
+            String[] sections = data.split("\\|");
+            String troopData = "";
+            String buildingData = "";
+            String gameData = "";
+            
+            for (String section : sections) {
+                if (section.startsWith("TROOPS#")) {
+                    troopData = section.substring(7);
+                } else if (section.startsWith("BUILDINGS#")) {
+                    buildingData = section.substring(10);
+                } else if (section.startsWith("GAME#")) {
+                    gameData = section.substring(5);
+                }
+            }
+            
+            // Clear existing entities and recreate from host state
+            gameState.clearEntities();
+            
+            // Apply troop state (with mirroring for client perspective)
+            if (!troopData.isEmpty()) {
+                applyTroopState(troopData);
+            }
+            
+            // Apply building state (with mirroring)
+            if (!buildingData.isEmpty()) {
+                applyBuildingState(buildingData);
+            }
+            
+            // Apply game state
+            if (!gameData.isEmpty()) {
+                applyGameData(gameData);
+            }
+            
+        } catch (Exception e) {
+            System.err.println("[NetworkBattle] Error parsing full state sync: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Applies troop state from host.
+     * Format: cardName,worldX,worldY,health,isPlayer,state|...
+     */
+    private void applyTroopState(String troopData) {
+        String[] troops = troopData.split("\\|");
+        
+        for (String troopStr : troops) {
+            if (troopStr.isEmpty()) continue;
+            
+            String[] parts = troopStr.split(",");
+            if (parts.length < 6) continue;
+            
+            try {
+                String cardName = parts[0];
+                double worldX = Double.parseDouble(parts[1]);
+                double worldY = Double.parseDouble(parts[2]);
+                int health = Integer.parseInt(parts[3]);
+                boolean hostIsPlayer = Boolean.parseBoolean(parts[4]);
+                String state = parts[5];
+                
+                // Mirror for client perspective:
+                // Host's player troops = Client's opponent troops
+                // Host's opponent troops = Client's player troops
+                boolean clientIsPlayer = !hostIsPlayer;
+                
+                // Mirror Y coordinate
+                double clientWorldY = (Arena.HEIGHT - 1) - worldY;
+                
+                // Spawn troop at the mirrored position
+                gameState.spawnTroopAtPosition(cardName, worldX, clientWorldY, health, clientIsPlayer, state);
+                
+            } catch (Exception e) {
+                System.err.println("[NetworkBattle] Error parsing troop: " + troopStr);
+            }
+        }
+    }
+    
+    /**
+     * Applies building state from host.
+     * Format: cardName,gridX,gridY,health,isPlayer,lifetime|...
+     */
+    private void applyBuildingState(String buildingData) {
+        String[] buildings = buildingData.split("\\|");
+        
+        for (String buildingStr : buildings) {
+            if (buildingStr.isEmpty()) continue;
+            
+            String[] parts = buildingStr.split(",");
+            if (parts.length < 6) continue;
+            
+            try {
+                String cardName = parts[0];
+                int gridX = Integer.parseInt(parts[1]);
+                int gridY = Integer.parseInt(parts[2]);
+                int health = Integer.parseInt(parts[3]);
+                boolean hostIsPlayer = Boolean.parseBoolean(parts[4]);
+                double lifetime = Double.parseDouble(parts[5]);
+                
+                // Mirror for client perspective
+                boolean clientIsPlayer = !hostIsPlayer;
+                
+                // Mirror Y coordinate (accounting for building height - assume 3x3)
+                int clientGridY = Arena.HEIGHT - 3 - gridY;
+                
+                // Spawn building at mirrored position
+                gameState.spawnBuildingAtPosition(cardName, gridX, clientGridY, health, clientIsPlayer, lifetime);
+                
+            } catch (Exception e) {
+                System.err.println("[NetworkBattle] Error parsing building: " + buildingStr);
+            }
+        }
+    }
+    
+    /**
+     * Applies game state data from host.
+     * Format: gameTime,pElixir,bElixir,pScore,bScore,doubleElixir,gameOver
+     */
+    private void applyGameData(String gameData) {
+        String[] parts = gameData.split(",");
+        if (parts.length < 7) return;
+        
+        try {
+            double gameTime = Double.parseDouble(parts[0]);
+            double hostPlayerElixir = Double.parseDouble(parts[1]);
+            double hostBotElixir = Double.parseDouble(parts[2]);
+            int hostPlayerScore = Integer.parseInt(parts[3]);
+            int hostBotScore = Integer.parseInt(parts[4]);
+            boolean doubleElixir = Boolean.parseBoolean(parts[5]);
+            boolean gameOver = Boolean.parseBoolean(parts[6]);
+            
+            // Apply game state (inverted for client perspective)
+            // Client's score = Host's botScore (towers client destroyed on host)
+            // Client's opponent score = Host's playerScore (towers host destroyed)
+            gameState.applyHostStateSync(
+                gameTime,
+                hostPlayerElixir,
+                hostBotElixir,
+                hostBotScore,      // Client's score
+                hostPlayerScore,   // Opponent's score from client view
+                doubleElixir
+            );
+            
+            // Update double elixir UI
+            if (doubleElixir && !doubleElixirShown) {
+                doubleElixirShown = true;
+                elixirBar.setDoubleElixirActive(true);
+            }
+            
+            // Handle game over from host
+            if (gameOver && !gameEnded) {
+                // Game over will be handled by GAME_OVER message with winner info
+                System.out.println("[NetworkBattle] Game over signal received from host");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("[NetworkBattle] Error parsing game data: " + e.getMessage());
         }
     }
     

@@ -451,6 +451,141 @@ public class GameState implements IBattleState {
         // NOTE: Do NOT update scores or check win conditions here
         // Those are authoritative from the host
     }
+    
+    /**
+     * Render-only update for network client.
+     * Client receives all entity positions from host and just renders them.
+     * No game logic is run locally - this just updates UI elements.
+     */
+    public void updateRenderOnly(double deltaTime) {
+        // Only update elixir for responsive UI (will be corrected by host sync)
+        playerElixir.update(deltaTime);
+        
+        // Everything else (troops, combat, towers) comes from host via full state sync
+        // No local simulation!
+    }
+    
+    /**
+     * Serializes all troops for network transmission.
+     * Format: cardName,worldX,worldY,health,isPlayer,state|cardName,...
+     */
+    public String serializeTroops() {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        
+        for (Troop troop : activeTroops) {
+            if (!first) sb.append("|");
+            first = false;
+            
+            Card card = troop.getBaseCard();
+            Vector2 pos = troop.getWorldPosition();
+            
+            sb.append(card != null ? card.getName() : "Unknown")
+              .append(",").append(String.format("%.2f", pos.getX()))
+              .append(",").append(String.format("%.2f", pos.getY()))
+              .append(",").append(troop.getCurrentHealth())
+              .append(",").append(troop.isPlayerSide())
+              .append(",").append(troop.getUnitState().name());
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Serializes all buildings for network transmission.
+     * Format: cardName,gridX,gridY,health,isPlayer,lifetime|...
+     */
+    public String serializeBuildings() {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        
+        for (Building building : activeBuildings) {
+            if (!first) sb.append("|");
+            first = false;
+            
+            GridPosition pos = building.getPosition();
+            
+            sb.append(building.getCardName() != null ? building.getCardName() : "Building")
+              .append(",").append(pos.getX())
+              .append(",").append(pos.getY())
+              .append(",").append(building.getCurrentHealth())
+              .append(",").append(building.isPlayerSide())
+              .append(",").append(String.format("%.1f", building.getRemainingLifetime()));
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Clears all troops and buildings - used before applying host state.
+     */
+    public void clearEntities() {
+        // Remove from spatial grid first
+        for (Troop troop : activeTroops) {
+            arena.getSpatialGrid().remove(troop);
+        }
+        for (Building building : activeBuildings) {
+            arena.getSpatialGrid().remove(building);
+        }
+        
+        activeTroops.clear();
+        activeBuildings.clear();
+    }
+    
+    /**
+     * Spawns a troop at exact world position (for network sync).
+     * Used by client to recreate host's troop state.
+     */
+    public void spawnTroopAtPosition(String cardName, double worldX, double worldY, int health, boolean isPlayer, String state) {
+        Card card = getCardByName(cardName);
+        if (card == null) {
+            System.err.println("[GameState] Unknown card for troop spawn: " + cardName);
+            return;
+        }
+        
+        // Create troop at approximate grid position
+        int gridX = (int) worldX;
+        int gridY = (int) worldY;
+        GridPosition spawn = GridPosition.tryCreate(
+            Math.max(0, Math.min(gridX, Arena.WIDTH - 1)),
+            Math.max(0, Math.min(gridY, Arena.HEIGHT - 1))
+        );
+        
+        if (spawn != null) {
+            Troop troop = new Troop(card, spawn, isPlayer);
+            // Set exact world position
+            troop.setWorldPosition(new Vector2(worldX, worldY));
+            troop.setCurrentHealth(health);
+            
+            activeTroops.add(troop);
+            arena.getSpatialGrid().add(troop);
+        }
+    }
+    
+    /**
+     * Spawns a building at position (for network sync).
+     */
+    public void spawnBuildingAtPosition(String cardName, int gridX, int gridY, int health, boolean isPlayer, double lifetime) {
+        Card card = getCardByName(cardName);
+        if (card == null) {
+            System.err.println("[GameState] Unknown card for building spawn: " + cardName);
+            return;
+        }
+        
+        int bw = Math.max(1, card.getFootprintWidthTiles());
+        int bh = Math.max(1, card.getFootprintHeightTiles());
+        
+        GridPosition pos = GridPosition.tryCreate(gridX, gridY);
+        if (pos != null) {
+            Building building = new Building(pos, bw, bh, isPlayer, card.getHp(), card.getImagePath(), card.getLifetime());
+            building.configureCombatFromCard(card);
+            building.setCurrentHealth(health);
+            building.setRemainingLifetime(lifetime);
+            
+            activeBuildings.add(building);
+            arena.getSpatialGrid().add(building);
+        }
+    }
 
     public int getPlayerScore() {
         return playerScore;

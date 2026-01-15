@@ -207,6 +207,21 @@ public class NetworkMessage implements Serializable {
     }
     
     /**
+     * Creates a full state sync message with all entities.
+     * Format: TROOPS#troops_data|BUILDINGS#buildings_data|GAME#gameTime,pElixir,bElixir,pScore,bScore,doubleElixir,gameOver
+     */
+    public static NetworkMessage fullStateSync(String troopData, String buildingData, 
+            double gameTime, double playerElixir, double botElixir,
+            int playerScore, int botScore, boolean doubleElixir, boolean gameOver) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("TROOPS#").append(troopData != null ? troopData : "");
+        sb.append("|BUILDINGS#").append(buildingData != null ? buildingData : "");
+        sb.append("|GAME#").append(String.format("%.2f,%.2f,%.2f,%d,%d,%b,%b", 
+                gameTime, playerElixir, botElixir, playerScore, botScore, doubleElixir, gameOver));
+        return new NetworkMessage(NetworkMessageType.FULL_STATE_SYNC, 1, sb.toString());
+    }
+    
+    /**
      * Creates a game over message (sent by host to client).
      * Format: winnerIsHost;reason
      * winnerIsHost: true if host won, false if client won

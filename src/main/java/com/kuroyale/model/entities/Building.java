@@ -131,6 +131,14 @@ public class Building implements ICombatant {
     public int getCurrentHealth() {
         return currentHealth;
     }
+    
+    public void setCurrentHealth(int health) {
+        this.currentHealth = Math.max(0, health);
+    }
+    
+    public void setRemainingLifetime(double lifetime) {
+        this.remainingLifetime = Math.max(0, lifetime);
+    }
 
     public String getImagePath() {
         return imagePath;

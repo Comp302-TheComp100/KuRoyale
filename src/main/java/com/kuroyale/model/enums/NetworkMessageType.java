@@ -34,6 +34,7 @@ public enum NetworkMessageType {
     SCORE_SYNC("Score synchronization from host"),
     TOWER_SYNC("Tower health synchronization from host"),
     GAME_OVER("Game over with winner info from host"),
+    FULL_STATE_SYNC("Complete entity state sync - troops, buildings, projectiles from host"),
     
     // Match End Messages
     VICTORY("Player won the match"),

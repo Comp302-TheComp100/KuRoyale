@@ -121,6 +121,10 @@ public class Troop implements ICombatant {
     public int getCurrentHealth() {
         return currentHealth;
     }
+    
+    public void setCurrentHealth(int health) {
+        this.currentHealth = Math.max(0, health);
+    }
 
     public void takeDamage(int amount) {
         currentHealth = Math.max(0, currentHealth - amount);
