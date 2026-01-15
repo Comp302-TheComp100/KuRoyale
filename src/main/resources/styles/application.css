@@ -109,14 +109,14 @@
   -fx-font-size: 18px;
   -fx-font-weight: bold;
   -fx-font-family: "Clash", Arial;
-  -fx-text-fill: -fx-purple;
+  -fx-text-fill: #5b21b6;
 }
 
 .average-elixir-value {
   -fx-font-size: 20px;
   -fx-font-weight: bold;
   -fx-font-family: "Clash", Arial;
-  -fx-text-fill: -fx-purple;
+  -fx-text-fill: #5b21b6;
 }
 
 .error-label {

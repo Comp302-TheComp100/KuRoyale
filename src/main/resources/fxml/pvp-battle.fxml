@@ -13,7 +13,7 @@
     xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.kuroyale.controller.PvPBattleController" stylesheets="@../styles/application.css">
 
     <!-- Background -->
-    <AnchorPane styleClass="main-background">
+    <AnchorPane style="-fx-background-color: black;"> <!-- Can be reverted to <AnchorPane styleClass="main-background"> -->
         <BorderPane AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 
             <!-- Left: Player 1 Elixir and Hand -->

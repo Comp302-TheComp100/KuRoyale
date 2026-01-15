@@ -68,7 +68,7 @@ public class GameSaveService {
                     .filter(path -> path.toString().endsWith(SAVE_FILE_EXTENSION)).collect(Collectors.toList());
 
             for (Path saveFile : saveFiles) {
-                try (ObjectInputStream ois = new ObjectInputStream(
+                try (ObjectInputStream ois = new LegacyObjectInputStream(
                         new FileInputStream(saveFile.toFile()))) {
                     SavedGameState savedGame = (SavedGameState) ois.readObject();
                     savedGames.add(savedGame);
@@ -104,7 +104,7 @@ public class GameSaveService {
             for (Path file : files) {
                 // First, read the file to check if it matches
                 String fileSaveId = null;
-                try (ObjectInputStream ois = new ObjectInputStream(
+                try (ObjectInputStream ois = new LegacyObjectInputStream(
                         new FileInputStream(file.toFile()))) {
                     SavedGameState savedGame = (SavedGameState) ois.readObject();
                     fileSaveId = savedGame.getSaveId();
@@ -243,5 +243,36 @@ public class GameSaveService {
         String timestamp = savedGame.getSaveTime().toString().replaceAll("[:\\-.]", "").replace("T", "_");
 
         return String.format("%s_%s%s", savedGame.getPlayerUsername(), timestamp, SAVE_FILE_EXTENSION);
+    }
+
+    // Custom ObjectInputStream to handle class name changes (migration from
+    // com.kuroyale.model to com.kuroyale.model.dto)
+    private static class LegacyObjectInputStream extends ObjectInputStream {
+        public LegacyObjectInputStream(InputStream in) throws IOException {
+            super(in);
+        }
+
+        @Override
+        protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
+            String name = desc.getName();
+
+            // Map old package class to new package class
+            if (name.equals("com.kuroyale.model.SavedGameState")) {
+                return com.kuroyale.model.dto.SavedGameState.class;
+            }
+            // Handle inner classes like SavedGameState$SavedTower
+            if (name.startsWith("com.kuroyale.model.SavedGameState$")) {
+                String suffix = name.substring("com.kuroyale.model.SavedGameState".length());
+                String newName = "com.kuroyale.model.dto.SavedGameState" + suffix;
+                return Class.forName(newName);
+            }
+
+            // Handle ArenaLayout if it moved from enums to entities
+            if (name.equals("com.kuroyale.model.enums.ArenaLayout")) {
+                return com.kuroyale.model.entities.ArenaLayout.class;
+            }
+
+            return super.resolveClass(desc);
+        }
     }
 }

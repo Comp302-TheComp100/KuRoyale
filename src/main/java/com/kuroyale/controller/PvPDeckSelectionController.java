@@ -88,7 +88,6 @@ public class PvPDeckSelectionController {
     }
 
     private void initializeStyles() {
-        root.getStyleClass().add("main-menu-background");
         if (titleLabel != null) {
             titleLabel.getStyleClass().add("title-label");
         }

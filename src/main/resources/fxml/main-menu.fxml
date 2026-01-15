@@ -60,7 +60,7 @@
            alignment="CENTER"/>
 
     <!-- Left Side - Challenge and Quest Icons -->
-    <VBox spacing="20" alignment="TOP_LEFT"
+    <VBox spacing="50" alignment="TOP_LEFT"
           AnchorPane.topAnchor="200.0"
           AnchorPane.leftAnchor="10.0">
         

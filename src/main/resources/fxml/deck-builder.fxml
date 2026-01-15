@@ -15,16 +15,15 @@
     <AnchorPane prefWidth="1280" prefHeight="720">
         
         <!-- Battle Deck Title - Centered -->
-        <HBox fx:id="battleDeckTitleContainer" 
-              layoutY="20"
-              alignment="CENTER"
-              prefWidth="1280">
-            <Label fx:id="battleDeckTitle" text="Battle Deck"/>
-        </HBox>
+        <!-- Battle Deck Title - Left Side Vertical -->
+        <VBox layoutX="50" layoutY="50" spacing="-5" alignment="CENTER_LEFT">
+            <Label text="BATTLE" styleClass="battle-deck-title-label" style="-fx-font-size: 44px;"/>
+            <Label fx:id="battleDeckTitle" text="DECK" styleClass="battle-deck-title-label" style="-fx-font-size: 44px;"/>
+        </VBox>
         
         <!-- Deck Slots Background Area - shows empty rectangles -->
         <AnchorPane fx:id="deckSlotsBackground" 
-                    layoutX="330" layoutY="60"
+                    layoutX="330" layoutY="30"
                     prefWidth="620" prefHeight="340">
             
             <!-- Average Elixir Cost Display - Centered inside brown area at bottom -->
@@ -44,20 +43,20 @@
         
         <!-- Deck Slots Container - transparent, slots positioned individually, moved down -->
         <AnchorPane fx:id="deckSlotsContainer" 
-              layoutX="330" layoutY="80"
+              layoutX="330" layoutY="50"
               prefWidth="620" prefHeight="280"
               style="-fx-background-color: transparent;">
         </AnchorPane>
         
         <!-- Cards Grid Background - fixed brown background -->
         <AnchorPane fx:id="cardsGridBackground" 
-                   layoutX="330" layoutY="420"
+                   layoutX="330" layoutY="390"
                    prefWidth="620" prefHeight="300">
         </AnchorPane>
         
         <!-- Cards Grid Area - transparent scroll pane, only cards scroll -->
         <ScrollPane fx:id="cardsScrollPane" 
-                   layoutX="0" layoutY="420"
+                   layoutX="0" layoutY="390"
                    prefWidth="1280" prefHeight="300"
                    fitToWidth="true">
             <VBox alignment="CENTER" style="-fx-background-color: transparent; -fx-padding: 20;">

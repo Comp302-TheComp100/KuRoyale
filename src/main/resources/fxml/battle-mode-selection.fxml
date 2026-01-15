@@ -12,18 +12,19 @@
     xmlns="http://javafx.com/javafx"
     xmlns:fx="http://javafx.com/fxml" fx:controller="com.kuroyale.controller.BattleModeSelectionController" prefWidth="1280" prefHeight="720">
 
+    <Label fx:id="titleLabel" text="SELECT BATTLE MODE" 
+           styleClass="title-label"
+           AnchorPane.topAnchor="80.0"
+           AnchorPane.leftAnchor="0.0"
+           AnchorPane.rightAnchor="0.0"
+           alignment="CENTER"/>
+
     <!-- Main Content (Centered) -->
-    <VBox alignment="CENTER" spacing="30" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
-
-        <padding>
-            <Insets top="50" right="50" bottom="50" left="50"/>
-        </padding>
-
-        <Label fx:id="titleLabel" text="SELECT BATTLE MODE" styleClass="title-label"/>
+    <VBox alignment="CENTER" spacing="30" AnchorPane.topAnchor="150.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
 
         <VBox alignment="CENTER" spacing="20">
             <!-- Local Player vs Bot Button -->
-            <Button fx:id="localBotButton" text="LOCAL PLAYER VS BOT" onAction="#handleLocalVsBot" prefWidth="350" prefHeight="70" styleClass="menu-button">
+        <Button fx:id="localBotButton" text="SOLO" onAction="#handleLocalVsBot" prefWidth="350" prefHeight="70" styleClass="menu-button">
                 <graphic>
                     <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
                         <image>
@@ -34,7 +35,7 @@
             </Button>
 
             <!-- Local Player vs Player Button -->
-            <Button fx:id="localPvpButton" text="LOCAL PLAYER VS PLAYER" onAction="#handleLocalPvP" prefWidth="350" prefHeight="70" styleClass="menu-button">
+            <Button fx:id="localPvpButton" text="1 VS 1" onAction="#handleLocalPvP" prefWidth="350" prefHeight="70" styleClass="menu-button">
                 <graphic>
                     <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
                         <image>
@@ -45,7 +46,7 @@
             </Button>
 
             <!-- Network PvP Button -->
-            <Button fx:id="networkPvpButton" text="PLAYERS THROUGH NETWORK" onAction="#handleNetworkPvP" prefWidth="350" prefHeight="70" styleClass="menu-button">
+            <Button fx:id="networkPvpButton" text="ONLINE" onAction="#handleNetworkPvP" prefWidth="350" prefHeight="70" styleClass="menu-button">
                 <graphic>
                     <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
                         <image>
