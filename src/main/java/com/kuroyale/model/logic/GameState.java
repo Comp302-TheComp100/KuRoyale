@@ -33,6 +33,9 @@ public class GameState implements IBattleState {
 
     // Challenge Context
     private ChallengeType activeChallenge;
+    
+    // Network mode flag - when true, bot AI is disabled (opponent is a real player)
+    private boolean networkMode = false;
 
     public GameState(Deck playerDeck, Deck botDeck, Arena arena) {
         this.playerHand = new Hand(playerDeck);
@@ -72,6 +75,17 @@ public class GameState implements IBattleState {
 
     public void setActiveChallenge(ChallengeType activeChallenge) {
         this.activeChallenge = activeChallenge;
+    }
+    
+    /**
+     * Enables network mode - disables bot AI so opponent is controlled by real player.
+     */
+    public void setNetworkMode(boolean networkMode) {
+        this.networkMode = networkMode;
+    }
+    
+    public boolean isNetworkMode() {
+        return networkMode;
     }
 
     // Restores game state from saved data
@@ -121,7 +135,8 @@ public class GameState implements IBattleState {
         playerElixir.update(deltaTime);
         botElixir.update(deltaTime);
 
-        if (!isGameOver) {
+        // Only run bot AI if NOT in network mode (opponent is a real player in network mode)
+        if (!isGameOver && !networkMode) {
             updateBot(deltaTime);
         }
 
@@ -331,6 +346,13 @@ public class GameState implements IBattleState {
 
     public double getGameTime() {
         return gameTime;
+    }
+    
+    /**
+     * Sets the game time (used for network sync where host is authoritative).
+     */
+    public void setGameTime(double gameTime) {
+        this.gameTime = Math.max(0, gameTime);
     }
 
     public int getPlayerScore() {
