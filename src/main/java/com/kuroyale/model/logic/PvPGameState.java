@@ -32,6 +32,8 @@ public class PvPGameState implements IBattleState {
     private int player1Score = 0, player2Score = 0;
 
     private boolean isDoubleElixir = false, isGameOver = false;
+    private boolean isTiebreakerMode = false; // Tiebreaker: all towers drain health
+    private static final double TIEBREAKER_DRAIN_RATE = 100.0; // HP per second
     private TurnManager.Turn winner = null;
 
     private Set<Tower> scoredTowers = new HashSet<>();
@@ -95,6 +97,12 @@ public class PvPGameState implements IBattleState {
     }
 
     private void updateGameTimer(double deltaTime) {
+        // Handle tiebreaker mode: all towers drain health until one reaches 0
+        if (isTiebreakerMode) {
+            updateTiebreakerMode(deltaTime);
+            return;
+        }
+
         if (gameTime > 0) {
             gameTime -= deltaTime;
 
@@ -108,35 +116,56 @@ public class PvPGameState implements IBattleState {
             if (gameTime <= 0) {
                 gameTime = 0;
                 if (!isGameOver) {
-                    isGameOver = true;
                     if (player1Score > player2Score) {
+                        isGameOver = true;
                         winner = TurnManager.Turn.PLAYER_1;
                     } else if (player2Score > player1Score) {
+                        isGameOver = true;
                         winner = TurnManager.Turn.PLAYER_2;
                     } else {
-                        // Tiebreaker: Compare lowest HP towers
-                        double p1MinHP = getLowestTowerHealth(true);
-                        double p2MinHP = getLowestTowerHealth(false);
-
-                        if (p1MinHP < p2MinHP) {
-                            winner = TurnManager.Turn.PLAYER_2; // Player 1 has weaker tower
-                        } else if (p2MinHP < p1MinHP) {
-                            winner = TurnManager.Turn.PLAYER_1; // Player 2 has weaker tower
-                        } else {
-                            winner = null; // Draw
-                        }
+                        // Equal scores: Enter tiebreaker mode
+                        // All remaining towers start losing health rapidly
+                        isTiebreakerMode = true;
                     }
                 }
             }
         }
     }
 
-    private double getLowestTowerHealth(boolean isPlayer1Side) {
-        return arena.getAllTowers().stream()
-                .filter(t -> t.isPlayerSide() == isPlayer1Side && t.isAlive())
-                .mapToDouble(Tower::getCurrentHealth)
-                .min()
-                .orElse(Double.MAX_VALUE); // If no towers alive, return max so opponent wins tiebreaker
+    /**
+     * Tiebreaker mode: All remaining towers lose health rapidly.
+     * The first tower to reach 0 health determines the loser.
+     */
+    private void updateTiebreakerMode(double deltaTime) {
+        double drainAmount = TIEBREAKER_DRAIN_RATE * deltaTime;
+
+        Tower lowestTower = null;
+        double lowestHealth = Double.MAX_VALUE;
+
+        // Drain all living towers and find the one with lowest health
+        for (Tower tower : arena.getAllTowers()) {
+            if (tower.isAlive()) {
+                double newHealth = tower.getCurrentHealth() - drainAmount;
+                tower.setCurrentHealth((int) Math.max(0, newHealth));
+
+                // Track which tower has the lowest health
+                if (newHealth < lowestHealth) {
+                    lowestHealth = newHealth;
+                    lowestTower = tower;
+                }
+            }
+        }
+
+        // Check if any tower reached 0 health
+        if (lowestTower != null && lowestTower.getCurrentHealth() <= 0) {
+            isGameOver = true;
+            // The side whose tower died first loses
+            if (lowestTower.isPlayerSide()) {
+                winner = TurnManager.Turn.PLAYER_2;
+            } else {
+                winner = TurnManager.Turn.PLAYER_1;
+            }
+        }
     }
 
     private void updateEntities(double deltaTime) {
@@ -469,6 +498,10 @@ public class PvPGameState implements IBattleState {
 
     public boolean isGameOver() {
         return isGameOver;
+    }
+
+    public boolean isTiebreakerMode() {
+        return isTiebreakerMode;
     }
 
     public TurnManager.Turn getWinner() {
