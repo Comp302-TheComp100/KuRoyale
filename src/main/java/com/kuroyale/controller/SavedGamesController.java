@@ -106,7 +106,7 @@ public class SavedGamesController {
         // Show confirmation dialog using themed alert
         // For confirmation dialogs, we'll use a simple approach: just delete on click
         // since ThemedAlertController is for info/error messages
-        com.kuroyale.view.ThemedAlertController.show(
+        com.kuroyale.view.ThemedAlertController.showConfirmation(
                 "Delete Saved Game",
                 "This will permanently delete the saved game. Are you sure?",
                 () -> {

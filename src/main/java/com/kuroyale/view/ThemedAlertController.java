@@ -7,6 +7,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
@@ -21,6 +22,8 @@ public class ThemedAlertController {
     private Label messageLabel;
     @FXML
     private Button okButton;
+    @FXML
+    private Button cancelButton;
 
     private Stage stage;
 
@@ -28,15 +31,22 @@ public class ThemedAlertController {
     private void initialize() {
         // Sound effect on hover
         if (okButton != null) {
-            okButton.setOnMouseEntered(e -> {
-                okButton.setScaleX(1.05);
-                okButton.setScaleY(1.05);
-            });
-            okButton.setOnMouseExited(e -> {
-                okButton.setScaleX(1.0);
-                okButton.setScaleY(1.0);
-            });
+            setupButtonHover(okButton);
         }
+        if (cancelButton != null) {
+            setupButtonHover(cancelButton);
+        }
+    }
+
+    private void setupButtonHover(Button button) {
+        button.setOnMouseEntered(e -> {
+            button.setScaleX(1.05);
+            button.setScaleY(1.05);
+        });
+        button.setOnMouseExited(e -> {
+            button.setScaleX(1.0);
+            button.setScaleY(1.0);
+        });
     }
 
     public void setStage(Stage stage) {
@@ -55,6 +65,13 @@ public class ThemedAlertController {
         }
     }
 
+    public void setConfirmationMode(boolean confirmationMode) {
+        if (cancelButton != null) {
+            cancelButton.setVisible(confirmationMode);
+            cancelButton.setManaged(confirmationMode);
+        }
+    }
+
     private Runnable onClose;
 
     public void setOnClose(Runnable onClose) {
@@ -70,6 +87,15 @@ public class ThemedAlertController {
         if (onClose != null) {
             onClose.run();
         }
+    }
+
+    @FXML
+    private void handleCancel() {
+        SoundEffectUtil.playButtonClick();
+        if (stage != null) {
+            stage.close();
+        }
+        // Cancel does NOT run onClose callback
     }
 
     /**
@@ -102,6 +128,35 @@ public class ThemedAlertController {
      * @param onClose The action to run when the alert is closed
      */
     public static void show(javafx.stage.Window owner, String title, String message, Runnable onClose) {
+        showInternal(owner, title, message, onClose, false);
+    }
+
+    /**
+     * Shows a themed confirmation alert with OK and Cancel buttons.
+     * 
+     * @param title     The title of the alert
+     * @param message   The message to display
+     * @param onConfirm The action to run when the user confirms (clicks OK)
+     */
+    public static void showConfirmation(String title, String message, Runnable onConfirm) {
+        showConfirmation(null, title, message, onConfirm);
+    }
+
+    /**
+     * Shows a themed confirmation alert with OK and Cancel buttons, centered on the
+     * owner window.
+     * 
+     * @param owner     The owner window of the alert
+     * @param title     The title of the alert
+     * @param message   The message to display
+     * @param onConfirm The action to run when the user confirms (clicks OK)
+     */
+    public static void showConfirmation(javafx.stage.Window owner, String title, String message, Runnable onConfirm) {
+        showInternal(owner, title, message, onConfirm, true);
+    }
+
+    private static void showInternal(javafx.stage.Window owner, String title, String message, Runnable onClose,
+            boolean isConfirmation) {
         try {
             FXMLLoader loader = new FXMLLoader(
                     ThemedAlertController.class.getResource("/fxml/components/themed_alert.fxml"));
@@ -113,6 +168,7 @@ public class ThemedAlertController {
             controller.setTitle(title);
             controller.setMessage(message);
             controller.setOnClose(onClose);
+            controller.setConfirmationMode(isConfirmation);
 
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initStyle(StageStyle.TRANSPARENT);
@@ -151,7 +207,8 @@ public class ThemedAlertController {
             e.printStackTrace();
             // Fallback to system alert if something fails
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                    javafx.scene.control.Alert.AlertType.ERROR);
+                    isConfirmation ? javafx.scene.control.Alert.AlertType.CONFIRMATION
+                            : javafx.scene.control.Alert.AlertType.ERROR);
             alert.setTitle(title);
             alert.setContentText(message);
 
@@ -166,8 +223,8 @@ public class ThemedAlertController {
             if (alertOwner != null) {
                 alert.initOwner(alertOwner);
             }
-            alert.showAndWait();
-            if (onClose != null) {
+            java.util.Optional<ButtonType> result = alert.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK && onClose != null) {
                 onClose.run();
             }
         }
