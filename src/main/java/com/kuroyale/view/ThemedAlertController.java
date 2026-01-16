@@ -117,12 +117,22 @@ public class ThemedAlertController {
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initStyle(StageStyle.TRANSPARENT);
 
-            if (owner != null) {
-                stage.initOwner(owner);
+            // If owner is null, try to find the active window
+            javafx.stage.Window alertOwner = owner;
+            if (alertOwner == null) {
+                alertOwner = javafx.stage.Window.getWindows().stream()
+                        .filter(javafx.stage.Window::isShowing)
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            if (alertOwner != null) {
+                stage.initOwner(alertOwner);
                 // Center relative to owner after stage is shown to get correct dimensions
+                final javafx.stage.Window finalOwner = alertOwner;
                 stage.setOnShown(e -> {
-                    double x = owner.getX() + (owner.getWidth() - stage.getWidth()) / 2;
-                    double y = owner.getY() + (owner.getHeight() - stage.getHeight()) / 2;
+                    double x = finalOwner.getX() + (finalOwner.getWidth() - stage.getWidth()) / 2;
+                    double y = finalOwner.getY() + (finalOwner.getHeight() - stage.getHeight()) / 2;
                     stage.setX(x);
                     stage.setY(y);
                 });
@@ -132,7 +142,7 @@ public class ThemedAlertController {
             scene.setFill(Color.TRANSPARENT);
             stage.setScene(scene);
 
-            if (owner == null) {
+            if (alertOwner == null) {
                 stage.centerOnScreen();
             }
 
@@ -144,8 +154,17 @@ public class ThemedAlertController {
                     javafx.scene.control.Alert.AlertType.ERROR);
             alert.setTitle(title);
             alert.setContentText(message);
-            if (owner != null) {
-                alert.initOwner(owner);
+
+            javafx.stage.Window alertOwner = owner;
+            if (alertOwner == null) {
+                alertOwner = javafx.stage.Window.getWindows().stream()
+                        .filter(javafx.stage.Window::isShowing)
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            if (alertOwner != null) {
+                alert.initOwner(alertOwner);
             }
             alert.showAndWait();
             if (onClose != null) {
