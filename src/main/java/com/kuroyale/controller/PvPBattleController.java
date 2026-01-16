@@ -486,25 +486,15 @@ public class PvPBattleController {
         pauseMenuContainer.getChildren().clear();
         pauseMenuContainer.setVisible(true);
 
-        com.kuroyale.view.battle.PauseMenuView menu = new com.kuroyale.view.battle.PauseMenuView(
-                new com.kuroyale.view.battle.PauseMenuView.PauseMenuListener() {
+        com.kuroyale.view.battle.SimplePauseMenuView menu = new com.kuroyale.view.battle.SimplePauseMenuView(
+                new com.kuroyale.view.battle.SimplePauseMenuView.SimplePauseMenuListener() {
                     @Override
                     public void onResume() {
                         handleResume();
                     }
 
                     @Override
-                    public void onSaveAndResume() {
-                        handleResume();
-                    }
-
-                    @Override
-                    public void onSaveAndExit() {
-                        handleExit();
-                    }
-
-                    @Override
-                    public void onExitWithoutSaving() {
+                    public void onExit() {
                         handleExit();
                     }
                 });
