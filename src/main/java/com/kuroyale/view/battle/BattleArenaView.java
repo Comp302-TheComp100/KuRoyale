@@ -528,7 +528,13 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             aoe.setFill(isPlayerSource ? com.kuroyale.util.GameColors.AOE_PLAYER
                     : com.kuroyale.util.GameColors.AOE_ENEMY);
             aoe.setStroke(com.kuroyale.util.GameColors.AOE_STROKE);
-            aoe.setStrokeWidth(1.2);
+            aoe.setStrokeWidth(2.5);
+            // Add glow effect for better visibility
+            javafx.scene.effect.DropShadow glow = new javafx.scene.effect.DropShadow();
+            glow.setColor(isPlayerSource ? javafx.scene.paint.Color.CYAN : javafx.scene.paint.Color.ORANGERED);
+            glow.setRadius(15);
+            glow.setSpread(0.4);
+            aoe.setEffect(glow);
             unitLayer.getChildren().add(aoe);
             activeSpellVisuals.add(new ActiveSpellVisual(aoe, duration));
         });

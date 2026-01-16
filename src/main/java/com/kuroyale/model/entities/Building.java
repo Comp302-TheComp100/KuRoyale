@@ -106,9 +106,10 @@ public class Building implements ICombatant {
     public GridPosition getCenterPosition() {
         if (position == null)
             return null;
-        // Center = topLeft + (size-1)/2
-        int cx = position.getX() + (width > 0 ? (width - 1) / 2 : 0);
-        int cy = position.getY() + (height > 0 ? (height - 1) / 2 : 0);
+        // Center = topLeft + size/2 (this gives proper center for both odd and even
+        // widths)
+        int cx = position.getX() + (width > 0 ? width / 2 : 0);
+        int cy = position.getY() + (height > 0 ? height / 2 : 0);
         return GridPosition.tryCreate(cx, cy);
     }
 

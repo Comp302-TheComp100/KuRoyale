@@ -90,9 +90,10 @@ public class Tower implements ICombatant {
             return null;
         int w = getWidth();
         int h = getHeight();
-        // Center = topLeft + (size-1)/2
-        int cx = position.getX() + (w > 0 ? (w - 1) / 2 : 0);
-        int cy = position.getY() + (h > 0 ? (h - 1) / 2 : 0);
+        // Center = topLeft + size/2 (this gives proper center for both odd and even
+        // widths)
+        int cx = position.getX() + (w > 0 ? w / 2 : 0);
+        int cy = position.getY() + (h > 0 ? h / 2 : 0);
         return GridPosition.tryCreate(cx, cy);
     }
 

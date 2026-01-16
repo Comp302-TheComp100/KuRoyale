@@ -39,9 +39,9 @@ public class GameColors {
     public static final Color HOVER_FILL = Color.color(0.0, 0.8, 1.0, 0.25);
     public static final Color HOVER_STROKE = Color.CYAN;
 
-    // Spell Effects
-    public static final Color AOE_PLAYER = Color.color(0.2, 0.6, 1.0, 0.18);
-    public static final Color AOE_ENEMY = Color.color(1.0, 0.3, 0.2, 0.18);
+    // Spell Effects - More visible with higher opacity
+    public static final Color AOE_PLAYER = Color.color(0.2, 0.6, 1.0, 0.30);
+    public static final Color AOE_ENEMY = Color.color(1.0, 0.3, 0.2, 0.30);
     public static final Color AOE_STROKE = Color.color(1, 1, 1, 0.6);
 
     private GameColors() {
