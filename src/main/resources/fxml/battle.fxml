@@ -31,8 +31,8 @@
                         <!-- HandView added dynamically -->
                     </VBox>
                     
+                    
                     <Button text="Pause" onAction="#handlePause" styleClass="menu-button-small"/>
-                    <Button text="Exit Battle" onAction="#handleExit" styleClass="menu-button-small"/>
             </VBox>
             </left>
             
@@ -68,6 +68,10 @@
                     
                     <Label text="COMBOS" style="-fx-text-fill: gold; -fx-font-size: 20px; -fx-font-weight: bold;"/>
                     <Label fx:id="comboLabel" text="0" style="-fx-text-fill: gold; -fx-font-size: 36px; -fx-font-weight: bold;"/>
+                    
+                    <Separator/>
+                    
+                    <Button text="Exit Battle" onAction="#handleExit" styleClass="menu-button-small"/>
                 </VBox>
             </right>
             
