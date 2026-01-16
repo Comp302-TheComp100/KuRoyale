@@ -284,6 +284,45 @@ public class CombatService {
         return com.kuroyale.model.logic.CombatUtils.getDistance(attacker, target);
     }
 
+    /**
+     * Calculates the distance from a point to the nearest tile of a structure's
+     * footprint.
+     * This is used for spell area damage to ensure spells hitting any part of a
+     * structure apply damage.
+     */
+    private double calculateDistanceToStructure(com.kuroyale.model.entities.GridPosition from, ICombatant structure) {
+        if (from == null || structure == null)
+            return Double.MAX_VALUE;
+
+        com.kuroyale.model.entities.GridPosition pos = structure.getPosition();
+        if (pos == null)
+            return Double.MAX_VALUE;
+
+        int x0 = pos.getX();
+        int y0 = pos.getY();
+        int w = Math.max(1, structure.getWidth());
+        int h = Math.max(1, structure.getHeight());
+
+        double minDist = Double.MAX_VALUE;
+
+        // Check all tiles in the structure's footprint
+        for (int dx = 0; dx < w; dx++) {
+            for (int dy = 0; dy < h; dy++) {
+                int tileX = x0 + dx;
+                int tileY = y0 + dy;
+                // Distance from spell center to tile center
+                double distX = from.getX() - tileX;
+                double distY = from.getY() - tileY;
+                double dist = Math.sqrt(distX * distX + distY * distY);
+                if (dist < minDist) {
+                    minDist = dist;
+                }
+            }
+        }
+
+        return minDist;
+    }
+
     // Centralized Area Damage logic.
     public void applyAreaDamage(com.kuroyale.model.logic.IBattleState gameState,
             com.kuroyale.model.entities.GridPosition center,
@@ -333,38 +372,41 @@ public class CombatService {
             }
 
             // Precise Distance Check
-            com.kuroyale.model.entities.GridPosition candidatePos = candidate.getPosition();
-            // For structures, use center for better splash approximation or keep simple pos
+            // For structures (towers/buildings), check distance to nearest perimeter tile
+            // This ensures spells that hit any part of the structure apply damage
+            double dist;
             if (candidate instanceof Building || candidate instanceof Tower) {
-                candidatePos = candidate.getCenterPosition();
+                // Calculate distance to the nearest tile of the structure's footprint
+                dist = calculateDistanceToStructure(center, candidate);
+            } else {
+                com.kuroyale.model.entities.GridPosition candidatePos = candidate.getPosition();
+                if (candidatePos == null)
+                    continue;
+                dist = center.getEuclideanDistanceTo(candidatePos);
             }
 
-            if (candidatePos != null) {
-                double dist = center.getEuclideanDistanceTo(candidatePos);
-                if (dist <= radiusTiles) {
+            if (dist <= radiusTiles) {
+                int finalDamage = intDamage;
+                if (isSpell && candidate instanceof Tower) {
+                    finalDamage = (int) Math.round(damage * 0.4);
+                }
 
-                    int finalDamage = intDamage;
-                    if (isSpell && candidate instanceof Tower) {
-                        finalDamage = (int) Math.round(damage * 0.4);
-                    }
+                // Apply Damage
+                candidate.takeDamage(finalDamage);
 
-                    // Apply Damage
-                    candidate.takeDamage(finalDamage);
+                // Track spell damage for quest progress
+                if (isSpell) {
+                    totalSpellDamage += finalDamage;
+                }
 
-                    // Track spell damage for quest progress
-                    if (isSpell) {
-                        totalSpellDamage += finalDamage;
-                    }
+                // Apply Stun
+                if (stunDuration > 0) {
+                    candidate.stun(stunDuration);
+                }
 
-                    // Apply Stun
-                    if (stunDuration > 0) {
-                        candidate.stun(stunDuration);
-                    }
-
-                    // Check for destroyed buildings to free footprint immediately
-                    if (!candidate.isAlive() && candidate instanceof Building b) {
-                        gameState.getArena().freeFootprint(b);
-                    }
+                // Check for destroyed buildings to free footprint immediately
+                if (!candidate.isAlive() && candidate instanceof Building b) {
+                    gameState.getArena().freeFootprint(b);
                 }
             }
         }
