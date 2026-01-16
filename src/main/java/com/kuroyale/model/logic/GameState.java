@@ -27,13 +27,15 @@ public class GameState implements IBattleState {
     private int playerScore = 0, botScore = 0;
 
     private boolean isDoubleElixir = false, isGameOver = false, playerWon = false, isDraw = false;
+    private boolean isTiebreakerMode = false; // Tiebreaker: all towers drain health
+    private static final double TIEBREAKER_DRAIN_RATE = 100.0; // HP per second
 
     // Track towers that have already been scored to avoid double-counting
     private java.util.Set<Tower> scoredTowers = new java.util.HashSet<>();
 
     // Challenge Context
     private ChallengeType activeChallenge;
-    
+
     // Network mode flag - when true, bot AI is disabled (opponent is a real player)
     private boolean networkMode = false;
 
@@ -76,14 +78,15 @@ public class GameState implements IBattleState {
     public void setActiveChallenge(ChallengeType activeChallenge) {
         this.activeChallenge = activeChallenge;
     }
-    
+
     /**
-     * Enables network mode - disables bot AI so opponent is controlled by real player.
+     * Enables network mode - disables bot AI so opponent is controlled by real
+     * player.
      */
     public void setNetworkMode(boolean networkMode) {
         this.networkMode = networkMode;
     }
-    
+
     public boolean isNetworkMode() {
         return networkMode;
     }
@@ -135,8 +138,8 @@ public class GameState implements IBattleState {
         playerElixir.update(deltaTime);
         botElixir.update(deltaTime);
 
-        // Only run bot AI if NOT in network mode (opponent is a real player in network mode)
-        if (!isGameOver && !networkMode) {
+        // Only run bot AI if NOT in network mode, NOT game over, and NOT in tiebreaker
+        if (!isGameOver && !networkMode && !isTiebreakerMode) {
             updateBot(deltaTime);
         }
 
@@ -147,6 +150,12 @@ public class GameState implements IBattleState {
     }
 
     private void updateGameTimer(double deltaTime) {
+        // Handle tiebreaker mode: all towers drain health until one reaches 0
+        if (isTiebreakerMode) {
+            updateTiebreakerMode(deltaTime);
+            return;
+        }
+
         if (gameTime > 0) {
             gameTime -= deltaTime;
 
@@ -160,41 +169,121 @@ public class GameState implements IBattleState {
             if (gameTime <= 0) {
                 gameTime = 0;
                 if (!isGameOver) {
-                    isGameOver = true;
                     if (playerScore > botScore) {
+                        isGameOver = true;
                         playerWon = true;
                     } else if (botScore > playerScore) {
-                        // Bot wins
+                        isGameOver = true;
                         playerWon = false;
                     } else {
-                        // Tiebreaker: Compare lowest HP towers
-                        // The side with the single lowest health tower loses.
-                        double playerMinHP = getLowestTowerHealth(true);
-                        double botMinHP = getLowestTowerHealth(false);
-
-                        if (playerMinHP < botMinHP) {
-                            // Player has the weakest tower -> Player loses
-                            playerWon = false;
-                        } else if (botMinHP < playerMinHP) {
-                            // Bot has the weakest tower -> Player wins
-                            playerWon = true;
-                        } else {
-                            // Equal lowest HP -> True Draw (very rare)
-                            isDraw = true;
-                            playerWon = false;
-                        }
+                        // Equal scores: Enter tiebreaker mode
+                        // All remaining towers start losing health rapidly
+                        isTiebreakerMode = true;
+                        // Clear all troops and buildings so they don't affect tiebreaker
+                        clearArenaUnits();
                     }
                 }
             }
         }
     }
 
-    private double getLowestTowerHealth(boolean isPlayer) {
-        return arena.getAllTowers().stream()
-                .filter(t -> t.isPlayerSide() == isPlayer && t.isAlive())
-                .mapToDouble(Tower::getCurrentHealth)
-                .min()
-                .orElse(0.0);
+    /**
+     * Tiebreaker mode: All remaining towers lose health rapidly.
+     * The first tower(s) to reach 0 health determines the loser.
+     * If towers on both sides die simultaneously, count crowns for both.
+     */
+    private void updateTiebreakerMode(double deltaTime) {
+        double drainAmount = TIEBREAKER_DRAIN_RATE * deltaTime;
+
+        // Drain all living towers
+        for (Tower tower : arena.getAllTowers()) {
+            if (tower.isAlive()) {
+                double newHealth = tower.getCurrentHealth() - drainAmount;
+                tower.setCurrentHealth((int) Math.max(0, newHealth));
+            }
+        }
+
+        // Count all towers that reached 0 health and score them
+        int playerTowersDied = 0;
+        int botTowersDied = 0;
+        boolean anyKingDied = false;
+        boolean playerKingDied = false;
+        boolean botKingDied = false;
+
+        for (Tower tower : arena.getAllTowers()) {
+            if (tower.getCurrentHealth() <= 0) {
+                boolean isPlayerTower = tower.isPlayerSide();
+                boolean isKingTower = tower.getType() == Tower.TowerType.KING;
+
+                if (isKingTower) {
+                    anyKingDied = true;
+                    if (isPlayerTower) {
+                        playerKingDied = true;
+                    } else {
+                        botKingDied = true;
+                    }
+                }
+
+                if (isPlayerTower) {
+                    playerTowersDied++;
+                } else {
+                    botTowersDied++;
+                }
+            }
+        }
+
+        // If any towers died, end the game
+        if (playerTowersDied > 0 || botTowersDied > 0) {
+            // Award crowns based on what died
+            if (anyKingDied) {
+                // King tower death = 3 crowns
+                if (playerKingDied) {
+                    botScore = 3;
+                }
+                if (botKingDied) {
+                    playerScore = 3;
+                }
+            } else {
+                // Princess towers = 1 crown each
+                botScore += playerTowersDied;
+                playerScore += botTowersDied;
+            }
+
+            // End the game
+            isGameOver = true;
+
+            // Determine winner based on final scores
+            if (playerScore > botScore) {
+                playerWon = true;
+            } else if (botScore > playerScore) {
+                playerWon = false;
+            } else {
+                // Still tied after simultaneous deaths = draw
+                isDraw = true;
+                playerWon = false;
+            }
+        }
+    }
+
+    /**
+     * Clears all troops and buildings from the arena.
+     * Called when entering tiebreaker mode to ensure only tower health matters.
+     */
+    private void clearArenaUnits() {
+        // Remove all troops from spatial grid
+        for (Troop troop : activeTroops) {
+            arena.getSpatialGrid().remove(troop);
+        }
+        activeTroops.clear();
+
+        // Remove all buildings from spatial grid and clear footprints
+        for (Building building : activeBuildings) {
+            arena.getSpatialGrid().remove(building);
+        }
+        activeBuildings.clear();
+
+        // Clear projectiles too
+        activeProjectiles.clear();
     }
 
     private void updateBot(double deltaTime) {
@@ -347,7 +436,7 @@ public class GameState implements IBattleState {
     public double getGameTime() {
         return gameTime;
     }
-    
+
     /**
      * Sets the game time (used for network sync where host is authoritative).
      */

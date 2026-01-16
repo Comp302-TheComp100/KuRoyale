@@ -126,6 +126,8 @@ public class PvPGameState implements IBattleState {
                         // Equal scores: Enter tiebreaker mode
                         // All remaining towers start losing health rapidly
                         isTiebreakerMode = true;
+                        // Clear all troops and buildings so they don't affect tiebreaker
+                        clearArenaUnits();
                     }
                 }
             }
@@ -134,38 +136,100 @@ public class PvPGameState implements IBattleState {
 
     /**
      * Tiebreaker mode: All remaining towers lose health rapidly.
-     * The first tower to reach 0 health determines the loser.
+     * The first tower(s) to reach 0 health determines the loser.
+     * If towers on both sides die simultaneously, count crowns for both.
      */
     private void updateTiebreakerMode(double deltaTime) {
         double drainAmount = TIEBREAKER_DRAIN_RATE * deltaTime;
 
-        Tower lowestTower = null;
-        double lowestHealth = Double.MAX_VALUE;
-
-        // Drain all living towers and find the one with lowest health
+        // Drain all living towers
         for (Tower tower : arena.getAllTowers()) {
             if (tower.isAlive()) {
                 double newHealth = tower.getCurrentHealth() - drainAmount;
                 tower.setCurrentHealth((int) Math.max(0, newHealth));
+            }
+        }
 
-                // Track which tower has the lowest health
-                if (newHealth < lowestHealth) {
-                    lowestHealth = newHealth;
-                    lowestTower = tower;
+        // Count all towers that reached 0 health and score them
+        int player1TowersDied = 0;
+        int player2TowersDied = 0;
+        boolean anyKingDied = false;
+        boolean player1KingDied = false;
+        boolean player2KingDied = false;
+
+        for (Tower tower : arena.getAllTowers()) {
+            if (tower.getCurrentHealth() <= 0) {
+                boolean isPlayer1Tower = tower.isPlayerSide();
+                boolean isKingTower = tower.getType() == Tower.TowerType.KING;
+
+                if (isKingTower) {
+                    anyKingDied = true;
+                    if (isPlayer1Tower) {
+                        player1KingDied = true;
+                    } else {
+                        player2KingDied = true;
+                    }
+                }
+
+                if (isPlayer1Tower) {
+                    player1TowersDied++;
+                } else {
+                    player2TowersDied++;
                 }
             }
         }
 
-        // Check if any tower reached 0 health
-        if (lowestTower != null && lowestTower.getCurrentHealth() <= 0) {
+        // If any towers died, end the game
+        if (player1TowersDied > 0 || player2TowersDied > 0) {
+            // Award crowns based on what died
+            if (anyKingDied) {
+                // King tower death = 3 crowns
+                if (player1KingDied) {
+                    player2Score = 3;
+                }
+                if (player2KingDied) {
+                    player1Score = 3;
+                }
+            } else {
+                // Princess towers = 1 crown each
+                player2Score += player1TowersDied;
+                player1Score += player2TowersDied;
+            }
+
+            // End the game
             isGameOver = true;
-            // The side whose tower died first loses
-            if (lowestTower.isPlayerSide()) {
+
+            // Determine winner based on final scores
+            if (player1Score > player2Score) {
+                winner = TurnManager.Turn.PLAYER_1;
+            } else if (player2Score > player1Score) {
                 winner = TurnManager.Turn.PLAYER_2;
             } else {
-                winner = TurnManager.Turn.PLAYER_1;
+                // Still tied after simultaneous deaths = draw
+                winner = null;
             }
         }
+    }
+
+    /**
+     * Clears all troops and buildings from the arena.
+     * Called when entering tiebreaker mode to ensure only tower health matters.
+     */
+    private void clearArenaUnits() {
+        // Remove all troops from spatial grid
+        for (Troop troop : activeTroops) {
+            arena.getSpatialGrid().remove(troop);
+        }
+        activeTroops.clear();
+
+        // Remove all buildings from spatial grid
+        for (Building building : activeBuildings) {
+            arena.getSpatialGrid().remove(building);
+        }
+        activeBuildings.clear();
+
+        // Clear projectiles too
+        activeProjectiles.clear();
     }
 
     private void updateEntities(double deltaTime) {
