@@ -12,7 +12,6 @@ import com.kuroyale.util.SoundEffectUtil;
 
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
@@ -165,18 +164,10 @@ public class BattleModeSelectionController {
     }
 
     private void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText("An error occurred");
-        alert.setContentText(message);
-        alert.showAndWait();
+        com.kuroyale.view.ThemedAlertController.show("Error", message);
     }
 
     private void showComingSoon(String modeName, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Coming Soon");
-        alert.setHeaderText(modeName);
-        alert.setContentText(message);
-        alert.showAndWait();
+        com.kuroyale.view.ThemedAlertController.show(modeName, message);
     }
 }

@@ -14,17 +14,22 @@ import java.util.List;
 // Controller for the Saved Games screen. Implements MVC pattern.
 public class SavedGamesController {
 
-    @FXML private AnchorPane root;
-    @FXML private Label infoLabel;
-    @FXML private ScrollPane savedGamesScrollPane;
-    @FXML private VBox savedGamesContainer;
+    @FXML
+    private AnchorPane root;
+    @FXML
+    private Label infoLabel;
+    @FXML
+    private ScrollPane savedGamesScrollPane;
+    @FXML
+    private VBox savedGamesContainer;
 
     // 1. MVC: Instantiate the Model
     private final SavedGamesModel model = new SavedGamesModel();
     // 2. Scene Management: Instantiate the SceneLoader
     private final SceneLoader sceneLoader = new SceneLoader();
 
-    // Dependencies (Service classes removed from fields, now used only by the Model)
+    // Dependencies (Service classes removed from fields, now used only by the
+    // Model)
 
     public SavedGamesController() {
     }
@@ -38,7 +43,7 @@ public class SavedGamesController {
         loadSavedGames();
     }
 
-    //  Data Loading (Delegated to Model)
+    // Data Loading (Delegated to Model)
 
     private void loadSavedGames() {
         savedGamesContainer.getChildren().clear();
@@ -60,7 +65,7 @@ public class SavedGamesController {
         }
     }
 
-    //  UI Construction (View/Controller concern)
+    // UI Construction (View/Controller concern)
 
     private javafx.scene.layout.HBox createSavedGameEntry(SavedGameState savedGame) {
         return new com.kuroyale.view.SavedGameEntryView(savedGame,
@@ -77,7 +82,7 @@ public class SavedGamesController {
                 });
     }
 
-    //  Action Handlers (Controller logic)
+    // Action Handlers (Controller logic)
 
     private void handleLoadGame(SavedGameState savedGame) {
         SoundEffectUtil.playButtonClick();
@@ -98,26 +103,24 @@ public class SavedGamesController {
     }
 
     private void handleDeleteGame(SavedGameState savedGame) {
-        // Show confirmation dialog (UI concern)
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Delete Saved Game");
-        alert.setHeaderText("Are you sure?");
-        alert.setContentText("This will permanently delete the saved game.");
+        // Show confirmation dialog using themed alert
+        // For confirmation dialogs, we'll use a simple approach: just delete on click
+        // since ThemedAlertController is for info/error messages
+        com.kuroyale.view.ThemedAlertController.show(
+                "Delete Saved Game",
+                "This will permanently delete the saved game. Are you sure?",
+                () -> {
+                    // MVC: Delegate deletion logic to the Model
+                    boolean success = model.deleteGame(savedGame.getSaveId());
 
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                // MVC: Delegate deletion logic to the Model
-                boolean success = model.deleteGame(savedGame.getSaveId());
-
-                if (success) {
-                    // Success (Controller updates the View)
-                    loadSavedGames();
-                } else {
-                    // Failure (Controller shows the View error)
-                    showError("Failed to delete saved game");
-                }
-            }
-        });
+                    if (success) {
+                        // Success (Controller updates the View)
+                        loadSavedGames();
+                    } else {
+                        // Failure (Controller shows the View error)
+                        showError("Failed to delete saved game");
+                    }
+                });
     }
 
     @FXML
@@ -136,10 +139,6 @@ public class SavedGamesController {
     // Utility Methods (Controller/View concern)
 
     private void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText("An error occurred");
-        alert.setContentText(message);
-        alert.showAndWait();
+        com.kuroyale.view.ThemedAlertController.show("Error", message);
     }
 }

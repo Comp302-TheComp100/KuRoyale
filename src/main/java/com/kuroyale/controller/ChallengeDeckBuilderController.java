@@ -21,7 +21,6 @@ import com.kuroyale.util.StyleHelper;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -73,8 +72,10 @@ public class ChallengeDeckBuilderController {
     private Label averageElixirValue;
     @FXML
     private Label battleDeckTitle;
-    @FXML private HBox averageElixirContainer;
-    @FXML private VBox challengeBanner;
+    @FXML
+    private HBox averageElixirContainer;
+    @FXML
+    private VBox challengeBanner;
     @FXML
     private Label challengeNameLabel;
     @FXML
@@ -700,11 +701,9 @@ public class ChallengeDeckBuilderController {
 
         List<String> errors = currentChallenge.validateDeck(deck.getCards());
         if (!errors.isEmpty() || !deck.isFull()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Invalid Deck");
-            alert.setHeaderText("Your deck doesn't meet the challenge requirements");
-            alert.setContentText(errors.isEmpty() ? "You need 8 cards in your deck." : errors.get(0));
-            alert.showAndWait();
+            com.kuroyale.view.ThemedAlertController.show(
+                    "Invalid Deck",
+                    errors.isEmpty() ? "You need 8 cards in your deck." : errors.get(0));
             return;
         }
 
@@ -727,11 +726,9 @@ public class ChallengeDeckBuilderController {
             // Start game logic (handled by controller.startChallengeGame -> startGame)
         } catch (IOException e) {
             e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Failed to start challenge");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            com.kuroyale.view.ThemedAlertController.show(
+                    "Error",
+                    "Failed to start challenge: " + e.getMessage());
         }
     }
 }

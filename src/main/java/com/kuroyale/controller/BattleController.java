@@ -769,13 +769,9 @@ public class BattleController {
     }
 
     private void showSaveConfirmation() {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.INFORMATION);
-        alert.setTitle("Game Saved");
-        alert.setHeaderText("Success");
-        alert.setContentText("Match saved successfully! You can resume it later from the main menu.");
-
-        alert.showAndWait();
+        com.kuroyale.view.ThemedAlertController.show(
+                "Game Saved",
+                "Match saved successfully! You can resume it later from the main menu.");
     }
 
     private void showSaveConfirmationBrief() {
