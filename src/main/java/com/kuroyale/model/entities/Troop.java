@@ -228,6 +228,8 @@ public class Troop implements ICombatant {
     }
 
     private double stunTimer = 0.0;
+    private double retargetCooldown = 0.0;
+    private static final double RETARGET_COOLDOWN_DURATION = 0.5; // seconds
 
     @Override
     public void stun(double duration) {
@@ -244,6 +246,17 @@ public class Troop implements ICombatant {
         if (stunTimer > 0) {
             stunTimer -= deltaTime;
         }
+        if (retargetCooldown > 0) {
+            retargetCooldown -= deltaTime;
+        }
+    }
+
+    public boolean canRetarget() {
+        return retargetCooldown <= 0;
+    }
+
+    public void triggerRetargetCooldown() {
+        this.retargetCooldown = RETARGET_COOLDOWN_DURATION;
     }
 
     public void heal(int amount) {
