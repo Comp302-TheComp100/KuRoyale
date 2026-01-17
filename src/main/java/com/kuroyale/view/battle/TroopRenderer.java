@@ -44,7 +44,7 @@ public class TroopRenderer {
             return 2.75*1.25;
         }else if("archers".equals(cardKey) || "minions".equals(cardKey) || "minion_horde".equals(cardKey)){
             return 1.5*1.25;
-        }else if("bomber".equals(cardKey) || "mini_pekka".equals(cardKey) || "hog_rider".equals(cardKey) || "giant".equals(cardKey) || "musketeer".equals(cardKey)){
+        }else if("bomber".equals(cardKey) || "mini_pekka".equals(cardKey) || "hog_rider".equals(cardKey) || "giant".equals(cardKey) || "musketeer".equals(cardKey) || "wizard".equals(cardKey)){
             return 2.0*1.25;
         }else if("goblins".equals(cardKey) || "knight".equals(cardKey)){
             return 2.5*1.25;
