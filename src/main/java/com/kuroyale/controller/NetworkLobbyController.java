@@ -256,6 +256,8 @@ public class NetworkLobbyController {
     private void checkStartConditions() {
         // Only host can start, and both must be ready
         boolean canStart = networkService.isHost() && isReady && opponentReady;
+        System.out.println("[NetworkLobby] checkStartConditions: isHost=" + networkService.isHost() 
+            + ", isReady=" + isReady + ", opponentReady=" + opponentReady + ", canStart=" + canStart);
         startMatchButton.setDisable(!canStart);
     }
 
@@ -368,12 +370,18 @@ public class NetworkLobbyController {
 
     @FXML
     private void handleStartMatch() {
+        System.out.println("[NetworkLobby] handleStartMatch() called!");
+        System.out.println("[NetworkLobby] isHost=" + networkService.isHost() + ", isReady=" + isReady + ", opponentReady=" + opponentReady);
         SoundEffectUtil.playButtonClick();
 
-        if (!networkService.isHost())
+        if (!networkService.isHost()) {
+            System.out.println("[NetworkLobby] Not host, returning");
             return;
-        if (!isReady || !opponentReady)
+        }
+        if (!isReady || !opponentReady) {
+            System.out.println("[NetworkLobby] Not both ready, returning");
             return;
+        }
 
         // Load and send the host's arena layout to the client
         // This ensures both players see the same arena design
@@ -394,13 +402,20 @@ public class NetworkLobbyController {
     }
 
     private void startMatch() {
+        System.out.println("[NetworkLobby] Starting match - loading network-battle.fxml...");
         try {
             sceneLoader.load(root, "/fxml/network-battle.fxml", "KU Royale - Network Battle", controller -> {
+                System.out.println("[NetworkLobby] Controller loaded: " + controller.getClass().getName());
                 if (controller instanceof NetworkBattleController nbc) {
+                    System.out.println("[NetworkLobby] Setting NetworkService on controller...");
                     nbc.setNetworkService(networkService);
+                } else {
+                    System.err.println("[NetworkLobby] ERROR: Controller is not NetworkBattleController!");
                 }
             });
-        } catch (IOException e) {
+            System.out.println("[NetworkLobby] Scene loaded successfully!");
+        } catch (Exception e) {
+            System.err.println("[NetworkLobby] ERROR loading battle: " + e.getMessage());
             e.printStackTrace();
             showError("Failed to load battle: " + e.getMessage());
         }

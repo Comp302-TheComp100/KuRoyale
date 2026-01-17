@@ -8,13 +8,16 @@ public class Projectile {
     private final int damage;
     private final boolean areaEffect;
     private final TargetType targetType;
-    private final boolean isPlayerSide;
+    private boolean isPlayerSide;
 
     private Vector2 position;
     private Vector2 targetPosSnapshot; // Where it's going (in case target moves/dies)
-    private final double speed;
+    private double speed;
     private boolean active = true;
 
+    /**
+     * Standard constructor for combat-created projectiles.
+     */
     public Projectile(ICombatant owner, ICombatant target) {
         this.owner = owner;
         this.target = target;
@@ -37,6 +40,22 @@ public class Projectile {
         double dist = owner.getRange();
         double hitSpeed = Math.max(0.1, owner.getHitSpeed()); // Sanity check: min 0.1s
         this.speed = Math.max(1.0, dist / hitSpeed); // Ensure it actually moves (min speed 1.0)
+    }
+    
+    /**
+     * Simplified constructor for network sync (CLIENT side rendering only).
+     * These projectiles are just for visual display, not for combat logic.
+     */
+    public Projectile(Vector2 position, Vector2 targetPosition, boolean isPlayerSide) {
+        this.owner = null;
+        this.target = null;
+        this.damage = 0;
+        this.areaEffect = false;
+        this.targetType = TargetType.BOTH;
+        this.isPlayerSide = isPlayerSide;
+        this.position = position;
+        this.targetPosSnapshot = targetPosition;
+        this.speed = 5.0; // Default speed for rendering
     }
 
     public void update(double deltaTime) {

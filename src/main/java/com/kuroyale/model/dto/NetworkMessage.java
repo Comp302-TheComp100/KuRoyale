@@ -342,6 +342,62 @@ public class NetworkMessage implements Serializable {
         }
     }
     
+    // ==================== Effect Message Factory Methods ====================
+    
+    /**
+     * Creates an area effect message (e.g., spell explosion, splash damage).
+     */
+    public static NetworkMessage effectArea(int playerId, boolean isPlayerSource, double centerX, double centerY, double radius, double duration) {
+        return new NetworkMessage(NetworkMessageType.EFFECT_AREA, playerId,
+                (isPlayerSource ? "1" : "0") + DATA_DELIMITER + centerX + DATA_DELIMITER + centerY + DATA_DELIMITER + radius + DATA_DELIMITER + duration);
+    }
+    
+    /**
+     * Creates a projectile hit effect message.
+     */
+    public static NetworkMessage effectProjectileHit(int playerId, double x, double y, boolean isPlayerSide) {
+        return new NetworkMessage(NetworkMessageType.EFFECT_PROJECTILE_HIT, playerId,
+                x + DATA_DELIMITER + y + DATA_DELIMITER + (isPlayerSide ? "1" : "0"));
+    }
+    
+    /**
+     * Parses area effect data: [isPlayerSource, centerX, centerY, radius, duration]
+     */
+    public double[] parseEffectArea() {
+        if (type != NetworkMessageType.EFFECT_AREA) return null;
+        try {
+            String[] parts = data.split(DATA_DELIMITER);
+            if (parts.length < 5) return null;
+            return new double[] {
+                "1".equals(parts[0]) ? 1.0 : 0.0,
+                Double.parseDouble(parts[1]),
+                Double.parseDouble(parts[2]),
+                Double.parseDouble(parts[3]),
+                Double.parseDouble(parts[4])
+            };
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Parses projectile hit effect data: [x, y, isPlayerSide]
+     */
+    public double[] parseEffectProjectileHit() {
+        if (type != NetworkMessageType.EFFECT_PROJECTILE_HIT) return null;
+        try {
+            String[] parts = data.split(DATA_DELIMITER);
+            if (parts.length < 3) return null;
+            return new double[] {
+                Double.parseDouble(parts[0]),
+                Double.parseDouble(parts[1]),
+                "1".equals(parts[2]) ? 1.0 : 0.0
+            };
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
     @Override
     public String toString() {
         return toProtocolString();

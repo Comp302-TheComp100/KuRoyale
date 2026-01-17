@@ -86,6 +86,7 @@ public class RelayService {
     /**
      * Creates a new game room and returns the room code.
      * Share this code with your friend to let them join.
+     * Room code format: First char = broker index, rest = random code
      */
     public CompletableFuture<String> createRoom() {
         this.isHost = true;
@@ -95,7 +96,8 @@ public class RelayService {
         return connectWithRetry(0).thenApply(success -> {
             if (success) {
                 subscribeToRoom();
-                return roomCode;
+                // Return room code with broker index prefix so client connects to same broker
+                return currentBrokerIndex + roomCode;
             }
             return null;
         });
@@ -103,21 +105,46 @@ public class RelayService {
     
     /**
      * Joins an existing game room using a room code.
+     * Room code format: First char = broker index (0-2), rest = actual room code
      */
     public CompletableFuture<Boolean> joinRoom(String code) {
         this.isHost = false;
-        this.roomCode = code.toUpperCase().trim();
+        code = code.toUpperCase().trim();
+        
+        // Extract broker index from first character
+        if (code.length() >= 1) {
+            char brokerChar = code.charAt(0);
+            if (brokerChar >= '0' && brokerChar <= '2') {
+                currentBrokerIndex = brokerChar - '0';
+                this.roomCode = code.substring(1); // Actual room code without broker prefix
+            } else {
+                this.roomCode = code; // Legacy format
+            }
+        } else {
+            this.roomCode = code;
+        }
+        
         regeneratePlayerId(); // Fresh ID for each join attempt
         
-        return connectWithRetry(0).thenCompose(success -> {
-            if (success) {
-                subscribeToRoom();
-                // Notify host that we joined
-                sendSystemMessage("PLAYER_JOINED:" + playerId);
-                return CompletableFuture.completedFuture(true);
-            }
-            return CompletableFuture.completedFuture(false);
-        });
+        // Connect directly to the same broker as the host
+        return connectToBroker(BROKER_HOSTS[currentBrokerIndex], BROKER_PORTS[currentBrokerIndex])
+            .thenCompose(success -> {
+                if (success) {
+                    subscribeToRoom();
+                    // Notify host that we joined
+                    sendSystemMessage("PLAYER_JOINED:" + playerId);
+                    return CompletableFuture.completedFuture(true);
+                }
+                // If the specific broker fails, try others
+                return connectWithRetry(0).thenCompose(retrySuccess -> {
+                    if (retrySuccess) {
+                        subscribeToRoom();
+                        sendSystemMessage("PLAYER_JOINED:" + playerId);
+                        return CompletableFuture.completedFuture(true);
+                    }
+                    return CompletableFuture.completedFuture(false);
+                });
+            });
     }
     
     /**

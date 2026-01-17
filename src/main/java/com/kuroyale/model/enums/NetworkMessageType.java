@@ -34,6 +34,10 @@ public enum NetworkMessageType {
     ELIXIR_UPDATE("Elixir level changed"),
     TIMER_SYNC("Game timer synchronization"),
     
+    // Visual Effects (synced from host to client)
+    EFFECT_AREA("Area effect: isPlayerSource:centerX:centerY:radius:duration"),
+    EFFECT_PROJECTILE_HIT("Projectile hit effect: x:y:isPlayerSide"),
+    
     // Match End Messages
     VICTORY("Player won the match"),
     DEFEAT("Player lost the match"),
