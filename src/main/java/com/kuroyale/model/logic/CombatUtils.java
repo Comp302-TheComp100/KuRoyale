@@ -9,7 +9,8 @@ import com.kuroyale.model.entities.*;
 public class CombatUtils {
 
     /**
-     * Calculates the effective distance between two combatants.
+     * Calculates the effective distance between two combatants using world
+     * coordinates.
      * Handles differences between Point-to-Point (Troop vs Troop)
      * and Point-to-Perimeter (Troop vs Building).
      */
@@ -22,87 +23,68 @@ public class CombatUtils {
             return distanceToPerimeter(a, b);
         }
 
-        // Structure vs Structure or Troop vs Troop (usually center to center or
-        // specialized)
-        // For Structure vs Structure this might technically be perimeter-to-perimeter
-        // in advanced logic,
-        // but typically standard distance or center-based is fine for spells.
-        // However, keeping consistent with old logic:
-
-        GridPosition posA = (isStructure(a)) ? a.getCenterPosition() : a.getPosition();
-        GridPosition posB = (isStructure(b)) ? b.getCenterPosition() : b.getPosition();
+        // Use world coordinates for sub-tile precision
+        Vector2 posA = a.getCenterWorldPosition();
+        Vector2 posB = b.getCenterWorldPosition();
 
         if (posA == null || posB == null)
             return Double.MAX_VALUE;
 
-        return posA.getEuclideanDistanceTo(posB);
+        return posA.distanceTo(posB);
     }
 
     /**
      * Calculates distance from one combatant (usually a troop) to the nearest
-     * perimeter tile of another (usually a building).
+     * perimeter of another (usually a building) using world coordinates.
      * If both are troops, falls back to standard distance.
      */
     public static double distanceToPerimeter(ICombatant source, ICombatant target) {
         // If neither is a structure, just use point distance
         if (!isStructure(source) && !isStructure(target)) {
-            return source.getPosition().getEuclideanDistanceTo(target.getPosition());
+            Vector2 srcPos = source.getCenterWorldPosition();
+            Vector2 tgtPos = target.getCenterWorldPosition();
+            if (srcPos == null || tgtPos == null)
+                return Double.MAX_VALUE;
+            return srcPos.distanceTo(tgtPos);
         }
 
         // Identify which one is the structure (or both).
         // Logic: Measure from Source (Point) to Target (Rect).
-        // If Source is also a Rect, we simplified in old code to use its CENTER as the
-        // 'From' point.
-
-        GridPosition from = source.getPosition();
+        // If Source is also a Rect, use its CENTER as the 'From' point.
+        Vector2 from = source.getCenterWorldPosition();
         ICombatant rectTarget = target;
-
-        if (isStructure(source)) {
-            from = source.getCenterPosition();
-        }
 
         if (!isStructure(target) && isStructure(source)) {
             // Swap: We measure from Target(Troop) to Source(Building) perimeter
-            from = target.getPosition();
+            from = target.getCenterWorldPosition();
             rectTarget = source;
         }
 
-        return calculateDistanceToRect(from, rectTarget);
+        if (from == null)
+            return Double.MAX_VALUE;
+
+        return calculateDistanceToRectWorld(from, rectTarget);
     }
 
-    private static double calculateDistanceToRect(GridPosition from, ICombatant rect) {
+    /**
+     * Calculates distance from a world position to the nearest point on a
+     * structure's footprint.
+     */
+    private static double calculateDistanceToRectWorld(Vector2 from, ICombatant rect) {
         GridPosition pos = rect.getPosition();
         if (pos == null || from == null)
             return Double.MAX_VALUE;
 
-        int x0 = pos.getX();
-        int y0 = pos.getY();
-        int w = Math.max(1, rect.getWidth());
-        int h = Math.max(1, rect.getHeight());
+        double x0 = pos.getX();
+        double y0 = pos.getY();
+        double w = Math.max(1, rect.getWidth());
+        double h = Math.max(1, rect.getHeight());
 
-        double best = Double.MAX_VALUE;
+        // Clamp point to rect bounds for shortest distance
+        double nearestX = Math.max(x0, Math.min(from.getX(), x0 + w));
+        double nearestY = Math.max(y0, Math.min(from.getY(), y0 + h));
 
-        // Check horizontal edges
-        for (int dx = 0; dx < w; dx++) {
-            GridPosition top = GridPosition.tryCreate(x0 + dx, y0);
-            GridPosition bottom = GridPosition.tryCreate(x0 + dx, y0 + h - 1);
-            if (top != null)
-                best = Math.min(best, from.getEuclideanDistanceTo(top));
-            if (bottom != null)
-                best = Math.min(best, from.getEuclideanDistanceTo(bottom));
-        }
-
-        // Check vertical edges
-        for (int dy = 0; dy < h; dy++) {
-            GridPosition left = GridPosition.tryCreate(x0, y0 + dy);
-            GridPosition right = GridPosition.tryCreate(x0 + w - 1, y0 + dy);
-            if (left != null)
-                best = Math.min(best, from.getEuclideanDistanceTo(left));
-            if (right != null)
-                best = Math.min(best, from.getEuclideanDistanceTo(right));
-        }
-
-        return best;
+        return from.distanceTo(new Vector2(nearestX, nearestY));
     }
 
     public static boolean isInRange(ICombatant attacker, ICombatant target) {
@@ -139,6 +121,66 @@ public class CombatUtils {
         return 0.0;
     }
 
+    /**
+     * Finds the nearest walkable perimeter position adjacent to a structure's
+     * footprint.
+     * Returns Vector2 for sub-tile precision in approach paths.
+     */
+    public static Vector2 getNearestPerimeterPosition(Arena arena, ICombatant combatant, Vector2 from) {
+        if (from == null)
+            return null;
+        GridPosition pos = combatant.getPosition();
+        if (pos == null)
+            return null;
+
+        double x0 = pos.getX();
+        double y0 = pos.getY();
+        double w = Math.max(1, combatant.getWidth());
+        double h = Math.max(1, combatant.getHeight());
+
+        // Calculate the nearest point on the perimeter (just outside the footprint)
+        // Clamp to the footprint bounds, then offset to perimeter
+        double nearestX = Math.max(x0, Math.min(from.getX(), x0 + w));
+        double nearestY = Math.max(y0, Math.min(from.getY(), y0 + h));
+
+        // Determine which edge is closest and offset to just outside
+        double distToLeft = from.getX() - (x0 - 0.5);
+        double distToRight = (x0 + w + 0.5) - from.getX();
+        double distToTop = from.getY() - (y0 - 0.5);
+        double distToBottom = (y0 + h + 0.5) - from.getY();
+
+        double minDist = Math.min(Math.min(distToLeft, distToRight), Math.min(distToTop, distToBottom));
+
+        if (minDist == distToLeft) {
+            nearestX = x0 - 0.5;
+            nearestY = Math.max(y0, Math.min(from.getY(), y0 + h));
+        } else if (minDist == distToRight) {
+            nearestX = x0 + w + 0.5;
+            nearestY = Math.max(y0, Math.min(from.getY(), y0 + h));
+        } else if (minDist == distToTop) {
+            nearestX = Math.max(x0, Math.min(from.getX(), x0 + w));
+            nearestY = y0 - 0.5;
+        } else {
+            nearestX = Math.max(x0, Math.min(from.getX(), x0 + w));
+            nearestY = y0 + h + 0.5;
+        }
+
+        // Verify the tile is walkable
+        GridPosition tilePos = new Vector2(nearestX, nearestY).toGridPosition();
+        if (tilePos != null && arena.getCell(tilePos) != null) {
+            return new Vector2(nearestX, nearestY);
+        }
+
+        // Fallback to discrete tile search if direct calculation fails
+        GridPosition gridResult = getNearestPerimeterTile(arena, combatant, from.toGridPosition());
+        return gridResult != null ? Vector2.fromGridPosition(gridResult) : null;
+    }
+
+    /**
+     * @deprecated Use getNearestPerimeterPosition(Arena, ICombatant, Vector2) for
+     *             sub-tile precision.
+     */
+    @Deprecated
     public static GridPosition getNearestPerimeterTile(Arena arena, ICombatant combatant, GridPosition from) {
         GridPosition pos = combatant.getPosition();
         if (pos == null)
