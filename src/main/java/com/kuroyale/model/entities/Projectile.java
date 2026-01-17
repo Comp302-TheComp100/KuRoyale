@@ -78,6 +78,13 @@ public class Projectile {
     public Vector2 getPosition() {
         return position;
     }
+    
+    /**
+     * Sets position directly (used for network sync).
+     */
+    public void setPosition(Vector2 pos) {
+        this.position = pos;
+    }
 
     public ICombatant getOwner() {
         return owner;

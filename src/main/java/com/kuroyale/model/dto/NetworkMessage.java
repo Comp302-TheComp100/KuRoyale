@@ -171,6 +171,38 @@ public class NetworkMessage implements Serializable {
         return new NetworkMessage(NetworkMessageType.ARENA_LAYOUT, 1, sb.toString());
     }
     
+    /**
+     * Creates a full game state sync message (host-authoritative).
+     * This is the core of the authoritative game loop - sent by host every tick.
+     */
+    public static NetworkMessage gameStateSync(NetworkGameStateSnapshot snapshot) {
+        return new NetworkMessage(NetworkMessageType.GAME_STATE_SYNC, 1, snapshot.serialize());
+    }
+    
+    /**
+     * Creates a client input message for card placement request.
+     * Client sends this to host; host validates and applies if valid.
+     */
+    public static NetworkMessage clientInput(int playerId, String cardName, double x, double y) {
+        return new NetworkMessage(NetworkMessageType.CLIENT_INPUT, playerId,
+                cardName + DATA_DELIMITER + x + "," + y);
+    }
+    
+    /**
+     * Creates a player input message (new format for authoritative model).
+     * Format: seq:playerId:type:cardName:x:y:clientTime
+     */
+    public static NetworkMessage playerInput(com.kuroyale.service.network.PlayerInput input) {
+        return new NetworkMessage(NetworkMessageType.PLAYER_INPUT, input.getPlayerId(), input.serialize());
+    }
+    
+    /**
+     * Creates a request for a full state snapshot (for client resync).
+     */
+    public static NetworkMessage requestSnapshot(int playerId) {
+        return new NetworkMessage(NetworkMessageType.REQUEST_SNAPSHOT, playerId, "");
+    }
+    
     public static NetworkMessage victory(int playerId) {
         return new NetworkMessage(NetworkMessageType.VICTORY, playerId, "");
     }
@@ -226,6 +258,37 @@ public class NetworkMessage implements Serializable {
         if (type != NetworkMessageType.PLAYER_INFO) return null;
         String[] parts = data.split(";", 2);
         return parts.length >= 2 ? parts : null;
+    }
+    
+    /**
+     * Parses client input data (card placement request).
+     * @return String array with [cardName, x, y] or null if invalid
+     */
+    public String[] parseClientInput() {
+        if (type != NetworkMessageType.CLIENT_INPUT) return null;
+        String[] parts = data.split(";");
+        if (parts.length < 2) return null;
+        String[] coords = parts[1].split(",");
+        if (coords.length < 2) return null;
+        return new String[] { parts[0], coords[0], coords[1] };
+    }
+    
+    /**
+     * Parses player input data (new authoritative model format).
+     * @return PlayerInput or null if invalid
+     */
+    public com.kuroyale.service.network.PlayerInput parsePlayerInput() {
+        if (type != NetworkMessageType.PLAYER_INPUT) return null;
+        return com.kuroyale.service.network.PlayerInput.deserialize(data);
+    }
+    
+    /**
+     * Parses full game state sync data.
+     * @return NetworkGameStateSnapshot or null if invalid
+     */
+    public NetworkGameStateSnapshot parseGameStateSync() {
+        if (type != NetworkMessageType.GAME_STATE_SYNC) return null;
+        return NetworkGameStateSnapshot.deserialize(data);
     }
     
     /**

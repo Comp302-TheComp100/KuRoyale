@@ -132,6 +132,13 @@ public class Building implements ICombatant {
     public int getCurrentHealth() {
         return currentHealth;
     }
+    
+    /**
+     * Sets current health directly (used for network sync).
+     */
+    public void setCurrentHealth(int health) {
+        this.currentHealth = Math.max(0, Math.min(maxHealth, health));
+    }
 
     public String getImagePath() {
         return imagePath;

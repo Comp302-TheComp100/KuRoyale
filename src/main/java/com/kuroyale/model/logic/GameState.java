@@ -3,6 +3,7 @@ package com.kuroyale.model.logic;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.dto.*;
+import com.kuroyale.model.dto.NetworkGameStateSnapshot;
 import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;
@@ -739,6 +740,262 @@ public class GameState implements IBattleState {
 
     public List<Building> getActiveBuildings() {
         return activeBuildings;
+    }
+    
+    // Aliases for NetworkGameStateSnapshot compatibility
+    public List<Troop> getTroops() {
+        return activeTroops;
+    }
+    
+    public List<Building> getBuildings() {
+        return activeBuildings;
+    }
+    
+    public boolean isTiebreakerMode() {
+        return isTiebreakerMode;
+    }
+    
+    // ==================== Network State Synchronization ====================
+    
+    /**
+     * Applies authoritative state from a network snapshot.
+     * This is called by the CLIENT to update its local state to match the host's.
+     * 
+     * This method performs FULL STATE SYNCHRONIZATION:
+     * - Core game values (time, scores, flags)
+     * - Elixir values (for display)
+     * - Tower health
+     * - Troop positions and health
+     * - Building positions and health
+     * - Projectile positions
+     * 
+     * @param snapshot The authoritative game state from the host
+     */
+    public void applyNetworkSnapshot(NetworkGameStateSnapshot snapshot) {
+        if (snapshot == null) return;
+        
+        // Apply core game state
+        this.gameTime = snapshot.getGameTime();
+        this.playerScore = snapshot.getPlayer1Score();
+        this.botScore = snapshot.getPlayer2Score();
+        this.isDoubleElixir = snapshot.isDoubleElixir();
+        this.isGameOver = snapshot.isGameOver();
+        this.isTiebreakerMode = snapshot.isTiebreakerMode();
+        
+        // Apply winner state
+        if (snapshot.isGameOver()) {
+            switch (snapshot.getWinner()) {
+                case 1 -> { playerWon = true; isDraw = false; }
+                case 2 -> { playerWon = false; isDraw = false; }
+                case 3 -> { playerWon = false; isDraw = true; }
+                default -> { }
+            }
+        }
+        
+        // Apply elixir values (client sees snapshot's player1 as "my" elixir after perspective mapping)
+        playerElixir.setCurrentElixir(snapshot.getPlayer1Elixir());
+        botElixir.setCurrentElixir(snapshot.getPlayer2Elixir());
+        
+        // Enable double elixir if needed
+        if (snapshot.isDoubleElixir() && !playerElixir.isDoubleElixir()) {
+            playerElixir.setDoubleElixir(true);
+            botElixir.setDoubleElixir(true);
+        }
+        
+        // Apply tower health from snapshot
+        applyTowerHealthFromSnapshot(snapshot.getTowers());
+        
+        // Apply troop state from snapshot
+        applyTroopsFromSnapshot(snapshot.getTroops());
+        
+        // Apply building state from snapshot
+        applyBuildingsFromSnapshot(snapshot.getBuildings());
+        
+        // Apply projectile state from snapshot
+        applyProjectilesFromSnapshot(snapshot.getProjectiles());
+    }
+    
+    /**
+     * Applies tower health values from the authoritative snapshot.
+     * 
+     * Matching logic: After perspective mapping, the snapshot's isPlayerSide
+     * matches the local tower's isPlayerSide. We match by type AND isPlayerSide.
+     */
+    private void applyTowerHealthFromSnapshot(List<NetworkGameStateSnapshot.TowerSnapshot> towerSnapshots) {
+        if (towerSnapshots == null) return;
+        
+        for (NetworkGameStateSnapshot.TowerSnapshot ts : towerSnapshots) {
+            // Find matching tower in arena by type and side
+            // After perspective mapping, isPlayerSide in snapshot matches local tower's isPlayerSide
+            for (Tower tower : arena.getAllTowers()) {
+                if (tower.getType().name().equals(ts.getType()) && 
+                    tower.isPlayerSide() == ts.isPlayerSide()) {
+                    tower.setCurrentHealth(ts.getHealth());
+                    break;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Applies troop state from the authoritative snapshot.
+     * This syncs positions and health of troops.
+     */
+    private void applyTroopsFromSnapshot(List<NetworkGameStateSnapshot.TroopSnapshot> troopSnapshots) {
+        if (troopSnapshots == null) return;
+        
+        // Build a map of snapshot troops by ID for efficient lookup
+        java.util.Map<Integer, NetworkGameStateSnapshot.TroopSnapshot> snapshotMap = new java.util.HashMap<>();
+        for (NetworkGameStateSnapshot.TroopSnapshot ts : troopSnapshots) {
+            snapshotMap.put(ts.getId(), ts);
+        }
+        
+        // Update existing troops and mark for removal if not in snapshot
+        java.util.List<Troop> toRemove = new java.util.ArrayList<>();
+        java.util.Set<Integer> matchedIds = new java.util.HashSet<>();
+        
+        for (Troop troop : activeTroops) {
+            int troopId = System.identityHashCode(troop);
+            NetworkGameStateSnapshot.TroopSnapshot ts = snapshotMap.get(troopId);
+            
+            if (ts != null) {
+                // Update troop state
+                troop.setCurrentHealth(ts.getHealth());
+                troop.setWorldPosition(ts.getX(), ts.getY());
+                troop.setTargetWorldPosition(ts.getTargetX(), ts.getTargetY());
+                matchedIds.add(troopId);
+            } else {
+                // Troop not in snapshot - mark for removal
+                toRemove.add(troop);
+            }
+        }
+        
+        // Remove troops not in snapshot
+        activeTroops.removeAll(toRemove);
+        
+        // Add new troops from snapshot (troops that exist in snapshot but not locally)
+        for (NetworkGameStateSnapshot.TroopSnapshot ts : troopSnapshots) {
+            if (!matchedIds.contains(ts.getId())) {
+                // Create new troop from snapshot
+                Card card = cardCatalog != null ? cardCatalog.apply(ts.getCardName()) : null;
+                if (card != null) {
+                    GridPosition spawnPos = new GridPosition((int) ts.getX(), (int) ts.getY());
+                    Troop newTroop = new Troop(card, spawnPos, ts.isPlayerSide());
+                    newTroop.setCurrentHealth(ts.getHealth());
+                    newTroop.setWorldPosition(ts.getX(), ts.getY());
+                    activeTroops.add(newTroop);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Applies building state from the authoritative snapshot.
+     */
+    private void applyBuildingsFromSnapshot(List<NetworkGameStateSnapshot.BuildingSnapshot> buildingSnapshots) {
+        if (buildingSnapshots == null) return;
+        
+        // Build a map of snapshot buildings by ID
+        java.util.Map<Integer, NetworkGameStateSnapshot.BuildingSnapshot> snapshotMap = new java.util.HashMap<>();
+        for (NetworkGameStateSnapshot.BuildingSnapshot bs : buildingSnapshots) {
+            snapshotMap.put(bs.getId(), bs);
+        }
+        
+        // Update existing buildings and mark for removal if not in snapshot
+        java.util.List<Building> toRemove = new java.util.ArrayList<>();
+        java.util.Set<Integer> matchedIds = new java.util.HashSet<>();
+        
+        for (Building building : activeBuildings) {
+            int buildingId = System.identityHashCode(building);
+            NetworkGameStateSnapshot.BuildingSnapshot bs = snapshotMap.get(buildingId);
+            
+            if (bs != null) {
+                // Update building state
+                building.setCurrentHealth(bs.getHealth());
+                matchedIds.add(buildingId);
+            } else {
+                // Building not in snapshot - mark for removal
+                toRemove.add(building);
+            }
+        }
+        
+        // Remove buildings not in snapshot
+        activeBuildings.removeAll(toRemove);
+        
+        // Add new buildings from snapshot
+        for (NetworkGameStateSnapshot.BuildingSnapshot bs : buildingSnapshots) {
+            if (!matchedIds.contains(bs.getId())) {
+                Card card = cardCatalog != null ? cardCatalog.apply(bs.getCardName()) : null;
+                if (card != null) {
+                    GridPosition pos = new GridPosition((int) bs.getX(), (int) bs.getY());
+                    int bw = Math.max(1, card.getFootprintWidthTiles());
+                    int bh = Math.max(1, card.getFootprintHeightTiles());
+                    Building newBuilding = new Building(pos, bw, bh, bs.isPlayerSide(), 
+                            card.getHp(), card.getImagePath(), card.getLifetime());
+                    newBuilding.configureCombatFromCard(card);
+                    newBuilding.setCurrentHealth(bs.getHealth());
+                    activeBuildings.add(newBuilding);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Applies projectile state from the authoritative snapshot.
+     * Projectiles are ephemeral so we just sync their positions.
+     */
+    private void applyProjectilesFromSnapshot(List<NetworkGameStateSnapshot.ProjectileSnapshot> projectileSnapshots) {
+        if (projectileSnapshots == null) return;
+        
+        // For simplicity, just update positions of existing projectiles
+        // Projectiles are very short-lived so exact sync isn't critical
+        java.util.Map<Integer, NetworkGameStateSnapshot.ProjectileSnapshot> snapshotMap = new java.util.HashMap<>();
+        for (NetworkGameStateSnapshot.ProjectileSnapshot ps : projectileSnapshots) {
+            snapshotMap.put(ps.getId(), ps);
+        }
+        
+        // Update existing projectiles
+        for (Projectile proj : activeProjectiles) {
+            int projId = System.identityHashCode(proj);
+            NetworkGameStateSnapshot.ProjectileSnapshot ps = snapshotMap.get(projId);
+            if (ps != null) {
+                proj.setPosition(new Vector2(ps.getX(), ps.getY()));
+            }
+        }
+    }
+    
+    /**
+     * Sets the player score directly (used for network sync).
+     */
+    public void setPlayerScore(int score) {
+        this.playerScore = score;
+    }
+    
+    /**
+     * Sets the bot/player2 score directly (used for network sync).
+     */
+    public void setBotScore(int score) {
+        this.botScore = score;
+    }
+    
+    /**
+     * Sets the game over state directly (used for network sync).
+     */
+    public void setGameOver(boolean isGameOver, boolean playerWon, boolean isDraw) {
+        this.isGameOver = isGameOver;
+        this.playerWon = playerWon;
+        this.isDraw = isDraw;
+    }
+    
+    /**
+     * Sets the double elixir flag (used for network sync).
+     */
+    public void setDoubleElixir(boolean isDoubleElixir) {
+        this.isDoubleElixir = isDoubleElixir;
+        if (isDoubleElixir) {
+            playerElixir.setDoubleElixir(true);
+            botElixir.setDoubleElixir(true);
+        }
     }
 
     // Inner class to track placed units
