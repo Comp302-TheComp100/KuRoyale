@@ -59,6 +59,11 @@ public class BuildingRenderer {
             Map.Entry<Building, BuildingVisual> entry = buildingIt.next();
             Building b = entry.getKey();
             if (!currentBuildings.contains(b) || !b.isAlive()) {
+                for (Node child : entry.getValue().root.getChildren()) {
+                    if (child instanceof PngSequenceSprite) {
+                        ((PngSequenceSprite) child).stop();
+                    }
+                }
                 unitLayer.getChildren().remove(entry.getValue().root);
                 if (entry.getValue().laserBeam != null) {
                     unitLayer.getChildren().remove(entry.getValue().laserBeam);
@@ -86,6 +91,11 @@ public class BuildingRenderer {
             Map.Entry<Building, BuildingVisual> entry = buildingIt.next();
             Building b = entry.getKey();
             if (!currentBuildings.contains(b) || !b.isAlive()) {
+                for (Node child : entry.getValue().root.getChildren()) {
+                    if (child instanceof PngSequenceSprite) {
+                        ((PngSequenceSprite) child).stop();
+                    }
+                }
                 unitLayer.getChildren().remove(entry.getValue().root);
                 if (entry.getValue().laserBeam != null) {
                     unitLayer.getChildren().remove(entry.getValue().laserBeam);
@@ -135,18 +145,33 @@ public class BuildingRenderer {
         buildingStack.setPrefSize(TILE_SIZE * w, TILE_SIZE * h);
 
         try {
-            String imgPath = b.getImagePath();
-            InputStream is = imgPath != null ? getClass().getResourceAsStream(imgPath) : null;
-            if (is != null) {
-                Image img = new Image(is);
-                ImageView imageView = new ImageView(img);
-                imageView.setFitWidth(TILE_SIZE * w);
-                imageView.setFitHeight(TILE_SIZE * h);
-                imageView.setPreserveRatio(false);
-                imageView.setSmooth(true);
-                buildingStack.getChildren().add(imageView);
+            String side = b.isPlayerSide() ? "player" : "enemy";
+            String cardName = b.getCardName();
+            if (cardName == null && b.getBaseCard() != null) {
+                cardName = b.getBaseCard().getName();
+            }
+            String cardKey = PngSequenceSprite.toCardKey(cardName);
+
+            if (cardKey != null && !cardKey.isBlank()) {
+                String baseFolder = "/images/animations/buildings/" + cardKey + "/" + side + "/idle";
+                PngSequenceSprite sprite = new PngSequenceSprite(baseFolder, TILE_SIZE * w, TILE_SIZE * h,
+                        b.getImagePath());
+                sprite.setPreserveRatio(false);
+                buildingStack.getChildren().add(sprite);
             } else {
-                buildingStack.getChildren().add(createFallbackRect(b, w, h));
+                String imgPath = b.getImagePath();
+                InputStream is = imgPath != null ? getClass().getResourceAsStream(imgPath) : null;
+                if (is != null) {
+                    Image img = new Image(is);
+                    ImageView imageView = new ImageView(img);
+                    imageView.setFitWidth(TILE_SIZE * w);
+                    imageView.setFitHeight(TILE_SIZE * h);
+                    imageView.setPreserveRatio(false);
+                    imageView.setSmooth(true);
+                    buildingStack.getChildren().add(imageView);
+                } else {
+                    buildingStack.getChildren().add(createFallbackRect(b, w, h));
+                }
             }
         } catch (Exception e) {
             buildingStack.getChildren().add(createFallbackRect(b, w, h));

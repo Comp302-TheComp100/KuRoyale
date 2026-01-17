@@ -638,6 +638,8 @@ public class GameState implements IBattleState {
         if (center == null)
             return;
 
+        com.kuroyale.event.GameEventBus.getInstance().publishSpellCast(isPlayer, spell, center);
+
         combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer, true,
                 spell.getStunDuration());
     }
