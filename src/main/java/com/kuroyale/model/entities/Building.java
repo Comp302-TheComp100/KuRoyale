@@ -3,6 +3,10 @@ package com.kuroyale.model.entities;
 import com.kuroyale.model.enums.*;
 
 public class Building implements ICombatant {
+    // Global ID counter for network synchronization
+    private static int nextId = 1;
+    
+    private int id;  // Persistent ID for network sync
     private final GridPosition position;
     private final int width, height;
     private final boolean playerSide;
@@ -41,6 +45,7 @@ public class Building implements ICombatant {
 
     public Building(GridPosition position, int width, int height, boolean playerSide, int maxHealth,
             String imagePath, int lifetimeSeconds) {
+        this.id = nextId++;  // Auto-assign unique ID
         this.position = position;
         this.width = width;
         this.height = height;
@@ -54,6 +59,27 @@ public class Building implements ICombatant {
         this.hitSpeedSeconds = 0.0;
         this.rangeTiles = 1;
         this.attackCooldown = 0.0;
+    }
+    
+    /**
+     * Gets the unique ID for network synchronization.
+     */
+    public int getId() {
+        return id;
+    }
+    
+    /**
+     * Sets the ID (used when syncing from network).
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+    
+    /**
+     * Resets the global ID counter (call at start of new match).
+     */
+    public static void resetIdCounter() {
+        nextId = 1;
     }
 
     // Configure combat from a base card

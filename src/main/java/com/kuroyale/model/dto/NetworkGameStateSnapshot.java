@@ -411,7 +411,7 @@ public class NetworkGameStateSnapshot {
         private final double targetX, targetY;
         
         public TroopSnapshot(Troop troop) {
-            this.id = System.identityHashCode(troop);
+            this.id = troop.getId();  // Use persistent ID
             this.cardName = troop.getBaseCard() != null ? troop.getBaseCard().getName() : "Unknown";
             this.isPlayerSide = troop.isPlayerSide();
             this.health = troop.getCurrentHealth();
@@ -485,7 +485,7 @@ public class NetworkGameStateSnapshot {
         private final double remainingLifetime;
         
         public BuildingSnapshot(Building building) {
-            this.id = System.identityHashCode(building);
+            this.id = building.getId();  // Use persistent ID
             this.cardName = building.getBaseCard() != null ? building.getBaseCard().getName() : 
                            (building.getCardName() != null ? building.getCardName() : "Unknown");
             this.isPlayerSide = building.isPlayerSide();

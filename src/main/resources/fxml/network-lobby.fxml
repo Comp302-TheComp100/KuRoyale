@@ -41,23 +41,37 @@
                 <Button fx:id="joinButton" text="JOIN GAME" onAction="#handleJoinGame" 
                         prefWidth="200" prefHeight="60" styleClass="menu-button"/>
             </HBox>
+            
+            <VBox alignment="CENTER" spacing="5" style="-fx-padding: 10;">
+                <Label text="Uses Java Socket/ServerSocket" styleClass="info-label" style="-fx-font-size: 12px; -fx-text-fill: #888;"/>
+                <Label text="For internet play: host needs port forwarding" styleClass="info-label" style="-fx-font-size: 11px; -fx-text-fill: #ff8800;"/>
+            </VBox>
         </VBox>
 
         <!-- Host Setup Pane - Hidden initially -->
         <VBox fx:id="hostSetupPane" alignment="CENTER" spacing="15" visible="false" managed="false">
             <Label text="HOST A GAME" styleClass="subtitle-label"/>
             
-            <!-- Hidden port field for compatibility -->
-            <TextField fx:id="portField" text="8080" visible="false" managed="false"/>
-            <Label fx:id="hostIpLabel" visible="false" managed="false"/>
-            <Label fx:id="publicIpLabel" visible="false" managed="false"/>
+            <Label text="Port number (default: 8080):" styleClass="info-label"/>
+            <TextField fx:id="portField" text="8080" promptText="8080" prefWidth="150" 
+                       style="-fx-font-size: 18px; -fx-alignment: center;"/>
             
-            <Label text="Click START to create a room and get a code to share with your friend." 
-                   styleClass="info-label" style="-fx-font-size: 14px;" wrapText="true"/>
+            <Label fx:id="hostIpLabel" text="" styleClass="info-label" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <Label fx:id="publicIpLabel" text="" styleClass="info-label" style="-fx-font-size: 14px; -fx-text-fill: #00aaff; -fx-font-weight: bold;"/>
+            
+            <VBox alignment="CENTER" spacing="3" style="-fx-padding: 10; -fx-background-color: rgba(0,0,0,0.3); -fx-background-radius: 10;">
+                <Label text="Share your IP with your friend:" styleClass="info-label" style="-fx-font-size: 13px;"/>
+                <Label text="• Same network: Give them your Local IP" 
+                       styleClass="info-label" style="-fx-font-size: 12px; -fx-text-fill: #00ff00;"/>
+                <Label text="• Different network: Give them your Public IP" 
+                       styleClass="info-label" style="-fx-font-size: 12px; -fx-text-fill: #00aaff;"/>
+                <Label fx:id="portForwardingLabel" text="⚠ For internet play: enable port forwarding in your router settings" 
+                       styleClass="info-label" style="-fx-font-size: 11px; -fx-text-fill: #ff8800;"/>
+            </VBox>
             
             <HBox alignment="CENTER" spacing="20">
-                <Button text="START" onAction="#handleStartHosting" 
-                        prefWidth="180" prefHeight="50" styleClass="menu-button"/>
+                <Button text="START SERVER" onAction="#handleStartHosting" 
+                        prefWidth="200" prefHeight="50" styleClass="menu-button"/>
                 <Button text="CANCEL" onAction="#handleCancelSetup" 
                         prefWidth="120" prefHeight="50" styleClass="back-button"/>
             </HBox>
@@ -67,17 +81,25 @@
         <VBox fx:id="joinSetupPane" alignment="CENTER" spacing="15" visible="false" managed="false">
             <Label text="JOIN A GAME" styleClass="subtitle-label"/>
             
-            <Label text="Enter the 6-character room code from your friend:" 
-                   styleClass="info-label" style="-fx-font-size: 14px;"/>
+            <Label text="Enter the host's IP address:" styleClass="info-label"/>
+            <TextField fx:id="hostIpField" promptText="e.g., 192.168.1.100" prefWidth="250" 
+                       style="-fx-font-size: 18px; -fx-alignment: center;"/>
             
-            <TextField fx:id="hostIpField" promptText="e.g., ABC123" prefWidth="200" 
-                       style="-fx-font-size: 24px; -fx-font-family: monospace; -fx-alignment: center;"/>
+            <Label text="Port number (default: 8080):" styleClass="info-label"/>
+            <TextField fx:id="joinPortField" text="8080" promptText="8080" prefWidth="150" 
+                       style="-fx-font-size: 18px; -fx-alignment: center;"/>
             
-            <!-- Hidden port field for compatibility -->
-            <TextField fx:id="joinPortField" text="8080" visible="false" managed="false"/>
+            <VBox alignment="CENTER" spacing="3" style="-fx-padding: 10;">
+                <Label text="• Same computer: use 127.0.0.1" 
+                       styleClass="info-label" style="-fx-font-size: 12px; -fx-text-fill: #888;"/>
+                <Label text="• Same network: use Local IP (e.g., 192.168.x.x)" 
+                       styleClass="info-label" style="-fx-font-size: 12px; -fx-text-fill: #888;"/>
+                <Label text="• Different network: use Public IP (host needs port forwarding)" 
+                       styleClass="info-label" style="-fx-font-size: 12px; -fx-text-fill: #ff8800;"/>
+            </VBox>
             
             <HBox alignment="CENTER" spacing="20">
-                <Button text="JOIN" onAction="#handleConnect" 
+                <Button text="CONNECT" onAction="#handleConnect" 
                         prefWidth="150" prefHeight="50" styleClass="menu-button"/>
                 <Button text="CANCEL" onAction="#handleCancelSetup" 
                         prefWidth="120" prefHeight="50" styleClass="back-button"/>

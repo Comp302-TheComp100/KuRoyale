@@ -1,6 +1,7 @@
 package com.kuroyale.service;
 
 import com.kuroyale.model.dto.NetworkMessage;
+import com.kuroyale.model.dto.NetworkGameStateSnapshot;
 import com.kuroyale.model.entities.ArenaLayout;
 import com.kuroyale.util.NetworkConfig;
 
@@ -13,17 +14,21 @@ import java.util.function.BiConsumer;
 
 /**
  * Service for handling network multiplayer connections.
- * Implements Host-Client model using Java Sockets.
+ * Implements Host-Client model using Java Socket and ServerSocket classes.
  * 
- * GRASP Patterns:
- * - Pure Fabrication: Not a domain concept, created to handle network concerns
- * - Low Coupling: Isolated network logic from game logic
- * - Controller: Manages network communication flow
+ * Connection Architecture (as per spec):
+ * - Host-Client model: One player hosts (acts as server), other player joins (acts as client)
+ * - Host specifies a port number (default: 8080)
+ * - Client connects using host's IP address and port
+ * - Connection status indicator showing "Connected" / "Connecting" / "Disconnected"
  * 
- * Cross-Network Support:
- * - Detects public IP for internet play
- * - Supports UPnP for automatic port forwarding
- * - Provides fallback instructions for manual port forwarding
+ * Network Protocol Format:
+ * MESSAGE_TYPE|player_id|data|timestamp
+ * 
+ * Examples:
+ * CARD_PLACED|1|Knight|5.2,3.8|00:45
+ * TOWER_DAMAGED|2|CrownLeft|450|01:23
+ * ELIXIR_UPDATE|1|7|01:24
  */
 public class NetworkService {
     
@@ -39,9 +44,18 @@ public class NetworkService {
         CLIENT
     }
     
+    /**
+     * Connection mode - Direct for same network, Relay for internet play
+     */
+    public enum ConnectionMode {
+        DIRECT,  // Direct socket connection (same network or with port forwarding)
+        RELAY    // MQTT relay (works across internet without port forwarding)
+    }
+    
     private final NetworkConfig config;
     private Role role;
     private ConnectionState state = ConnectionState.DISCONNECTED;
+    private ConnectionMode connectionMode = ConnectionMode.DIRECT;
     
     // Server components (for host)
     private ServerSocket serverSocket;
@@ -72,71 +86,70 @@ public class NetworkService {
     // Arena layout (received from host for clients)
     private ArenaLayout hostArenaLayout;
     
-    // UPnP support
-    private final UPnPService upnpService;
-    private boolean upnpPortOpened = false;
+    // Port being used
     private int hostedPort = -1;
     
-    // Relay support (works on ANY network, NO setup needed)
-    private final RelayService relayService;
-    private boolean usingRelay = false;
-    
-    // Callback for connection status updates
-    private BiConsumer<Boolean, String> onUPnPStatusChanged;
+    // Callbacks for connection status
     private BiConsumer<Boolean, String> onConnectionReady;
+    
+    // Reconnection tracking
+    private int reconnectAttempts = 0;
+    private String lastHostAddress;
+    private int lastHostPort;
     
     public NetworkService() {
         this.config = NetworkConfig.getInstance();
         this.executorService = Executors.newCachedThreadPool();
-        this.upnpService = UPnPService.getInstance();
-        this.relayService = RelayService.getInstance();
         
         // Add shutdown hook to ensure cleanup on JVM exit
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("[NetworkService] Shutdown hook triggered");
             forceCloseAllSockets();
-            // Close relay connection
-            if (usingRelay) {
-                relayService.disconnect();
-            }
-            // Close UPnP port mapping
-            if (upnpPortOpened) {
-                upnpService.closeCurrentPort();
-            }
         }));
-        
-        // Setup relay callbacks
-        setupRelayCallbacks();
     }
     
     /**
-     * Sets up callbacks for the relay service.
+     * Resets the service for a fresh connection attempt.
+     * Call this before startHosting or connectToHost if the service was previously used.
      */
-    private void setupRelayCallbacks() {
-        relayService.setOnMessageReceived(message -> {
-            System.out.println("[NetworkService] Relay message: " + message);
-            NetworkMessage netMsg = NetworkMessage.fromProtocolString(message);
-            if (netMsg != null) {
-                handleMessage(netMsg);
-            }
-        });
+    public void reset() {
+        System.out.println("[NetworkService] Resetting service...");
         
-        relayService.setOnPlayerJoined(joinedPlayerId -> {
-            System.out.println("[NetworkService] Player joined: " + joinedPlayerId);
-            setState(ConnectionState.CONNECTED);
-            // Send our info to the new player
-            send(NetworkMessage.connectAck(playerName));
-        });
+        // Force close any existing connections
+        running = false;
         
-        relayService.setOnConnectionChanged(connected -> {
-            if (!connected && state != ConnectionState.DISCONNECTED) {
-                handleDisconnection();
-            }
-        });
+        // Disconnect relay if it was being used
+        try { RelayService.getInstance().disconnect(); } catch (Exception e) { /* ignore */ }
         
-        relayService.setOnError(error -> {
-            handleError(error);
-        });
+        // Close direct socket connections
+        try { if (serverSocket != null && !serverSocket.isClosed()) serverSocket.close(); } catch (Exception e) { /* ignore */ }
+        try { if (socket != null && !socket.isClosed()) socket.close(); } catch (Exception e) { /* ignore */ }
+        try { if (clientSocket != null && !clientSocket.isClosed()) clientSocket.close(); } catch (Exception e) { /* ignore */ }
+        try { if (reader != null) reader.close(); } catch (Exception e) { /* ignore */ }
+        try { if (writer != null) writer.close(); } catch (Exception e) { /* ignore */ }
+        
+        serverSocket = null;
+        socket = null;
+        clientSocket = null;
+        reader = null;
+        writer = null;
+        
+        // Shutdown and recreate executor if needed
+        if (executorService == null || executorService.isShutdown()) {
+            executorService = Executors.newCachedThreadPool();
+        }
+        if (heartbeatScheduler != null) {
+            heartbeatScheduler.shutdownNow();
+            heartbeatScheduler = null;
+        }
+        
+        // Reset state
+        connectionMode = ConnectionMode.DIRECT;  // Default to direct mode
+        opponentName = null;
+        state = ConnectionState.DISCONNECTED;
+        reconnectAttempts = 0;
+        
+        System.out.println("[NetworkService] Reset complete");
     }
     
     /**
@@ -152,35 +165,64 @@ public class NetworkService {
     }
     
     /**
-     * Starts hosting a game using the FREE relay service.
-     * Works on ANY network without any setup!
-     * @param port Unused (kept for compatibility)
+     * Starts hosting a game on the specified port.
+     * Uses Java ServerSocket as per spec requirements.
+     * 
+     * @param port The port to host on (default: 8080)
      * @param playerName The host player's name
      * @return true if hosting started successfully
      */
     public boolean startHosting(int port, String playerName) {
+        // Reset any previous state first
+        reset();
+        
+        this.connectionMode = ConnectionMode.DIRECT;
         this.role = Role.HOST;
         this.playerId = 1;
         this.playerName = playerName;
         this.hostedPort = port;
-        this.usingRelay = true;
         
         setState(ConnectionState.CONNECTING);
-        System.out.println("[NetworkService] Creating game room via relay...");
+        System.out.println("[NetworkService] Starting server on port " + port + "...");
         
-        // Reset relay service for fresh connection
-        relayService.reset();
-        
-        // Create room using the FREE relay service
-        relayService.createRoom().thenAccept(roomCode -> {
-            if (roomCode != null) {
-                System.out.println("[NetworkService] Room created! Code: " + roomCode);
+        executorService.submit(() -> {
+            try {
+                // Create server socket with address reuse enabled
+                serverSocket = new ServerSocket();
+                serverSocket.setReuseAddress(true); // Allow immediate port reuse
+                serverSocket.bind(new InetSocketAddress(port));
+                serverSocket.setSoTimeout(0); // No timeout - wait indefinitely
+                running = true;
+                
+                // Get local IP for display
+                String localIP = getLocalIPAddress();
+                System.out.println("[NetworkService] Server started! IP: " + localIP + ", Port: " + port);
+                
+                // Notify that hosting is ready
                 if (onConnectionReady != null) {
-                    onConnectionReady.accept(true, roomCode);
+                    javafx.application.Platform.runLater(() -> 
+                        onConnectionReady.accept(true, localIP + ":" + port));
                 }
-            } else {
-                handleError("Failed to create room. Please try again.");
+                
+                // Wait for client connection
+                waitForClient();
+                
+            } catch (BindException e) {
+                System.err.println("[NetworkService] Port " + port + " is already in use");
+                handleError("Port " + port + " is already in use. Try a different port or wait a moment.");
                 setState(ConnectionState.DISCONNECTED);
+                if (onConnectionReady != null) {
+                    javafx.application.Platform.runLater(() -> 
+                        onConnectionReady.accept(false, null));
+                }
+            } catch (IOException e) {
+                System.err.println("[NetworkService] Failed to start server: " + e.getMessage());
+                handleError("Failed to start server: " + e.getMessage());
+                setState(ConnectionState.DISCONNECTED);
+                if (onConnectionReady != null) {
+                    javafx.application.Platform.runLater(() -> 
+                        onConnectionReady.accept(false, null));
+                }
             }
         });
         
@@ -188,135 +230,54 @@ public class NetworkService {
     }
     
     /**
-     * Attempts to open a port via UPnP for internet connectivity.
-     * This runs asynchronously and updates the UI when complete.
-     */
-    private void openPortViaUPnP(int port) {
-        if (!upnpService.isInitialized()) {
-            // Wait for UPnP initialization then try
-            upnpService.initialize().thenCompose(available -> {
-                if (available) {
-                    return upnpService.openPort(port);
-                }
-                return CompletableFuture.completedFuture(false);
-            }).thenAccept(success -> {
-                upnpPortOpened = success;
-                handleUPnPResult(success, port);
-            });
-        } else if (upnpService.isUPnPAvailable()) {
-            upnpService.openPort(port).thenAccept(success -> {
-                upnpPortOpened = success;
-                handleUPnPResult(success, port);
-            });
-        } else {
-            System.out.println("[NetworkService] UPnP not available on this network");
-            // Fallback to showing local IP for same-network play
-            notifyConnectionReady(false, "LOCAL_ONLY", port);
-        }
-    }
-    
-    /**
-     * Handles the UPnP result and notifies appropriate callbacks.
-     */
-    private void handleUPnPResult(boolean success, int port) {
-        if (success) {
-            String externalIP = upnpService.getExternalIP();
-            String connStr = upnpService.getConnectionString(port);
-            
-            // Check for CGNAT (private IP ranges as "external" IP)
-            if (externalIP != null && isCGNAT(externalIP)) {
-                System.out.println("[NetworkService] CGNAT detected - internet play may not work");
-                notifyConnectionReady(false, "CGNAT_DETECTED", port);
-            } else {
-                System.out.println("[NetworkService] UPnP port opened! Share: " + connStr);
-                notifyConnectionReady(true, connStr, port);
-            }
-        } else {
-            System.out.println("[NetworkService] UPnP port opening failed");
-            notifyConnectionReady(false, "UPNP_FAILED", port);
-        }
-    }
-    
-    /**
-     * Checks if the IP address indicates CGNAT (Carrier-Grade NAT).
-     * CGNAT uses private IP ranges as the "external" IP.
-     */
-    private boolean isCGNAT(String ip) {
-        if (ip == null) return false;
-        // CGNAT typically uses 100.64.0.0/10 range, but ISPs also use 10.x.x.x
-        return ip.startsWith("10.") || 
-               ip.startsWith("100.64.") || ip.startsWith("100.65.") || ip.startsWith("100.66.") ||
-               ip.startsWith("100.67.") || ip.startsWith("100.68.") || ip.startsWith("100.69.") ||
-               ip.startsWith("100.70.") || ip.startsWith("100.71.") || ip.startsWith("100.72.") ||
-               ip.startsWith("100.73.") || ip.startsWith("100.74.") || ip.startsWith("100.75.") ||
-               ip.startsWith("100.76.") || ip.startsWith("100.77.") || ip.startsWith("100.78.") ||
-               ip.startsWith("100.79.") || ip.startsWith("100.80.") || ip.startsWith("100.81.") ||
-               ip.startsWith("100.82.") || ip.startsWith("100.83.") || ip.startsWith("100.84.") ||
-               ip.startsWith("100.85.") || ip.startsWith("100.86.") || ip.startsWith("100.87.") ||
-               ip.startsWith("100.88.") || ip.startsWith("100.89.") || ip.startsWith("100.90.") ||
-               ip.startsWith("100.91.") || ip.startsWith("100.92.") || ip.startsWith("100.93.") ||
-               ip.startsWith("100.94.") || ip.startsWith("100.95.") || ip.startsWith("100.96.") ||
-               ip.startsWith("100.97.") || ip.startsWith("100.98.") || ip.startsWith("100.99.") ||
-               ip.startsWith("100.100.") || ip.startsWith("100.101.") || ip.startsWith("100.102.") ||
-               ip.startsWith("100.103.") || ip.startsWith("100.104.") || ip.startsWith("100.105.") ||
-               ip.startsWith("100.106.") || ip.startsWith("100.107.") || ip.startsWith("100.108.") ||
-               ip.startsWith("100.109.") || ip.startsWith("100.110.") || ip.startsWith("100.111.") ||
-               ip.startsWith("100.112.") || ip.startsWith("100.113.") || ip.startsWith("100.114.") ||
-               ip.startsWith("100.115.") || ip.startsWith("100.116.") || ip.startsWith("100.117.") ||
-               ip.startsWith("100.118.") || ip.startsWith("100.119.") || ip.startsWith("100.120.") ||
-               ip.startsWith("100.121.") || ip.startsWith("100.122.") || ip.startsWith("100.123.") ||
-               ip.startsWith("100.124.") || ip.startsWith("100.125.") || ip.startsWith("100.126.") ||
-               ip.startsWith("100.127.") ||
-               ip.startsWith("192.168.") || ip.startsWith("172.16.") || ip.startsWith("172.17.") ||
-               ip.startsWith("172.18.") || ip.startsWith("172.19.") || ip.startsWith("172.20.") ||
-               ip.startsWith("172.21.") || ip.startsWith("172.22.") || ip.startsWith("172.23.") ||
-               ip.startsWith("172.24.") || ip.startsWith("172.25.") || ip.startsWith("172.26.") ||
-               ip.startsWith("172.27.") || ip.startsWith("172.28.") || ip.startsWith("172.29.") ||
-               ip.startsWith("172.30.") || ip.startsWith("172.31.");
-    }
-    
-    /**
-     * Notifies callbacks about connection readiness.
-     */
-    private void notifyConnectionReady(boolean success, String status, int port) {
-        if (onConnectionReady != null) {
-            onConnectionReady.accept(success, status);
-        }
-        if (onUPnPStatusChanged != null) {
-            onUPnPStatusChanged.accept(success, status);
-        }
-    }
-    
-    /**
-     * Connects to a host using a room code via the FREE relay service.
-     * @param roomCode The room code shared by the host
-     * @param port Unused (kept for compatibility)
+     * Connects to a host at the specified IP address and port.
+     * Uses Java Socket as per spec requirements.
+     * 
+     * @param hostAddress The host's IP address (e.g., "192.168.1.100" or "127.0.0.1")
+     * @param port The port the host is listening on
      * @param playerName The client player's name
-     * @return true if connection started
+     * @return true if connection attempt started
      */
-    public boolean connectToHost(String roomCode, int port, String playerName) {
+    public boolean connectToHost(String hostAddress, int port, String playerName) {
+        // Reset any previous state first
+        reset();
+        
+        this.connectionMode = ConnectionMode.DIRECT;
         this.role = Role.CLIENT;
         this.playerId = 2;
         this.playerName = playerName;
-        this.usingRelay = true;
+        this.lastHostAddress = hostAddress;
+        this.lastHostPort = port;
         
         setState(ConnectionState.CONNECTING);
-        System.out.println("[NetworkService] Joining room: " + roomCode);
+        System.out.println("[NetworkService] Connecting to " + hostAddress + ":" + port + "...");
         
-        // Reset relay service for fresh connection
-        relayService.reset();
-        
-        // Join room using the FREE relay service
-        relayService.joinRoom(roomCode).thenAccept(success -> {
-            if (success) {
-                System.out.println("[NetworkService] Joined room successfully!");
+        executorService.submit(() -> {
+            try {
+                // Create socket and connect with timeout
+                socket = new Socket();
+                socket.connect(new InetSocketAddress(hostAddress, port), config.getConnectionTimeout());
+                running = true;
+                
+                setupStreams(socket);
                 setState(ConnectionState.CONNECTED);
                 
-                // Send connection message via relay
+                System.out.println("[NetworkService] Connected to host!");
+                
+                // Send connection request with player name
                 send(NetworkMessage.connect(playerName));
                 
-            } else {
-                handleError("Failed to join room. Check the code and try again.");
+                // Start receiving messages
+                startReceiving();
+                startHeartbeat();
+                
+            } catch (SocketTimeoutException e) {
+                System.err.println("[NetworkService] Connection timed out");
+                handleError("Connection timed out. Check the IP address and port.");
+                setState(ConnectionState.DISCONNECTED);
+            } catch (IOException e) {
+                System.err.println("[NetworkService] Connection failed: " + e.getMessage());
+                handleError("Connection failed: " + e.getMessage());
                 setState(ConnectionState.DISCONNECTED);
             }
         });
@@ -324,6 +285,117 @@ public class NetworkService {
         return true;
     }
     
+    // ==================== RELAY MODE (for Internet play without port forwarding) ====================
+    
+    /**
+     * Creates a game room using relay (for internet play).
+     * No port forwarding required - works through any firewall.
+     * 
+     * @param playerName The host player's name
+     * @return true if room creation started
+     */
+    public boolean createRelayRoom(String playerName) {
+        reset();
+        this.connectionMode = ConnectionMode.RELAY;
+        this.role = Role.HOST;
+        this.playerId = 1;
+        this.playerName = playerName;
+        
+        setState(ConnectionState.CONNECTING);
+        System.out.println("[NetworkService] Creating relay room...");
+        
+        RelayService relay = RelayService.getInstance();
+        relay.reset();
+        
+        // Set up relay callbacks
+        relay.setOnMessageReceived(message -> {
+            NetworkMessage netMsg = NetworkMessage.fromProtocolString(message);
+            if (netMsg != null) {
+                handleMessage(netMsg);
+            }
+        });
+        
+        relay.setOnPlayerJoined(joinedPlayerId -> {
+            System.out.println("[NetworkService] Player joined via relay: " + joinedPlayerId);
+            running = true;
+            setState(ConnectionState.CONNECTED);
+            // Send our player info
+            send(NetworkMessage.connectAck(playerName));
+            send(NetworkMessage.playerInfo(playerId, playerName, null));
+        });
+        
+        relay.setOnError(error -> handleError(error));
+        
+        relay.createRoom().whenComplete((roomCode, error) -> {
+            if (error != null || roomCode == null) {
+                handleError("Failed to create relay room: " + (error != null ? error.getMessage() : "Unknown error"));
+                setState(ConnectionState.DISCONNECTED);
+                if (onConnectionReady != null) {
+                    javafx.application.Platform.runLater(() -> onConnectionReady.accept(false, null));
+                }
+            } else {
+                System.out.println("[NetworkService] Relay room created: " + roomCode);
+                running = true;
+                if (onConnectionReady != null) {
+                    javafx.application.Platform.runLater(() -> onConnectionReady.accept(true, "ROOM: " + roomCode));
+                }
+            }
+        });
+        
+        return true;
+    }
+    
+    /**
+     * Joins a game room using relay (for internet play).
+     * No port forwarding required - works through any firewall.
+     * 
+     * @param roomCode The room code shared by the host
+     * @param playerName The client player's name
+     * @return true if join attempt started
+     */
+    public boolean joinRelayRoom(String roomCode, String playerName) {
+        reset();
+        this.connectionMode = ConnectionMode.RELAY;
+        this.role = Role.CLIENT;
+        this.playerId = 2;
+        this.playerName = playerName;
+        
+        setState(ConnectionState.CONNECTING);
+        System.out.println("[NetworkService] Joining relay room: " + roomCode);
+        
+        RelayService relay = RelayService.getInstance();
+        relay.reset();
+        
+        // Set up relay callbacks
+        relay.setOnMessageReceived(message -> {
+            NetworkMessage netMsg = NetworkMessage.fromProtocolString(message);
+            if (netMsg != null) {
+                handleMessage(netMsg);
+            }
+        });
+        
+        relay.setOnError(error -> handleError(error));
+        
+        relay.joinRoom(roomCode).whenComplete((success, error) -> {
+            if (error != null || !success) {
+                handleError("Failed to join relay room: " + (error != null ? error.getMessage() : "Room not found"));
+                setState(ConnectionState.DISCONNECTED);
+            } else {
+                System.out.println("[NetworkService] Joined relay room!");
+                running = true;
+                setState(ConnectionState.CONNECTED);
+                // Send our connection info
+                send(NetworkMessage.connect(playerName));
+                send(NetworkMessage.playerInfo(playerId, playerName, null));
+            }
+        });
+        
+        return true;
+    }
+    
+    /**
+     * Waits for a client to connect (HOST only).
+     */
     private void waitForClient() {
         try {
             System.out.println("[NetworkService] Waiting for client connection...");
@@ -332,12 +404,12 @@ public class NetworkService {
             setupStreams(clientSocket);
             setState(ConnectionState.CONNECTED);
             
+            System.out.println("[NetworkService] Client connected from " + 
+                    clientSocket.getInetAddress().getHostAddress());
+            
             // Start receiving messages
             startReceiving();
             startHeartbeat();
-            
-            System.out.println("[NetworkService] Client connected from " + 
-                    clientSocket.getInetAddress().getHostAddress());
             
         } catch (IOException e) {
             if (running) {
@@ -346,74 +418,93 @@ public class NetworkService {
         }
     }
     
+    /**
+     * Sets up input/output streams for a socket.
+     */
     private void setupStreams(Socket socket) throws IOException {
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
-        running = true;
+        writer = new PrintWriter(socket.getOutputStream(), true);
     }
     
+    /**
+     * Starts the message receiving loop in a separate thread.
+     */
     private void startReceiving() {
         executorService.submit(() -> {
-            while (running && state == ConnectionState.CONNECTED) {
-                try {
-                    String line = reader.readLine();
-                    if (line == null) {
-                        // Connection closed
-                        handleDisconnection();
-                        break;
-                    }
+            try {
+                String line;
+                while (running && (line = reader.readLine()) != null) {
+                    final String message = line;
                     
-                    System.out.println("[NetworkService] RECEIVED: " + line);
-                    NetworkMessage message = NetworkMessage.fromProtocolString(line);
-                    if (message != null) {
-                        handleMessage(message);
-                    } else {
-                        System.err.println("[NetworkService] Failed to parse message: " + line);
+                    // Parse and handle message
+                    NetworkMessage netMsg = NetworkMessage.fromProtocolString(message);
+                    if (netMsg != null) {
+                        handleMessage(netMsg);
                     }
-                    
-                } catch (SocketTimeoutException e) {
-                    // Timeout is ok, continue reading
+                }
                 } catch (IOException e) {
                     if (running) {
+                    System.err.println("[NetworkService] Connection lost: " + e.getMessage());
                         handleDisconnection();
-                    }
-                    break;
                 }
             }
         });
     }
     
+    /**
+     * Starts the heartbeat sender for connection keep-alive.
+     */
     private void startHeartbeat() {
         heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
         heartbeatScheduler.scheduleAtFixedRate(() -> {
-            if (state == ConnectionState.CONNECTED) {
+            if (running && state == ConnectionState.CONNECTED) {
                 send(NetworkMessage.heartbeat(playerId));
             }
-        }, config.getHeartbeatInterval(), config.getHeartbeatInterval(), TimeUnit.MILLISECONDS);
+        }, 1000, config.getHeartbeatInterval(), TimeUnit.MILLISECONDS);
     }
     
+    /**
+     * Handles an incoming network message.
+     */
     private void handleMessage(NetworkMessage message) {
-        // Handle internal messages
+        System.out.println("[NetworkService] Received: " + message.getType());
+        
         switch (message.getType()) {
             case CONNECT:
+                // Client is connecting - data contains player name
                 opponentName = message.getData();
-                // Host responds with acknowledgment
-                if (role == Role.HOST) {
-                    send(NetworkMessage.connectAck(playerName));
-                    send(NetworkMessage.playerInfo(playerId, playerName, ""));
+                System.out.println("[NetworkService] Opponent name: " + opponentName);
+                // Send acknowledgment with our name
+                send(NetworkMessage.connectAck(playerName));
+                // Send our player info so lobby can display it
+                send(NetworkMessage.playerInfo(playerId, playerName, null));
+                // Notify listener so lobby can update UI
+                if (onMessageReceived != null) {
+                    javafx.application.Platform.runLater(() -> onMessageReceived.accept(message));
                 }
                 break;
                 
             case CONNECT_ACK:
-                opponentName = message.getData();
-                send(NetworkMessage.playerInfo(playerId, playerName, ""));
+                // Host acknowledged our connection
+                String ackName = message.getData();
+                if (ackName != null && !ackName.isEmpty()) {
+                    opponentName = ackName;
+                }
+                reconnectAttempts = 0; // Reset reconnect counter on successful connect
+                // Notify listener so lobby can update UI
+                if (onMessageReceived != null) {
+                    javafx.application.Platform.runLater(() -> onMessageReceived.accept(message));
+                }
+                // Send our player info to the host
+                send(NetworkMessage.playerInfo(playerId, playerName, null));
                 break;
                 
             case HEARTBEAT:
-                // Heartbeat received, connection is alive
+                // Keep-alive received, connection is healthy
                 break;
                 
             case DISCONNECT:
+                System.out.println("[NetworkService] Opponent disconnected gracefully");
                 handleDisconnection();
                 break;
                 
@@ -421,121 +512,122 @@ public class NetworkService {
                 // Client receives arena layout from host
                 if (role == Role.CLIENT) {
                     hostArenaLayout = message.parseArenaLayout();
-                    System.out.println("[NetworkService] Received host arena layout: " + 
-                        (hostArenaLayout != null ? hostArenaLayout.getName() : "null"));
+                    System.out.println("[NetworkService] Received arena layout from host");
                 }
-                break;
+                // Fall through to notify listener
                 
             default:
-                // Forward to callback
+                // Forward to listener (game logic)
+                if (onMessageReceived != null) {
+                    javafx.application.Platform.runLater(() -> onMessageReceived.accept(message));
+                }
                 break;
-        }
-        
-        // Always forward to callback for UI updates
-        if (onMessageReceived != null) {
-            onMessageReceived.accept(message);
         }
     }
     
+    /**
+     * Handles disconnection - attempts reconnection as per spec.
+     */
     private void handleDisconnection() {
         if (state == ConnectionState.DISCONNECTED) return;
         
-        System.out.println("[NetworkService] Connection lost, attempting reconnection...");
         setState(ConnectionState.RECONNECTING);
         
-        // Notify about disconnection
-        if (onMessageReceived != null) {
-            onMessageReceived.accept(NetworkMessage.opponentDisconnected());
-        }
+        // Attempt reconnection for 5 seconds (as per spec)
+        int maxAttempts = config.getReconnectAttempts();
         
-        // Try to reconnect
         executorService.submit(() -> {
-            for (int i = 0; i < config.getReconnectAttempts(); i++) {
+            while (reconnectAttempts < maxAttempts && state == ConnectionState.RECONNECTING) {
+                reconnectAttempts++;
+                System.out.println("[NetworkService] Reconnection attempt " + reconnectAttempts + "/" + maxAttempts);
+                
                 try {
-                    Thread.sleep(config.getReconnectWait());
+                    Thread.sleep(1500); // Wait between attempts
                     
-                    if (role == Role.HOST) {
-                        // Host waits for client to reconnect
-                        if (serverSocket != null && !serverSocket.isClosed()) {
-                            serverSocket.setSoTimeout(config.getConnectionTimeout());
-                            try {
-                                clientSocket = serverSocket.accept();
-                                setupStreams(clientSocket);
+                    if (role == Role.CLIENT && lastHostAddress != null) {
+                        // Try to reconnect
+                        socket = new Socket();
+                        socket.connect(new InetSocketAddress(lastHostAddress, lastHostPort), 2000);
+                        setupStreams(socket);
+                        running = true;
                                 setState(ConnectionState.CONNECTED);
                                 startReceiving();
-                                System.out.println("[NetworkService] Client reconnected");
+                        System.out.println("[NetworkService] Reconnected!");
                                 return;
-                            } catch (SocketTimeoutException e) {
-                                // Continue trying
-                            }
-                        }
-                    } else {
-                        // Client tries to reconnect to host
-                        // Would need stored host address
                     }
-                    
-                } catch (InterruptedException | IOException e) {
-                    // Continue trying
+                } catch (Exception e) {
+                    System.out.println("[NetworkService] Reconnection failed: " + e.getMessage());
                 }
             }
             
             // Reconnection failed
-            System.out.println("[NetworkService] Reconnection failed");
+            System.out.println("[NetworkService] All reconnection attempts failed");
             setState(ConnectionState.DISCONNECTED);
+            
+            // Notify about opponent disconnection
+            if (onMessageReceived != null) {
+                javafx.application.Platform.runLater(() -> 
+                    onMessageReceived.accept(NetworkMessage.opponentDisconnected()));
+            }
         });
     }
     
     /**
-     * Sends a message to the connected player.
-     * @param message The message to send
+     * Sends a message to the connected peer.
      */
     public void send(NetworkMessage message) {
-        String protocolStr = message.toProtocolString();
+        if (state != ConnectionState.CONNECTED && state != ConnectionState.RECONNECTING) {
+            return;
+        }
         
-        if (usingRelay) {
-            // Send via relay service
-            relayService.send(protocolStr);
-            System.out.println("[NetworkService] SENT via relay: " + protocolStr);
-        } else if (writer != null && state == ConnectionState.CONNECTED) {
-            // Send via direct socket
-            writer.println(protocolStr);
-            writer.flush();
-            System.out.println("[NetworkService] SENT: " + protocolStr);
+        String protocolString = message.toProtocolString();
+        
+        if (connectionMode == ConnectionMode.RELAY) {
+            // Send via relay
+            RelayService relay = RelayService.getInstance();
+            if (relay.isConnected()) {
+                relay.send(protocolString);
+            }
         } else {
-            System.err.println("[NetworkService] Cannot send - not connected");
+            // Send via direct socket
+            if (writer != null) {
+                executorService.submit(() -> {
+                    try {
+                        writer.println(protocolString);
+                        writer.flush();
+                    } catch (Exception e) {
+                        System.err.println("[NetworkService] Failed to send message: " + e.getMessage());
+                    }
+                });
+            }
         }
     }
     
     /**
-     * Sends a card placement message.
+     * Sends a game state snapshot to the connected peer.
      */
-    public void sendCardPlaced(String cardName, double x, double y) {
-        send(NetworkMessage.cardPlaced(playerId, cardName, x, y));
+    public void sendGameStateSnapshot(NetworkGameStateSnapshot snapshot) {
+        send(NetworkMessage.gameStateSync(snapshot));
     }
     
     /**
-     * Sends a tower damage message.
+     * Sends the arena layout to the client (HOST only).
      */
-    public void sendTowerDamaged(String towerName, int damage) {
-        send(NetworkMessage.towerDamaged(playerId, towerName, damage));
+    public void sendArenaLayout(ArenaLayout layout) {
+        if (role == Role.HOST) {
+            send(NetworkMessage.arenaLayout(layout));
+        }
     }
     
     /**
-     * Sends an elixir update.
+     * Sends ready status to the opponent.
      */
-    public void sendElixirUpdate(double elixir) {
-        send(NetworkMessage.elixirUpdate(playerId, elixir));
+    public void sendReadyStatus(boolean ready) {
+        send(NetworkMessage.readyStatus(playerId, ready));
     }
     
     /**
-     * Sends ready status.
-     */
-    public void sendReadyStatus(boolean isReady) {
-        send(NetworkMessage.readyStatus(playerId, isReady));
-    }
-    
-    /**
-     * Sends match start signal (host only).
+     * Sends match start signal (HOST only).
      */
     public void sendMatchStart() {
         if (role == Role.HOST) {
@@ -544,310 +636,119 @@ public class NetworkService {
     }
     
     /**
-     * Sends arena layout to the client (host only).
-     * This should be called before sendMatchStart to ensure the client
-     * receives the layout before the battle starts.
-     */
-    public void sendArenaLayout(ArenaLayout layout) {
-        if (role == Role.HOST && layout != null) {
-            send(NetworkMessage.arenaLayout(layout));
-            System.out.println("[NetworkService] Sent arena layout: " + layout.getName());
-        }
-    }
-    
-    /**
-     * Gets the arena layout received from the host.
-     * @return The host's arena layout, or null if not received or if this is the host
-     */
-    public ArenaLayout getHostArenaLayout() {
-        return hostArenaLayout;
-    }
-    
-    /**
-     * Clears the stored host arena layout.
-     */
-    public void clearHostArenaLayout() {
-        this.hostArenaLayout = null;
-    }
-    
-    /**
-     * Gracefully disconnects and releases all resources.
+     * Gracefully disconnects from the game.
+     * Notifies opponent before closing connection (as per spec).
      */
     public void disconnect() {
-        System.out.println("[NetworkService] Disconnecting...");
+        if (state == ConnectionState.DISCONNECTED) return;
         
-        // Set running to false first to stop loops
+        System.out.println("[NetworkService] Disconnecting gracefully...");
+        
+        // Notify opponent
+        send(NetworkMessage.disconnect(playerId, "Leaving game"));
+        
+        // Give time for message to be sent
+        try { Thread.sleep(100); } catch (InterruptedException e) { /* ignore */ }
+        
         running = false;
         
-        // Send disconnect message before closing (if connected)
-        if (writer != null && state == ConnectionState.CONNECTED) {
-            try {
-                writer.println(NetworkMessage.disconnect(playerId, "User disconnected").toProtocolString());
-                writer.flush();
-            } catch (Exception e) {
-                // Ignore errors during disconnect
-            }
+        // Disconnect based on mode
+        if (connectionMode == ConnectionMode.RELAY) {
+            RelayService.getInstance().disconnect();
+        } else {
+            // Close direct socket resources
+            try { if (reader != null) reader.close(); } catch (Exception e) { /* ignore */ }
+            try { if (writer != null) writer.close(); } catch (Exception e) { /* ignore */ }
+            try { if (socket != null) socket.close(); } catch (Exception e) { /* ignore */ }
+            try { if (clientSocket != null) clientSocket.close(); } catch (Exception e) { /* ignore */ }
+            try { if (serverSocket != null) serverSocket.close(); } catch (Exception e) { /* ignore */ }
         }
         
-        // Close relay connection if active
-        if (usingRelay) {
-            System.out.println("[NetworkService] Closing relay connection...");
-            relayService.disconnect();
-            usingRelay = false;
-        }
-        
-        // Close UPnP port mapping if we opened one
-        if (upnpPortOpened && hostedPort > 0) {
-            System.out.println("[NetworkService] Closing UPnP port mapping...");
-            upnpService.closePort(hostedPort);
-            upnpPortOpened = false;
-        }
-        
-        // Shutdown heartbeat scheduler
         if (heartbeatScheduler != null) {
             heartbeatScheduler.shutdownNow();
-            heartbeatScheduler = null;
         }
         
-        // Close server socket FIRST to interrupt accept() blocking call
-        if (serverSocket != null) {
-            try {
-                serverSocket.close();
-            } catch (IOException e) {
-                // Ignore
-            }
-            serverSocket = null;
-        }
-        
-        // Close client connections
-        try {
-            if (reader != null) {
-                reader.close();
-                reader = null;
-            }
-        } catch (IOException e) { /* ignore */ }
-        
-        try {
-            if (writer != null) {
-                writer.close();
-                writer = null;
-            }
-        } catch (Exception e) { /* ignore */ }
-        
-        try {
-            if (socket != null) {
-                socket.close();
-                socket = null;
-            }
-        } catch (IOException e) { /* ignore */ }
-        
-        try {
-            if (clientSocket != null) {
-                clientSocket.close();
-                clientSocket = null;
-            }
-        } catch (IOException e) { /* ignore */ }
-        
-        // Shutdown executor service
-        if (executorService != null) {
-            executorService.shutdownNow();
-            executorService = Executors.newCachedThreadPool(); // Create fresh one for next use
-        }
-        
-        hostedPort = -1;
         setState(ConnectionState.DISCONNECTED);
-        System.out.println("[NetworkService] Disconnected successfully");
-    }
-    
-    private void setState(ConnectionState newState) {
-        this.state = newState;
-        if (onStateChanged != null) {
-            onStateChanged.accept(newState);
-        }
-    }
-    
-    private void handleError(String error) {
-        System.err.println("[NetworkService] Error: " + error);
-        if (onError != null) {
-            onError.accept(error);
-        }
-    }
-    
-    // Getters and setters
-    
-    public ConnectionState getState() {
-        return state;
-    }
-    
-    public Role getRole() {
-        return role;
-    }
-    
-    public int getPlayerId() {
-        return playerId;
-    }
-    
-    public String getPlayerName() {
-        return playerName;
-    }
-    
-    public String getOpponentName() {
-        return opponentName;
-    }
-    
-    public boolean isHost() {
-        return role == Role.HOST;
-    }
-    
-    public boolean isConnected() {
-        return state == ConnectionState.CONNECTED;
     }
     
     /**
-     * Gets the local IP address for LAN play.
-     * This is the IP other devices on the same network can use.
+     * Gets the local IP address for display.
      */
     public String getLocalIPAddress() {
         try {
-            // Try to find a non-loopback, non-virtual network interface
+            // Try to find a non-loopback address
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while (interfaces.hasMoreElements()) {
                 NetworkInterface iface = interfaces.nextElement();
-                
-                // Skip loopback and down interfaces
-                if (iface.isLoopback() || !iface.isUp() || iface.isVirtual()) {
-                    continue;
-                }
-                
-                // Skip common virtual interface names
-                String name = iface.getName().toLowerCase();
-                if (name.contains("docker") || name.contains("veth") || 
-                    name.contains("vmnet") || name.contains("vbox")) {
-                    continue;
-                }
+                if (iface.isLoopback() || !iface.isUp()) continue;
                 
                 Enumeration<InetAddress> addresses = iface.getInetAddresses();
                 while (addresses.hasMoreElements()) {
                     InetAddress addr = addresses.nextElement();
-                    
-                    // Prefer IPv4, non-loopback addresses
-                    if (addr instanceof java.net.Inet4Address && !addr.isLoopbackAddress()) {
-                        String ip = addr.getHostAddress();
-                        // Prefer private network addresses
-                        if (ip.startsWith("192.168.") || ip.startsWith("10.") || 
-                            ip.startsWith("172.16.") || ip.startsWith("172.17.") ||
-                            ip.startsWith("172.18.") || ip.startsWith("172.19.") ||
-                            ip.startsWith("172.20.") || ip.startsWith("172.21.") ||
-                            ip.startsWith("172.22.") || ip.startsWith("172.23.") ||
-                            ip.startsWith("172.24.") || ip.startsWith("172.25.") ||
-                            ip.startsWith("172.26.") || ip.startsWith("172.27.") ||
-                            ip.startsWith("172.28.") || ip.startsWith("172.29.") ||
-                            ip.startsWith("172.30.") || ip.startsWith("172.31.")) {
-                            return ip;
-                        }
+                    if (addr instanceof Inet4Address) {
+                        return addr.getHostAddress();
                     }
                 }
             }
-            
-            // Fallback to getLocalHost
+            // Fallback to localhost
             return InetAddress.getLocalHost().getHostAddress();
-            
         } catch (Exception e) {
             return "127.0.0.1";
         }
     }
     
-    // Cached public IP
-    private String cachedPublicIP = null;
-    private boolean publicIPFetched = false;
-    
     /**
-     * Gets the public IP address for internet play.
-     * Uses external services to determine the public-facing IP.
-     * Returns null if unable to determine (e.g., no internet connection).
-     */
-    public String getPublicIPAddress() {
-        if (publicIPFetched) {
-            return cachedPublicIP;
-        }
-        
-        // Try multiple services for reliability
-        String[] services = {
-            "https://api.ipify.org",
-            "https://checkip.amazonaws.com",
-            "https://icanhazip.com",
-            "https://ipinfo.io/ip"
-        };
-        
-        for (String service : services) {
-            try {
-                URI uri = new URI(service);
-                URL url = uri.toURL();
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setConnectTimeout(3000);
-                conn.setReadTimeout(3000);
-                conn.setRequestProperty("User-Agent", "KU-Royale/1.0");
-                
-                if (conn.getResponseCode() == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    String ip = reader.readLine().trim();
-                    reader.close();
-                    conn.disconnect();
-                    
-                    // Validate IP format
-                    if (ip.matches("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) {
-                        cachedPublicIP = ip;
-                        publicIPFetched = true;
-                        return ip;
-                    }
-                }
-                conn.disconnect();
-                
-            } catch (Exception e) {
-                // Try next service
-                System.out.println("[NetworkService] Failed to get public IP from " + service + ": " + e.getMessage());
-            }
-        }
-        
-        publicIPFetched = true;
-        cachedPublicIP = null;
-        return null;
-    }
-    
-    /**
-     * Fetches the public IP address asynchronously.
-     * @param callback Called with the public IP when found, or null if not available
+     * Fetches the public IP address asynchronously (for internet play).
      */
     public void fetchPublicIPAsync(Consumer<String> callback) {
         executorService.submit(() -> {
-            String publicIP = getPublicIPAddress();
-            if (callback != null) {
+            try {
+                URI uri = new URI("https://api.ipify.org");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(uri.toURL().openStream()));
+                String publicIP = reader.readLine();
+                reader.close();
                 callback.accept(publicIP);
+            } catch (Exception e) {
+                callback.accept(null);
             }
         });
     }
     
-    /**
-     * Gets connection info string for display.
-     */
-    public String getConnectionInfoString(int port) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Local Network IP: ").append(getLocalIPAddress()).append("\n");
-        
-        String publicIP = cachedPublicIP;
-        if (publicIP != null) {
-            sb.append("Public IP (Internet): ").append(publicIP).append("\n");
-        } else {
-            sb.append("Public IP: Fetching...\n");
+    // ==================== State Management ====================
+    
+    private void setState(ConnectionState newState) {
+        this.state = newState;
+        if (onStateChanged != null) {
+            javafx.application.Platform.runLater(() -> onStateChanged.accept(newState));
         }
-        
-        sb.append("Port: ").append(port);
-        
-        return sb.toString();
     }
     
-    // Callback setters
+    private void handleError(String error) {
+        if (onError != null) {
+            javafx.application.Platform.runLater(() -> onError.accept(error));
+        }
+    }
+    
+    // ==================== Getters and Setters ====================
+    
+    public ConnectionState getState() { return state; }
+    public Role getRole() { return role; }
+    public boolean isHost() { return role == Role.HOST; }
+    public boolean isConnected() { return state == ConnectionState.CONNECTED; }
+    public int getPlayerId() { return playerId; }
+    public String getPlayerName() { return playerName; }
+    public String getOpponentName() { return opponentName; }
+    public ArenaLayout getHostArenaLayout() { return hostArenaLayout; }
+    public int getHostedPort() { return hostedPort; }
+    public ConnectionMode getConnectionMode() { return connectionMode; }
+    public boolean isRelayMode() { return connectionMode == ConnectionMode.RELAY; }
+    
+    public int getPing() {
+        // Simplified ping estimation
+        return isConnected() ? 20 : 0;
+    }
+    
+    // ==================== Callback Setters ====================
     
     public void setOnMessageReceived(Consumer<NetworkMessage> callback) {
         this.onMessageReceived = callback;
@@ -861,77 +762,7 @@ public class NetworkService {
         this.onError = callback;
     }
     
-    /**
-     * Sets callback for UPnP status changes.
-     * @param callback BiConsumer with (success, message)
-     */
-    public void setOnUPnPStatusChanged(BiConsumer<Boolean, String> callback) {
-        this.onUPnPStatusChanged = callback;
-    }
-    
-    /**
-     * Sets callback for when connection is ready (ngrok tunnel created or UPnP port opened).
-     * @param callback BiConsumer with (success, shareableAddress or status message)
-     */
     public void setOnConnectionReady(BiConsumer<Boolean, String> callback) {
         this.onConnectionReady = callback;
     }
-    
-    // Relay related getters
-    
-    /**
-     * Gets the relay service.
-     */
-    public RelayService getRelayService() {
-        return relayService;
-    }
-    
-    /**
-     * Checks if using relay for communication.
-     */
-    public boolean isUsingRelay() {
-        return usingRelay;
-    }
-    
-    /**
-     * Gets the current room code.
-     */
-    public String getRoomCode() {
-        return relayService.getRoomCode();
-    }
-    
-    // UPnP related getters
-    
-    /**
-     * Checks if UPnP is available on this network.
-     */
-    public boolean isUPnPAvailable() {
-        return upnpService.isUPnPAvailable();
-    }
-    
-    /**
-     * Checks if a port was successfully opened via UPnP.
-     */
-    public boolean isUPnPPortOpened() {
-        return upnpPortOpened;
-    }
-    
-    /**
-     * Gets the shareable room code for multiplayer.
-     * @return Room code like "ABC123" or null
-     */
-    public String getShareableConnectionString() {
-        if (usingRelay) {
-            return relayService.getRoomCode();
-        }
-        return null;
-    }
-    
-    /**
-     * Gets the UPnP service instance for advanced usage.
-     */
-    public UPnPService getUPnPService() {
-        return upnpService;
-    }
 }
-

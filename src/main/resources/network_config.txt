@@ -1,49 +1,30 @@
-# ============================================
-# KU Royale - Network Configuration File
-# ============================================
-# This file contains network settings for multiplayer gameplay.
-# Modify these values to customize your network experience.
-# If this file is missing, default values will be used.
-# ============================================
+# KU Royale Network Configuration
+# This file configures network settings for multiplayer mode.
+# Modify these values to adjust network behavior.
 
 # Default port number for hosting games
 # Valid range: 1024-65535 (ports below 1024 require admin privileges)
-# Default: 8080
 DEFAULT_PORT=8080
 
 # Connection timeout in milliseconds
-# How long to wait when attempting to connect to a host
+# How long to wait for a connection before giving up
 # Valid range: 1000-30000
-# Default: 5000 (5 seconds)
-CONNECTION_TIMEOUT=15000
+CONNECTION_TIMEOUT=5000
 
-# Number of reconnection attempts if connection is lost during a match
+# Number of reconnection attempts when connection is lost
 # Valid range: 1-10
-# Default: 3
 RECONNECT_ATTEMPTS=3
 
-# Synchronization interval in milliseconds
-# How often game state is synchronized between players
+# Game state synchronization interval in milliseconds
 # Lower values = smoother gameplay but more network traffic
 # Valid range: 50-500
-# Default: 100 (10 updates per second)
 SYNC_INTERVAL=100
 
 # Maximum message size in bytes
-# Maximum size of a single network message
-# Valid range: 512-4096
-# Default: 1024
+# Valid range: 512-8192
 MAX_MESSAGE_SIZE=1024
 
-# Reconnection wait time in milliseconds
-# Time to wait between reconnection attempts
-# Valid range: 500-5000
-# Default: 1000 (1 second)
-RECONNECT_WAIT=1000
-
 # Heartbeat interval in milliseconds
-# Interval for sending keep-alive messages
+# How often to send keep-alive pings
 # Valid range: 500-5000
-# Default: 2000 (2 seconds)
-HEARTBEAT_INTERVAL=2000
-
+HEARTBEAT_INTERVAL=1000

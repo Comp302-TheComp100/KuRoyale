@@ -15,7 +15,6 @@ import com.kuroyale.util.SoundEffectUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
@@ -27,7 +26,6 @@ import javafx.scene.input.ClipboardContent;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Controller for the Network Lobby screen.
@@ -65,6 +63,8 @@ public class NetworkLobbyController {
     private Label hostIpLabel;
     @FXML
     private Label publicIpLabel;
+    @FXML
+    private Label portForwardingLabel;
 
     // Join Setup
     @FXML
@@ -73,6 +73,12 @@ public class NetworkLobbyController {
     private TextField hostIpField;
     @FXML
     private TextField joinPortField;
+    
+    // Join Relay
+    @FXML
+    private VBox joinRelayPane;
+    @FXML
+    private TextField roomCodeField;
 
     // Waiting
     @FXML
@@ -160,21 +166,31 @@ public class NetworkLobbyController {
 
         networkService.setOnError(error -> Platform.runLater(() -> showError(error)));
 
-        // Connection ready callback - shows room code when ready
-        networkService.setOnConnectionReady((success, roomCode) -> Platform.runLater(() -> {
-            if (!waitingPane.isVisible())
-                return;
-
-            if (success && roomCode != null) {
-                // Success! Show the room code
-                waitingLabel.setText("✓ Ready! Share this code with your friend:");
-                connectionInfoLabel.setText(roomCode);
+        // Connection ready callback - shows IP:port when hosting is ready
+        networkService.setOnConnectionReady((success, connectionInfo) -> Platform.runLater(() -> {
+            if (success && connectionInfo != null) {
+                // Make sure we're showing the waiting pane
+                if (!waitingPane.isVisible()) {
+                    showPane(waitingPane);
+                }
+                // Success! Show the IP:port for clients to connect
+                waitingLabel.setText("✓ Server started! Share this with your friend:");
+                connectionInfoLabel.setText(connectionInfo);
                 connectionInfoLabel.setStyle(
-                        "-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #00ff00; -fx-font-family: monospace;");
-                copyToClipboard(roomCode);
+                        "-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #00ff00; -fx-font-family: monospace;");
+                copyToClipboard(connectionInfo);
+                
+                // Also show public IP if available
+                networkService.fetchPublicIPAsync(publicIP -> Platform.runLater(() -> {
+                    if (publicIP != null && publicIpLabel != null) {
+                        String port = connectionInfo.contains(":") ? connectionInfo.split(":")[1] : "8080";
+                        publicIpLabel.setText("For internet: " + publicIP + ":" + port);
+                        publicIpLabel.setVisible(true);
+                    }
+                }));
             } else {
-                waitingLabel.setText("Connection failed. Please try again.");
-                connectionInfoLabel.setText("");
+                // Server failed - go back to mode selection
+                showModeSelection();
             }
         }));
 
@@ -236,6 +252,7 @@ public class NetworkLobbyController {
     private void handleReadyStatus(NetworkMessage message) {
         boolean ready = Boolean.parseBoolean(message.getData());
         opponentReady = ready;
+        System.out.println("[NetworkLobby] Received READY_STATUS: opponentReady=" + ready);
 
         // Opponent is always in column 2 (player2)
         updateReadyIndicator(player2ReadyIndicator, player2ReadyLabel, ready);
@@ -259,6 +276,7 @@ public class NetworkLobbyController {
         System.out.println("[NetworkLobby] checkStartConditions: isHost=" + networkService.isHost() 
             + ", isReady=" + isReady + ", opponentReady=" + opponentReady + ", canStart=" + canStart);
         startMatchButton.setDisable(!canStart);
+        System.out.println("[NetworkLobby] Start button disabled=" + startMatchButton.isDisable() + ", visible=" + startMatchButton.isVisible());
     }
 
     private void updateOpponentInfo(String name, List<String> deck) {
@@ -302,7 +320,8 @@ public class NetworkLobbyController {
 
         int port;
         try {
-            port = Integer.parseInt(portField.getText().trim());
+            String portText = portField.getText().trim();
+            port = portText.isEmpty() ? config.getDefaultPort() : Integer.parseInt(portText);
         } catch (NumberFormatException e) {
             showError("Invalid port number");
             return;
@@ -310,8 +329,8 @@ public class NetworkLobbyController {
 
         if (networkService.startHosting(port, playerName)) {
             showPane(waitingPane);
-            waitingLabel.setText("Creating public game server...");
-            connectionInfoLabel.setText("Please wait...");
+            waitingLabel.setText("Waiting for opponent to connect...");
+            connectionInfoLabel.setText("Starting server on port " + port + "...");
             connectionInfoLabel.setStyle("-fx-font-size: 14px;");
         }
     }
@@ -320,23 +339,67 @@ public class NetworkLobbyController {
     private void handleConnect() {
         SoundEffectUtil.playButtonClick();
 
-        String roomCode = hostIpField.getText().trim().toUpperCase();
-        if (roomCode.isEmpty()) {
-            showError("Please enter the room code");
+        // Get host IP address
+        String hostIP = hostIpField.getText().trim();
+        if (hostIP.isEmpty()) {
+            showError("Please enter the host's IP address");
             return;
         }
 
-        if (roomCode.length() != 6) {
-            showError("Room code should be 6 characters");
+        // Get port number
+        int port;
+        try {
+            String portText = joinPortField != null ? joinPortField.getText().trim() : "";
+            port = portText.isEmpty() ? config.getDefaultPort() : Integer.parseInt(portText);
+        } catch (NumberFormatException e) {
+            showError("Invalid port number");
             return;
         }
 
         showPane(waitingPane);
-        waitingLabel.setText("Joining room...");
-        connectionInfoLabel.setText("Room: " + roomCode);
-        connectionInfoLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        waitingLabel.setText("Connecting to host...");
+        connectionInfoLabel.setText(hostIP + ":" + port);
+        connectionInfoLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        networkService.connectToHost(roomCode, 0, playerName);
+        networkService.connectToHost(hostIP, port, playerName);
+    }
+    
+    // ==================== Relay Mode Handlers (for Internet play) ====================
+    
+    @FXML
+    private void handleHostRelay() {
+        SoundEffectUtil.playButtonClick();
+        
+        showPane(waitingPane);
+        waitingLabel.setText("Creating room...");
+        connectionInfoLabel.setText("Connecting to relay server...");
+        connectionInfoLabel.setStyle("-fx-font-size: 14px;");
+        
+        networkService.createRelayRoom(playerName);
+    }
+    
+    @FXML
+    private void handleJoinRelay() {
+        SoundEffectUtil.playButtonClick();
+        showPane(joinRelayPane);
+    }
+    
+    @FXML
+    private void handleConnectRelay() {
+        SoundEffectUtil.playButtonClick();
+        
+        String roomCode = roomCodeField.getText().trim().toUpperCase();
+        if (roomCode.isEmpty()) {
+            showError("Please enter a room code");
+            return;
+        }
+        
+        showPane(waitingPane);
+        waitingLabel.setText("Joining room...");
+        connectionInfoLabel.setText(roomCode);
+        connectionInfoLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-font-family: monospace;");
+        
+        networkService.joinRelayRoom(roomCode, playerName);
     }
 
     @FXML
@@ -356,6 +419,7 @@ public class NetworkLobbyController {
     private void handleToggleReady() {
         SoundEffectUtil.playButtonClick();
         isReady = !isReady;
+        System.out.println("[NetworkLobby] Toggle ready: isReady=" + isReady + ", sending to opponent...");
 
         // You are always player1 (column 1)
         updateReadyIndicator(player1ReadyIndicator, player1ReadyLabel, isReady);
@@ -364,6 +428,7 @@ public class NetworkLobbyController {
 
         // Send to opponent
         networkService.sendReadyStatus(isReady);
+        System.out.println("[NetworkLobby] Sent ready status: " + isReady);
 
         checkStartConditions();
     }
@@ -479,6 +544,10 @@ public class NetworkLobbyController {
         hostSetupPane.setManaged(false);
         joinSetupPane.setVisible(false);
         joinSetupPane.setManaged(false);
+        if (joinRelayPane != null) {
+            joinRelayPane.setVisible(false);
+            joinRelayPane.setManaged(false);
+        }
         waitingPane.setVisible(false);
         waitingPane.setManaged(false);
         lobbyPane.setVisible(false);

@@ -5,6 +5,10 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 public class Troop implements ICombatant {
+    // Global ID counter for network synchronization
+    private static int nextId = 1;
+    
+    private int id;  // Persistent ID for network sync
     private final Card baseCard;
     private Vector2 worldPosition, targetWorldPosition;
     private final boolean isPlayer, isAirUnit, buildingOnly;
@@ -19,6 +23,7 @@ public class Troop implements ICombatant {
     private ICombatant currentTarget;
 
     public Troop(Card card, GridPosition spawn, boolean isPlayer) {
+        this.id = nextId++;  // Auto-assign unique ID
         this.baseCard = card;
         this.worldPosition = Vector2.fromGridPosition(spawn);
         this.targetWorldPosition = null;
@@ -100,6 +105,27 @@ public class Troop implements ICombatant {
 
     public Vector2 getWorldPosition() {
         return worldPosition;
+    }
+    
+    /**
+     * Gets the unique ID for network synchronization.
+     */
+    public int getId() {
+        return id;
+    }
+    
+    /**
+     * Sets the ID (used when syncing from network).
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+    
+    /**
+     * Resets the global ID counter (call at start of new match).
+     */
+    public static void resetIdCounter() {
+        nextId = 1;
     }
 
     public void setWorldPosition(Vector2 pos) {

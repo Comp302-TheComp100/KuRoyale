@@ -89,6 +89,13 @@ public class NetworkBattleController implements GameEventListener {
         this.networkService = networkService;
         try {
             System.out.println("[NetworkBattle] Initializing as " + (networkService.isHost() ? "HOST" : "CLIENT"));
+            
+            // Reset ID counters at the start of a new match (HOST only generates IDs)
+            if (networkService.isHost()) {
+                Troop.resetIdCounter();
+                Building.resetIdCounter();
+            }
+            
             setupNetworkCallbacks();
             initializeGame();
             
@@ -338,12 +345,14 @@ public class NetworkBattleController implements GameEventListener {
         double duration = data[4];
         
         // Mirror coordinates for CLIENT perspective (180° rotation)
-        double mirroredX = (Arena.WIDTH - 1) - centerX;
-        double mirroredY = (Arena.HEIGHT - 1) - centerY;
+        final double maxX = Arena.WIDTH - 1;
+        final double maxY = Arena.HEIGHT - 1;
+        double mirroredX = maxX - centerX;
+        double mirroredY = maxY - centerY;
         boolean mirroredPlayerSource = !isPlayerSource; // Flip ownership
         
         // Trigger the effect via GameEventBus so BattleArenaView displays it
-        GridPosition mirroredCenter = new GridPosition((int) mirroredX, (int) mirroredY);
+        GridPosition mirroredCenter = new GridPosition((int) Math.round(mirroredX), (int) Math.round(mirroredY));
         GameEventBus.getInstance().publishAreaEffect(mirroredPlayerSource, mirroredCenter, radius, duration);
     }
     
@@ -358,11 +367,13 @@ public class NetworkBattleController implements GameEventListener {
         double y = data[1];
         
         // Mirror for CLIENT
-        double mirroredX = (Arena.WIDTH - 1) - x;
-        double mirroredY = (Arena.HEIGHT - 1) - y;
+        final double maxX = Arena.WIDTH - 1;
+        final double maxY = Arena.HEIGHT - 1;
+        double mirroredX = maxX - x;
+        double mirroredY = maxY - y;
         
         // Simple hit effect - publish as small area effect
-        GridPosition mirroredPos = new GridPosition((int) mirroredX, (int) mirroredY);
+        GridPosition mirroredPos = new GridPosition((int) Math.round(mirroredX), (int) Math.round(mirroredY));
         GameEventBus.getInstance().publishAreaEffect(data[2] < 0.5, mirroredPos, 0.5, 0.2);
     }
 
@@ -420,32 +431,44 @@ public class NetworkBattleController implements GameEventListener {
 
     /**
      * Sync troops from HOST with 180° coordinate mirroring.
+     * For a grid of size W x H (0-indexed from 0 to W-1, 0 to H-1):
+     * - Mirrored X = (W - 1) - X
+     * - Mirrored Y = (H - 1) - Y
      */
     private void syncTroopsFromHost(List<NetworkGameStateSnapshot.TroopSnapshot> hostTroops) {
         List<Troop> currentTroops = gameState.getTroops();
         Set<Integer> hostTroopIds = new HashSet<>();
         
+        // Arena dimensions for mirroring (0-indexed, so max index is DIM - 1)
+        final double maxX = Arena.WIDTH - 1;  // 17 for width of 18
+        final double maxY = Arena.HEIGHT - 1; // 31 for height of 32
+        
         for (NetworkGameStateSnapshot.TroopSnapshot ts : hostTroops) {
             hostTroopIds.add(ts.getId());
             
-            // Mirror BOTH axes (180° rotation)
-            double mirroredX = (Arena.WIDTH - 1) - ts.getX();
-            double mirroredY = (Arena.HEIGHT - 1) - ts.getY();
+            // Mirror BOTH axes (180° rotation around center)
+            double mirroredX = maxX - ts.getX();
+            double mirroredY = maxY - ts.getY();
+            double mirroredTargetX = maxX - ts.getTargetX();
+            double mirroredTargetY = maxY - ts.getTargetY();
             boolean isMyTroop = !ts.isPlayerSide(); // Mirror ownership
             
             Troop existingTroop = troopMap.get(ts.getId());
             
             if (existingTroop != null && currentTroops.contains(existingTroop)) {
-                // Update existing troop
+                // Update existing troop position and state
                 existingTroop.setWorldPosition(mirroredX, mirroredY);
+                existingTroop.setTargetWorldPosition(mirroredTargetX, mirroredTargetY);
                 existingTroop.setCurrentHealth(ts.getHealth());
             } else {
-                // Create new troop
+                // Create new troop with the HOST's ID
                 Card card = model.getCardByName(ts.getCardName());
                 if (card != null) {
                     GridPosition pos = new GridPosition((int) mirroredX, (int) mirroredY);
                     Troop newTroop = new Troop(card, pos, isMyTroop);
+                    newTroop.setId(ts.getId());  // Use HOST's ID for consistent tracking
                     newTroop.setWorldPosition(mirroredX, mirroredY);
+                    newTroop.setTargetWorldPosition(mirroredTargetX, mirroredTargetY);
                     newTroop.setCurrentHealth(ts.getHealth());
                     currentTroops.add(newTroop);
                     troopMap.put(ts.getId(), newTroop);
@@ -471,11 +494,14 @@ public class NetworkBattleController implements GameEventListener {
         List<Building> currentBuildings = gameState.getBuildings();
         Set<Integer> hostBuildingIds = new HashSet<>();
         
+        final double maxX = Arena.WIDTH - 1;
+        final double maxY = Arena.HEIGHT - 1;
+        
         for (NetworkGameStateSnapshot.BuildingSnapshot bs : hostBuildings) {
             hostBuildingIds.add(bs.getId());
             
-            double mirroredX = (Arena.WIDTH - 1) - bs.getX();
-            double mirroredY = (Arena.HEIGHT - 1) - bs.getY();
+            double mirroredX = maxX - bs.getX();
+            double mirroredY = maxY - bs.getY();
             boolean isMyBuilding = !bs.isPlayerSide();
             
             Building existingBuilding = buildingMap.get(bs.getId());
@@ -490,6 +516,7 @@ public class NetworkBattleController implements GameEventListener {
                     int bh = Math.max(1, card.getFootprintHeightTiles());
                     Building newBuilding = new Building(pos, bw, bh, isMyBuilding,
                             card.getHp(), card.getImagePath(), card.getLifetime());
+                    newBuilding.setId(bs.getId());  // Use HOST's ID for consistent tracking
                     newBuilding.configureCombatFromCard(card);
                     newBuilding.setCurrentHealth(bs.getHealth());
                     currentBuildings.add(newBuilding);
@@ -514,14 +541,17 @@ public class NetworkBattleController implements GameEventListener {
     private void syncProjectilesFromHost(List<NetworkGameStateSnapshot.ProjectileSnapshot> hostProjectiles) {
         List<Projectile> currentProjectiles = gameState.getProjectiles();
         
+        final double maxX = Arena.WIDTH - 1;
+        final double maxY = Arena.HEIGHT - 1;
+        
         // Clear and rebuild projectiles each frame (they're short-lived)
         currentProjectiles.clear();
         
         for (NetworkGameStateSnapshot.ProjectileSnapshot ps : hostProjectiles) {
-            double mirroredX = (Arena.WIDTH - 1) - ps.getX();
-            double mirroredY = (Arena.HEIGHT - 1) - ps.getY();
-            double mirroredTargetX = (Arena.WIDTH - 1) - ps.getTargetX();
-            double mirroredTargetY = (Arena.HEIGHT - 1) - ps.getTargetY();
+            double mirroredX = maxX - ps.getX();
+            double mirroredY = maxY - ps.getY();
+            double mirroredTargetX = maxX - ps.getTargetX();
+            double mirroredTargetY = maxY - ps.getTargetY();
             boolean isMyProjectile = !ps.isPlayerSide();
             
             // Create a simple projectile for rendering
@@ -546,8 +576,8 @@ public class NetworkBattleController implements GameEventListener {
         int y = (int) Double.parseDouble(data[2]);
         
         // Mirror BOTH axes (CLIENT sends in their perspective)
-        int mirroredX = (Arena.WIDTH - 1) - x;
-        int mirroredY = (Arena.HEIGHT - 1) - y;
+        int mirroredX = (Arena.WIDTH - 1) - x;  // 17 - x for width 18
+        int mirroredY = (Arena.HEIGHT - 1) - y; // 31 - y for height 32
         
         Card card = model.getCardByName(cardName);
         if (card != null) {
