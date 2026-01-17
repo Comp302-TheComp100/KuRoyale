@@ -41,13 +41,13 @@ public class TroopRenderer {
         }
         String cardKey = PngSequenceSprite.toCardKey(troop.getBaseCard().getName());
         if ("skeletons".equals(cardKey) || "barbarians".equals(cardKey)) {
-            return 2.75;
-        }else if("archers".equals(cardKey)){
-            return 1.5;
-        }else if("bomber".equals(cardKey) || "hog_rider".equals(cardKey) || "giant".equals(cardKey)){
-            return 2.0;
+            return 2.75*1.25;
+        }else if("archers".equals(cardKey) ){
+            return 1.5*1.25;
+        }else if("bomber".equals(cardKey) || "mini_pekka".equals(cardKey) || "hog_rider".equals(cardKey) || "giant".equals(cardKey)){
+            return 2.0*1.25;
         }else if("goblins".equals(cardKey) || "knight".equals(cardKey)){
-            return 2.5;
+            return 2.5*1.25;
         }
         return 1.0;
     }
