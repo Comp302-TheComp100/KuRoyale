@@ -44,6 +44,8 @@ public class TroopRenderer {
             return 2.8;
         }else if("archers".equals(cardKey)){
             return 1.5;
+        }else if("barbarians".equals(cardKey)){
+            return 2.5;
         }
         return 1.0;
     }
