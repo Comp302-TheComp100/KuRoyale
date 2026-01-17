@@ -29,17 +29,22 @@ import javafx.scene.shape.Circle;
 import javafx.util.Duration;
 
 /**
- * NETWORK BATTLE CONTROLLER
+ * NETWORK BATTLE CONTROLLER - HOST-AUTHORITATIVE MODEL
  * 
- * Works EXACTLY like the offline BattleController, with network sync added:
- * - Same AnimationTimer game loop
- * - Same gameState.update(deltaTime) call
- * - Same UI updates
+ * For cross-network play, we need ONE authoritative game loop:
  * 
- * Network additions:
- * - HOST broadcasts state to CLIENT periodically
- * - CLIENT applies state from HOST (tower health sync)
- * - Card placements are sent over network
+ * HOST (Player 1):
+ * - Runs gameState.update() - the ONLY simulation
+ * - Broadcasts FULL state to CLIENT every frame
+ * - Receives card placements from CLIENT and applies them
+ * 
+ * CLIENT (Player 2):
+ * - Does NOT run gameState.update() - no local simulation
+ * - Receives full state from HOST and applies it
+ * - Sends card placements to HOST
+ * - Only renders what HOST tells them
+ * 
+ * This ensures both players ALWAYS see the same game state.
  */
 public class NetworkBattleController {
 
@@ -74,22 +79,18 @@ public class NetworkBattleController {
     private final SceneLoader sceneLoader = new SceneLoader();
     private final BattleModel model = new BattleModel();
 
-    // Core components - SAME as offline
+    // Core components
     private NetworkService networkService;
     private GameState gameState;
     private BattleArenaView arenaView;
     private ElixirBar elixirBar;
     private HandView handView;
-    private AnimationTimer gameLoop;  // SAME game loop as offline
+    private AnimationTimer gameLoop;
 
     // State tracking
     private boolean isPaused = false;
     private boolean gameEnded = false;
     private boolean doubleElixirShown = false;
-
-    // Network sync
-    private Timeline syncTimer;
-    private static final int SYNC_INTERVAL_MS = 100; // Sync every 100ms
 
     @FXML
     private void initialize() {
@@ -107,7 +108,6 @@ public class NetworkBattleController {
     }
 
     private void setupNetworkCallbacks() {
-        // Message handler - runs on JavaFX thread
         networkService.setOnMessageReceived(message -> 
             Platform.runLater(() -> handleNetworkMessage(message)));
 
@@ -155,17 +155,16 @@ public class NetworkBattleController {
             System.out.println("[NetworkBattle] HOST: Using own arena layout");
         }
 
-        // Create Arena and GameState - SAME as offline
+        // Create Arena and GameState
         Arena arena = model.createArena(layoutToUse);
         Deck opponentDeck = model.createBotDeck(currentUser);
         gameState = new GameState(playerDeck, opponentDeck, arena);
         gameState.setCardCatalog(name -> model.getCardByName(name));
         gameState.setNetworkMode(true);  // Disables bot AI
 
-        // Initialize UI - SAME as offline
+        // Initialize UI
         arenaView = new BattleArenaView(gameState);
         arenaContainer.getChildren().add(arenaView);
-
         arenaView.setOnGridClicked((tileX, tileY) -> handleArenaClick(tileX, tileY));
 
         elixirBar = new ElixirBar(gameState.getPlayerElixir());
@@ -188,10 +187,11 @@ public class NetworkBattleController {
     }
 
     /**
-     * Starts the game loop - EXACTLY like offline BattleController.
+     * Starts the game loop.
+     * HOST: Runs simulation + broadcasts state
+     * CLIENT: Only renders (no simulation)
      */
     private void startGame() {
-        // SAME game loop as offline
         gameLoop = new AnimationTimer() {
             private long lastTime = 0;
 
@@ -206,33 +206,32 @@ public class NetworkBattleController {
                 lastTime = now;
 
                 if (!isPaused && !gameEnded) {
-                    update(deltaTime);
+                    if (networkService.isHost()) {
+                        // HOST: Run simulation and broadcast
+                        updateHost(deltaTime);
+                    } else {
+                        // CLIENT: Only render (state comes from network)
+                        updateClient(deltaTime);
+                    }
                 }
             }
         };
         gameLoop.start();
 
-        // Network sync timer (HOST only broadcasts state)
-        if (networkService.isHost()) {
-            startSyncTimer();
-        }
-
-        System.out.println("[NetworkBattle] Game started as " + (networkService.isHost() ? "HOST" : "CLIENT"));
+        System.out.println("[NetworkBattle] Game started as " + (networkService.isHost() ? "HOST (authoritative)" : "CLIENT (receiver)"));
     }
 
     /**
-     * Update method - EXACTLY like offline BattleController.
+     * HOST: Runs the authoritative game simulation and broadcasts state.
      */
-    private void update(double deltaTime) {
-        // Update game state - SAME as offline
+    private void updateHost(double deltaTime) {
+        // Run the simulation - HOST is the source of truth
         gameState.update(deltaTime);
         
-        // Update UI - SAME as offline
+        // Update UI
         elixirBar.update();
         handView.update();
         arenaView.update(deltaTime);
-        
-        // Update sidebar
         updateTimeDisplay();
         updateScoreDisplay();
 
@@ -245,10 +244,52 @@ public class NetworkBattleController {
             }
         }
 
+        // Broadcast state to CLIENT
+        if (networkService.isConnected()) {
+            broadcastFullState();
+        }
+
         // Check game over
         if (gameState.isGameOver() && !gameEnded) {
             endGame();
         }
+    }
+
+    /**
+     * CLIENT: Only renders, does not simulate.
+     * State is received from HOST via handleNetworkMessage.
+     */
+    private void updateClient(double deltaTime) {
+        // NO gameState.update() here - CLIENT does not simulate!
+        
+        // Only update UI rendering
+        elixirBar.update();
+        handView.update();
+        arenaView.update(deltaTime);  // Visual updates only
+        updateTimeDisplay();
+        updateScoreDisplay();
+
+        // Check for Double Elixir (based on synced state)
+        if (gameState.isDoubleElixir() && !doubleElixirShown) {
+            doubleElixirShown = true;
+            elixirBar.setDoubleElixirActive(true);
+            if (timeLabel != null) {
+                timeLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 32px; -fx-font-weight: bold; -fx-font-family: 'Courier New';");
+            }
+        }
+
+        // Check game over (based on synced state)
+        if (gameState.isGameOver() && !gameEnded) {
+            endGame();
+        }
+    }
+
+    /**
+     * HOST: Broadcasts the full game state to CLIENT.
+     */
+    private void broadcastFullState() {
+        NetworkGameStateSnapshot snapshot = new NetworkGameStateSnapshot(gameState, 0);
+        networkService.send(NetworkMessage.gameStateSync(snapshot));
     }
 
     private void updateTimeDisplay() {
@@ -267,45 +308,22 @@ public class NetworkBattleController {
         }
     }
 
-    // ==================== Network Sync ====================
-
-    /**
-     * HOST: Broadcasts state to client periodically.
-     */
-    private void startSyncTimer() {
-        syncTimer = new Timeline(new KeyFrame(Duration.millis(SYNC_INTERVAL_MS), e -> {
-            if (!gameEnded && networkService.isConnected()) {
-                broadcastState();
-            }
-        }));
-        syncTimer.setCycleCount(Timeline.INDEFINITE);
-        syncTimer.play();
-    }
-
-    private void broadcastState() {
-        // Create snapshot of current state
-        NetworkGameStateSnapshot snapshot = new NetworkGameStateSnapshot(gameState, 0);
-        networkService.send(NetworkMessage.gameStateSync(snapshot));
-    }
-
     // ==================== Network Message Handling ====================
 
     private void handleNetworkMessage(NetworkMessage message) {
         switch (message.getType()) {
             case GAME_STATE_SYNC:
-                // CLIENT: Apply state from HOST
+                // CLIENT: Apply full state from HOST
                 if (!networkService.isHost()) {
-                    applyHostState(message);
+                    applyFullStateFromHost(message);
                 }
                 break;
                 
             case CARD_PLACED:
-                // Apply opponent's card placement
-                handleOpponentCardPlacement(message);
-                break;
-                
-            case HEARTBEAT:
-                // Ignore heartbeats
+                // HOST: Apply opponent's card placement
+                if (networkService.isHost()) {
+                    handleOpponentCardPlacement(message);
+                }
                 break;
                 
             case VICTORY:
@@ -330,35 +348,118 @@ public class NetworkBattleController {
     }
 
     /**
-     * CLIENT: Applies tower health from HOST's state.
+     * CLIENT: Applies the full game state received from HOST.
+     * This is the key to keeping both players in sync.
      */
-    private void applyHostState(NetworkMessage message) {
+    private void applyFullStateFromHost(NetworkMessage message) {
         NetworkGameStateSnapshot snapshot = message.parseGameStateSync();
         if (snapshot == null) return;
         
-        // Only sync tower health - let local simulation handle everything else
-        // This ensures towers are always in sync
+        // Apply game time
+        gameState.setGameTime(snapshot.getGameTime());
+        
+        // Apply scores (swap perspective: HOST's player is CLIENT's enemy)
+        gameState.setPlayerScore(snapshot.getPlayer2Score());
+        gameState.setBotScore(snapshot.getPlayer1Score());
+        
+        // Apply double elixir flag
+        if (snapshot.isDoubleElixir()) {
+            gameState.setDoubleElixir(true);
+        }
+        
+        // Apply game over state
+        if (snapshot.isGameOver()) {
+            // Swap winner perspective
+            int winner = snapshot.getWinner();
+            if (winner == 1) winner = 2;
+            else if (winner == 2) winner = 1;
+            
+            boolean playerWon = (winner == 1);
+            boolean isDraw = (winner == 3);
+            gameState.setGameOver(true, playerWon, isDraw);
+        }
+        
+        // Apply elixir (swap perspective)
+        gameState.getPlayerElixir().setCurrentElixir(snapshot.getPlayer2Elixir());
+        gameState.getBotElixir().setCurrentElixir(snapshot.getPlayer1Elixir());
+        
+        // Apply tower health (swap perspective)
         for (NetworkGameStateSnapshot.TowerSnapshot ts : snapshot.getTowers()) {
             for (Tower tower : gameState.getArena().getAllTowers()) {
-                // Match by type and side (after perspective consideration)
-                // HOST's player towers are CLIENT's enemy towers
-                boolean isMyTower = ts.isPlayerSide();  // In HOST's perspective
-                boolean matchesMySide = !isMyTower;     // Flip for CLIENT's perspective
+                // HOST's player towers = CLIENT's enemy towers
+                boolean isMyTower = !ts.isPlayerSide();  // Swap perspective
                 
                 if (tower.getType().name().equals(ts.getType()) && 
-                    tower.isPlayerSide() == matchesMySide) {
+                    tower.isPlayerSide() == isMyTower) {
                     tower.setCurrentHealth(ts.getHealth());
                 }
             }
         }
         
-        // Sync scores (flip for perspective)
-        gameState.setPlayerScore(snapshot.getPlayer2Score());  // HOST's bot is CLIENT's player opponent
-        gameState.setBotScore(snapshot.getPlayer1Score());     // HOST's player is CLIENT's enemy
+        // Apply troop state (health and positions)
+        applyTroopsFromHost(snapshot);
+        
+        // Apply building state
+        applyBuildingsFromHost(snapshot);
     }
 
     /**
-     * Handles opponent's card placement.
+     * Syncs troops from HOST state.
+     */
+    private void applyTroopsFromHost(NetworkGameStateSnapshot snapshot) {
+        // Clear existing troops and rebuild from snapshot
+        // This is simpler and ensures perfect sync
+        gameState.getTroops().clear();
+        
+        for (NetworkGameStateSnapshot.TroopSnapshot ts : snapshot.getTroops()) {
+            Card card = model.getCardByName(ts.getCardName());
+            if (card != null) {
+                // Swap perspective: HOST's player = CLIENT's enemy
+                boolean isMyTroop = !ts.isPlayerSide();
+                
+                // Mirror Y coordinate for perspective
+                double mirroredY = (Arena.HEIGHT - 1) - ts.getY();
+                
+                GridPosition pos = new GridPosition((int) ts.getX(), (int) mirroredY);
+                Troop troop = new Troop(card, pos, isMyTroop);
+                troop.setCurrentHealth(ts.getHealth());
+                troop.setWorldPosition(ts.getX(), mirroredY);
+                gameState.getTroops().add(troop);
+            }
+        }
+    }
+
+    /**
+     * Syncs buildings from HOST state.
+     */
+    private void applyBuildingsFromHost(NetworkGameStateSnapshot snapshot) {
+        // Clear existing buildings and rebuild from snapshot
+        gameState.getBuildings().clear();
+        
+        for (NetworkGameStateSnapshot.BuildingSnapshot bs : snapshot.getBuildings()) {
+            Card card = model.getCardByName(bs.getCardName());
+            if (card != null) {
+                // Swap perspective
+                boolean isMyBuilding = !bs.isPlayerSide();
+                
+                // Mirror Y coordinate
+                double mirroredY = (Arena.HEIGHT - 1) - bs.getY();
+                
+                GridPosition pos = new GridPosition((int) bs.getX(), (int) mirroredY);
+                int bw = Math.max(1, card.getFootprintWidthTiles());
+                int bh = Math.max(1, card.getFootprintHeightTiles());
+                
+                Building building = new Building(pos, bw, bh, isMyBuilding,
+                        card.getHp(), card.getImagePath(), card.getLifetime());
+                building.configureCombatFromCard(card);
+                building.setCurrentHealth(bs.getHealth());
+                gameState.getBuildings().add(building);
+            }
+        }
+    }
+
+    /**
+     * HOST: Handles card placement from CLIENT.
      */
     private void handleOpponentCardPlacement(NetworkMessage message) {
         String[] data = message.parseCardPlacement();
@@ -368,21 +469,25 @@ public class NetworkBattleController {
         int x = (int) Double.parseDouble(data[1]);
         int y = (int) Double.parseDouble(data[2]);
         
-        // Mirror coordinates for opponent (their bottom is our top)
+        // Mirror Y coordinate (CLIENT's view is flipped)
         int mirroredY = (Arena.HEIGHT - 1) - y;
         
         Card card = model.getCardByName(cardName);
         if (card != null) {
-            // Place as opponent (isPlayer = false)
-            gameState.placeCard(false, card, x, mirroredY);
-            System.out.println("[NetworkBattle] Opponent placed " + cardName + " at (" + x + ", " + mirroredY + ")");
+            // Spend opponent's elixir
+            if (gameState.getBotElixir().getCurrentElixir() >= card.getCost()) {
+                gameState.getBotElixir().spend(card.getCost());
+                // Place as opponent (isPlayer = false)
+                gameState.placeCard(false, card, x, mirroredY);
+                System.out.println("[NetworkBattle] HOST: Opponent placed " + cardName + " at (" + x + ", " + mirroredY + ")");
+            }
         }
     }
 
     // ==================== Input Handling ====================
 
     /**
-     * Handles arena click for card deployment - SAME as offline, plus network send.
+     * Handles arena click for card deployment.
      */
     private void handleArenaClick(int tileX, int tileY) {
         int selectedIndex = handView.getSelectedIndex();
@@ -395,22 +500,31 @@ public class NetworkBattleController {
         Card card = gameState.getPlayerHand().getCard(selectedIndex);
         if (card == null) return;
         
-        // Check elixir - SAME as offline
+        // Check elixir
         if (gameState.getPlayerElixir().getCurrentElixir() < card.getCost()) {
             return;
         }
 
-        // Place card locally - SAME as offline
-        boolean success = gameState.placeCard(true, selectedIndex, tileX, tileY);
-        
-        if (success) {
-            // Send to opponent over network
+        if (networkService.isHost()) {
+            // HOST: Place card locally (simulation will handle it)
+            boolean success = gameState.placeCard(true, selectedIndex, tileX, tileY);
+            if (success) {
+                System.out.println("[NetworkBattle] HOST: Placed " + card.getName() + " at (" + tileX + ", " + tileY + ")");
+            }
+        } else {
+            // CLIENT: Send to HOST, also place locally for immediate feedback
             networkService.send(NetworkMessage.cardPlaced(
                 networkService.getPlayerId(), 
                 card.getName(), 
                 tileX, 
                 tileY
             ));
+            
+            // Optimistic local update
+            gameState.getPlayerElixir().spend(card.getCost());
+            gameState.getPlayerHand().playCard(selectedIndex);
+            
+            System.out.println("[NetworkBattle] CLIENT: Sent card placement " + card.getName());
         }
 
         handView.clearSelection();
@@ -572,7 +686,7 @@ public class NetworkBattleController {
 
     private void showVictory(String details) {
         gameEnded = true;
-        stopLoops();
+        if (gameLoop != null) gameLoop.stop();
 
         if (resultLabel != null) {
             resultLabel.setText("VICTORY!");
@@ -588,7 +702,7 @@ public class NetworkBattleController {
 
     private void showDefeat(String details) {
         gameEnded = true;
-        stopLoops();
+        if (gameLoop != null) gameLoop.stop();
 
         if (resultLabel != null) {
             resultLabel.setText("DEFEAT");
@@ -600,7 +714,7 @@ public class NetworkBattleController {
 
     private void showDraw() {
         gameEnded = true;
-        stopLoops();
+        if (gameLoop != null) gameLoop.stop();
 
         if (resultLabel != null) {
             resultLabel.setText("DRAW");
@@ -610,13 +724,8 @@ public class NetworkBattleController {
         if (resultOverlay != null) resultOverlay.setVisible(true);
     }
 
-    private void stopLoops() {
-        if (gameLoop != null) gameLoop.stop();
-        if (syncTimer != null) syncTimer.stop();
-    }
-
     private void cleanup() {
-        stopLoops();
+        if (gameLoop != null) gameLoop.stop();
         if (networkService != null) {
             networkService.disconnect();
         }
