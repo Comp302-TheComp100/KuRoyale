@@ -498,7 +498,8 @@ public class NetworkBattleController implements GameEventListener {
     }
 
     @Override
-    public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration) {
+    public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration,
+            String effectType) {
         // Visual effects handled by arena view
     }
 

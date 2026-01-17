@@ -364,6 +364,10 @@ public class Arena {
                 .anyMatch(t -> t.getType() == Tower.TowerType.KING && !t.isPlayerSide() && t.isAlive());
     }
 
+    public Tower getKingTower(boolean isPlayer) {
+        return getTowersByType(Tower.TowerType.KING, isPlayer).stream().findFirst().orElse(null);
+    }
+
     // Occupies the footprint of a building on the grid
     public void occupyFootprint(Building b) {
         if (b == null)

@@ -33,12 +33,16 @@ public class ProjectileRenderer {
             Node node = visualMap.get(p);
             if (node == null) {
                 // Create new visual
-                Circle dot = new Circle(3.0);
-                dot.setFill(p.isPlayerSide() ? Color.LIGHTSKYBLUE : Color.ORANGERED);
-                dot.setStroke(Color.color(0, 0, 0, 0.45));
-                dot.setStrokeWidth(1.0);
+                if (isFireball(p)) {
+                    node = com.kuroyale.view.util.FireballFactory.createProceduralFireball(6.0);
+                } else {
+                    Circle dot = new Circle(3.0);
+                    dot.setFill(p.isPlayerSide() ? Color.LIGHTSKYBLUE : Color.ORANGERED);
+                    dot.setStroke(Color.color(0, 0, 0, 0.45));
+                    dot.setStrokeWidth(1.0);
+                    node = dot;
+                }
 
-                node = dot;
                 unitLayer.getChildren().add(node);
                 visualMap.put(p, node);
             }
@@ -66,4 +70,20 @@ public class ProjectileRenderer {
             }
         }
     }
+
+    private boolean isFireball(Projectile p) {
+        if (p.getSourceCard() != null) {
+            String name = p.getSourceCard().getName();
+            return "Fireball".equalsIgnoreCase(name) || "Baby Dragon".equalsIgnoreCase(name)
+                    || "Wizard".equalsIgnoreCase(name) || "Witch".equalsIgnoreCase(name);
+        }
+        if (p.getOwner() instanceof com.kuroyale.model.entities.Troop) {
+            com.kuroyale.model.entities.Troop t = (com.kuroyale.model.entities.Troop) p.getOwner();
+            String name = t.getBaseCard().getName();
+            return "Wizard".equalsIgnoreCase(name) || "Fireball".equalsIgnoreCase(name)
+                    || "Baby Dragon".equalsIgnoreCase(name) || "Witch".equalsIgnoreCase(name);
+        }
+        return false;
+    }
+
 }

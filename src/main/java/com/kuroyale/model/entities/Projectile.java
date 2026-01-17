@@ -15,6 +15,11 @@ public class Projectile {
     private final double speed;
     private boolean active = true;
 
+    // Spell Support
+    private Card sourceCard;
+    private double spellRadius;
+    private double stunDuration;
+
     public Projectile(ICombatant owner, ICombatant target) {
         this.owner = owner;
         this.target = target;
@@ -39,11 +44,34 @@ public class Projectile {
         this.speed = Math.max(1.0, dist / hitSpeed); // Ensure it actually moves (min speed 1.0)
     }
 
+    /**
+     * Constructor for Spells (Position-based targeting)
+     */
+    public Projectile(ICombatant owner, Vector2 startPos, Vector2 targetPos, Card spellCard) {
+        this.owner = owner;
+        this.target = null; // No specific unit target
+        this.sourceCard = spellCard;
+        this.damage = spellCard.getDamage();
+        this.areaEffect = true;
+        this.spellRadius = spellCard.getRange();
+        this.stunDuration = spellCard.getStunDuration();
+        this.targetType = TargetType.BOTH;
+        this.isPlayerSide = owner != null ? owner.isPlayerSide() : false;
+
+        this.position = startPos;
+        this.targetPosSnapshot = targetPos;
+
+        // Spell Speed (Standardized for Fireball/Snowball/etc usually)
+        // Fireball speed is usually around 20-25 tiles/sec visually, but let's make it
+        // consistent
+        this.speed = 15.0;
+    }
+
     public void update(double deltaTime) {
         if (!active)
             return;
 
-        // Update target position if target is still alive
+        // Update target position if target is still alive (Only for unit targeting)
         if (target != null && target.isAlive()) {
             updateTargetSnapshot();
         }
@@ -79,6 +107,10 @@ public class Projectile {
         return position;
     }
 
+    public Vector2 getTargetPosition() {
+        return targetPosSnapshot;
+    }
+
     public ICombatant getOwner() {
         return owner;
     }
@@ -101,5 +133,17 @@ public class Projectile {
 
     public boolean isPlayerSide() {
         return isPlayerSide;
+    }
+
+    public Card getSourceCard() {
+        return sourceCard;
+    }
+
+    public double getSpellRadius() {
+        return spellRadius;
+    }
+
+    public double getStunDuration() {
+        return stunDuration;
     }
 }

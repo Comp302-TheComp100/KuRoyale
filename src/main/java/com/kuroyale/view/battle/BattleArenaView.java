@@ -519,24 +519,34 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
     @Override
     public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center, double radius,
-            double duration) {
+            double duration, String effectType) {
         javafx.application.Platform.runLater(() -> {
+            boolean isFireball = "Fireball".equalsIgnoreCase(effectType) || "Wizard".equalsIgnoreCase(effectType)
+                    || "Baby Dragon".equalsIgnoreCase(effectType);
+
             double cx = center.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
             double cy = center.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
             double rPixels = radius * TILE_SIZE;
-            javafx.scene.shape.Circle aoe = new javafx.scene.shape.Circle(cx, cy, rPixels);
-            aoe.setFill(isPlayerSource ? com.kuroyale.util.GameColors.AOE_PLAYER
-                    : com.kuroyale.util.GameColors.AOE_ENEMY);
-            aoe.setStroke(com.kuroyale.util.GameColors.AOE_STROKE);
-            aoe.setStrokeWidth(2.5);
-            // Add glow effect for better visibility
-            javafx.scene.effect.DropShadow glow = new javafx.scene.effect.DropShadow();
-            glow.setColor(isPlayerSource ? javafx.scene.paint.Color.CYAN : javafx.scene.paint.Color.ORANGERED);
-            glow.setRadius(15);
-            glow.setSpread(0.4);
-            aoe.setEffect(glow);
-            unitLayer.getChildren().add(aoe);
-            activeSpellVisuals.add(new ActiveSpellVisual(aoe, duration));
+
+            if (isFireball) {
+                // Use the procedural explosion effect
+                com.kuroyale.view.util.FireballFactory.playExplosionEffect(unitLayer, cx, cy, rPixels);
+            } else {
+                // Default visual for other spells (Arrows, Zap, etc.)
+                javafx.scene.shape.Circle aoe = new javafx.scene.shape.Circle(cx, cy, rPixels);
+                aoe.setFill(isPlayerSource ? com.kuroyale.util.GameColors.AOE_PLAYER
+                        : com.kuroyale.util.GameColors.AOE_ENEMY);
+                aoe.setStroke(com.kuroyale.util.GameColors.AOE_STROKE);
+                aoe.setStrokeWidth(2.5);
+                // Add glow effect for better visibility
+                javafx.scene.effect.DropShadow glow = new javafx.scene.effect.DropShadow();
+                glow.setColor(isPlayerSource ? javafx.scene.paint.Color.CYAN : javafx.scene.paint.Color.ORANGERED);
+                glow.setRadius(15);
+                glow.setSpread(0.4);
+                aoe.setEffect(glow);
+                unitLayer.getChildren().add(aoe);
+                activeSpellVisuals.add(new ActiveSpellVisual(aoe, duration));
+            }
         });
     }
 

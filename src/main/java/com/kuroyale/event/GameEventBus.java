@@ -52,9 +52,9 @@ public class GameEventBus {
     }
 
     public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
-            double radius, double duration) {
+            double radius, double duration, String effectType) {
 
-        new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration));
+        new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration, effectType));
     }
 
     public void publishComboTriggered(com.kuroyale.model.enums.ComboType combo,

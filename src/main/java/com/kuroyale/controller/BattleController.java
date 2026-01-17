@@ -235,7 +235,8 @@ public class BattleController {
             }
 
             @Override
-            public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration) {
+            public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration,
+                    String effectType) {
             }
 
             @Override

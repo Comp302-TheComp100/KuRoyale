@@ -72,8 +72,17 @@ public class CombatService {
                     com.kuroyale.model.entities.GridPosition impactPos = com.kuroyale.model.entities.GridPosition
                             .tryCreate((int) p.getPosition().getX(), (int) p.getPosition().getY());
                     if (impactPos != null) {
-                        applyAreaDamage(state, impactPos, 1.0, p.getDamage(),
-                                p.getTargetType(), p.isPlayerSide(), false, 0.0);
+                        double radius = 1.0;
+                        double stun = 0.0;
+                        String effType = "Generic";
+                        if (p.getSourceCard() != null) {
+                            radius = p.getSpellRadius();
+                            stun = p.getStunDuration();
+                            effType = p.getSourceCard().getName();
+                        }
+
+                        applyAreaDamage(state, impactPos, radius, p.getDamage(),
+                                p.getTargetType(), p.isPlayerSide(), p.getSourceCard() != null, stun, effType);
                     }
                 } else {
                     if (p.getTarget() != null && p.getTarget().isAlive()) {
@@ -213,7 +222,7 @@ public class CombatService {
                 }
 
                 applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
-                        attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0);
+                        attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0, "Generic");
             } else {
                 applyDamage(attacker, target);
             }
@@ -331,7 +340,8 @@ public class CombatService {
             com.kuroyale.model.enums.TargetType targetType,
             boolean isPlayerSource,
             boolean isSpell,
-            double stunDuration) {
+            double stunDuration,
+            String effectType) {
 
         if (gameState == null || center == null || radiusTiles <= 0)
             return;
@@ -412,7 +422,8 @@ public class CombatService {
         }
 
         // Broadcast visual effect via Event Bus
-        com.kuroyale.event.GameEventBus.getInstance().publishAreaEffect(isPlayerSource, center, radiusTiles, 0.3);
+        com.kuroyale.event.GameEventBus.getInstance().publishAreaEffect(isPlayerSource, center, radiusTiles, 0.3,
+                effectType);
 
         // Broadcast spell damage for quest tracking
         if (isSpell && totalSpellDamage > 0) {
