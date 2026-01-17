@@ -48,6 +48,8 @@ public class TroopRenderer {
             return 2.0*1.25;
         }else if("goblins".equals(cardKey) || "knight".equals(cardKey)){
             return 2.5*1.25;
+        }else if("spear_goblins".equals(cardKey)){
+            return 3.0*1.25;
         }
         return 1.0;
     }
