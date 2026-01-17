@@ -7,6 +7,7 @@ import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.NetworkService;
 import com.kuroyale.service.NetworkService.ConnectionState;
+import com.kuroyale.service.UPnPService;
 import com.kuroyale.util.NetworkConfig;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.ServiceFactory;
@@ -73,12 +74,6 @@ public class NetworkLobbyController {
     private TextField hostIpField;
     @FXML
     private TextField joinPortField;
-    
-    // Join Relay
-    @FXML
-    private VBox joinRelayPane;
-    @FXML
-    private TextField roomCodeField;
 
     // Waiting
     @FXML
@@ -119,10 +114,13 @@ public class NetworkLobbyController {
 
     private final SceneLoader sceneLoader = new SceneLoader();
     private final NetworkConfig config = NetworkConfig.getInstance();
+    private final UPnPService upnpService = UPnPService.getInstance();
     private NetworkService networkService;
 
     private boolean isReady = false;
     private boolean opponentReady = false;
+    private boolean upnpPortOpened = false;
+    private int upnpOpenedPort = -1;
     private String playerName;
     private List<String> playerDeck;
 
@@ -295,6 +293,24 @@ public class NetworkLobbyController {
         // Show local IP immediately
         hostIpLabel.setText("Local IP (same network): " + networkService.getLocalIPAddress());
 
+        // Initialize UPnP in background to discover router
+        if (portForwardingLabel != null) {
+            portForwardingLabel.setText("⏳ Checking UPnP (automatic port forwarding)...");
+            portForwardingLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #ffff00;");
+        }
+        
+        upnpService.initialize().thenAccept(available -> Platform.runLater(() -> {
+            if (portForwardingLabel != null) {
+                if (available) {
+                    portForwardingLabel.setText("✓ UPnP available! Port will be opened automatically.");
+                    portForwardingLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #00ff00;");
+                } else {
+                    portForwardingLabel.setText("⚠ UPnP not available. For internet play: enable port forwarding manually.");
+                    portForwardingLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #ff8800;");
+                }
+            }
+        }));
+
         // Fetch public IP asynchronously
         if (publicIpLabel != null) {
             publicIpLabel.setText("Public IP (internet): Fetching...");
@@ -327,11 +343,54 @@ public class NetworkLobbyController {
             return;
         }
 
+        final int finalPort = port;
+        
+        // Show waiting pane immediately
+        showPane(waitingPane);
+        waitingLabel.setText("Setting up server...");
+        connectionInfoLabel.setText("Attempting to open port " + port + "...");
+        connectionInfoLabel.setStyle("-fx-font-size: 14px;");
+        
+        // Try to open port via UPnP first (for internet play)
+        if (upnpService.isUPnPAvailable()) {
+            waitingLabel.setText("Opening port via UPnP...");
+            upnpService.openPort(port).thenAccept(success -> Platform.runLater(() -> {
+                if (success) {
+                    upnpPortOpened = true;
+                    upnpOpenedPort = finalPort;
+                    System.out.println("[NetworkLobby] UPnP port " + finalPort + " opened successfully!");
+                    waitingLabel.setText("✓ Port opened! Starting server...");
+                } else {
+                    System.out.println("[NetworkLobby] UPnP failed to open port " + finalPort);
+                    waitingLabel.setText("⚠ UPnP failed. Starting server anyway...");
+                }
+                // Start the server regardless
+                startServerOnPort(finalPort);
+            }));
+        } else {
+            // No UPnP, just start the server
+            System.out.println("[NetworkLobby] UPnP not available, starting server directly");
+            startServerOnPort(port);
+        }
+    }
+    
+    private void startServerOnPort(int port) {
         if (networkService.startHosting(port, playerName)) {
-            showPane(waitingPane);
             waitingLabel.setText("Waiting for opponent to connect...");
             connectionInfoLabel.setText("Starting server on port " + port + "...");
             connectionInfoLabel.setStyle("-fx-font-size: 14px;");
+            
+            // Show UPnP status in the connection info
+            if (upnpPortOpened) {
+                String externalIP = upnpService.getExternalIP();
+                if (externalIP != null) {
+                    connectionInfoLabel.setText("Internet: " + externalIP + ":" + port);
+                    connectionInfoLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #00ff00;");
+                }
+            }
+        } else {
+            showError("Failed to start server on port " + port);
+            showModeSelection();
         }
     }
 
@@ -364,44 +423,6 @@ public class NetworkLobbyController {
         networkService.connectToHost(hostIP, port, playerName);
     }
     
-    // ==================== Relay Mode Handlers (for Internet play) ====================
-    
-    @FXML
-    private void handleHostRelay() {
-        SoundEffectUtil.playButtonClick();
-        
-        showPane(waitingPane);
-        waitingLabel.setText("Creating room...");
-        connectionInfoLabel.setText("Connecting to relay server...");
-        connectionInfoLabel.setStyle("-fx-font-size: 14px;");
-        
-        networkService.createRelayRoom(playerName);
-    }
-    
-    @FXML
-    private void handleJoinRelay() {
-        SoundEffectUtil.playButtonClick();
-        showPane(joinRelayPane);
-    }
-    
-    @FXML
-    private void handleConnectRelay() {
-        SoundEffectUtil.playButtonClick();
-        
-        String roomCode = roomCodeField.getText().trim().toUpperCase();
-        if (roomCode.isEmpty()) {
-            showError("Please enter a room code");
-            return;
-        }
-        
-        showPane(waitingPane);
-        waitingLabel.setText("Joining room...");
-        connectionInfoLabel.setText(roomCode);
-        connectionInfoLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-font-family: monospace;");
-        
-        networkService.joinRelayRoom(roomCode, playerName);
-    }
-
     @FXML
     private void handleCancelSetup() {
         SoundEffectUtil.playButtonClick();
@@ -412,6 +433,15 @@ public class NetworkLobbyController {
     private void handleCancelWaiting() {
         SoundEffectUtil.playButtonClick();
         networkService.disconnect();
+        
+        // Close UPnP port if we opened one
+        if (upnpPortOpened && upnpOpenedPort > 0) {
+            System.out.println("[NetworkLobby] Closing UPnP port " + upnpOpenedPort);
+            upnpService.closePort(upnpOpenedPort);
+            upnpPortOpened = false;
+            upnpOpenedPort = -1;
+        }
+        
         showModeSelection();
     }
 
@@ -490,9 +520,16 @@ public class NetworkLobbyController {
     private void handleBack() {
         SoundEffectUtil.playButtonClick();
 
-        // Disconnect in background to avoid UI freeze
+        // Disconnect and close UPnP port in background to avoid UI freeze
         new Thread(() -> {
             networkService.disconnect();
+            // Close UPnP port if we opened one
+            if (upnpPortOpened && upnpOpenedPort > 0) {
+                System.out.println("[NetworkLobby] Closing UPnP port " + upnpOpenedPort);
+                upnpService.closePort(upnpOpenedPort);
+                upnpPortOpened = false;
+                upnpOpenedPort = -1;
+            }
         }).start();
 
         // Navigate immediately - don't wait for disconnect to complete
@@ -544,10 +581,6 @@ public class NetworkLobbyController {
         hostSetupPane.setManaged(false);
         joinSetupPane.setVisible(false);
         joinSetupPane.setManaged(false);
-        if (joinRelayPane != null) {
-            joinRelayPane.setVisible(false);
-            joinRelayPane.setManaged(false);
-        }
         waitingPane.setVisible(false);
         waitingPane.setManaged(false);
         lobbyPane.setVisible(false);
