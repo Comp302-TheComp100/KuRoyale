@@ -4,6 +4,7 @@ import com.kuroyale.model.entities.Arena;
 import com.kuroyale.model.logic.GameState;
 import com.kuroyale.model.entities.GridCell;
 import com.kuroyale.model.enums.TileType;
+import com.kuroyale.model.enums.CardType;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -546,10 +547,58 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             ActiveSpellVisual visual = it.next();
             visual.timeRemaining -= deltaTime;
             if (visual.timeRemaining <= 0) {
+                if (visual.node instanceof PngSequenceSprite) {
+                    ((PngSequenceSprite) visual.node).stop();
+                }
                 unitLayer.getChildren().remove(visual.node);
                 it.remove();
             }
         }
+    }
+
+    @Override
+    public void onSpellCast(boolean isPlayer, com.kuroyale.model.entities.Card spell,
+            com.kuroyale.model.entities.GridPosition center) {
+        if (spell == null || center == null) {
+            return;
+        }
+        if (spell.getType() != CardType.SPELL) {
+            return;
+        }
+
+        javafx.application.Platform.runLater(() -> {
+            String cardKey = PngSequenceSprite.toCardKey(spell.getName());
+            String side = isPlayer ? "player" : "enemy";
+            String folder = "/images/animations/spells/" + cardKey + "/" + side + "/attack";
+
+            double rPixels = Math.max(1.0, spell.getRange()) * TILE_SIZE;
+            double size = rPixels * 2.0;
+
+            double totalDurationSeconds = 0.7;
+
+            PngSequenceSprite sprite = new PngSequenceSprite(folder, size, size);
+            sprite.setLoop(false);
+            sprite.setLoopDurationSeconds(totalDurationSeconds);
+            sprite.setMouseTransparent(true);
+
+            double cx = center.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
+            double cy = center.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
+            sprite.setLayoutX(cx - size / 2.0);
+            sprite.setLayoutY(cy - size / 2.0);
+
+            unitLayer.getChildren().add(sprite);
+
+            final ActiveSpellVisual[] visualRef = new ActiveSpellVisual[1];
+            ActiveSpellVisual visual = new ActiveSpellVisual(sprite, totalDurationSeconds + 0.2);
+            visualRef[0] = visual;
+            activeSpellVisuals.add(visual);
+
+            sprite.setOnFinished(() -> {
+                if (visualRef[0] != null) {
+                    visualRef[0].timeRemaining = 0.0;
+                }
+            });
+        });
     }
 
     public void showComboEffect(com.kuroyale.model.enums.ComboType combo,

@@ -39,6 +39,10 @@ public class GameEventBus {
         new ArrayList<>(listeners).forEach(l -> l.onCardPlayed(isPlayer, card, spawnedUnits));
     }
 
+    public void publishSpellCast(boolean isPlayer, Card spell, com.kuroyale.model.entities.GridPosition center) {
+        new ArrayList<>(listeners).forEach(l -> l.onSpellCast(isPlayer, spell, center));
+    }
+
     public void publishTowerDestroyed(boolean isPlayerTower, Tower tower) {
         new ArrayList<>(listeners).forEach(l -> l.onTowerDestroyed(isPlayerTower, tower));
     }

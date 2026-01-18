@@ -7,6 +7,10 @@ public interface GameEventListener {
                         java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
         }
 
+        default void onSpellCast(boolean isPlayer, com.kuroyale.model.entities.Card spell,
+                        com.kuroyale.model.entities.GridPosition center) {
+        }
+
         default void onTowerDestroyed(boolean isPlayerTower, com.kuroyale.model.entities.Tower tower) {
         }
 

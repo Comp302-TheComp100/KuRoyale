@@ -507,6 +507,8 @@ public class PvPGameState implements IBattleState {
         if (center == null)
             return;
 
+        com.kuroyale.event.GameEventBus.getInstance().publishSpellCast(isPlayer1, spell, center);
+
         combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer1, true,
                 spell.getStunDuration());
     }
