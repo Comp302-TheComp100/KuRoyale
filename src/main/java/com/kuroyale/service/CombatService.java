@@ -434,24 +434,4 @@ public class CombatService {
         }
     }
 
-    /**
-     * Backward-compatible overload for area damage using GridPosition.
-     * 
-     * @deprecated Use the Vector2 version for sub-tile precision.
-     */
-    @Deprecated
-    public void applyAreaDamage(com.kuroyale.model.logic.IBattleState gameState,
-            com.kuroyale.model.entities.GridPosition center,
-            double radiusTiles,
-            double damage,
-            com.kuroyale.model.enums.TargetType targetType,
-            boolean isPlayerSource,
-            boolean isSpell,
-            double stunDuration,
-            String effectType) {
-        if (center == null)
-            return;
-        applyAreaDamage(gameState, com.kuroyale.model.entities.Vector2.fromGridPosition(center),
-                radiusTiles, damage, targetType, isPlayerSource, isSpell, stunDuration, effectType);
-    }
 }

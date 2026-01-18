@@ -3,7 +3,6 @@ package com.kuroyale.model.logic;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.dto.*;
-import com.kuroyale.model.dto.NetworkGameStateSnapshot;
 import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;
@@ -666,7 +665,9 @@ public class GameState implements IBattleState {
 
         com.kuroyale.event.GameEventBus.getInstance().publishSpellCast(isPlayer, spell, center);
 
-        combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer, true,
+        Vector2 centerVec = Vector2.fromGridPosition(center);
+
+        combatService.applyAreaDamage(this, centerVec, radius, damage, TargetType.BOTH, isPlayer, true,
                 spell.getStunDuration(), spell.getName());
     }
 
@@ -689,7 +690,8 @@ public class GameState implements IBattleState {
         double damage = attacker.getCombatStats() != null ? attacker.getCombatStats().getDamage() : 0;
         TargetType targetType = attacker.getBaseCard() != null ? attacker.getBaseCard().getTarget() : TargetType.BOTH;
 
-        combatService.applyAreaDamage(this, center, radius, damage, targetType, attacker.isPlayerSide(), false, 0.0,
+        Vector2 centerVec = Vector2.fromGridPosition(center);
+        combatService.applyAreaDamage(this, centerVec, radius, damage, targetType, attacker.isPlayerSide(), false, 0.0,
                 "Generic");
     }
 
@@ -769,22 +771,22 @@ public class GameState implements IBattleState {
     public List<Building> getActiveBuildings() {
         return activeBuildings;
     }
-    
+
     // Aliases for NetworkGameStateSnapshot compatibility
     public List<Troop> getTroops() {
         return activeTroops;
     }
-    
+
     public List<Building> getBuildings() {
         return activeBuildings;
     }
-    
+
     public boolean isTiebreakerMode() {
         return isTiebreakerMode;
     }
-    
+
     // ==================== Network State Synchronization ====================
-    
+
     /**
      * Applies authoritative state from a network snapshot.
      * This is called by the CLIENT to update its local state to match the host's.
@@ -800,8 +802,9 @@ public class GameState implements IBattleState {
      * @param snapshot The authoritative game state from the host
      */
     public void applyNetworkSnapshot(NetworkGameStateSnapshot snapshot) {
-        if (snapshot == null) return;
-        
+        if (snapshot == null)
+            return;
+
         // Apply core game state
         this.gameTime = snapshot.getGameTime();
         this.playerScore = snapshot.getPlayer1Score();
@@ -809,40 +812,51 @@ public class GameState implements IBattleState {
         this.isDoubleElixir = snapshot.isDoubleElixir();
         this.isGameOver = snapshot.isGameOver();
         this.isTiebreakerMode = snapshot.isTiebreakerMode();
-        
+
         // Apply winner state
         if (snapshot.isGameOver()) {
             switch (snapshot.getWinner()) {
-                case 1 -> { playerWon = true; isDraw = false; }
-                case 2 -> { playerWon = false; isDraw = false; }
-                case 3 -> { playerWon = false; isDraw = true; }
-                default -> { }
+                case 1 -> {
+                    playerWon = true;
+                    isDraw = false;
+                }
+                case 2 -> {
+                    playerWon = false;
+                    isDraw = false;
+                }
+                case 3 -> {
+                    playerWon = false;
+                    isDraw = true;
+                }
+                default -> {
+                }
             }
         }
-        
-        // Apply elixir values (client sees snapshot's player1 as "my" elixir after perspective mapping)
+
+        // Apply elixir values (client sees snapshot's player1 as "my" elixir after
+        // perspective mapping)
         playerElixir.setCurrentElixir(snapshot.getPlayer1Elixir());
         botElixir.setCurrentElixir(snapshot.getPlayer2Elixir());
-        
+
         // Enable double elixir if needed
         if (snapshot.isDoubleElixir() && !playerElixir.isDoubleElixir()) {
             playerElixir.setDoubleElixir(true);
             botElixir.setDoubleElixir(true);
         }
-        
+
         // Apply tower health from snapshot
         applyTowerHealthFromSnapshot(snapshot.getTowers());
-        
+
         // Apply troop state from snapshot
         applyTroopsFromSnapshot(snapshot.getTroops());
-        
+
         // Apply building state from snapshot
         applyBuildingsFromSnapshot(snapshot.getBuildings());
-        
+
         // Apply projectile state from snapshot
         applyProjectilesFromSnapshot(snapshot.getProjectiles());
     }
-    
+
     /**
      * Applies tower health values from the authoritative snapshot.
      * 
@@ -850,42 +864,45 @@ public class GameState implements IBattleState {
      * matches the local tower's isPlayerSide. We match by type AND isPlayerSide.
      */
     private void applyTowerHealthFromSnapshot(List<NetworkGameStateSnapshot.TowerSnapshot> towerSnapshots) {
-        if (towerSnapshots == null) return;
-        
+        if (towerSnapshots == null)
+            return;
+
         for (NetworkGameStateSnapshot.TowerSnapshot ts : towerSnapshots) {
             // Find matching tower in arena by type and side
-            // After perspective mapping, isPlayerSide in snapshot matches local tower's isPlayerSide
+            // After perspective mapping, isPlayerSide in snapshot matches local tower's
+            // isPlayerSide
             for (Tower tower : arena.getAllTowers()) {
-                if (tower.getType().name().equals(ts.getType()) && 
-                    tower.isPlayerSide() == ts.isPlayerSide()) {
+                if (tower.getType().name().equals(ts.getType()) &&
+                        tower.isPlayerSide() == ts.isPlayerSide()) {
                     tower.setCurrentHealth(ts.getHealth());
                     break;
                 }
             }
         }
     }
-    
+
     /**
      * Applies troop state from the authoritative snapshot.
      * This syncs positions and health of troops.
      */
     private void applyTroopsFromSnapshot(List<NetworkGameStateSnapshot.TroopSnapshot> troopSnapshots) {
-        if (troopSnapshots == null) return;
-        
+        if (troopSnapshots == null)
+            return;
+
         // Build a map of snapshot troops by ID for efficient lookup
         java.util.Map<Integer, NetworkGameStateSnapshot.TroopSnapshot> snapshotMap = new java.util.HashMap<>();
         for (NetworkGameStateSnapshot.TroopSnapshot ts : troopSnapshots) {
             snapshotMap.put(ts.getId(), ts);
         }
-        
+
         // Update existing troops and mark for removal if not in snapshot
         java.util.List<Troop> toRemove = new java.util.ArrayList<>();
         java.util.Set<Integer> matchedIds = new java.util.HashSet<>();
-        
+
         for (Troop troop : activeTroops) {
             int troopId = System.identityHashCode(troop);
             NetworkGameStateSnapshot.TroopSnapshot ts = snapshotMap.get(troopId);
-            
+
             if (ts != null) {
                 // Update troop state
                 troop.setCurrentHealth(ts.getHealth());
@@ -897,10 +914,10 @@ public class GameState implements IBattleState {
                 toRemove.add(troop);
             }
         }
-        
+
         // Remove troops not in snapshot
         activeTroops.removeAll(toRemove);
-        
+
         // Add new troops from snapshot (troops that exist in snapshot but not locally)
         for (NetworkGameStateSnapshot.TroopSnapshot ts : troopSnapshots) {
             if (!matchedIds.contains(ts.getId())) {
@@ -916,27 +933,28 @@ public class GameState implements IBattleState {
             }
         }
     }
-    
+
     /**
      * Applies building state from the authoritative snapshot.
      */
     private void applyBuildingsFromSnapshot(List<NetworkGameStateSnapshot.BuildingSnapshot> buildingSnapshots) {
-        if (buildingSnapshots == null) return;
-        
+        if (buildingSnapshots == null)
+            return;
+
         // Build a map of snapshot buildings by ID
         java.util.Map<Integer, NetworkGameStateSnapshot.BuildingSnapshot> snapshotMap = new java.util.HashMap<>();
         for (NetworkGameStateSnapshot.BuildingSnapshot bs : buildingSnapshots) {
             snapshotMap.put(bs.getId(), bs);
         }
-        
+
         // Update existing buildings and mark for removal if not in snapshot
         java.util.List<Building> toRemove = new java.util.ArrayList<>();
         java.util.Set<Integer> matchedIds = new java.util.HashSet<>();
-        
+
         for (Building building : activeBuildings) {
             int buildingId = System.identityHashCode(building);
             NetworkGameStateSnapshot.BuildingSnapshot bs = snapshotMap.get(buildingId);
-            
+
             if (bs != null) {
                 // Update building state
                 building.setCurrentHealth(bs.getHealth());
@@ -946,10 +964,10 @@ public class GameState implements IBattleState {
                 toRemove.add(building);
             }
         }
-        
+
         // Remove buildings not in snapshot
         activeBuildings.removeAll(toRemove);
-        
+
         // Add new buildings from snapshot
         for (NetworkGameStateSnapshot.BuildingSnapshot bs : buildingSnapshots) {
             if (!matchedIds.contains(bs.getId())) {
@@ -958,7 +976,7 @@ public class GameState implements IBattleState {
                     GridPosition pos = new GridPosition((int) bs.getX(), (int) bs.getY());
                     int bw = Math.max(1, card.getFootprintWidthTiles());
                     int bh = Math.max(1, card.getFootprintHeightTiles());
-                    Building newBuilding = new Building(pos, bw, bh, bs.isPlayerSide(), 
+                    Building newBuilding = new Building(pos, bw, bh, bs.isPlayerSide(),
                             card.getHp(), card.getImagePath(), card.getLifetime());
                     newBuilding.configureCombatFromCard(card);
                     newBuilding.setCurrentHealth(bs.getHealth());
@@ -967,21 +985,22 @@ public class GameState implements IBattleState {
             }
         }
     }
-    
+
     /**
      * Applies projectile state from the authoritative snapshot.
      * Projectiles are ephemeral so we just sync their positions.
      */
     private void applyProjectilesFromSnapshot(List<NetworkGameStateSnapshot.ProjectileSnapshot> projectileSnapshots) {
-        if (projectileSnapshots == null) return;
-        
+        if (projectileSnapshots == null)
+            return;
+
         // For simplicity, just update positions of existing projectiles
         // Projectiles are very short-lived so exact sync isn't critical
         java.util.Map<Integer, NetworkGameStateSnapshot.ProjectileSnapshot> snapshotMap = new java.util.HashMap<>();
         for (NetworkGameStateSnapshot.ProjectileSnapshot ps : projectileSnapshots) {
             snapshotMap.put(ps.getId(), ps);
         }
-        
+
         // Update existing projectiles
         for (Projectile proj : activeProjectiles) {
             int projId = System.identityHashCode(proj);
@@ -991,21 +1010,21 @@ public class GameState implements IBattleState {
             }
         }
     }
-    
+
     /**
      * Sets the player score directly (used for network sync).
      */
     public void setPlayerScore(int score) {
         this.playerScore = score;
     }
-    
+
     /**
      * Sets the bot/player2 score directly (used for network sync).
      */
     public void setBotScore(int score) {
         this.botScore = score;
     }
-    
+
     /**
      * Sets the game over state directly (used for network sync).
      */
@@ -1014,7 +1033,7 @@ public class GameState implements IBattleState {
         this.playerWon = playerWon;
         this.isDraw = isDraw;
     }
-    
+
     /**
      * Sets the double elixir flag (used for network sync).
      */
