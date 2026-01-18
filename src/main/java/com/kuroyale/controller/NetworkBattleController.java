@@ -44,32 +44,52 @@ import javafx.util.Duration;
 public class NetworkBattleController {
 
     // FXML Components
-    @FXML private StackPane arenaContainer;
-    @FXML private HBox elixirContainer;
-    @FXML private VBox handContainer;
-    @FXML private VBox pauseMenuContainer;
-    @FXML private Label timeLabel;
+    @FXML
+    private StackPane arenaContainer;
+    @FXML
+    private HBox elixirContainer;
+    @FXML
+    private VBox handContainer;
+    @FXML
+    private VBox pauseMenuContainer;
+    @FXML
+    private Label timeLabel;
 
     // Network status indicators
-    @FXML private Circle connectionIndicator;
-    @FXML private Label connectionStatusLabel;
-    @FXML private Label pingLabel;
-    @FXML private Label lagIndicator;
+    @FXML
+    private Circle connectionIndicator;
+    @FXML
+    private Label connectionStatusLabel;
+    @FXML
+    private Label pingLabel;
+    @FXML
+    private Label lagIndicator;
 
     // Score display
-    @FXML private Label playerNameLabel;
-    @FXML private Label playerScoreLabel;
-    @FXML private Label opponentNameLabel;
-    @FXML private Label opponentScoreLabel;
+    @FXML
+    private Label playerNameLabel;
+    @FXML
+    private Label playerScoreLabel;
+    @FXML
+    private Label opponentNameLabel;
+    @FXML
+    private Label opponentScoreLabel;
 
     // Overlays
-    @FXML private VBox disconnectionOverlay;
-    @FXML private Label disconnectionLabel;
-    @FXML private Label reconnectingLabel;
-    @FXML private Label reconnectCountdownLabel;
-    @FXML private VBox resultOverlay;
-    @FXML private Label resultLabel;
-    @FXML private Label resultDetailsLabel;
+    @FXML
+    private VBox disconnectionOverlay;
+    @FXML
+    private Label disconnectionLabel;
+    @FXML
+    private Label reconnectingLabel;
+    @FXML
+    private Label reconnectCountdownLabel;
+    @FXML
+    private VBox resultOverlay;
+    @FXML
+    private Label resultLabel;
+    @FXML
+    private Label resultDetailsLabel;
 
     private final SceneLoader sceneLoader = new SceneLoader();
     private final BattleModel model = new BattleModel();
@@ -80,7 +100,7 @@ public class NetworkBattleController {
     private BattleArenaView arenaView;
     private ElixirBar elixirBar;
     private HandView handView;
-    private AnimationTimer gameLoop;  // SAME game loop as offline
+    private AnimationTimer gameLoop; // SAME game loop as offline
 
     // State tracking
     private boolean isPaused = false;
@@ -108,8 +128,7 @@ public class NetworkBattleController {
 
     private void setupNetworkCallbacks() {
         // Message handler - runs on JavaFX thread
-        networkService.setOnMessageReceived(message -> 
-            Platform.runLater(() -> handleNetworkMessage(message)));
+        networkService.setOnMessageReceived(message -> Platform.runLater(() -> handleNetworkMessage(message)));
 
         networkService.setOnStateChanged(state -> Platform.runLater(() -> {
             updateConnectionStatus(state);
@@ -117,7 +136,8 @@ public class NetworkBattleController {
             if (state == ConnectionState.RECONNECTING) {
                 showDisconnectionOverlay();
                 isPaused = true;
-            } else if (state == ConnectionState.CONNECTED && disconnectionOverlay != null && disconnectionOverlay.isVisible()) {
+            } else if (state == ConnectionState.CONNECTED && disconnectionOverlay != null
+                    && disconnectionOverlay.isVisible()) {
                 hideDisconnectionOverlay();
                 isPaused = false;
             } else if (state == ConnectionState.DISCONNECTED && !gameEnded) {
@@ -130,8 +150,10 @@ public class NetworkBattleController {
         // Set player names
         String myName = networkService.getPlayerName();
         String oppName = networkService.getOpponentName();
-        if (playerNameLabel != null) playerNameLabel.setText(myName != null ? myName : "You");
-        if (opponentNameLabel != null) opponentNameLabel.setText(oppName != null ? oppName : "Opponent");
+        if (playerNameLabel != null)
+            playerNameLabel.setText(myName != null ? myName : "You");
+        if (opponentNameLabel != null)
+            opponentNameLabel.setText(oppName != null ? oppName : "Opponent");
 
         // Get current user
         User currentUser = model.getCurrentUser();
@@ -160,7 +182,7 @@ public class NetworkBattleController {
         Deck opponentDeck = model.createBotDeck(currentUser);
         gameState = new GameState(playerDeck, opponentDeck, arena);
         gameState.setCardCatalog(name -> model.getCardByName(name));
-        gameState.setNetworkMode(true);  // Disables bot AI
+        gameState.setNetworkMode(true); // Disables bot AI
 
         // Initialize UI - SAME as offline
         arenaView = new BattleArenaView(gameState);
@@ -226,12 +248,12 @@ public class NetworkBattleController {
     private void update(double deltaTime) {
         // Update game state - SAME as offline
         gameState.update(deltaTime);
-        
+
         // Update UI - SAME as offline
         elixirBar.update();
         handView.update();
         arenaView.update(deltaTime);
-        
+
         // Update sidebar
         updateTimeDisplay();
         updateScoreDisplay();
@@ -241,7 +263,8 @@ public class NetworkBattleController {
             doubleElixirShown = true;
             elixirBar.setDoubleElixirActive(true);
             if (timeLabel != null) {
-                timeLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 32px; -fx-font-weight: bold; -fx-font-family: 'Courier New';");
+                timeLabel.setStyle(
+                        "-fx-text-fill: #ff4444; -fx-font-size: 32px; -fx-font-weight: bold; -fx-font-family: 'Courier New';");
             }
         }
 
@@ -262,8 +285,10 @@ public class NetworkBattleController {
 
     private void updateScoreDisplay() {
         if (gameState != null) {
-            if (playerScoreLabel != null) playerScoreLabel.setText(String.valueOf(gameState.getPlayerScore()));
-            if (opponentScoreLabel != null) opponentScoreLabel.setText(String.valueOf(gameState.getBotScore()));
+            if (playerScoreLabel != null)
+                playerScoreLabel.setText(String.valueOf(gameState.getPlayerScore()));
+            if (opponentScoreLabel != null)
+                opponentScoreLabel.setText(String.valueOf(gameState.getBotScore()));
         }
     }
 
@@ -298,32 +323,32 @@ public class NetworkBattleController {
                     applyHostState(message);
                 }
                 break;
-                
+
             case CARD_PLACED:
                 // Apply opponent's card placement
                 handleOpponentCardPlacement(message);
                 break;
-                
+
             case HEARTBEAT:
                 // Ignore heartbeats
                 break;
-                
+
             case VICTORY:
                 if (message.getPlayerId() != networkService.getPlayerId()) {
                     showDefeat("Opponent won the match!");
                 }
                 break;
-                
+
             case DEFEAT:
                 if (message.getPlayerId() != networkService.getPlayerId()) {
                     handleOpponentForfeit();
                 }
                 break;
-                
+
             case OPPONENT_DISCONNECTED:
                 handleOpponentDisconnected();
                 break;
-                
+
             default:
                 break;
         }
@@ -334,27 +359,28 @@ public class NetworkBattleController {
      */
     private void applyHostState(NetworkMessage message) {
         NetworkGameStateSnapshot snapshot = message.parseGameStateSync();
-        if (snapshot == null) return;
-        
+        if (snapshot == null)
+            return;
+
         // Only sync tower health - let local simulation handle everything else
         // This ensures towers are always in sync
         for (NetworkGameStateSnapshot.TowerSnapshot ts : snapshot.getTowers()) {
             for (Tower tower : gameState.getArena().getAllTowers()) {
                 // Match by type and side (after perspective consideration)
                 // HOST's player towers are CLIENT's enemy towers
-                boolean isMyTower = ts.isPlayerSide();  // In HOST's perspective
-                boolean matchesMySide = !isMyTower;     // Flip for CLIENT's perspective
-                
-                if (tower.getType().name().equals(ts.getType()) && 
-                    tower.isPlayerSide() == matchesMySide) {
+                boolean isMyTower = ts.isPlayerSide(); // In HOST's perspective
+                boolean matchesMySide = !isMyTower; // Flip for CLIENT's perspective
+
+                if (tower.getType().name().equals(ts.getType()) &&
+                        tower.isPlayerSide() == matchesMySide) {
                     tower.setCurrentHealth(ts.getHealth());
                 }
             }
         }
-        
+
         // Sync scores (flip for perspective)
-        gameState.setPlayerScore(snapshot.getPlayer2Score());  // HOST's bot is CLIENT's player opponent
-        gameState.setBotScore(snapshot.getPlayer1Score());     // HOST's player is CLIENT's enemy
+        gameState.setPlayerScore(snapshot.getPlayer2Score()); // HOST's bot is CLIENT's player opponent
+        gameState.setBotScore(snapshot.getPlayer1Score()); // HOST's player is CLIENT's enemy
     }
 
     /**
@@ -362,15 +388,16 @@ public class NetworkBattleController {
      */
     private void handleOpponentCardPlacement(NetworkMessage message) {
         String[] data = message.parseCardPlacement();
-        if (data == null) return;
-        
+        if (data == null)
+            return;
+
         String cardName = data[0];
         int x = (int) Double.parseDouble(data[1]);
         int y = (int) Double.parseDouble(data[2]);
-        
+
         // Mirror coordinates for opponent (their bottom is our top)
         int mirroredY = (Arena.HEIGHT - 1) - y;
-        
+
         Card card = model.getCardByName(cardName);
         if (card != null) {
             // Place as opponent (isPlayer = false)
@@ -386,15 +413,17 @@ public class NetworkBattleController {
      */
     private void handleArenaClick(int tileX, int tileY) {
         int selectedIndex = handView.getSelectedIndex();
-        if (selectedIndex == -1) return;
-        
+        if (selectedIndex == -1)
+            return;
+
         if (tileX < 0 || tileX >= Arena.WIDTH || tileY < 0 || tileY >= Arena.HEIGHT) {
             return;
         }
-        
+
         Card card = gameState.getPlayerHand().getCard(selectedIndex);
-        if (card == null) return;
-        
+        if (card == null)
+            return;
+
         // Check elixir - SAME as offline
         if (gameState.getPlayerElixir().getCurrentElixir() < card.getCost()) {
             return;
@@ -402,15 +431,14 @@ public class NetworkBattleController {
 
         // Place card locally - SAME as offline
         boolean success = gameState.placeCard(true, selectedIndex, tileX, tileY);
-        
+
         if (success) {
             // Send to opponent over network
             networkService.send(NetworkMessage.cardPlaced(
-                networkService.getPlayerId(), 
-                card.getName(), 
-                tileX, 
-                tileY
-            ));
+                    networkService.getPlayerId(),
+                    card.getName(),
+                    tileX,
+                    tileY));
         }
 
         handView.clearSelection();
@@ -421,7 +449,8 @@ public class NetworkBattleController {
 
     @FXML
     private void handlePause() {
-        if (gameEnded) return;
+        if (gameEnded)
+            return;
         SoundEffectUtil.playButtonClick();
         isPaused = true;
         showPauseMenu();
@@ -436,14 +465,17 @@ public class NetworkBattleController {
             public void onResume() {
                 handleResume();
             }
+
             @Override
             public void onSaveAndResume() {
                 handleResume();
             }
+
             @Override
             public void onSaveAndExit() {
                 forfeitAndExit();
             }
+
             @Override
             public void onExitWithoutSaving() {
                 forfeitAndExit();
@@ -491,7 +523,8 @@ public class NetworkBattleController {
     // ==================== Connection Handling ====================
 
     private void handleOpponentDisconnected() {
-        if (gameEnded) return;
+        if (gameEnded)
+            return;
         System.out.println("[NetworkBattle] Opponent disconnected");
         showDisconnectionOverlay();
         isPaused = true;
@@ -512,7 +545,8 @@ public class NetworkBattleController {
     }
 
     private void handleOpponentForfeit() {
-        if (gameEnded) return;
+        if (gameEnded)
+            return;
         hideDisconnectionOverlay();
         showVictory("Opponent forfeited - Victory!");
     }
@@ -520,20 +554,24 @@ public class NetworkBattleController {
     // ==================== UI Updates ====================
 
     private void updateConnectionStatus(ConnectionState state) {
-        if (connectionIndicator == null) return;
-        
+        if (connectionIndicator == null)
+            return;
+
         switch (state) {
             case CONNECTED:
                 connectionIndicator.setFill(Color.LIME);
-                if (connectionStatusLabel != null) connectionStatusLabel.setText("Connected");
+                if (connectionStatusLabel != null)
+                    connectionStatusLabel.setText("Connected");
                 break;
             case RECONNECTING:
                 connectionIndicator.setFill(Color.ORANGE);
-                if (connectionStatusLabel != null) connectionStatusLabel.setText("Reconnecting...");
+                if (connectionStatusLabel != null)
+                    connectionStatusLabel.setText("Reconnecting...");
                 break;
             case DISCONNECTED:
                 connectionIndicator.setFill(Color.RED);
-                if (connectionStatusLabel != null) connectionStatusLabel.setText("Disconnected");
+                if (connectionStatusLabel != null)
+                    connectionStatusLabel.setText("Disconnected");
                 break;
             default:
                 break;
@@ -578,8 +616,10 @@ public class NetworkBattleController {
             resultLabel.setText("VICTORY!");
             resultLabel.setStyle("-fx-text-fill: gold; -fx-font-size: 48px; -fx-font-weight: bold;");
         }
-        if (resultDetailsLabel != null) resultDetailsLabel.setText(details);
-        if (resultOverlay != null) resultOverlay.setVisible(true);
+        if (resultDetailsLabel != null)
+            resultDetailsLabel.setText(details);
+        if (resultOverlay != null)
+            resultOverlay.setVisible(true);
 
         ServiceFactory.getInstance().getAchievementService().updateProgress(AchievementType.FIRST_BLOOD, 1);
         ServiceFactory.getInstance().getQuestService().updateProgress(QuestType.WIN_MATCHES, 1);
@@ -594,8 +634,10 @@ public class NetworkBattleController {
             resultLabel.setText("DEFEAT");
             resultLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 48px; -fx-font-weight: bold;");
         }
-        if (resultDetailsLabel != null) resultDetailsLabel.setText(details);
-        if (resultOverlay != null) resultOverlay.setVisible(true);
+        if (resultDetailsLabel != null)
+            resultDetailsLabel.setText(details);
+        if (resultOverlay != null)
+            resultOverlay.setVisible(true);
     }
 
     private void showDraw() {
@@ -606,13 +648,17 @@ public class NetworkBattleController {
             resultLabel.setText("DRAW");
             resultLabel.setStyle("-fx-text-fill: #aaaaaa; -fx-font-size: 48px; -fx-font-weight: bold;");
         }
-        if (resultDetailsLabel != null) resultDetailsLabel.setText("Equal towers destroyed!");
-        if (resultOverlay != null) resultOverlay.setVisible(true);
+        if (resultDetailsLabel != null)
+            resultDetailsLabel.setText("Equal towers destroyed!");
+        if (resultOverlay != null)
+            resultOverlay.setVisible(true);
     }
 
     private void stopLoops() {
-        if (gameLoop != null) gameLoop.stop();
-        if (syncTimer != null) syncTimer.stop();
+        if (gameLoop != null)
+            gameLoop.stop();
+        if (syncTimer != null)
+            syncTimer.stop();
     }
 
     private void cleanup() {

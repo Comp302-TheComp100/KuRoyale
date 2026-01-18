@@ -22,7 +22,7 @@ public interface GameEventListener {
 
         default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center,
                         double radius,
-                        double duration) {
+                        double duration, String effectType) {
         }
 
         default void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
