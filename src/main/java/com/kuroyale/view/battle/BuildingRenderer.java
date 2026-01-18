@@ -180,12 +180,11 @@ public class BuildingRenderer {
         }
 
         // Add Health Bar
-        HealthBarRenderer.HealthBarNodes hpNodes = HealthBarRenderer.createDetailedHealthBar(
+        HealthBarRenderer.HealthBarNodes hpNodes = HealthBarRenderer.createSimpleHealthBar(
                 Math.max(40, TILE_SIZE * w - 6),
-                GameConstants.HEALTH_BAR_HEIGHT_TEXT,
-                b.getCurrentHealth());
+                6.0);
 
-        StackPane.setMargin(hpNodes.root, new javafx.geometry.Insets(-35, 0, 0, 0));
+        StackPane.setMargin(hpNodes.root, new javafx.geometry.Insets(-45, 0, 0, 0));
         buildingStack.getChildren().add(hpNodes.root);
 
         // Apply initial color and width
