@@ -519,7 +519,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     }
 
     @Override
-    public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center, double radius,
+    public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
             double duration, String effectType) {
         javafx.application.Platform.runLater(() -> {
             boolean isFireball = "Fireball".equalsIgnoreCase(effectType) || "Wizard".equalsIgnoreCase(effectType)

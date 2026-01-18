@@ -445,12 +445,6 @@ public class NetworkBattleController {
         arenaView.highlightValidCells(false, false);
     }
 
-    @Override
-    public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration,
-            String effectType) {
-        // Visual effects handled by arena view
-    }
-
     // ==================== UI Actions ====================
 
     @FXML

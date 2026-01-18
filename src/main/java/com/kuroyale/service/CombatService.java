@@ -224,8 +224,9 @@ public class CombatService {
                     targetPos = target.getCenterPosition();
                 }
 
-                applyAreaDamage(state, targetPos, 1.0, attacker.getDamage(),
-                        attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0, "Generic");
+                applyAreaDamage(state, com.kuroyale.model.entities.Vector2.fromGridPosition(targetPos), 1.0,
+                        attacker.getDamage(), attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0,
+                        "Generic");
             } else {
                 applyDamage(attacker, target);
             }
@@ -446,10 +447,11 @@ public class CombatService {
             com.kuroyale.model.enums.TargetType targetType,
             boolean isPlayerSource,
             boolean isSpell,
-            double stunDuration) {
+            double stunDuration,
+            String effectType) {
         if (center == null)
             return;
         applyAreaDamage(gameState, com.kuroyale.model.entities.Vector2.fromGridPosition(center),
-                radiusTiles, damage, targetType, isPlayerSource, isSpell, stunDuration);
+                radiusTiles, damage, targetType, isPlayerSource, isSpell, stunDuration, effectType);
     }
 }

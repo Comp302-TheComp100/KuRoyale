@@ -55,10 +55,16 @@ public class GameEventBus {
         new ArrayList<>(listeners).forEach(l -> l.onBuildingProduction(building, resource, amount));
     }
 
+    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center,
+            double radius, double duration, String effectType) {
+        new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration, effectType));
+    }
+
     public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
             double radius, double duration, String effectType) {
-
-        new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration, effectType));
+        publishAreaEffect(isPlayerSource, com.kuroyale.model.entities.Vector2.fromGridPosition(center), radius,
+                duration,
+                effectType);
     }
 
     public void publishComboTriggered(com.kuroyale.model.enums.ComboType combo,

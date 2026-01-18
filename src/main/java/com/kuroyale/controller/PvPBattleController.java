@@ -181,7 +181,7 @@ public class PvPBattleController {
 
             @Override
             public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
-                    double duration) {
+                    double duration, String effectType) {
             }
 
             @Override
