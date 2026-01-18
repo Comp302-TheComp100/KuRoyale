@@ -133,6 +133,43 @@ public class NetworkBattleController implements GameEventListener {
         
         // Subscribe to game events
         GameEventBus.getInstance().subscribe(this);
+        
+        // Add window close handler for graceful disconnection
+        setupWindowCloseHandler();
+    }
+    
+    /**
+     * Sets up handler to detect when window is closed, ensuring graceful disconnection.
+     */
+    private void setupWindowCloseHandler() {
+        // Use Platform.runLater to ensure the scene is available
+        Platform.runLater(() -> {
+            if (arenaContainer != null && arenaContainer.getScene() != null) {
+                javafx.stage.Stage stage = (javafx.stage.Stage) arenaContainer.getScene().getWindow();
+                if (stage != null) {
+                    stage.setOnCloseRequest(event -> {
+                        System.out.println("[NetworkBattle] Window close detected - sending disconnect notification");
+                        
+                        // Send disconnect/forfeit message to opponent
+                        if (networkService != null && networkService.isConnected()) {
+                            if (!gameEnded) {
+                                networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
+                            }
+                            // Small delay to ensure message is sent
+                            try {
+                                Thread.sleep(200);
+                            } catch (InterruptedException e) {
+                                // Ignore
+                            }
+                        }
+                        
+                        // Cleanup
+                        cleanup();
+                    });
+                    System.out.println("[NetworkBattle] Window close handler registered");
+                }
+            }
+        });
     }
     
     private void setupNetworkCallbacks() {
@@ -1203,8 +1240,41 @@ public class NetworkBattleController implements GameEventListener {
     
     private void handleOpponentForfeit() {
         if (gameEnded) return;
-        hideDisconnectionOverlay();
-        showVictory("Opponent forfeited - Victory!");
+        
+        // Show disconnection overlay with forfeit message
+        showDisconnectionOverlay();
+        if (disconnectionLabel != null) {
+            disconnectionLabel.setText("Opponent Forfeited");
+        }
+        if (reconnectingLabel != null) {
+            reconnectingLabel.setText("Victory in...");
+        }
+        if (reconnectCountdownLabel != null) {
+            reconnectCountdownLabel.setText("5");
+        }
+        
+        System.out.println("[NetworkBattle] Opponent forfeited - showing 5 second countdown");
+        
+        // Cancel any existing timer
+        if (reconnectionTimer != null) {
+            reconnectionTimer.stop();
+        }
+        
+        final int[] countdown = {5};
+        reconnectionTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            countdown[0]--;
+            
+            if (reconnectCountdownLabel != null) {
+                reconnectCountdownLabel.setText(String.valueOf(countdown[0]));
+            }
+            
+            if (countdown[0] <= 0) {
+                hideDisconnectionOverlay();
+                showVictory("Opponent forfeited - Victory!");
+            }
+        }));
+        reconnectionTimer.setCycleCount(5);
+        reconnectionTimer.play();
     }
     
     // ==================== UI Updates ====================
