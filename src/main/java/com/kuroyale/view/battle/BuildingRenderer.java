@@ -131,6 +131,8 @@ public class BuildingRenderer {
 
             unitLayer.getChildren().add(visual.root);
             activeBuildingVisuals.put(b, visual);
+            // Play spawn animation to avoid visual flash
+            playSpawnAnimation(visual.root);
         } else {
             // Update existing bars
             updateBuildingBars(b, visual, w * TILE_SIZE);
@@ -304,5 +306,34 @@ public class BuildingRenderer {
                 visual.laserBeam.setVisible(false);
             }
         }
+    }
+
+    /**
+     * Plays a spawn animation on the given node to prevent visual flash.
+     * The node starts invisible and small, then fades in with a scale-up effect.
+     */
+    private void playSpawnAnimation(Node node) {
+        // Start invisible and slightly scaled down
+        node.setOpacity(0.0);
+        node.setScaleX(0.5);
+        node.setScaleY(0.5);
+
+        // Fade in animation
+        javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(
+                javafx.util.Duration.millis(150), node);
+        fadeIn.setFromValue(0.0);
+        fadeIn.setToValue(1.0);
+
+        // Scale up animation
+        javafx.animation.ScaleTransition scaleUp = new javafx.animation.ScaleTransition(
+                javafx.util.Duration.millis(150), node);
+        scaleUp.setFromX(0.5);
+        scaleUp.setFromY(0.5);
+        scaleUp.setToX(1.0);
+        scaleUp.setToY(1.0);
+
+        // Play both animations together
+        javafx.animation.ParallelTransition spawnAnim = new javafx.animation.ParallelTransition(fadeIn, scaleUp);
+        spawnAnim.play();
     }
 }

@@ -6,7 +6,6 @@ import com.kuroyale.model.enums.UnitState;
 
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
-import javafx.scene.shape.Circle;
 
 import javafx.geometry.Point2D;
 
@@ -41,15 +40,16 @@ public class TroopRenderer {
         }
         String cardKey = PngSequenceSprite.toCardKey(troop.getBaseCard().getName());
         if ("skeletons".equals(cardKey) || "barbarians".equals(cardKey)) {
-            return 2.75*1.25;
-        }else if("archers".equals(cardKey) || "minions".equals(cardKey) || "minion_horde".equals(cardKey)){
-            return 1.5*1.25;
-        }else if("bomber".equals(cardKey) || "mini_pekka".equals(cardKey) || "hog_rider".equals(cardKey) || "giant".equals(cardKey) || "musketeer".equals(cardKey) || "wizard".equals(cardKey)){
-            return 2.0*1.25;
-        }else if("goblins".equals(cardKey) || "knight".equals(cardKey) || "valkyrie".equals(cardKey)){
-            return 2.5*1.25;
-        }else if("spear_goblins".equals(cardKey)){
-            return 3.0*1.25;
+            return 2.75 * 1.25;
+        } else if ("archers".equals(cardKey) || "minions".equals(cardKey) || "minion_horde".equals(cardKey)) {
+            return 1.5 * 1.25;
+        } else if ("bomber".equals(cardKey) || "mini_pekka".equals(cardKey) || "hog_rider".equals(cardKey)
+                || "giant".equals(cardKey) || "musketeer".equals(cardKey) || "wizard".equals(cardKey)) {
+            return 2.0 * 1.25;
+        } else if ("goblins".equals(cardKey) || "knight".equals(cardKey) || "valkyrie".equals(cardKey)) {
+            return 2.5 * 1.25;
+        } else if ("spear_goblins".equals(cardKey)) {
+            return 3.0 * 1.25;
         }
         return 1.0;
     }
@@ -150,6 +150,8 @@ public class TroopRenderer {
             unitNode = createTroopVisualPvP(troop, cardName);
             unitLayer.getChildren().add(unitNode);
             activeTroopVisuals.put(troop, unitNode);
+            // Play spawn animation to avoid visual flash
+            playSpawnAnimation(unitNode);
         }
 
         updateTroopAnimationIfNeeded(troop, unitNode);
@@ -224,6 +226,8 @@ public class TroopRenderer {
             unitNode = createTroopVisual(troop, cardName, gameState);
             unitLayer.getChildren().add(unitNode);
             activeTroopVisuals.put(troop, unitNode);
+            // Play spawn animation to avoid visual flash
+            playSpawnAnimation(unitNode);
         }
 
         updateTroopAnimationIfNeeded(troop, unitNode);
@@ -290,6 +294,35 @@ public class TroopRenderer {
         }
 
         sprite.updateSequence(baseFolder);
+    }
+
+    /**
+     * Plays a spawn animation on the given node to prevent visual flash.
+     * The node starts invisible and small, then fades in with a scale-up effect.
+     */
+    private void playSpawnAnimation(Node node) {
+        // Start invisible and slightly scaled down
+        node.setOpacity(0.0);
+        node.setScaleX(0.5);
+        node.setScaleY(0.5);
+
+        // Fade in animation
+        javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(
+                javafx.util.Duration.millis(150), node);
+        fadeIn.setFromValue(0.0);
+        fadeIn.setToValue(1.0);
+
+        // Scale up animation
+        javafx.animation.ScaleTransition scaleUp = new javafx.animation.ScaleTransition(
+                javafx.util.Duration.millis(150), node);
+        scaleUp.setFromX(0.5);
+        scaleUp.setFromY(0.5);
+        scaleUp.setToX(1.0);
+        scaleUp.setToY(1.0);
+
+        // Play both animations together
+        javafx.animation.ParallelTransition spawnAnim = new javafx.animation.ParallelTransition(fadeIn, scaleUp);
+        spawnAnim.play();
     }
 
     private void renderHealthBar(Troop troop, double visualX, double visualY, double spriteW, double spriteH) {
