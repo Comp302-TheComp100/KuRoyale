@@ -8,8 +8,11 @@ import com.kuroyale.model.logic.*;
 import com.kuroyale.event.GameEventBus;
 import com.kuroyale.event.GameEventListener;
 import com.kuroyale.service.NetworkService;
+import com.kuroyale.service.network.NetworkInputQueue;
+import com.kuroyale.service.network.PlayerInput;
 import com.kuroyale.service.NetworkService.ConnectionState;
 import com.kuroyale.util.SceneLoader;
+import com.kuroyale.util.NetworkConfig;
 import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.view.battle.BattleArenaView;
@@ -31,6 +34,7 @@ import javafx.scene.shape.Circle;
 import javafx.util.Duration;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * NETWORK BATTLE CONTROLLER - SINGLE AUTHORITATIVE GAME LOOP
@@ -66,6 +70,7 @@ public class NetworkBattleController implements GameEventListener {
 
     private final SceneLoader sceneLoader = new SceneLoader();
     private final BattleModel model = new BattleModel();
+    private final NetworkConfig networkConfig = NetworkConfig.getInstance();
 
     private NetworkService networkService;
     private GameState gameState;
@@ -77,10 +82,15 @@ public class NetworkBattleController implements GameEventListener {
     private boolean isPaused = false;
     private boolean gameEnded = false;
     private boolean doubleElixirShown = false;
+    private long lastSyncTimeMs = 0;
     
     // Track entities by ID for proper sync on CLIENT
     private Map<Integer, Troop> troopMap = new HashMap<>();
     private Map<Integer, Building> buildingMap = new HashMap<>();
+    
+    // Input sequencing & queue (HOST processes, CLIENT sends)
+    private final NetworkInputQueue inputQueue = new NetworkInputQueue();
+    private final AtomicLong inputSequence = new AtomicLong(0);
 
     @FXML
     private void initialize() {}
@@ -182,7 +192,10 @@ public class NetworkBattleController implements GameEventListener {
         }
 
         Arena arena = model.createArena(layoutToUse);
-        Deck opponentDeck = model.createBotDeck(currentUser);
+        List<String> opponentDeckNames = networkService.getOpponentDeck();
+        Deck opponentDeck = (opponentDeckNames != null && !opponentDeckNames.isEmpty())
+                ? model.createDeckFromNames(opponentDeckNames)
+                : model.createBotDeck(currentUser);
         gameState = new GameState(playerDeck, opponentDeck, arena);
         gameState.setCardCatalog(name -> model.getCardByName(name));
         gameState.setNetworkMode(true);
@@ -240,6 +253,9 @@ public class NetworkBattleController implements GameEventListener {
      * HOST: Run the ONLY simulation and broadcast everything.
      */
     private void updateHost(double deltaTime) {
+        // Apply any queued player inputs first
+        processQueuedInputs();
+        
         // Run simulation - this is the SINGLE game loop
         gameState.update(deltaTime);
         
@@ -255,10 +271,14 @@ public class NetworkBattleController implements GameEventListener {
             elixirBar.setDoubleElixirActive(true);
         }
 
-        // Broadcast FULL state to CLIENT
+        // Broadcast FULL state to CLIENT (throttled)
         if (networkService.isConnected()) {
-            NetworkGameStateSnapshot snapshot = new NetworkGameStateSnapshot(gameState, 0);
-            networkService.send(NetworkMessage.gameStateSync(snapshot));
+            long nowMs = System.currentTimeMillis();
+            if (nowMs - lastSyncTimeMs >= networkConfig.getSyncInterval()) {
+                NetworkGameStateSnapshot snapshot = new NetworkGameStateSnapshot(gameState, 0);
+                networkService.send(NetworkMessage.gameStateSync(snapshot));
+                lastSyncTimeMs = nowMs;
+            }
         }
 
         if (gameState.isGameOver() && !gameEnded) {
@@ -298,9 +318,12 @@ public class NetworkBattleController implements GameEventListener {
                     applyStateFromHost(message);
                 }
                 break;
-            case CARD_PLACED:
+            case PLAYER_INPUT:
                 if (networkService.isHost()) {
-                    handleClientCardPlacement(message);
+                    PlayerInput input = message.parsePlayerInput();
+                    if (input != null) {
+                        inputQueue.queuePlayer2Input(input);
+                    }
                 }
                 break;
             case EFFECT_AREA:
@@ -464,7 +487,9 @@ public class NetworkBattleController implements GameEventListener {
                 // Create new troop with the HOST's ID
                 Card card = model.getCardByName(ts.getCardName());
                 if (card != null) {
-                    GridPosition pos = new GridPosition((int) mirroredX, (int) mirroredY);
+                    int gridX = (int) Math.round(mirroredX);
+                    int gridY = (int) Math.round(mirroredY);
+                    GridPosition pos = new GridPosition(gridX, gridY);
                     Troop newTroop = new Troop(card, pos, isMyTroop);
                     newTroop.setId(ts.getId());  // Use HOST's ID for consistent tracking
                     newTroop.setWorldPosition(mirroredX, mirroredY);
@@ -511,7 +536,9 @@ public class NetworkBattleController implements GameEventListener {
             } else {
                 Card card = model.getCardByName(bs.getCardName());
                 if (card != null) {
-                    GridPosition pos = new GridPosition((int) mirroredX, (int) mirroredY);
+                    int gridX = (int) Math.round(mirroredX);
+                    int gridY = (int) Math.round(mirroredY);
+                    GridPosition pos = new GridPosition(gridX, gridY);
                     int bw = Math.max(1, card.getFootprintWidthTiles());
                     int bh = Math.max(1, card.getFootprintHeightTiles());
                     Building newBuilding = new Building(pos, bw, bh, isMyBuilding,
@@ -563,30 +590,38 @@ public class NetworkBattleController implements GameEventListener {
             currentProjectiles.add(proj);
         }
     }
-
+    
     /**
-     * HOST: Handle card placement from CLIENT.
+     * HOST: Drain queued client inputs and apply them to the authoritative state.
      */
-    private void handleClientCardPlacement(NetworkMessage message) {
-        String[] data = message.parseCardPlacement();
-        if (data == null) return;
+    private void processQueuedInputs() {
+        PlayerInput input;
+        while ((input = inputQueue.pollPlayer2Input()) != null) {
+            applyPlayerInput(input);
+        }
+    }
+    
+    private void applyPlayerInput(PlayerInput input) {
+        if (input == null) return;
+        switch (input.getType()) {
+            case CARD_DEPLOY -> applyOpponentCardDeploy(input);
+            case FORFEIT -> showVictory("Opponent forfeited!");
+            default -> {}
+        }
+    }
+    
+    private void applyOpponentCardDeploy(PlayerInput input) {
+        String cardName = input.getCardName();
+        int x = input.getX();
+        int y = input.getY();
         
-        String cardName = data[0];
-        int x = (int) Double.parseDouble(data[1]);
-        int y = (int) Double.parseDouble(data[2]);
+        // Mirror to HOST perspective (CLIENT sends from their view)
+        int mirroredX = (Arena.WIDTH - 1) - x;
+        int mirroredY = (Arena.HEIGHT - 1) - y;
         
-        // Mirror BOTH axes (CLIENT sends in their perspective)
-        int mirroredX = (Arena.WIDTH - 1) - x;  // 17 - x for width 18
-        int mirroredY = (Arena.HEIGHT - 1) - y; // 31 - y for height 32
-        
-        Card card = model.getCardByName(cardName);
-        if (card != null) {
-            double oppElixir = gameState.getBotElixir().getCurrentElixir();
-            if (oppElixir >= card.getCost()) {
-                gameState.getBotElixir().spend(card.getCost());
-                gameState.placeCard(false, card, mirroredX, mirroredY);
-                System.out.println("[HOST] Client placed " + cardName + " at (" + mirroredX + "," + mirroredY + ")");
-            }
+        boolean applied = gameState.placeOpponentCard(cardName, mirroredX, mirroredY);
+        if (applied) {
+            System.out.println("[HOST] Applied client deploy " + cardName + " at (" + mirroredX + "," + mirroredY + ")");
         }
     }
 
@@ -600,19 +635,27 @@ public class NetworkBattleController implements GameEventListener {
         Card card = gameState.getPlayerHand().getCard(selectedIndex);
         if (card == null) return;
         if (gameState.getPlayerElixir().getCurrentElixir() < card.getCost()) return;
+        
+        boolean isSpell = card.getType() == CardType.SPELL;
+        if (!isSpell) {
+            if (!gameState.getArena().getCell(tileX, tileY).canPlaceUnit()) return;
+            if (tileY < Arena.HEIGHT / 2) return; // Player side is bottom half
+        }
 
         if (networkService.isHost()) {
             // HOST: Place directly in the simulation
             gameState.placeCard(true, selectedIndex, tileX, tileY);
             System.out.println("[HOST] Placed " + card.getName() + " at (" + tileX + "," + tileY + ")");
         } else {
-            // CLIENT: Send placement request to HOST
-            networkService.send(NetworkMessage.cardPlaced(
-                networkService.getPlayerId(), card.getName(), tileX, tileY));
-            // Optimistic update for responsive UI
+            // CLIENT: Send input intent to HOST (authoritative)
+            long seq = inputSequence.incrementAndGet();
+            PlayerInput input = PlayerInput.cardDeploy(seq, networkService.getPlayerId(),
+                    card.getName(), tileX, tileY, System.currentTimeMillis());
+            networkService.send(NetworkMessage.playerInput(input));
+            // Optimistic update for responsive UI (host will correct via snapshots)
             gameState.getPlayerElixir().spend(card.getCost());
             gameState.getPlayerHand().playCard(selectedIndex);
-            System.out.println("[CLIENT] Sent " + card.getName() + " at (" + tileX + "," + tileY + ")");
+            System.out.println("[CLIENT] Sent input " + card.getName() + " at (" + tileX + "," + tileY + ")");
         }
 
         handView.clearSelection();

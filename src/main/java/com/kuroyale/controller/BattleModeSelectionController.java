@@ -101,14 +101,15 @@ public class BattleModeSelectionController {
      * Low coupling: Controller doesn't know battle-type-specific logic.
      */
     private void startBattle(BattleMode mode) {
-        // First validate that we can start a match
-        List<String> validationErrors = model.validateAndPrepareMatchStart();
-
-        if (!validationErrors.isEmpty()) {
-            StringBuilder errorMessage = new StringBuilder("Cannot start match. Please fix the following issues:\n\n");
-            validationErrors.forEach(error -> errorMessage.append("• ").append(error).append("\n"));
-            showError(errorMessage.toString());
-            return;
+        // Validate for local modes; allow NETWORK_PVP without login
+        if (mode != BattleMode.NETWORK_PVP) {
+            List<String> validationErrors = model.validateAndPrepareMatchStart();
+            if (!validationErrors.isEmpty()) {
+                StringBuilder errorMessage = new StringBuilder("Cannot start match. Please fix the following issues:\n\n");
+                validationErrors.forEach(error -> errorMessage.append("• ").append(error).append("\n"));
+                showError(errorMessage.toString());
+                return;
+            }
         }
 
         // Get the strategy for this battle mode

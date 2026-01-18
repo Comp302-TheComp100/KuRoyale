@@ -61,10 +61,8 @@ public class NetworkMessage implements Serializable {
             NetworkMessageType type = NetworkMessageType.valueOf(parts[0]);
             int playerId = Integer.parseInt(parts[1]);
             String data = parts.length > 2 ? parts[2] : "";
-            String timestamp = parts.length > 3 ? parts[3] : LocalTime.now().format(TIME_FORMAT);
             
-            NetworkMessage msg = new NetworkMessage(type, playerId, data);
-            return msg;
+            return new NetworkMessage(type, playerId, data);
         } catch (IllegalArgumentException e) {
             System.err.println("[NetworkMessage] Failed to parse: " + protocolString);
             return null;
@@ -128,7 +126,13 @@ public class NetworkMessage implements Serializable {
     }
     
     public static NetworkMessage heartbeat(int playerId) {
-        return new NetworkMessage(NetworkMessageType.HEARTBEAT, playerId, "");
+        return new NetworkMessage(NetworkMessageType.HEARTBEAT, playerId,
+                "PING:" + System.currentTimeMillis());
+    }
+    
+    public static NetworkMessage heartbeatPong(int playerId, long pingSentAt) {
+        return new NetworkMessage(NetworkMessageType.HEARTBEAT, playerId,
+                "PONG:" + pingSentAt);
     }
     
     public static NetworkMessage matchStart() {

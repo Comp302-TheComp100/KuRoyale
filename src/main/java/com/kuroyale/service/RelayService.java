@@ -27,13 +27,11 @@ import java.util.function.Consumer;
  */
 public class RelayService {
     
-    // FREE public MQTT brokers - multiple for fallback
+    // FREE public MQTT broker (single to keep room codes clean)
     private static final String[] BROKER_HOSTS = {
-        "broker.hivemq.com",
-        "test.mosquitto.org",
-        "broker.emqx.io"
+        "broker.hivemq.com"
     };
-    private static final int[] BROKER_PORTS = {1883, 1883, 1883};
+    private static final int[] BROKER_PORTS = {1883};
     private static final String TOPIC_PREFIX = "kuroyale/game/";
     
     // Retry configuration
@@ -86,7 +84,6 @@ public class RelayService {
     /**
      * Creates a new game room and returns the room code.
      * Share this code with your friend to let them join.
-     * Room code format: First char = broker index, rest = random code
      */
     public CompletableFuture<String> createRoom() {
         this.isHost = true;
@@ -96,8 +93,7 @@ public class RelayService {
         return connectWithRetry(0).thenApply(success -> {
             if (success) {
                 subscribeToRoom();
-                // Return room code with broker index prefix so client connects to same broker
-                return currentBrokerIndex + roomCode;
+                return roomCode;
             }
             return null;
         });
@@ -105,29 +101,16 @@ public class RelayService {
     
     /**
      * Joins an existing game room using a room code.
-     * Room code format: First char = broker index (0-2), rest = actual room code
      */
     public CompletableFuture<Boolean> joinRoom(String code) {
         this.isHost = false;
         code = code.toUpperCase().trim();
-        
-        // Extract broker index from first character
-        if (code.length() >= 1) {
-            char brokerChar = code.charAt(0);
-            if (brokerChar >= '0' && brokerChar <= '2') {
-                currentBrokerIndex = brokerChar - '0';
-                this.roomCode = code.substring(1); // Actual room code without broker prefix
-            } else {
-                this.roomCode = code; // Legacy format
-            }
-        } else {
-            this.roomCode = code;
-        }
+        this.roomCode = code;
         
         regeneratePlayerId(); // Fresh ID for each join attempt
         
-        // Connect directly to the same broker as the host
-        return connectToBroker(BROKER_HOSTS[currentBrokerIndex], BROKER_PORTS[currentBrokerIndex])
+        // Connect to broker
+        return connectToBroker(BROKER_HOSTS[0], BROKER_PORTS[0])
             .thenCompose(success -> {
                 if (success) {
                     subscribeToRoom();
