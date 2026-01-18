@@ -2,10 +2,10 @@ package com.kuroyale.view.battle;
 
 import com.kuroyale.model.logic.GameState;
 import com.kuroyale.model.entities.Troop;
+import com.kuroyale.model.enums.UnitState;
 
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
-import javafx.scene.shape.Circle;
 
 import javafx.geometry.Point2D;
 
@@ -32,6 +32,67 @@ public class TroopRenderer {
 
     public TroopRenderer(Pane unitLayer) {
         this.unitLayer = unitLayer;
+    }
+
+    private static double getVisualScale(Troop troop) {
+        if (troop == null || troop.getBaseCard() == null) {
+            return 1.0;
+        }
+        String cardKey = PngSequenceSprite.toCardKey(troop.getBaseCard().getName());
+        if ("skeletons".equals(cardKey) || "barbarians".equals(cardKey)) {
+            return 2.75 * 1.25;
+        } else if ("archers".equals(cardKey) || "minions".equals(cardKey) || "minion_horde".equals(cardKey)) {
+            return 1.5 * 1.25;
+        } else if ("bomber".equals(cardKey) || "mini_pekka".equals(cardKey) || "hog_rider".equals(cardKey)
+                || "giant".equals(cardKey) || "musketeer".equals(cardKey) || "wizard".equals(cardKey)) {
+            return 2.0 * 1.25;
+        } else if ("goblins".equals(cardKey) || "knight".equals(cardKey) || "valkyrie".equals(cardKey)) {
+            return 2.5 * 1.25;
+        } else if ("spear_goblins".equals(cardKey)) {
+            return 3.0 * 1.25;
+        }
+        return 1.0;
+    }
+
+    private static double getVisualWidthTiles(Troop troop) {
+        if (troop == null || troop.getBaseCard() == null) {
+            return 1.0;
+        }
+        double base = troop.getBaseCard().getWidth();
+        if (base <= 0) {
+            base = 1.0;
+        }
+        return base * getVisualScale(troop);
+    }
+
+    private static double getVisualHeightTiles(Troop troop) {
+        if (troop == null || troop.getBaseCard() == null) {
+            return 1.0;
+        }
+        double base = troop.getBaseCard().getHeight();
+        if (base <= 0) {
+            base = 1.0;
+        }
+        return base * getVisualScale(troop);
+    }
+
+    private static String getSideFolder(boolean isPlayerSide) {
+        return isPlayerSide ? "player" : "enemy";
+    }
+
+    private static String getTroopActionFolder(UnitState state) {
+        if (state == null) {
+            return null;
+        }
+        return switch (state) {
+            case MOVING -> "walk";
+            case ATTACKING -> "attack";
+            default -> null;
+        };
+    }
+
+    private static double clamp(double v, double min, double max) {
+        return Math.max(min, Math.min(max, v));
     }
 
     public void render(GameState gameState) {
@@ -72,8 +133,8 @@ public class TroopRenderer {
             return;
 
         // Get sprite size from card
-        double spriteW = troop.getBaseCard().getWidth() * TILE_SIZE;
-        double spriteH = troop.getBaseCard().getHeight() * TILE_SIZE;
+        double spriteW = getVisualWidthTiles(troop) * TILE_SIZE;
+        double spriteH = getVisualHeightTiles(troop) * TILE_SIZE;
 
         // Center sprite on world position
         double visualX = worldPos.getX() * TILE_SIZE - spriteW / 2;
@@ -89,7 +150,11 @@ public class TroopRenderer {
             unitNode = createTroopVisualPvP(troop, cardName);
             unitLayer.getChildren().add(unitNode);
             activeTroopVisuals.put(troop, unitNode);
+            // Play spawn animation to avoid visual flash
+            playSpawnAnimation(unitNode);
         }
+
+        updateTroopAnimationIfNeeded(troop, unitNode);
 
         unitNode.setLayoutX(visualX);
         unitNode.setLayoutY(visualY);
@@ -99,28 +164,13 @@ public class TroopRenderer {
 
     private Node createTroopVisualPvP(Troop troop, String cardName) {
         // Get sprite size from card
-        double spriteW = troop.getBaseCard().getWidth() * TILE_SIZE;
-        double spriteH = troop.getBaseCard().getHeight() * TILE_SIZE;
+        double spriteW = getVisualWidthTiles(troop) * TILE_SIZE;
+        double spriteH = getVisualHeightTiles(troop) * TILE_SIZE;
 
-        try {
-            String imgPath = troop.getBaseCard().getImagePath();
-            javafx.scene.image.Image img = new javafx.scene.image.Image(getClass().getResourceAsStream(imgPath));
-            javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(img);
-            iv.setFitWidth(spriteW);
-            iv.setFitHeight(spriteH);
-            iv.setPreserveRatio(true);
-            iv.setSmooth(true);
-            return iv;
-        } catch (Exception e) {
-            double radius = Math.min(spriteW, spriteH) / 2.5;
-            Circle fallback = new Circle(radius);
-            fallback.setFill(troop.isPlayerSide()
-                    ? (troop.isAirUnit() ? com.kuroyale.util.GameColors.PROJECTILE_USER
-                            : com.kuroyale.util.GameColors.PLAYER_TEAM)
-                    : (troop.isAirUnit() ? com.kuroyale.util.GameColors.PROJECTILE_ENEMY
-                            : com.kuroyale.util.GameColors.ENEMY_TEAM));
-            return fallback;
-        }
+        String fallbackImagePath = troop.getBaseCard().getImagePath();
+        PngSequenceSprite sprite = new PngSequenceSprite(null, spriteW, spriteH, fallbackImagePath);
+        lastTroopState.put(troop, null);
+        return sprite;
     }
 
     private void cleanupDeadTroops(Set<Troop> currentTroops) {
@@ -133,6 +183,9 @@ public class TroopRenderer {
                 Node node = entry.getValue();
                 if (node instanceof AnimatedSprite) {
                     ((AnimatedSprite) node).stop();
+                }
+                if (node instanceof PngSequenceSprite) {
+                    ((PngSequenceSprite) node).stop();
                 }
                 unitLayer.getChildren().remove(node);
 
@@ -155,8 +208,8 @@ public class TroopRenderer {
             return;
 
         // Get sprite size from card
-        double spriteW = troop.getBaseCard().getWidth() * TILE_SIZE;
-        double spriteH = troop.getBaseCard().getHeight() * TILE_SIZE;
+        double spriteW = getVisualWidthTiles(troop) * TILE_SIZE;
+        double spriteH = getVisualHeightTiles(troop) * TILE_SIZE;
 
         // Center sprite on world position
         double visualX = worldPos.getX() * TILE_SIZE - spriteW / 2;
@@ -173,7 +226,11 @@ public class TroopRenderer {
             unitNode = createTroopVisual(troop, cardName, gameState);
             unitLayer.getChildren().add(unitNode);
             activeTroopVisuals.put(troop, unitNode);
+            // Play spawn animation to avoid visual flash
+            playSpawnAnimation(unitNode);
         }
+
+        updateTroopAnimationIfNeeded(troop, unitNode);
 
         unitNode.setLayoutX(visualX);
         unitNode.setLayoutY(visualY);
@@ -183,28 +240,89 @@ public class TroopRenderer {
 
     private Node createTroopVisual(Troop troop, String cardName, GameState gameState) {
         // Get sprite size from card
-        double spriteW = troop.getBaseCard().getWidth() * TILE_SIZE;
-        double spriteH = troop.getBaseCard().getHeight() * TILE_SIZE;
+        double spriteW = getVisualWidthTiles(troop) * TILE_SIZE;
+        double spriteH = getVisualHeightTiles(troop) * TILE_SIZE;
 
-        try {
-            String imgPath = troop.getBaseCard().getImagePath();
-            javafx.scene.image.Image img = new javafx.scene.image.Image(getClass().getResourceAsStream(imgPath));
-            javafx.scene.image.ImageView iv = new javafx.scene.image.ImageView(img);
-            iv.setFitWidth(spriteW);
-            iv.setFitHeight(spriteH);
-            iv.setPreserveRatio(true);
-            iv.setSmooth(true);
-            return iv;
-        } catch (Exception e) {
-            double radius = Math.min(spriteW, spriteH) / 2.5;
-            Circle fallback = new Circle(radius);
-            fallback.setFill(troop.isPlayerSide()
-                    ? (troop.isAirUnit() ? com.kuroyale.util.GameColors.PROJECTILE_USER
-                            : com.kuroyale.util.GameColors.PLAYER_TEAM)
-                    : (troop.isAirUnit() ? com.kuroyale.util.GameColors.PROJECTILE_ENEMY
-                            : com.kuroyale.util.GameColors.ENEMY_TEAM));
-            return fallback;
+        String fallbackImagePath = troop.getBaseCard().getImagePath();
+        PngSequenceSprite sprite = new PngSequenceSprite(null, spriteW, spriteH, fallbackImagePath);
+        lastTroopState.put(troop, null);
+        return sprite;
+    }
+
+    private void updateTroopAnimationIfNeeded(Troop troop, Node unitNode) {
+        if (!(unitNode instanceof PngSequenceSprite sprite)) {
+            return;
         }
+
+        UnitState state = troop.getUnitState();
+        String action = getTroopActionFolder(state);
+        String side = getSideFolder(troop.isPlayerSide());
+
+        String newStateKey;
+        if (action == null) {
+            newStateKey = "static";
+        } else {
+            String cardKey = PngSequenceSprite.toCardKey(troop.getBaseCard().getName());
+            newStateKey = cardKey + ":" + side + ":" + action;
+        }
+
+        String lastKey = lastTroopState.get(troop);
+        if (newStateKey.equals(lastKey)) {
+            return;
+        }
+        lastTroopState.put(troop, newStateKey);
+
+        sprite.setFallbackImagePath(troop.getBaseCard().getImagePath());
+
+        if (action == null) {
+            sprite.updateSequence(null);
+            return;
+        }
+
+        String cardKey = PngSequenceSprite.toCardKey(troop.getBaseCard().getName());
+        String baseFolder = "/images/animations/troops/" + cardKey + "/" + side + "/" + action;
+
+        sprite.setLoop(true);
+
+        if ("attack".equals(action)) {
+            double hitSpeed = troop.getHitSpeed();
+            sprite.setLoopDurationSeconds(clamp(hitSpeed, 0.25, 3.5));
+        } else {
+            double move = troop.getMoveSpeed();
+            double walkLoop = 1.6 / Math.max(0.1, move);
+            sprite.setLoopDurationSeconds(clamp(walkLoop, 0.6, 1.8));
+        }
+
+        sprite.updateSequence(baseFolder);
+    }
+
+    /**
+     * Plays a spawn animation on the given node to prevent visual flash.
+     * The node starts invisible and small, then fades in with a scale-up effect.
+     */
+    private void playSpawnAnimation(Node node) {
+        // Start invisible and slightly scaled down
+        node.setOpacity(0.0);
+        node.setScaleX(0.5);
+        node.setScaleY(0.5);
+
+        // Fade in animation
+        javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(
+                javafx.util.Duration.millis(150), node);
+        fadeIn.setFromValue(0.0);
+        fadeIn.setToValue(1.0);
+
+        // Scale up animation
+        javafx.animation.ScaleTransition scaleUp = new javafx.animation.ScaleTransition(
+                javafx.util.Duration.millis(150), node);
+        scaleUp.setFromX(0.5);
+        scaleUp.setFromY(0.5);
+        scaleUp.setToX(1.0);
+        scaleUp.setToY(1.0);
+
+        // Play both animations together
+        javafx.animation.ParallelTransition spawnAnim = new javafx.animation.ParallelTransition(fadeIn, scaleUp);
+        spawnAnim.play();
     }
 
     private void renderHealthBar(Troop troop, double visualX, double visualY, double spriteW, double spriteH) {

@@ -20,9 +20,13 @@ public enum NetworkMessageType {
     LOBBY_UPDATE("Lobby state update"),
     MATCH_START("Match is starting"),
     
-    // Game State Synchronization
+    // Game State Synchronization (Host-Authoritative Model)
     ARENA_LAYOUT("Arena layout synchronization from host"),
-    CARD_PLACED("Card placement on arena"),
+    GAME_STATE_SYNC("Full authoritative game state from host - includes all entities, scores, timers"),
+    PLAYER_INPUT("Player input intent: seq:playerId:type:cardName:x:y:clientTime"),
+    CARD_PLACED("Card placement on arena (legacy)"),
+    CLIENT_INPUT("Client input: card placement request sent to host for validation (legacy)"),
+    REQUEST_SNAPSHOT("Client requests full state snapshot for resync"),
     UNIT_MOVE("Unit movement update"),
     UNIT_ATTACK("Unit attacking"),
     TOWER_DAMAGED("Tower took damage"),

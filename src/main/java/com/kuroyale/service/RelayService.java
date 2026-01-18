@@ -7,6 +7,7 @@ import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -26,10 +27,18 @@ import java.util.function.Consumer;
  */
 public class RelayService {
     
-    // FREE public MQTT broker - no account needed!
-    private static final String BROKER_HOST = "broker.hivemq.com";
-    private static final int BROKER_PORT = 1883;
+    // FREE public MQTT brokers - multiple for fallback
+    private static final String[] BROKER_HOSTS = {
+        "broker.hivemq.com",
+        "test.mosquitto.org",
+        "broker.emqx.io"
+    };
+    private static final int[] BROKER_PORTS = {1883, 1883, 1883};
     private static final String TOPIC_PREFIX = "kuroyale/game/";
+    
+    // Retry configuration
+    private static final int MAX_RETRY_ATTEMPTS = 3;
+    private static final long INITIAL_RETRY_DELAY_MS = 1000;
     
     private static RelayService instance;
     
@@ -38,6 +47,7 @@ public class RelayService {
     private String playerId;
     private boolean isHost;
     private boolean connected = false;
+    private int currentBrokerIndex = 0;
     
     // Callbacks
     private Consumer<String> onMessageReceived;
@@ -46,6 +56,14 @@ public class RelayService {
     private Consumer<String> onError;
     
     private RelayService() {
+        // Generate a unique player ID for this session
+        regeneratePlayerId();
+    }
+    
+    /**
+     * Regenerates the player ID to avoid connection collisions.
+     */
+    private void regeneratePlayerId() {
         this.playerId = UUID.randomUUID().toString().substring(0, 8);
     }
     
@@ -57,14 +75,24 @@ public class RelayService {
     }
     
     /**
+     * Resets the service for a fresh connection attempt.
+     */
+    public void reset() {
+        disconnect();
+        regeneratePlayerId();
+        currentBrokerIndex = 0;
+    }
+    
+    /**
      * Creates a new game room and returns the room code.
      * Share this code with your friend to let them join.
      */
     public CompletableFuture<String> createRoom() {
         this.isHost = true;
         this.roomCode = generateRoomCode();
+        regeneratePlayerId(); // Fresh ID for each room
         
-        return connect().thenApply(success -> {
+        return connectWithRetry(0).thenApply(success -> {
             if (success) {
                 subscribeToRoom();
                 return roomCode;
@@ -79,8 +107,9 @@ public class RelayService {
     public CompletableFuture<Boolean> joinRoom(String code) {
         this.isHost = false;
         this.roomCode = code.toUpperCase().trim();
+        regeneratePlayerId(); // Fresh ID for each join attempt
         
-        return connect().thenCompose(success -> {
+        return connectWithRetry(0).thenCompose(success -> {
             if (success) {
                 subscribeToRoom();
                 // Notify host that we joined
@@ -92,29 +121,99 @@ public class RelayService {
     }
     
     /**
-     * Connects to the free public MQTT broker.
+     * Connects to the MQTT broker with retry logic and broker fallback.
      */
-    private CompletableFuture<Boolean> connect() {
+    private CompletableFuture<Boolean> connectWithRetry(int attempt) {
+        if (attempt >= MAX_RETRY_ATTEMPTS * BROKER_HOSTS.length) {
+            // Tried all brokers multiple times
+            handleError("All connection attempts failed. Please try again later.");
+            return CompletableFuture.completedFuture(false);
+        }
+        
+        // Calculate which broker to try
+        currentBrokerIndex = (attempt / MAX_RETRY_ATTEMPTS) % BROKER_HOSTS.length;
+        String brokerHost = BROKER_HOSTS[currentBrokerIndex];
+        int brokerPort = BROKER_PORTS[currentBrokerIndex];
+        
+        // Calculate delay with exponential backoff
+        int retryWithinBroker = attempt % MAX_RETRY_ATTEMPTS;
+        long delay = retryWithinBroker == 0 ? 0 : INITIAL_RETRY_DELAY_MS * (1L << (retryWithinBroker - 1));
+        
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        
+        // Apply delay if this is a retry
+        if (delay > 0) {
+            System.out.println("[Relay] Waiting " + delay + "ms before retry...");
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                future.complete(false);
+                return future;
+            }
+        }
+        
+        // Try to connect
+        connectToBroker(brokerHost, brokerPort)
+            .whenComplete((success, throwable) -> {
+                if (throwable != null || !success) {
+                    String error = throwable != null ? throwable.getMessage() : "Connection failed";
+                    System.out.println("[Relay] Attempt " + (attempt + 1) + " failed: " + error);
+                    
+                    // Try next attempt
+                    connectWithRetry(attempt + 1)
+                        .whenComplete((retrySuccess, retryError) -> {
+                            future.complete(retrySuccess);
+                        });
+                } else {
+                    future.complete(true);
+                }
+            });
+        
+        return future;
+    }
+    
+    /**
+     * Connects to a specific MQTT broker.
+     */
+    private CompletableFuture<Boolean> connectToBroker(String host, int port) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         
         try {
-            System.out.println("[Relay] Connecting to relay server...");
+            System.out.println("[Relay] Connecting to " + host + ":" + port + "...");
+            
+            // Disconnect existing client if any
+            if (client != null) {
+                try {
+                    client.disconnect().get(2, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    // Ignore disconnect errors
+                }
+                client = null;
+            }
+            
+            // Create a unique client ID with timestamp to avoid collisions
+            String clientId = "kuroyale-" + playerId + "-" + System.currentTimeMillis() % 100000;
             
             client = MqttClient.builder()
                     .useMqttVersion5()
-                    .serverHost(BROKER_HOST)
-                    .serverPort(BROKER_PORT)
-                    .identifier("kuroyale-" + playerId)
+                    .serverHost(host)
+                    .serverPort(port)
+                    .identifier(clientId)
+                    .automaticReconnect()
+                        .initialDelay(1, TimeUnit.SECONDS)
+                        .maxDelay(30, TimeUnit.SECONDS)
+                        .applyAutomaticReconnect()
                     .buildAsync();
             
             client.connect()
+                    .orTimeout(10, TimeUnit.SECONDS)
                     .whenComplete((connAck, throwable) -> {
                         if (throwable != null) {
                             System.err.println("[Relay] Connection failed: " + throwable.getMessage());
-                            handleError("Connection failed: " + throwable.getMessage());
                             future.complete(false);
                         } else {
-                            System.out.println("[Relay] Connected to relay server!");
+                            System.out.println("[Relay] Connected to " + host + "!");
                             connected = true;
                             notifyConnectionChanged(true);
                             future.complete(true);
@@ -123,7 +222,6 @@ public class RelayService {
             
         } catch (Exception e) {
             System.err.println("[Relay] Error: " + e.getMessage());
-            handleError("Error: " + e.getMessage());
             future.complete(false);
         }
         
@@ -217,10 +315,16 @@ public class RelayService {
      * Disconnects from the relay.
      */
     public void disconnect() {
-        if (client != null && connected) {
+        connected = false;
+        
+        if (client != null) {
             System.out.println("[Relay] Disconnecting...");
-            client.disconnect();
-            connected = false;
+            try {
+                client.disconnect().get(2, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                // Ignore disconnect errors
+            }
+            client = null;
             notifyConnectionChanged(false);
         }
         roomCode = null;

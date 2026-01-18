@@ -59,6 +59,11 @@ public class BuildingRenderer {
             Map.Entry<Building, BuildingVisual> entry = buildingIt.next();
             Building b = entry.getKey();
             if (!currentBuildings.contains(b) || !b.isAlive()) {
+                for (Node child : entry.getValue().root.getChildren()) {
+                    if (child instanceof PngSequenceSprite) {
+                        ((PngSequenceSprite) child).stop();
+                    }
+                }
                 unitLayer.getChildren().remove(entry.getValue().root);
                 if (entry.getValue().laserBeam != null) {
                     unitLayer.getChildren().remove(entry.getValue().laserBeam);
@@ -86,6 +91,11 @@ public class BuildingRenderer {
             Map.Entry<Building, BuildingVisual> entry = buildingIt.next();
             Building b = entry.getKey();
             if (!currentBuildings.contains(b) || !b.isAlive()) {
+                for (Node child : entry.getValue().root.getChildren()) {
+                    if (child instanceof PngSequenceSprite) {
+                        ((PngSequenceSprite) child).stop();
+                    }
+                }
                 unitLayer.getChildren().remove(entry.getValue().root);
                 if (entry.getValue().laserBeam != null) {
                     unitLayer.getChildren().remove(entry.getValue().laserBeam);
@@ -121,6 +131,8 @@ public class BuildingRenderer {
 
             unitLayer.getChildren().add(visual.root);
             activeBuildingVisuals.put(b, visual);
+            // Play spawn animation to avoid visual flash
+            playSpawnAnimation(visual.root);
         } else {
             // Update existing bars
             updateBuildingBars(b, visual, w * TILE_SIZE);
@@ -135,30 +147,44 @@ public class BuildingRenderer {
         buildingStack.setPrefSize(TILE_SIZE * w, TILE_SIZE * h);
 
         try {
-            String imgPath = b.getImagePath();
-            InputStream is = imgPath != null ? getClass().getResourceAsStream(imgPath) : null;
-            if (is != null) {
-                Image img = new Image(is);
-                ImageView imageView = new ImageView(img);
-                imageView.setFitWidth(TILE_SIZE * w);
-                imageView.setFitHeight(TILE_SIZE * h);
-                imageView.setPreserveRatio(false);
-                imageView.setSmooth(true);
-                buildingStack.getChildren().add(imageView);
+            String side = b.isPlayerSide() ? "player" : "enemy";
+            String cardName = b.getCardName();
+            if (cardName == null && b.getBaseCard() != null) {
+                cardName = b.getBaseCard().getName();
+            }
+            String cardKey = PngSequenceSprite.toCardKey(cardName);
+
+            if (cardKey != null && !cardKey.isBlank()) {
+                String baseFolder = "/images/animations/buildings/" + cardKey + "/" + side + "/idle";
+                PngSequenceSprite sprite = new PngSequenceSprite(baseFolder, TILE_SIZE * w, TILE_SIZE * h,
+                        b.getImagePath());
+                sprite.setPreserveRatio(false);
+                buildingStack.getChildren().add(sprite);
             } else {
-                buildingStack.getChildren().add(createFallbackRect(b, w, h));
+                String imgPath = b.getImagePath();
+                InputStream is = imgPath != null ? getClass().getResourceAsStream(imgPath) : null;
+                if (is != null) {
+                    Image img = new Image(is);
+                    ImageView imageView = new ImageView(img);
+                    imageView.setFitWidth(TILE_SIZE * w);
+                    imageView.setFitHeight(TILE_SIZE * h);
+                    imageView.setPreserveRatio(false);
+                    imageView.setSmooth(true);
+                    buildingStack.getChildren().add(imageView);
+                } else {
+                    buildingStack.getChildren().add(createFallbackRect(b, w, h));
+                }
             }
         } catch (Exception e) {
             buildingStack.getChildren().add(createFallbackRect(b, w, h));
         }
 
         // Add Health Bar
-        HealthBarRenderer.HealthBarNodes hpNodes = HealthBarRenderer.createDetailedHealthBar(
+        HealthBarRenderer.HealthBarNodes hpNodes = HealthBarRenderer.createSimpleHealthBar(
                 Math.max(40, TILE_SIZE * w - 6),
-                GameConstants.HEALTH_BAR_HEIGHT_TEXT,
-                b.getCurrentHealth());
+                6.0);
 
-        StackPane.setMargin(hpNodes.root, new javafx.geometry.Insets(-35, 0, 0, 0));
+        StackPane.setMargin(hpNodes.root, new javafx.geometry.Insets(-45, 0, 0, 0));
         buildingStack.getChildren().add(hpNodes.root);
 
         // Apply initial color and width
@@ -279,5 +305,34 @@ public class BuildingRenderer {
                 visual.laserBeam.setVisible(false);
             }
         }
+    }
+
+    /**
+     * Plays a spawn animation on the given node to prevent visual flash.
+     * The node starts invisible and small, then fades in with a scale-up effect.
+     */
+    private void playSpawnAnimation(Node node) {
+        // Start invisible and slightly scaled down
+        node.setOpacity(0.0);
+        node.setScaleX(0.5);
+        node.setScaleY(0.5);
+
+        // Fade in animation
+        javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(
+                javafx.util.Duration.millis(150), node);
+        fadeIn.setFromValue(0.0);
+        fadeIn.setToValue(1.0);
+
+        // Scale up animation
+        javafx.animation.ScaleTransition scaleUp = new javafx.animation.ScaleTransition(
+                javafx.util.Duration.millis(150), node);
+        scaleUp.setFromX(0.5);
+        scaleUp.setFromY(0.5);
+        scaleUp.setToX(1.0);
+        scaleUp.setToY(1.0);
+
+        // Play both animations together
+        javafx.animation.ParallelTransition spawnAnim = new javafx.animation.ParallelTransition(fadeIn, scaleUp);
+        spawnAnim.play();
     }
 }

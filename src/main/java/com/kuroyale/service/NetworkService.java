@@ -168,6 +168,9 @@ public class NetworkService {
         setState(ConnectionState.CONNECTING);
         System.out.println("[NetworkService] Creating game room via relay...");
         
+        // Reset relay service for fresh connection
+        relayService.reset();
+        
         // Create room using the FREE relay service
         relayService.createRoom().thenAccept(roomCode -> {
             if (roomCode != null) {
@@ -176,7 +179,7 @@ public class NetworkService {
                     onConnectionReady.accept(true, roomCode);
                 }
             } else {
-                handleError("Failed to create room");
+                handleError("Failed to create room. Please try again.");
                 setState(ConnectionState.DISCONNECTED);
             }
         });
@@ -299,6 +302,9 @@ public class NetworkService {
         
         setState(ConnectionState.CONNECTING);
         System.out.println("[NetworkService] Joining room: " + roomCode);
+        
+        // Reset relay service for fresh connection
+        relayService.reset();
         
         // Join room using the FREE relay service
         relayService.joinRoom(roomCode).thenAccept(success -> {

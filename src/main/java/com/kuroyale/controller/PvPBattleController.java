@@ -180,8 +180,8 @@ public class PvPBattleController {
             }
 
             @Override
-            public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration,
-                    String effectType) {
+            public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
+                    double duration) {
             }
 
             @Override
