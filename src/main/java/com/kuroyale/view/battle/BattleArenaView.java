@@ -621,6 +621,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         javafx.application.Platform.runLater(() -> {
             boolean isFireball = "Fireball".equalsIgnoreCase(effectType) || "Wizard".equalsIgnoreCase(effectType)
                     || "Baby Dragon".equalsIgnoreCase(effectType);
+            boolean isZap = "Zap".equalsIgnoreCase(effectType);
 
             double cx = center.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
             double cy = center.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
@@ -629,8 +630,38 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             if (isFireball) {
                 // Use the procedural explosion effect
                 com.kuroyale.view.util.FireballFactory.playExplosionEffect(unitLayer, cx, cy, rPixels);
+            } else if (isZap) {
+                // Use zap.gif for Zap spell animation with visible area indicator
+                double size = rPixels * 2.0;
+
+                // Add a glowing circle to show the affected area
+                javafx.scene.shape.Circle areaCircle = new javafx.scene.shape.Circle(cx, cy, rPixels);
+                areaCircle.setFill(javafx.scene.paint.Color.rgb(255, 255, 0, 0.2)); // Yellow transparent
+                areaCircle.setStroke(javafx.scene.paint.Color.YELLOW);
+                areaCircle.setStrokeWidth(3.0);
+                javafx.scene.effect.DropShadow zapGlow = new javafx.scene.effect.DropShadow();
+                zapGlow.setColor(javafx.scene.paint.Color.YELLOW);
+                zapGlow.setRadius(20);
+                zapGlow.setSpread(0.5);
+                areaCircle.setEffect(zapGlow);
+                areaCircle.setMouseTransparent(true);
+                unitLayer.getChildren().add(areaCircle);
+                activeSpellVisuals.add(new ActiveSpellVisual(areaCircle, duration));
+
+                // Add the GIF animation on top
+                javafx.scene.image.Image gifImage = new javafx.scene.image.Image(
+                        getClass().getResourceAsStream("/gifs/zap.gif"));
+                javafx.scene.image.ImageView gifView = new javafx.scene.image.ImageView(gifImage);
+                gifView.setFitWidth(size);
+                gifView.setFitHeight(size);
+                gifView.setPreserveRatio(false);
+                gifView.setLayoutX(cx - size / 2.0);
+                gifView.setLayoutY(cy - size / 2.0);
+                gifView.setMouseTransparent(true);
+                unitLayer.getChildren().add(gifView);
+                activeSpellVisuals.add(new ActiveSpellVisual(gifView, duration));
             } else {
-                // Default visual for other spells (Arrows, Zap, etc.)
+                // Default visual for other spells (Arrows, etc.)
                 javafx.scene.shape.Circle aoe = new javafx.scene.shape.Circle(cx, cy, rPixels);
                 aoe.setFill(isPlayerSource ? com.kuroyale.util.GameColors.AOE_PLAYER
                         : com.kuroyale.util.GameColors.AOE_ENEMY);
