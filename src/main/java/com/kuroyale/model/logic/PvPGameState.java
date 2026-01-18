@@ -252,6 +252,7 @@ public class PvPGameState implements IBattleState {
         while (it.hasNext()) {
             Building b = it.next();
             if (!b.isAlive()) {
+                arena.freeFootprint(b); // Clear occupied cells so new cards can be placed
                 arena.getSpatialGrid().remove(b);
                 it.remove();
             }
