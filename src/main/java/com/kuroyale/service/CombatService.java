@@ -288,45 +288,6 @@ public class CombatService {
     }
 
     /**
-     * Calculates the distance from a point to the nearest tile of a structure's
-     * footprint.
-     * This is used for spell area damage to ensure spells hitting any part of a
-     * structure apply damage.
-     */
-    private double calculateDistanceToStructure(com.kuroyale.model.entities.GridPosition from, ICombatant structure) {
-        if (from == null || structure == null)
-            return Double.MAX_VALUE;
-
-        com.kuroyale.model.entities.GridPosition pos = structure.getPosition();
-        if (pos == null)
-            return Double.MAX_VALUE;
-
-        int x0 = pos.getX();
-        int y0 = pos.getY();
-        int w = Math.max(1, structure.getWidth());
-        int h = Math.max(1, structure.getHeight());
-
-        double minDist = Double.MAX_VALUE;
-
-        // Check all tiles in the structure's footprint
-        for (int dx = 0; dx < w; dx++) {
-            for (int dy = 0; dy < h; dy++) {
-                int tileX = x0 + dx;
-                int tileY = y0 + dy;
-                // Distance from spell center to tile center
-                double distX = from.getX() - tileX;
-                double distY = from.getY() - tileY;
-                double dist = Math.sqrt(distX * distX + distY * distY);
-                if (dist < minDist) {
-                    minDist = dist;
-                }
-            }
-        }
-
-        return minDist;
-    }
-
-    /**
      * Centralized Area Damage logic using world coordinates (Vector2).
      */
     public void applyAreaDamage(com.kuroyale.model.logic.IBattleState gameState,
