@@ -10,18 +10,18 @@ import java.util.List;
 
 /**
  * Represents a message sent over the network between players.
- * Implements the network protocol format: MESSAGE_TYPE|player_id|data|timestamp
- * Data fields use ';' as internal delimiter to avoid conflict with '|'.
+ * Implements the network protocol format: MESSAGE_TYPE§§§player_id§§§data§§§timestamp
  * 
- * Examples:
- * - CARD_PLACED|1|Knight;5.2,3.8|00:45
- * - TOWER_DAMAGED|2|CrownLeft;450|01:23
- * - ELIXIR_UPDATE|1|7|01:24
+ * IMPORTANT: Protocol uses §§§ as delimiter to avoid collision with:
+ * - | used between entities (troops, buildings)
+ * - @@ used between sections (TROOPS, BUILDINGS, GAME)
+ * - , used for entity fields
+ * - ; used for other data
  */
 public class NetworkMessage implements Serializable {
     private static final long serialVersionUID = 1L;
-    private static final String DELIMITER = "|";
-    private static final String DATA_DELIMITER = ";";  // Use different delimiter for data fields
+    private static final String DELIMITER = "§§§";  // Unique protocol delimiter
+    private static final String DATA_DELIMITER = ";";
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("mm:ss");
     
     private final NetworkMessageType type;
@@ -44,7 +44,7 @@ public class NetworkMessage implements Serializable {
     
     /**
      * Creates a network message from a protocol string.
-     * @param protocolString The string in format MESSAGE_TYPE|player_id|data|timestamp
+     * @param protocolString The string in format MESSAGE_TYPE§§§player_id§§§data§§§timestamp
      * @return The parsed NetworkMessage, or null if invalid
      */
     public static NetworkMessage fromProtocolString(String protocolString) {
@@ -52,7 +52,8 @@ public class NetworkMessage implements Serializable {
             return null;
         }
         
-        String[] parts = protocolString.split("\\|", 4);
+        // Split by our unique delimiter §§§
+        String[] parts = protocolString.split("§§§", 4);
         if (parts.length < 3) {
             return null;
         }
@@ -207,16 +208,22 @@ public class NetworkMessage implements Serializable {
     }
     
     /**
+     * Section delimiter for FULL_STATE_SYNC - must be different from entity delimiter (|)
+     */
+    public static final String SECTION_DELIMITER = "@@";
+    
+    /**
      * Creates a full state sync message with all entities.
-     * Format: TROOPS#troops_data|BUILDINGS#buildings_data|GAME#gameTime,pElixir,bElixir,pScore,bScore,doubleElixir,gameOver
+     * Format: TROOPS#troops_data@@BUILDINGS#buildings_data@@GAME#gameTime,pElixir,bElixir,pScore,bScore,doubleElixir,gameOver
+     * Note: Uses @@ as section delimiter to avoid collision with | used between entities
      */
     public static NetworkMessage fullStateSync(String troopData, String buildingData, 
             double gameTime, double playerElixir, double botElixir,
             int playerScore, int botScore, boolean doubleElixir, boolean gameOver) {
         StringBuilder sb = new StringBuilder();
         sb.append("TROOPS#").append(troopData != null ? troopData : "");
-        sb.append("|BUILDINGS#").append(buildingData != null ? buildingData : "");
-        sb.append("|GAME#").append(String.format("%.2f,%.2f,%.2f,%d,%d,%b,%b", 
+        sb.append(SECTION_DELIMITER).append("BUILDINGS#").append(buildingData != null ? buildingData : "");
+        sb.append(SECTION_DELIMITER).append("GAME#").append(String.format("%.2f,%.2f,%.2f,%d,%d,%b,%b", 
                 gameTime, playerElixir, botElixir, playerScore, botScore, doubleElixir, gameOver));
         return new NetworkMessage(NetworkMessageType.FULL_STATE_SYNC, 1, sb.toString());
     }

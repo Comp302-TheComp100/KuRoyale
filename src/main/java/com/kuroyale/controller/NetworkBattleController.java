@@ -551,12 +551,12 @@ public class NetworkBattleController implements GameEventListener {
                 double targetY = Double.parseDouble(parts[3]);
                 boolean hostIsPlayerSide = Boolean.parseBoolean(parts[4]);
                 
-                // Mirror for client perspective
+                // Mirror for client perspective: (W-1-x, H-1-y)
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
-                double clientX = (Arena.WIDTH - 1.0) - x;
-                double clientY = (Arena.HEIGHT - 1.0) - y;
-                double clientTargetX = (Arena.WIDTH - 1.0) - targetX;
-                double clientTargetY = (Arena.HEIGHT - 1.0) - targetY;
+                double clientX = (Arena.WIDTH - 1) - x;
+                double clientY = (Arena.HEIGHT - 1) - y;
+                double clientTargetX = (Arena.WIDTH - 1) - targetX;
+                double clientTargetY = (Arena.HEIGHT - 1) - targetY;
                 
                 // Clamp to valid arena bounds
                 clientX = Math.max(0, Math.min(Arena.WIDTH - 1, clientX));
@@ -623,6 +623,12 @@ public class NetworkBattleController implements GameEventListener {
         System.out.println("[NetworkBattle] HOST: Spawning client's " + cardName + 
             " at (" + mirroredX + ", " + mirroredY + ") [original: (" + x + ", " + y + ")]");
         
+        // Deduct elixir from the "bot" (client's) elixir pool for consistency
+        int cost = card.getCost();
+        if (gameState.getBotElixir().getCurrentElixir() >= cost) {
+            gameState.getBotElixir().spend(cost);
+        }
+        
         // Spawn as opponent (isPlayer=false from HOST's perspective = client's troop)
         gameState.placeCard(false, card, mirroredX, mirroredY);
     }
@@ -638,7 +644,8 @@ public class NetworkBattleController implements GameEventListener {
         if (data == null || data.isEmpty()) return;
         
         try {
-            String[] sections = data.split("\\|");
+            // Split by section delimiter (@@) - NOT entity delimiter (|)
+            String[] sections = data.split(NetworkMessage.SECTION_DELIMITER);
             String troopData = "";
             String buildingData = "";
             String gameData = "";
@@ -749,14 +756,13 @@ public class NetworkBattleController implements GameEventListener {
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
                 
                 // Mirror BOTH X and Y (180° rotation)
-                // Formula: mirrored = (DIMENSION - 1) - position
-                // This gives proper symmetry: x + mirroredX = DIMENSION - 1
-                double clientWorldX = (Arena.WIDTH - 1.0) - worldX;
-                double clientWorldY = (Arena.HEIGHT - 1.0) - worldY;
+                // Mirror for client perspective: (W-1-x, H-1-y)
+                double clientWorldX = (Arena.WIDTH - 1) - worldX;
+                double clientWorldY = (Arena.HEIGHT - 1) - worldY;
                 
                 // Clamp to valid arena bounds
-                clientWorldX = Math.max(0, Math.min(Arena.WIDTH - 1.0, clientWorldX));
-                clientWorldY = Math.max(0, Math.min(Arena.HEIGHT - 1.0, clientWorldY));
+                clientWorldX = Math.max(0, Math.min(Arena.WIDTH - 1, clientWorldX));
+                clientWorldY = Math.max(0, Math.min(Arena.HEIGHT - 1, clientWorldY));
                 
                 gameState.spawnTroopAtPosition(cardName, clientWorldX, clientWorldY, health, clientIsPlayerSide, state);
                 
@@ -805,12 +811,11 @@ public class NetworkBattleController implements GameEventListener {
                 // Mirror for client perspective
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
                 
-                // Mirror BOTH X and Y (180° rotation)
-                // For 0-indexed positions in arena of size WIDTH x HEIGHT:
-                // Single point x mirrors to (WIDTH - 1 - x)
-                // Building top-left at x with width W: new top-left = (WIDTH - 1) - (x + W - 1) = WIDTH - x - W
-                int clientGridX = (Arena.WIDTH - 1) - (gridX + width - 1);
-                int clientGridY = (Arena.HEIGHT - 1) - (gridY + height - 1);
+                // Mirror for client perspective: (W-1-x, H-1-y)
+                // For buildings with width W and height H starting at (x,y):
+                // The mirrored top-left = (W-1-(x+width-1), H-1-(y+height-1)) = (W-width-x, H-height-y)
+                int clientGridX = Arena.WIDTH - width - gridX;
+                int clientGridY = Arena.HEIGHT - height - gridY;
                 
                 // Clamp to valid arena bounds
                 clientGridX = Math.max(0, Math.min(Arena.WIDTH - width, clientGridX));
@@ -878,6 +883,8 @@ public class NetworkBattleController implements GameEventListener {
      * CRITICAL: Tower matching must account for mirrored perspective.
      * HOST's player towers = CLIENT's enemy towers (at top)
      * HOST's enemy towers = CLIENT's player towers (at bottom)
+     * 
+     * For PRINCESS towers, we must use position to distinguish left from right.
      */
     private void handleTowerSync(NetworkMessage message) {
         String towerData = message.getTowerSyncData();
@@ -903,11 +910,13 @@ public class NetworkBattleController implements GameEventListener {
                 // HOST's player towers = CLIENT's enemy towers
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
                 
-                // Find the tower by type and side
-                Tower targetTower = findTowerByTypeAndSide(arena, type, clientIsPlayerSide);
+                // Mirror the X position: (W-1-x)
+                int clientGridX = (Arena.WIDTH - 1) - hostGridX;
+                
+                // Find the tower by type, side, AND position (important for princess towers)
+                Tower targetTower = findTowerByTypeAndPosition(arena, type, clientIsPlayerSide, clientGridX);
                 
                 if (targetTower != null) {
-                    int oldHealth = targetTower.getCurrentHealth();
                     targetTower.setCurrentHealth(currentHealth);
                     
                     if (!isAlive && targetTower.isAlive()) {
@@ -934,15 +943,38 @@ public class NetworkBattleController implements GameEventListener {
     }
     
     /**
-     * Finds a tower by type and side.
-     * For PRINCESS towers, there may be multiple (left and right).
+     * Finds a tower by type, side, and X position.
+     * For PRINCESS towers, uses X position to distinguish left from right.
+     * LEFT princess is on left side of arena (low X), RIGHT is on right side (high X).
      */
-    private Tower findTowerByTypeAndSide(Arena arena, Tower.TowerType type, boolean isPlayerSide) {
+    private Tower findTowerByTypeAndPosition(Arena arena, Tower.TowerType type, boolean isPlayerSide, int clientGridX) {
         java.util.List<Tower> matching = arena.getTowersByType(type, isPlayerSide);
-        if (!matching.isEmpty()) {
-            return matching.get(0);  // Return first match
+        
+        if (matching.isEmpty()) {
+            return null;
         }
-        return null;
+        
+        // For KING tower, there's only one per side
+        if (type == Tower.TowerType.KING) {
+            return matching.get(0);
+        }
+        
+        // For PRINCESS towers, use X position to find the correct one
+        // Arena center is around WIDTH/2 = 9
+        boolean isLeftSide = clientGridX < Arena.WIDTH / 2;
+        
+        for (Tower tower : matching) {
+            GridPosition pos = tower.getPosition();
+            if (pos != null) {
+                boolean towerIsLeft = pos.getX() < Arena.WIDTH / 2;
+                if (towerIsLeft == isLeftSide) {
+                    return tower;
+                }
+            }
+        }
+        
+        // Fallback to first match if position matching fails
+        return matching.get(0);
     }
     
     /**
@@ -969,7 +1001,8 @@ public class NetworkBattleController implements GameEventListener {
     
     /**
      * Handles arena click for card placement.
-     * Both HOST and CLIENT can place cards on their own side.
+     * HOST places cards locally (authoritative).
+     * CLIENT sends placement request to HOST - does NOT place locally to avoid sync issues.
      */
     private void handleArenaClick(int tileX, int tileY) {
         int selectedIndex = handView.getSelectedIndex();
@@ -984,21 +1017,28 @@ public class NetworkBattleController implements GameEventListener {
             // HOST: Place card locally (authoritative)
             if (gameState.placeCard(true, selectedIndex, tileX, tileY)) {
                 System.out.println("[NetworkBattle] HOST: Placed " + card.getName() + " at (" + tileX + ", " + tileY + ")");
-                // Will be included in FULL_STATE_SYNC
                 handView.clearSelection();
                 arenaView.highlightValidCells(false, false);
             }
         } else {
-            // CLIENT: Place locally for immediate visual feedback, then send to HOST
-            // HOST will sync it back to confirm/correct position
-            if (gameState.placeCard(true, selectedIndex, tileX, tileY)) {
-                System.out.println("[NetworkBattle] CLIENT: Placed " + card.getName() + " locally at (" + tileX + ", " + tileY + ")");
-                
-                // Send to HOST (HOST will mirror coordinates and spawn on their side)
-                networkService.sendCardPlaced(card.getName(), tileX, tileY);
-                
-                handView.clearSelection();
-                arenaView.highlightValidCells(false, false);
+            // CLIENT: Do NOT place locally - send to HOST and wait for sync
+            // This prevents the "appear then disappear" issue
+            int cost = card.getCost();
+            if (gameState.getPlayerElixir().getCurrentElixir() >= cost) {
+                // Check if placement is valid (player's side)
+                if (tileY >= Arena.HEIGHT / 2 || card.getType() == CardType.SPELL) {
+                    System.out.println("[NetworkBattle] CLIENT: Sending " + card.getName() + " placement to HOST at (" + tileX + ", " + tileY + ")");
+                    
+                    // Send to HOST - HOST will spawn and sync back
+                    networkService.sendCardPlaced(card.getName(), tileX, tileY);
+                    
+                    // Deduct elixir and remove card from hand locally
+                    gameState.getPlayerElixir().spend(cost);
+                    gameState.getPlayerHand().playCard(selectedIndex);
+                    
+                    handView.clearSelection();
+                    arenaView.highlightValidCells(false, false);
+                }
             }
         }
     }
