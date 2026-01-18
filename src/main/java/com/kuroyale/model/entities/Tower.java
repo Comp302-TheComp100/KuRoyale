@@ -4,7 +4,7 @@ import com.kuroyale.model.enums.*;
 
 public class Tower implements ICombatant {
     private final TowerType type;
-    private final boolean playerSide; // Now explicitly tracked
+    private boolean playerSide; // Mutable for network perspective swap
     private int maxHealth;
     private int currentHealth;
     private int damage;
@@ -65,6 +65,10 @@ public class Tower implements ICombatant {
     @Override
     public boolean isPlayerSide() {
         return playerSide;
+    }
+    
+    public void setPlayerSide(boolean playerSide) {
+        this.playerSide = playerSide;
     }
 
     @Override

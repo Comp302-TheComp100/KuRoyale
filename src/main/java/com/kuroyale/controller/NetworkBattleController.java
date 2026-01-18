@@ -186,12 +186,15 @@ public class NetworkBattleController implements GameEventListener {
 
         ArenaLayout layoutToUse;
         if (!networkService.isHost() && networkService.getHostArenaLayout() != null) {
-            layoutToUse = mirrorArenaLayout(networkService.getHostArenaLayout());
+            // CLIENT: Use HOST's layout directly
+            layoutToUse = networkService.getHostArenaLayout();
         } else {
             layoutToUse = model.loadArenaLayout();
         }
 
         Arena arena = model.createArena(layoutToUse);
+        
+
         List<String> opponentDeckNames = networkService.getOpponentDeck();
         Deck opponentDeck = (opponentDeckNames != null && !opponentDeckNames.isEmpty())
                 ? model.createDeckFromNames(opponentDeckNames)
@@ -423,13 +426,43 @@ public class NetworkBattleController implements GameEventListener {
             gameState.setDoubleElixir(true);
         }
         
-        // Sync towers (MIRROR)
+        // Sync towers by MIRRORED POSITION (like troops/projectiles)
+        // Tower identity is stable - we do NOT invert ownership
+        // Mirror coordinates: mx = (WIDTH-1) - x, my = (HEIGHT-1) - y
+        // Then find matching tower by type + closest position
+        final double maxX = Arena.WIDTH - 1;
+        final double maxY = Arena.HEIGHT - 1;
+        
         for (NetworkGameStateSnapshot.TowerSnapshot ts : snapshot.getTowers()) {
+            // Mirror the snapshot coordinates (180° rotation)
+            int mirroredX = (int) Math.round(maxX - ts.getX());
+            int mirroredY = (int) Math.round(maxY - ts.getY());
+            String towerType = ts.getType();
+            
+            // Find the local tower with matching type and closest position
+            Tower bestMatch = null;
+            double bestDistance = Double.MAX_VALUE;
+            
             for (Tower tower : gameState.getArena().getAllTowers()) {
-                boolean isMyTower = !ts.isPlayerSide(); // Mirror ownership
-                if (tower.getType().name().equals(ts.getType()) && tower.isPlayerSide() == isMyTower) {
-                    tower.setCurrentHealth(ts.getHealth());
+                if (!tower.getType().name().equals(towerType)) continue;
+                
+                GridPosition towerPos = tower.getPosition();
+                if (towerPos == null) continue;
+                
+                // Calculate distance to mirrored position
+                double dx = towerPos.getX() - mirroredX;
+                double dy = towerPos.getY() - mirroredY;
+                double distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Match if within threshold (towers are 3-4 tiles wide)
+                if (distance < bestDistance && distance <= 2.0) {
+                    bestDistance = distance;
+                    bestMatch = tower;
                 }
+            }
+            
+            if (bestMatch != null) {
+                bestMatch.setCurrentHealth(ts.getHealth());
             }
         }
         
