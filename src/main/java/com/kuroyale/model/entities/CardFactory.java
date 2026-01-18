@@ -43,7 +43,7 @@ public class CardFactory {
     public Card createBomber() {
         return new Card("Bomber", 3, CardType.TROOP, Rarity.COMMON, 150, 100, 1.9, 5.0,
                 SpeedType.MEDIUM, TargetType.GROUND, false, true,
-                "Throws bombs that explode on impact.", 1, 0);
+                "Throws bombs that explode on impact.", 1, 0, 0.8, 0.8);
     }
 
     public Card createValkyrie() {
@@ -61,19 +61,19 @@ public class CardFactory {
     public Card createSkeletons() {
         return new Card("Skeletons", 1, CardType.TROOP, Rarity.COMMON, 30, 30, 1.0, 0,
                 SpeedType.VERY_FAST, TargetType.GROUND, false, false,
-                "Spawns 4 very weak but very fast soldiers.", 4, 0, 0.6, 0.6);
+                "Spawns 4 very weak but very fast soldiers.", 4, 0, 0.75, 0.75);
     }
 
     public Card createGoblins() {
         return new Card("Goblins", 2, CardType.TROOP, Rarity.COMMON, 80, 50, 1.1, 0,
                 SpeedType.FAST, TargetType.GROUND, false, false,
-                "Spawns 3 fast, weak melee fighters.", 3, 0, 0.7, 0.7);
+                "Spawns 3 fast, weak melee fighters.", 3, 0, 0.8, 0.8);
     }
 
     public Card createSpearGoblins() {
         return new Card("Spear Goblins", 2, CardType.TROOP, Rarity.COMMON, 52, 24, 1.3, 5.5,
                 SpeedType.FAST, TargetType.BOTH, false, false,
-                "Spawns 3 ranged goblins (can hit air).", 3, 0, 0.7, 0.7);
+                "Spawns 3 ranged goblins (can hit air).", 3, 0, 0.8, 0.8);
     }
 
     public Card createArchers() {

@@ -2,7 +2,7 @@ package com.kuroyale.util;
 
 public class GameConstants {
     // Grid Dimensions
-    public static final int TILE_SIZE = 18;
+    public static final int TILE_SIZE = 20;
 
     // Tower Dimensions
     public static final int PRINCESS_TOWER_SIZE = 3;

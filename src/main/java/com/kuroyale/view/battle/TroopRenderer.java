@@ -36,22 +36,14 @@ public class TroopRenderer {
 
     private static double getVisualScale(Troop troop) {
         if (troop == null || troop.getBaseCard() == null) {
-            return 1.0;
+            return 1.5;
         }
         String cardKey = PngSequenceSprite.toCardKey(troop.getBaseCard().getName());
-        if ("skeletons".equals(cardKey) || "barbarians".equals(cardKey)) {
-            return 2.75 * 1.25;
-        } else if ("archers".equals(cardKey) || "minions".equals(cardKey) || "minion_horde".equals(cardKey)) {
-            return 1.5 * 1.25;
-        } else if ("bomber".equals(cardKey) || "mini_pekka".equals(cardKey) || "hog_rider".equals(cardKey)
-                || "giant".equals(cardKey) || "musketeer".equals(cardKey) || "wizard".equals(cardKey)) {
-            return 2.0 * 1.25;
-        } else if ("goblins".equals(cardKey) || "knight".equals(cardKey) || "valkyrie".equals(cardKey)) {
-            return 2.5 * 1.25;
-        } else if ("spear_goblins".equals(cardKey)) {
-            return 3.0 * 1.25;
+
+        if ("giant".equals(cardKey) || "hog_rider".equals(cardKey) || "valkyrie".equals(cardKey)) {
+            return 1.0;
         }
-        return 1.0;
+        return troop.getBaseCard().getHeight() * 1.5;
     }
 
     private static double getVisualWidthTiles(Troop troop) {

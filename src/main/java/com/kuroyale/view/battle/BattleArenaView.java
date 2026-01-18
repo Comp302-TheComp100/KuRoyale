@@ -20,6 +20,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private final Pane unitLayer;
     private final Pane effectLayer;
     private final Canvas highlightLayer;
+    private final Canvas debugLayer;
     private final Pane arenaPane;
     private final GameState gameState;
     private final com.kuroyale.model.logic.PvPGameState pvpGameState; // For PvP mode
@@ -76,7 +77,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.effectLayer.setMouseTransparent(true);
         this.highlightLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
         this.highlightLayer.setMouseTransparent(true);
-        this.arenaPane = new Pane(grid, highlightLayer, unitLayer, effectLayer);
+        this.debugLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        this.debugLayer.setMouseTransparent(true);
+        this.arenaPane = new Pane(grid, highlightLayer, unitLayer, effectLayer, debugLayer);
         arenaPane.setPrefSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
 
         bindLayers();
@@ -110,7 +113,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.effectLayer.setMouseTransparent(true);
         this.highlightLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
         this.highlightLayer.setMouseTransparent(true);
-        this.arenaPane = new Pane(grid, highlightLayer, unitLayer, effectLayer);
+        this.debugLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        this.debugLayer.setMouseTransparent(true);
+        this.arenaPane = new Pane(grid, highlightLayer, unitLayer, effectLayer, debugLayer);
         arenaPane.setPrefSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
 
         bindLayers();
@@ -139,8 +144,10 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         unitLayer.layoutYProperty().bind(grid.layoutYProperty());
         effectLayer.layoutXProperty().bind(grid.layoutXProperty());
         effectLayer.layoutYProperty().bind(grid.layoutYProperty());
-        highlightLayer.layoutXProperty().bind(grid.layoutXProperty().add(TILE_SIZE / 2.0));
-        highlightLayer.layoutYProperty().bind(grid.layoutYProperty().add(TILE_SIZE / 2.0));
+        highlightLayer.layoutXProperty().bind(grid.layoutXProperty());
+        highlightLayer.layoutYProperty().bind(grid.layoutYProperty());
+        debugLayer.layoutXProperty().bind(grid.layoutXProperty());
+        debugLayer.layoutYProperty().bind(grid.layoutYProperty());
     }
 
     private void setupInteractions() {
@@ -369,6 +376,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         buildingRenderer.render(gameState);
         projectileRenderer.render(gameState.getProjectiles(), deltaTime);
         updateSpellEffects(deltaTime);
+        renderDebug();
     }
 
     public void updatePvP(double deltaTime) {
@@ -381,6 +389,95 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         buildingRenderer.renderPvP(pvpGameState);
         projectileRenderer.render(pvpGameState.getProjectiles(), deltaTime);
         updateSpellEffects(deltaTime);
+        renderDebug();
+    }
+
+    private void renderDebug() {
+        // Debug rendering disabled - uncomment to re-enable
+        /*
+         * GraphicsContext gc = debugLayer.getGraphicsContext2D();
+         * gc.clearRect(0, 0, debugLayer.getWidth(), debugLayer.getHeight());
+         * 
+         * Arena arena = getArena();
+         * if (arena == null)
+         * return;
+         * 
+         * // 1. Grid Lines
+         * gc.setStroke(Color.rgb(200, 200, 200, 0.15));
+         * gc.setLineWidth(1.0);
+         * for (int x = 0; x < Arena.WIDTH; x++) {
+         * for (int y = 0; y < Arena.HEIGHT; y++) {
+         * gc.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+         * }
+         * }
+         * 
+         * // 2. Highlight Bridge Walkable Areas
+         * gc.setFill(Color.rgb(0, 0, 255, 0.3)); // Blue transparent
+         * gc.setStroke(Color.BLUE);
+         * gc.setLineWidth(2.0);
+         * 
+         * for (int x = 0; x < Arena.WIDTH; x++) {
+         * for (int y = 0; y < Arena.HEIGHT; y++) {
+         * GridCell cell = arena.getCell(x, y);
+         * if (cell.getTileType() == TileType.BRIDGE) {
+         * gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+         * gc.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+         * }
+         * }
+         * }
+         * 
+         * // 3. Highlight Tower Areas
+         * gc.setFill(Color.rgb(0, 255, 0, 0.3)); // Green transparent
+         * gc.setStroke(Color.GREEN);
+         * gc.setLineWidth(2.0);
+         * 
+         * for (com.kuroyale.model.entities.Tower tower : arena.getAllTowers()) {
+         * com.kuroyale.model.entities.GridPosition pos = tower.getPosition();
+         * if (pos == null)
+         * continue;
+         * 
+         * int size = (tower.getType() ==
+         * com.kuroyale.model.entities.Tower.TowerType.KING) ? 4 : 3;
+         * 
+         * // Tower position is top-left
+         * gc.fillRect(pos.getX() * TILE_SIZE, pos.getY() * TILE_SIZE, size * TILE_SIZE,
+         * size * TILE_SIZE);
+         * gc.strokeRect(pos.getX() * TILE_SIZE, pos.getY() * TILE_SIZE, size *
+         * TILE_SIZE, size * TILE_SIZE);
+         * }
+         * 
+         * // 4. Highlight Troop Collision Areas
+         * java.util.List<com.kuroyale.model.entities.Troop> troops = null;
+         * if (gameState != null) {
+         * troops = gameState.getActiveTroops();
+         * } else if (pvpGameState != null) {
+         * troops = pvpGameState.getActiveTroops();
+         * }
+         * 
+         * if (troops != null) {
+         * gc.setStroke(Color.RED);
+         * gc.setLineWidth(1.0);
+         * gc.setFill(Color.rgb(255, 0, 0, 0.2));
+         * 
+         * for (com.kuroyale.model.entities.Troop troop : troops) {
+         * com.kuroyale.model.entities.Vector2 pos = troop.getWorldPosition();
+         * if (pos == null)
+         * continue;
+         * 
+         * double r = troop.getCollisionRadius();
+         * double dPixels = r * 2.0 * TILE_SIZE;
+         * 
+         * double cx = pos.getX() * TILE_SIZE;
+         * double cy = pos.getY() * TILE_SIZE;
+         * 
+         * double tlX = cx - dPixels / 2.0;
+         * double tlY = cy - dPixels / 2.0;
+         * 
+         * gc.fillOval(tlX, tlY, dPixels, dPixels);
+         * gc.strokeOval(tlX, tlY, dPixels, dPixels);
+         * }
+         * }
+         */
     }
 
     private int[] calculateTileCoordinates(double mouseX, double mouseY) {
