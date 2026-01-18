@@ -1113,8 +1113,15 @@ public class NetworkBattleController implements GameEventListener {
     
     private void forfeitAndExit() {
         if (!gameEnded && networkService != null && networkService.isConnected()) {
+            // Graceful shutdown: notify opponent before closing connection
+            System.out.println("[NetworkBattle] Sending forfeit notification to opponent...");
             networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
-            Timeline exitDelay = new Timeline(new KeyFrame(Duration.millis(200), e -> navigateToMenu()));
+            
+            // Small delay to ensure message is sent before disconnecting
+            Timeline exitDelay = new Timeline(new KeyFrame(Duration.millis(300), e -> {
+                System.out.println("[NetworkBattle] Gracefully closing connection...");
+                navigateToMenu();
+            }));
             exitDelay.play();
         } else {
             navigateToMenu();
@@ -1140,23 +1147,58 @@ public class NetworkBattleController implements GameEventListener {
         }
     }
     
+    private Timeline reconnectionTimer;
+    
     private void handleOpponentDisconnected() {
         if (gameEnded) return;
+        
+        // Show disconnection overlay with proper messages
         showDisconnectionOverlay();
+        if (disconnectionLabel != null) {
+            disconnectionLabel.setText("Opponent Disconnected");
+        }
+        if (reconnectingLabel != null) {
+            reconnectingLabel.setText("Attempting to reconnect...");
+        }
+        if (reconnectCountdownLabel != null) {
+            reconnectCountdownLabel.setText("5");
+        }
+        
+        System.out.println("[NetworkBattle] Opponent disconnected - waiting 5 seconds for reconnection");
+        
+        // Cancel any existing timer
+        if (reconnectionTimer != null) {
+            reconnectionTimer.stop();
+        }
         
         final int[] countdown = {5};
-        Timeline countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+        reconnectionTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             countdown[0]--;
+            
+            // Update countdown display
             if (reconnectCountdownLabel != null) {
                 reconnectCountdownLabel.setText(String.valueOf(countdown[0]));
             }
-            if (countdown[0] <= 0) {
+            
+            // Check if reconnected
+            if (networkService != null && networkService.getState() == ConnectionState.CONNECTED) {
+                System.out.println("[NetworkBattle] Opponent reconnected!");
                 hideDisconnectionOverlay();
-                showVictory("Opponent left the game - Victory!");
+                if (reconnectionTimer != null) {
+                    reconnectionTimer.stop();
+                }
+                return;
+            }
+            
+            // Countdown finished - award victory
+            if (countdown[0] <= 0) {
+                System.out.println("[NetworkBattle] Reconnection timeout - awarding victory");
+                hideDisconnectionOverlay();
+                showVictory("Opponent disconnected - Victory!");
             }
         }));
-        countdownTimer.setCycleCount(5);
-        countdownTimer.play();
+        reconnectionTimer.setCycleCount(5);
+        reconnectionTimer.play();
     }
     
     private void handleOpponentForfeit() {
