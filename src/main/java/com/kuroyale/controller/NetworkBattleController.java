@@ -42,7 +42,7 @@ import javafx.util.Duration;
  * SYMMETRY:
  * - Each player sees themselves at the bottom of the arena
  * - HOST's player side = CLIENT's opponent side (and vice versa)
- * - Coordinates are mirrored: Y' = (Arena.HEIGHT - 1) - Y
+ * - Coordinates are mirrored: X' = Arena.WIDTH - X, Y' = Arena.HEIGHT - Y
  * - Tower ownership is flipped: HOST's player towers = CLIENT's enemy towers
  */
 public class NetworkBattleController implements GameEventListener {
@@ -551,12 +551,12 @@ public class NetworkBattleController implements GameEventListener {
                 double targetY = Double.parseDouble(parts[3]);
                 boolean hostIsPlayerSide = Boolean.parseBoolean(parts[4]);
                 
-                // Mirror for client perspective: (W-1-x, H-1-y)
+                // Mirror for client perspective: (W-x, H-y)
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
-                double clientX = (Arena.WIDTH - 1) - x;
-                double clientY = (Arena.HEIGHT - 1) - y;
-                double clientTargetX = (Arena.WIDTH - 1) - targetX;
-                double clientTargetY = (Arena.HEIGHT - 1) - targetY;
+                double clientX = Arena.WIDTH - x;
+                double clientY = Arena.HEIGHT - y;
+                double clientTargetX = Arena.WIDTH - targetX;
+                double clientTargetY = Arena.HEIGHT - targetY;
                 
                 // Clamp to valid arena bounds
                 clientX = Math.max(0, Math.min(Arena.WIDTH - 1, clientX));
@@ -605,8 +605,7 @@ public class NetworkBattleController implements GameEventListener {
         int y = (int) Double.parseDouble(data[2]);
         
         // Mirror BOTH X and Y (180° rotation) for proper symmetry
-        // Formula: mirrored = (DIMENSION - 1) - position
-        // This gives proper symmetry: x + mirroredX = DIMENSION - 1
+        // CLIENT→HOST uses (W-1-x, H-1-y) which is inverse of HOST→CLIENT display
         int mirroredX = (Arena.WIDTH - 1) - x;
         int mirroredY = (Arena.HEIGHT - 1) - y;
         
@@ -756,13 +755,13 @@ public class NetworkBattleController implements GameEventListener {
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
                 
                 // Mirror BOTH X and Y (180° rotation)
-                // Mirror for client perspective: (W-1-x, H-1-y)
-                double clientWorldX = (Arena.WIDTH - 1) - worldX;
-                double clientWorldY = (Arena.HEIGHT - 1) - worldY;
+                // Mirror for client perspective: (W-x, H-y)
+                double clientWorldX = Arena.WIDTH - worldX;
+                double clientWorldY = Arena.HEIGHT - worldY;
                 
                 // Clamp to valid arena bounds
-                clientWorldX = Math.max(0, Math.min(Arena.WIDTH - 1, clientWorldX));
-                clientWorldY = Math.max(0, Math.min(Arena.HEIGHT - 1, clientWorldY));
+                clientWorldX = Math.max(0, Math.min(Arena.WIDTH, clientWorldX));
+                clientWorldY = Math.max(0, Math.min(Arena.HEIGHT, clientWorldY));
                 
                 gameState.spawnTroopAtPosition(cardName, clientWorldX, clientWorldY, health, clientIsPlayerSide, state);
                 
@@ -811,11 +810,10 @@ public class NetworkBattleController implements GameEventListener {
                 // Mirror for client perspective
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
                 
-                // Mirror for client perspective: (W-1-x, H-1-y)
-                // For buildings with width W and height H starting at (x,y):
-                // The mirrored top-left = (W-1-(x+width-1), H-1-(y+height-1)) = (W-width-x, H-height-y)
+                // Mirror for client perspective
+                // Formula adjusted based on testing feedback
                 int clientGridX = Arena.WIDTH - width - gridX;
-                int clientGridY = Arena.HEIGHT - height - gridY;
+                int clientGridY = Arena.HEIGHT - 1 - height - gridY;
                 
                 // Clamp to valid arena bounds
                 clientGridX = Math.max(0, Math.min(Arena.WIDTH - width, clientGridX));
@@ -910,8 +908,8 @@ public class NetworkBattleController implements GameEventListener {
                 // HOST's player towers = CLIENT's enemy towers
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
                 
-                // Mirror the X position: (W-1-x)
-                int clientGridX = (Arena.WIDTH - 1) - hostGridX;
+                // Mirror the X position: (W-x)
+                int clientGridX = Arena.WIDTH - hostGridX;
                 
                 // Find the tower by type, side, AND position (important for princess towers)
                 Tower targetTower = findTowerByTypeAndPosition(arena, type, clientIsPlayerSide, clientGridX);
