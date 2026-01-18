@@ -141,10 +141,13 @@ public class CombatService {
                 troop.setUnitState(com.kuroyale.model.enums.UnitState.ATTACKING);
                 troop.setTarget(target);
             } else {
-                // Only reset if it was attacking before
+                // Target died or moved out of range - clear everything so movement service can
+                // retarget
                 if (troop.getUnitState() == com.kuroyale.model.enums.UnitState.ATTACKING) {
-                    troop.setUnitState(com.kuroyale.model.enums.UnitState.MOVING);
+                    troop.setUnitState(com.kuroyale.model.enums.UnitState.IDLE);
                     troop.setTarget(null);
+                    troop.setTargetWorldPosition(null); // Clear so TroopMovementService finds new target
+                    troop.clearPath();
                 }
             }
         }

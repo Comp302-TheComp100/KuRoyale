@@ -8,6 +8,16 @@ import java.util.ArrayList;
 public class TargetingService {
 
     /**
+     * Result of target finding - contains both the target entity and the position
+     * to move to.
+     */
+    public static record TargetResult(ICombatant target, Vector2 position) {
+        public boolean isValid() {
+            return target != null && position != null;
+        }
+    }
+
+    /**
      * Finds the nearest valid enemy target or objective for a troop.
      * 
      * @requires state != null && troop != null && troop.getWorldPosition() != null
@@ -28,11 +38,21 @@ public class TargetingService {
      *          </pre>
      */
     public Vector2 findNearestEnemyOrObjective(IBattleState state, Troop troop) {
+        TargetResult result = findNearestEnemyOrObjectiveWithEntity(state, troop);
+        return result != null ? result.position() : null;
+    }
+
+    /**
+     * Finds the nearest valid enemy target, returning both the entity and position.
+     * This allows the troop to track when the target dies during movement.
+     */
+    public TargetResult findNearestEnemyOrObjectiveWithEntity(IBattleState state, Troop troop) {
         Vector2 troopWorldPos = troop.getWorldPosition();
         if (troopWorldPos == null)
             return null;
 
         double bestDist = Double.MAX_VALUE;
+        ICombatant bestTarget = null;
         Vector2 bestPos = null;
 
         // Compute detection radius: ranged cards use range+2, melee use base radius
@@ -77,6 +97,7 @@ public class TargetingService {
 
                 if (dist <= detectionRadius && dist < bestDist) {
                     bestDist = dist;
+                    bestTarget = other;
                     bestPos = otherWorldPos;
                 }
             } else if (candidate instanceof Building b) {
@@ -88,6 +109,7 @@ public class TargetingService {
                 double dist = troopWorldPos.distanceTo(buildingCenter);
                 if (dist < bestDist) {
                     bestDist = dist;
+                    bestTarget = b;
                     // Return perimeter position for pathfinding (still needed for ground units)
                     GridPosition perimeter = CombatUtils.getNearestPerimeterTile(state.getArena(), b,
                             troop.getPosition());
@@ -101,20 +123,21 @@ public class TargetingService {
         }
 
         if (bestPos != null)
-            return bestPos;
+            return new TargetResult(bestTarget, bestPos);
 
         // fallback to nearest enemy tower
-        return findNearestEnemyTower(state.getArena(), troop);
+        return findNearestEnemyTowerWithEntity(state.getArena(), troop);
     }
 
     /**
-     * Finds the nearest enemy tower position for a troop.
+     * Finds the nearest enemy tower, returning both entity and position.
      */
-    private Vector2 findNearestEnemyTower(Arena arena, Troop troop) {
+    private TargetResult findNearestEnemyTowerWithEntity(Arena arena, Troop troop) {
         Vector2 troopWorldPos = troop.getWorldPosition();
         if (troopWorldPos == null)
             return null;
 
+        Tower bestTower = null;
         Vector2 bestPos = null;
         double bestDist = Double.MAX_VALUE;
 
@@ -133,10 +156,15 @@ public class TargetingService {
             double dist = troopWorldPos.distanceTo(tilePos);
             if (dist < bestDist) {
                 bestDist = dist;
+                bestTower = tower;
                 bestPos = tilePos;
             }
         }
-        return bestPos;
+
+        if (bestTower != null && bestPos != null) {
+            return new TargetResult(bestTower, bestPos);
+        }
+        return null;
     }
 
     public boolean isValidTarget(Troop attacker, Troop candidate) {
