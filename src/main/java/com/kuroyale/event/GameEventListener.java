@@ -20,7 +20,7 @@ public interface GameEventListener {
         default void onBuildingProduction(com.kuroyale.model.entities.Building building, String resource, int amount) {
         }
 
-        default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
+        default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center,
                         double radius,
                         double duration) {
         }

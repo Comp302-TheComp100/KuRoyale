@@ -29,8 +29,8 @@ public class TroopMovementService {
 
             // retarget if current target is dead or null
             ICombatant currentTarget = troop.getTarget();
-            boolean targetIsDead = (currentTarget != null && !currentTarget.isAlive());
-            boolean hasNoTargetPos = (troop.getTargetWorldPosition() == null);
+            boolean targetIsDead = currentTarget != null && !currentTarget.isAlive();
+            boolean hasNoTargetPos = troop.getTargetWorldPosition() == null;
 
             if (targetIsDead) {
                 troop.setTarget(null);
@@ -41,34 +41,46 @@ public class TroopMovementService {
 
             // Check for retarget: dead target, no target position, or better target
             // available
-            GridPosition newTargetGrid = null;
-            boolean needsRetarget = targetIsDead || hasNoTargetPos;
+            TargetingService.TargetResult newTargetResult = null;
+            boolean needsRetarget = targetIsDead || hasNoTargetPos || (currentTarget == null);
 
             if (!needsRetarget) {
                 // Only check for opportunistic retarget if not forced
-                newTargetGrid = findRetargetPosition(state, troop);
-                needsRetarget = (newTargetGrid != null);
+                newTargetResult = findRetargetResult(state, troop);
+                needsRetarget = (newTargetResult != null);
             } else {
-                // Forced retarget - find new target
-                newTargetGrid = targetingService.findNearestEnemyOrObjective(state, troop);
+                // Forced retarget - find new target with entity reference
+                newTargetResult = targetingService.findNearestEnemyOrObjectiveWithEntity(state, troop);
             }
 
             if (needsRetarget) {
                 // Check cooldown to prevent constant retargeting
+                // ALWAYS allow retarget if target died - cooldown should not prevent this
                 if (!troop.canRetarget() && !targetIsDead && !hasNoTargetPos) {
                     // Skip retargeting, still on cooldown (unless forced by dead/null target)
                 } else {
-                    if (newTargetGrid != null) {
-                        troop.setTargetWorldPosition(Vector2.fromGridPosition(newTargetGrid));
+                    if (newTargetResult != null && newTargetResult.position() != null) {
+                        // Store the target entity so we can detect when it dies
+                        if (newTargetResult.target() != null) {
+                            troop.setTarget(newTargetResult.target());
+                        }
+                        troop.setTargetWorldPosition(newTargetResult.position());
                         troop.clearPath();
                         PathfindingStrategy strategy = troop.isAirUnit() ? airStrategy : groundStrategy;
-                        Deque<GridPosition> gridPath = strategy.computePath(arena, troop, newTargetGrid);
-                        // Convert and smooth GridPosition path to Vector2 waypoints
-                        Deque<Vector2> worldPath = convertPathToVector2(arena, gridPath, troop.isAirUnit());
-                        troop.setPath(worldPath);
+                        // Convert Vector2 target to GridPosition for A* pathfinding
+                        GridPosition destGrid = newTargetResult.position().toGridPosition();
+                        if (destGrid != null) {
+                            Deque<GridPosition> gridPath = strategy.computePath(arena, troop, destGrid);
+                            // Convert and smooth GridPosition path to Vector2 waypoints
+                            Deque<Vector2> worldPath = convertPathToVector2(arena, gridPath, troop.isAirUnit());
+                            // Append exact target for sub-tile precision
+                            if (!worldPath.isEmpty()) {
+                                worldPath.addLast(newTargetResult.position());
+                            }
+                            troop.setPath(worldPath);
+                        }
                     } else {
                         // No valid target found, clear path and set idle
-                        // Trigger cooldown to avoid retrying every frame
                         troop.setTargetWorldPosition(null);
                         troop.clearPath();
                         troop.triggerRetargetCooldown();
@@ -94,33 +106,33 @@ public class TroopMovementService {
     }
 
     /**
-     * Checks if the troop should retarget and returns the new target position.
+     * Checks if the troop should retarget and returns the new target.
      * Returns null if no retarget is needed or no valid target exists.
      */
-    private GridPosition findRetargetPosition(IBattleState state, Troop troop) {
+    private TargetingService.TargetResult findRetargetResult(IBattleState state, Troop troop) {
         // 1. Sticky Targeting: If already attacking, do not switch
         if (troop.getUnitState() == UnitState.ATTACKING)
             return null;
 
         // 2. Navigation: If path is finished or lost, we must find a target
         if (troop.getPath().isEmpty() || troop.getTargetWorldPosition() == null) {
-            return targetingService.findNearestEnemyOrObjective(state, troop);
+            return targetingService.findNearestEnemyOrObjectiveWithEntity(state, troop);
         }
 
         // 3. Opportunistic Targeting:
         // If we are moving check if a NEW enemy has entered our immediate attack range.
-        GridPosition nearestGrid = targetingService.findNearestEnemyOrObjective(state, troop);
-        if (nearestGrid == null)
+        TargetingService.TargetResult nearestResult = targetingService.findNearestEnemyOrObjectiveWithEntity(state,
+                troop);
+        if (nearestResult == null || nearestResult.position() == null)
             return null;
 
-        Vector2 nearestPos = Vector2.fromGridPosition(nearestGrid);
-        double distToNearest = troop.getWorldPosition().distanceTo(nearestPos);
+        double distToNearest = troop.getWorldPosition().distanceTo(nearestResult.position());
         double distToCurrentTarget = troop.getWorldPosition().distanceTo(troop.getTargetWorldPosition());
 
         // If the nearest enemy is closer than our current target, switch
         // 0.5 is a buffer to avoid switching targets too often
         if (distToNearest < distToCurrentTarget - 0.5) {
-            return nearestGrid;
+            return nearestResult;
         }
 
         return null;
@@ -135,9 +147,10 @@ public class TroopMovementService {
         List<GridPosition> original = new ArrayList<>(gridPath);
         Deque<Vector2> smoothedPath = new ArrayDeque<>();
 
-        // Start from first node
+        // SKIP the first node (troop's current tile center) - troop is already there
+        // Moving to tile center from sub-tile position causes backward jittering
         int current = 0;
-        smoothedPath.add(Vector2.fromGridPosition(original.get(0)));
+        // Don't add: smoothedPath.add(Vector2.fromGridPosition(original.get(0)));
 
         while (current < original.size() - 1) {
             int furthestVisible = current + 1;
@@ -275,7 +288,7 @@ public class TroopMovementService {
         // Use a safe search radius (max possible combined radius is roughly 1.8 for 2
         // giants, plus buffer)
         double searchRadius = 3.0;
-        List<ICombatant> nearby = grid.getNearby(proposedPos.toGridPosition(), searchRadius);
+        List<ICombatant> nearby = grid.getNearby(proposedPos, searchRadius);
 
         for (ICombatant candidate : nearby) {
             if (!(candidate instanceof Troop other))

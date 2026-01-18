@@ -55,7 +55,7 @@ public class Troop implements ICombatant {
     public void setTargetWorldPosition(Vector2 target) {
         this.targetWorldPosition = target;
     }
-    
+
     /**
      * Sets target world position from x, y coordinates (used for network sync).
      */
@@ -98,6 +98,7 @@ public class Troop implements ICombatant {
         return baseCard;
     }
 
+    @Override
     public Vector2 getWorldPosition() {
         return worldPosition;
     }
@@ -105,7 +106,7 @@ public class Troop implements ICombatant {
     public void setWorldPosition(Vector2 pos) {
         this.worldPosition = pos;
     }
-    
+
     /**
      * Sets world position from x, y coordinates (used for network sync).
      */
@@ -135,7 +136,7 @@ public class Troop implements ICombatant {
     public int getCurrentHealth() {
         return currentHealth;
     }
-    
+
     /**
      * Sets current health directly (used for network sync).
      */
@@ -185,8 +186,14 @@ public class Troop implements ICombatant {
 
     // ICombatant Implementation
 
+    @Override
     public GridPosition getCenterPosition() {
         return getPosition();
+    }
+
+    @Override
+    public Vector2 getCenterWorldPosition() {
+        return worldPosition; // Troops are point entities, center = position
     }
 
     public int getWidth() {

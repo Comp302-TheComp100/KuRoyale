@@ -519,7 +519,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     }
 
     @Override
-    public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center, double radius,
+    public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
             double duration) {
         javafx.application.Platform.runLater(() -> {
             double cx = center.getX() * TILE_SIZE + (TILE_SIZE / 2.0);

@@ -55,7 +55,7 @@ public class GameEventBus {
         new ArrayList<>(listeners).forEach(l -> l.onBuildingProduction(building, resource, amount));
     }
 
-    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
+    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center,
             double radius, double duration) {
 
         new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration));

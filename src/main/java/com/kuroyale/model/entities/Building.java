@@ -113,6 +113,23 @@ public class Building implements ICombatant {
         return GridPosition.tryCreate(cx, cy);
     }
 
+    @Override
+    public Vector2 getWorldPosition() {
+        if (position == null)
+            return null;
+        return Vector2.fromGridPosition(position);
+    }
+
+    @Override
+    public Vector2 getCenterWorldPosition() {
+        if (position == null)
+            return null;
+        // Precise center using floating point
+        return new Vector2(
+                position.getX() + width / 2.0,
+                position.getY() + height / 2.0);
+    }
+
     public int getWidth() {
         return width;
     }
@@ -132,7 +149,7 @@ public class Building implements ICombatant {
     public int getCurrentHealth() {
         return currentHealth;
     }
-    
+
     /**
      * Sets current health directly (used for network sync).
      */
