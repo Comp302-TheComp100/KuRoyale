@@ -62,7 +62,7 @@ public class GroundPathfindingStrategy implements PathfindingStrategy {
                     java.util.List<ICombatant> occupants = arena.getSpatialGrid().getAt(neighbor);
                     for (ICombatant c : occupants) {
                         if (c instanceof Troop && c != troop && c.isAlive()) {
-                            moveCost += 10; // Penalty for moving through another troop
+                            moveCost += 2; // Penalty for moving through another troop
                         }
                     }
                 }
