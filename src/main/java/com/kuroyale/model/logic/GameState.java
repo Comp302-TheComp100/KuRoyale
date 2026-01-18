@@ -442,27 +442,31 @@ public class GameState implements IBattleState {
         if (cardName == null) return false;
         Hand botHand = bot.getHand();
         int handIndex = -1;
+        Card card = null;
         for (int i = 0; i < Hand.HAND_SIZE; i++) {
-            Card card = botHand.getCard(i);
-            if (card != null && cardName.equals(card.getName())) {
+            Card candidate = botHand.getCard(i);
+            if (candidate != null && cardName.equals(candidate.getName())) {
                 handIndex = i;
+                card = candidate;
                 break;
             }
         }
-        if (handIndex == -1) {
-            return false;
+        
+        // Fallback: allow card by name even if not in hand (prevents input drops)
+        if (card == null) {
+            card = getCardByName(cardName);
         }
-        return placeOpponentCard(handIndex, x, y);
-    }
-    
-    private boolean placeOpponentCard(int handIndex, int x, int y) {
-        if (x < 0 || x >= Arena.WIDTH || y < 0 || y >= Arena.HEIGHT) {
+        if (card == null) {
             return false;
         }
         
-        Hand botHand = bot.getHand();
-        Card card = botHand.getCard(handIndex);
-        if (card == null) return false;
+        return placeOpponentCardInternal(card, handIndex, x, y);
+    }
+    
+    private boolean placeOpponentCardInternal(Card card, int handIndex, int x, int y) {
+        if (x < 0 || x >= Arena.WIDTH || y < 0 || y >= Arena.HEIGHT) {
+            return false;
+        }
         
         boolean isSpell = card.getType() == CardType.SPELL;
         
@@ -480,7 +484,9 @@ public class GameState implements IBattleState {
             java.util.List<ICombatant> spawnedUnits = spawnUnit(false, card, x, y);
             if (spawnedUnits != null) {
                 botElixir.spend(cost);
-                botHand.playCard(handIndex);
+                if (handIndex >= 0) {
+                    bot.getHand().playCard(handIndex);
+                }
                 GameEventBus.getInstance().publishElixirSpent(false, cost);
                 return true;
             }

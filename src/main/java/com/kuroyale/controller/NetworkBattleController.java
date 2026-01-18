@@ -186,7 +186,7 @@ public class NetworkBattleController implements GameEventListener {
 
         ArenaLayout layoutToUse;
         if (!networkService.isHost() && networkService.getHostArenaLayout() != null) {
-            layoutToUse = networkService.getHostArenaLayout();
+            layoutToUse = mirrorArenaLayout(networkService.getHostArenaLayout());
         } else {
             layoutToUse = model.loadArenaLayout();
         }
@@ -667,6 +667,28 @@ public class NetworkBattleController implements GameEventListener {
             int seconds = (int) gameState.getGameTime();
             timeLabel.setText(String.format("%02d:%02d", seconds / 60, seconds % 60));
         }
+    }
+
+    /**
+     * Mirrors the arena layout for the client's 180° perspective.
+     */
+    private ArenaLayout mirrorArenaLayout(ArenaLayout hostLayout) {
+        if (hostLayout == null) return null;
+        ArenaLayout mirrored = new ArenaLayout(hostLayout.getName());
+        final int maxX = Arena.WIDTH - 1;
+        final int maxY = Arena.HEIGHT - 1;
+        
+        for (GridPosition bridge : hostLayout.getBridgePositions()) {
+            mirrored.addBridgePosition(maxX - bridge.getX(), maxY - bridge.getY());
+        }
+        for (GridPosition princess : hostLayout.getPrincessTowerPositions()) {
+            mirrored.addPrincessTowerPosition(maxX - princess.getX(), maxY - princess.getY());
+        }
+        GridPosition king = hostLayout.getKingTowerPosition();
+        if (king != null) {
+            mirrored.setKingTowerPosition(maxX - king.getX(), maxY - king.getY());
+        }
+        return mirrored;
     }
 
     private void updateScoreDisplay() {
