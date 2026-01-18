@@ -274,6 +274,14 @@ public class GameState implements IBattleState {
     public boolean isDraw() {
         return isDraw;
     }
+    
+    /**
+     * Returns whether tiebreaker mode is active.
+     * In tiebreaker mode, the player with the lowest health tower loses.
+     */
+    public boolean isTiebreakerMode() {
+        return gameTime <= 0 && playerScore == botScore;
+    }
 
     public int getPlayerDamageTaken() {
         int damage = 0;
@@ -361,6 +369,20 @@ public class GameState implements IBattleState {
     public void setScores(int playerScore, int botScore) {
         this.playerScore = playerScore;
         this.botScore = botScore;
+    }
+    
+    /**
+     * Sets the player score directly (used for network sync).
+     */
+    public void setPlayerScore(int score) {
+        this.playerScore = score;
+    }
+    
+    /**
+     * Sets the bot/opponent score directly (used for network sync).
+     */
+    public void setBotScore(int score) {
+        this.botScore = score;
     }
     
     /**
@@ -568,14 +590,18 @@ public class GameState implements IBattleState {
     public void spawnBuildingAtPosition(String cardName, int gridX, int gridY, int health, boolean isPlayer, double lifetime) {
         Card card = getCardByName(cardName);
         if (card == null) {
-            System.err.println("[GameState] Unknown card for building spawn: " + cardName);
+            System.err.println("[GameState] Unknown card for building spawn: '" + cardName + "' - cardCatalog is " + (cardCatalog != null ? "set" : "NULL"));
             return;
         }
         
         int bw = Math.max(1, card.getFootprintWidthTiles());
         int bh = Math.max(1, card.getFootprintHeightTiles());
         
-        GridPosition pos = GridPosition.tryCreate(gridX, gridY);
+        // Clamp position to valid bounds
+        int clampedX = Math.max(0, Math.min(gridX, Arena.WIDTH - bw));
+        int clampedY = Math.max(0, Math.min(gridY, Arena.HEIGHT - bh));
+        
+        GridPosition pos = GridPosition.tryCreate(clampedX, clampedY);
         if (pos != null) {
             Building building = new Building(pos, bw, bh, isPlayer, card.getHp(), card.getImagePath(), card.getLifetime());
             building.configureCombatFromCard(card);
@@ -584,7 +610,63 @@ public class GameState implements IBattleState {
             
             activeBuildings.add(building);
             arena.getSpatialGrid().add(building);
+            System.out.println("[GameState] Building '" + cardName + "' spawned at (" + clampedX + ", " + clampedY + ") size " + bw + "x" + bh);
+        } else {
+            System.err.println("[GameState] Failed to create GridPosition for building at (" + clampedX + ", " + clampedY + ")");
         }
+    }
+    
+    /**
+     * Spawns a building directly without relying on card catalog (for network sync).
+     * This is a fallback method when card lookup fails.
+     */
+    public boolean spawnBuildingDirect(String cardName, int gridX, int gridY, int health, int maxHealth,
+            boolean isPlayer, double lifetime, int width, int height, String imagePath) {
+        
+        // First try using card catalog
+        Card card = getCardByName(cardName);
+        if (card != null) {
+            // Use card-based spawn
+            int bw = Math.max(1, card.getFootprintWidthTiles());
+            int bh = Math.max(1, card.getFootprintHeightTiles());
+            
+            int clampedX = Math.max(0, Math.min(gridX, Arena.WIDTH - bw));
+            int clampedY = Math.max(0, Math.min(gridY, Arena.HEIGHT - bh));
+            
+            GridPosition pos = GridPosition.tryCreate(clampedX, clampedY);
+            if (pos != null) {
+                Building building = new Building(pos, bw, bh, isPlayer, card.getHp(), card.getImagePath(), card.getLifetime());
+                building.configureCombatFromCard(card);
+                building.setCurrentHealth(health);
+                building.setRemainingLifetime(lifetime);
+                
+                activeBuildings.add(building);
+                arena.getSpatialGrid().add(building);
+                System.out.println("[GameState] Building '" + cardName + "' spawned via card at (" + clampedX + ", " + clampedY + ")");
+                return true;
+            }
+        }
+        
+        // Fallback: Create building directly with provided data
+        int clampedX = Math.max(0, Math.min(gridX, Arena.WIDTH - width));
+        int clampedY = Math.max(0, Math.min(gridY, Arena.HEIGHT - height));
+        
+        GridPosition pos = GridPosition.tryCreate(clampedX, clampedY);
+        if (pos != null) {
+            String imgPath = (imagePath != null && !imagePath.isEmpty()) ? imagePath : "images/cards/building_default.png";
+            Building building = new Building(pos, width, height, isPlayer, maxHealth, imgPath, (int) lifetime);
+            building.setCardName(cardName);
+            building.setCurrentHealth(health);
+            building.setRemainingLifetime(lifetime);
+            
+            activeBuildings.add(building);
+            arena.getSpatialGrid().add(building);
+            System.out.println("[GameState] Building '" + cardName + "' spawned DIRECTLY at (" + clampedX + ", " + clampedY + ") size " + width + "x" + height);
+            return true;
+        }
+        
+        System.err.println("[GameState] Failed to spawn building '" + cardName + "' at (" + gridX + ", " + gridY + ")");
+        return false;
     }
 
     public int getPlayerScore() {
@@ -853,8 +935,22 @@ public class GameState implements IBattleState {
     public List<Troop> getActiveTroops() {
         return activeTroops;
     }
+    
+    /**
+     * Alias for getActiveTroops() - used for network sync compatibility.
+     */
+    public List<Troop> getTroops() {
+        return activeTroops;
+    }
 
     public List<Building> getActiveBuildings() {
+        return activeBuildings;
+    }
+    
+    /**
+     * Alias for getActiveBuildings() - used for network sync compatibility.
+     */
+    public List<Building> getBuildings() {
         return activeBuildings;
     }
 

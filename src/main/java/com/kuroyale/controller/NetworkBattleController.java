@@ -32,16 +32,22 @@ import javafx.util.Duration;
 
 /**
  * Controller for Network Battle gameplay.
- * Integrates with existing game logic and synchronizes state between players.
  * 
- * GRASP Patterns:
- * - Controller: Handles UI events and game logic coordination
- * - Low Coupling: Delegates network operations to NetworkService
- * - Observer: Listens for game events and network messages
+ * ARCHITECTURE:
+ * - HOST runs the SINGLE authoritative game loop (gameState.update())
+ * - HOST broadcasts full state to CLIENT periodically
+ * - CLIENT does NOT run game logic - it ONLY renders state received from HOST
+ * - Card placements from CLIENT are sent to HOST, which processes them
+ * 
+ * SYMMETRY:
+ * - Each player sees themselves at the bottom of the arena
+ * - HOST's player side = CLIENT's opponent side (and vice versa)
+ * - Coordinates are mirrored: Y' = (Arena.HEIGHT - 1) - Y
+ * - Tower ownership is flipped: HOST's player towers = CLIENT's enemy towers
  */
 public class NetworkBattleController implements GameEventListener {
 
-    // FXML Components - matching battle.fxml structure
+    // FXML Components
     @FXML private StackPane arenaContainer;
     @FXML private HBox elixirContainer;
     @FXML private VBox handContainer;
@@ -81,8 +87,8 @@ public class NetworkBattleController implements GameEventListener {
     private BattleArenaView arenaView;
     private ElixirBar elixirBar;
     private HandView handView;
-    private AnimationTimer gameLoop;
-    private Timeline syncTimer;
+    private AnimationTimer renderLoop;  // Render loop (both HOST and CLIENT)
+    private Timeline syncTimer;         // Sync timer (HOST only broadcasts)
     private ArenaLayout currentArenaLayout;
     
     // Game state flags
@@ -94,29 +100,38 @@ public class NetworkBattleController implements GameEventListener {
     private long lastPingTime = 0;
     private long currentPing = 0;
     
-    // Authoritative host model - only host runs game logic
+    // HOST is the single source of truth
     private boolean isHost = false;
+    
+    // Sync interval (33ms = 30 updates per second for smooth updates)
+    private static final int SYNC_INTERVAL_MS = 33;
     
     @FXML
     private void initialize() {
-        // Initial setup - network service will be set via setter
+        // Network service will be set via setter
     }
     
     /**
      * Sets the network service and starts the game.
-     * Called by NetworkLobbyController after loading this scene.
      */
     public void setNetworkService(NetworkService networkService) {
         this.networkService = networkService;
         this.isHost = networkService.isHost();
         
-        System.out.println("[NetworkBattle] Initializing as " + (isHost ? "HOST (authoritative)" : "CLIENT (receives state)"));
+        System.out.println("[NetworkBattle] ====================================");
+        System.out.println("[NetworkBattle] Initializing as " + (isHost ? "HOST (AUTHORITATIVE)" : "CLIENT (RENDER ONLY)"));
+        System.out.println("[NetworkBattle] ====================================");
         
         setupNetworkCallbacks();
         initializeGame();
-        startGameLoop();
+        startRenderLoop();
         
-        // Subscribe to game events for network sync
+        // HOST: Start sync timer to broadcast state
+        if (isHost) {
+            startSyncTimer();
+        }
+        
+        // Subscribe to game events
         GameEventBus.getInstance().subscribe(this);
     }
     
@@ -128,7 +143,7 @@ public class NetworkBattleController implements GameEventListener {
             
             if (state == ConnectionState.RECONNECTING) {
                 showDisconnectionOverlay();
-            } else if (state == ConnectionState.CONNECTED && disconnectionOverlay.isVisible()) {
+            } else if (state == ConnectionState.CONNECTED && disconnectionOverlay != null && disconnectionOverlay.isVisible()) {
                 hideDisconnectionOverlay();
             } else if (state == ConnectionState.DISCONNECTED && !gameEnded) {
                 handleOpponentDisconnected();
@@ -141,8 +156,8 @@ public class NetworkBattleController implements GameEventListener {
         String myName = networkService.getPlayerName();
         String oppName = networkService.getOpponentName();
         
-        playerNameLabel.setText(myName != null ? myName : "You");
-        opponentNameLabel.setText(oppName != null ? oppName : "Opponent");
+        if (playerNameLabel != null) playerNameLabel.setText(myName != null ? myName : "You");
+        if (opponentNameLabel != null) opponentNameLabel.setText(oppName != null ? oppName : "Opponent");
         
         // Get current user
         User currentUser = model.getCurrentUser();
@@ -151,49 +166,38 @@ public class NetworkBattleController implements GameEventListener {
             return;
         }
         
-        // Set current user in arena service
         model.setCurrentUserInArenaService(currentUser);
         
-        // Create deck
+        // Create player's deck
         Deck playerDeck = model.createDeckFromNames(currentUser.getDeck());
         
-        // Determine which arena layout to use:
-        // - If we're the client and received the host's layout, use that
-        // - Otherwise (we're the host or no layout received), use our own layout
+        // Determine arena layout (HOST's layout is used by both)
         ArenaLayout layoutToUse;
-        if (!networkService.isHost() && networkService.getHostArenaLayout() != null) {
-            // Client: use the host's arena layout for consistency
+        if (!isHost && networkService.getHostArenaLayout() != null) {
             layoutToUse = networkService.getHostArenaLayout();
-            System.out.println("[NetworkBattle] Using HOST's arena layout: " + layoutToUse.getName());
+            System.out.println("[NetworkBattle] CLIENT using HOST's arena layout: " + layoutToUse.getName());
         } else {
-            // Host: use own layout
             layoutToUse = model.loadArenaLayout();
-            System.out.println("[NetworkBattle] Using own arena layout: " + layoutToUse.getName());
+            System.out.println("[NetworkBattle] HOST using own arena layout: " + layoutToUse.getName());
         }
         currentArenaLayout = layoutToUse;
         
         // Create Arena
         Arena arena = model.createArena(layoutToUse);
         
-        // Create opponent deck (mirrored for network play)
+        // Create opponent deck
         Deck opponentDeck = model.createBotDeck(currentUser);
         
         // Initialize GameState
         gameState = new GameState(playerDeck, opponentDeck, arena);
         gameState.setCardCatalog(name -> model.getCardByName(name));
-        
-        // IMPORTANT: Enable network mode to disable bot AI
-        // In network mode, the opponent is a real player, not AI
-        gameState.setNetworkMode(true);
+        gameState.setNetworkMode(true);  // Disable bot AI
         
         // Initialize UI Components
         arenaView = new BattleArenaView(gameState);
         arenaContainer.getChildren().add(arenaView);
         
-        // Handle clicks on arena for card placement
-        arenaView.setOnGridClicked((tileX, tileY) -> {
-            handleArenaClick(tileX, tileY);
-        });
+        arenaView.setOnGridClicked((tileX, tileY) -> handleArenaClick(tileX, tileY));
         
         elixirBar = new ElixirBar(gameState.getPlayerElixir());
         elixirContainer.getChildren().add(elixirBar);
@@ -214,8 +218,13 @@ public class NetworkBattleController implements GameEventListener {
         updateScoreDisplay();
     }
     
-    private void startGameLoop() {
-        gameLoop = new AnimationTimer() {
+    /**
+     * Starts the render loop. Both HOST and CLIENT run this.
+     * - HOST: Runs full game logic
+     * - CLIENT: Updates elixir locally (for responsive UI) but receives authoritative state from HOST
+     */
+    private void startRenderLoop() {
+        renderLoop = new AnimationTimer() {
             private long lastTime = 0;
             
             @Override
@@ -230,99 +239,189 @@ public class NetworkBattleController implements GameEventListener {
                 double deltaTime = (now - lastTime) / 1_000_000_000.0;
                 lastTime = now;
                 
-                update(deltaTime);
+                try {
+                    if (isHost) {
+                        // HOST: Run full game logic - THE SINGLE AUTHORITATIVE GAME LOOP
+                        gameState.update(deltaTime);
+                        
+                        // Check game over
+                        if (gameState.isGameOver() && !gameEnded) {
+                            endGame();
+                        }
+                    } else {
+                        // CLIENT: Update elixir and timer locally for responsive UI
+                        // (Will be corrected by FULL_STATE_SYNC from HOST)
+                        gameState.getPlayerElixir().update(deltaTime);
+                        
+                        // Update local timer (will be synced from HOST)
+                        if (gameState.getGameTime() > 0) {
+                            gameState.setGameTime(gameState.getGameTime() - deltaTime);
+                        }
+                    }
+                    
+                    // Update UI (both HOST and CLIENT)
+                    updateUI(deltaTime);
+                } catch (Exception e) {
+                    System.err.println("[NetworkBattle] Error in render loop: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         };
-        gameLoop.start();
-        
-        // Sync timer - periodically sync state with opponent
-        syncTimer = new Timeline(new KeyFrame(Duration.millis(config.getSyncInterval()), e -> syncGameState()));
-        syncTimer.setCycleCount(Timeline.INDEFINITE);
-        syncTimer.play();
-    }
-    
-    private void update(double deltaTime) {
-        if (isHost) {
-            // HOST: Run full authoritative game logic - this is the ONLY game loop
-            gameState.update(deltaTime);
-        } else {
-            // CLIENT: Render only - NO game logic!
-            // All entity positions and game state come from host via FULL_STATE_SYNC
-            gameState.updateRenderOnly(deltaTime);
-        }
-        
-        // Update UI elements (both host and client)
-        elixirBar.update();
-        handView.update();
-        arenaView.update(deltaTime);
-        
-        // Update timer display
-        updateTimerDisplay();
-        
-        // Update score display
-        updateScoreDisplay();
-        
-        // Check for Double Elixir
-        if (gameState.isDoubleElixir() && !doubleElixirShown) {
-            doubleElixirShown = true;
-            elixirBar.setDoubleElixirActive(true);
-        }
-        
-        // Check for Game Over (host determines this)
-        if (isHost && gameState.isGameOver() && !gameEnded) {
-            endGame();
-        }
-    }
-    
-    private void syncGameState() {
-        if (gameEnded || !networkService.isConnected()) return;
-        
-        if (isHost) {
-            // HOST: Send FULL authoritative state to client
-            // This is the single source of truth - client just renders this
-            
-            // Serialize all entities
-            String troopData = gameState.serializeTroops();
-            String buildingData = gameState.serializeBuildings();
-            
-            // Send full state sync with ALL game data
-            networkService.send(NetworkMessage.fullStateSync(
-                troopData,
-                buildingData,
-                gameState.getGameTime(),
-                gameState.getPlayerElixir().getCurrentElixir(),
-                gameState.getBotElixir().getCurrentElixir(),
-                gameState.getPlayerScore(),
-                gameState.getBotScore(),
-                gameState.isDoubleElixir(),
-                gameState.isGameOver()
-            ));
-            
-            // Send tower health sync
-            String towerData = buildTowerSyncData();
-            if (towerData != null && !towerData.isEmpty()) {
-                networkService.send(NetworkMessage.towerSync(towerData));
-            }
-            
-            // Check if game should end and notify client immediately
-            if (gameState.isGameOver() && !gameEnded) {
-                endGame();
-            }
-        }
-        
-        // Both send elixir update (for UI responsiveness on both sides)
-        networkService.sendElixirUpdate(gameState.getPlayerElixir().getCurrentElixir());
-        
-        // Measure ping
-        lastPingTime = System.currentTimeMillis();
-        networkService.send(NetworkMessage.heartbeat(networkService.getPlayerId()));
+        renderLoop.start();
     }
     
     /**
-     * Builds tower sync data string for network transmission.
-     * Format: towerType,isPlayerSide,currentHealth,maxHealth,gridX,gridY;...
+     * HOST: Starts the sync timer to broadcast state to client.
      */
-    private String buildTowerSyncData() {
+    private void startSyncTimer() {
+        syncTimer = new Timeline(new KeyFrame(Duration.millis(SYNC_INTERVAL_MS), e -> {
+            if (!gameEnded && networkService.isConnected()) {
+                broadcastFullState();
+            }
+        }));
+        syncTimer.setCycleCount(Timeline.INDEFINITE);
+        syncTimer.play();
+        System.out.println("[NetworkBattle] HOST sync timer started (interval: " + SYNC_INTERVAL_MS + "ms)");
+    }
+    
+    /**
+     * HOST: Broadcasts complete game state to client.
+     */
+    private void broadcastFullState() {
+        if (!isHost) return;
+        
+        // 1. Send full entity state (troops, buildings, projectiles)
+        String troopData = serializeTroopsForNetwork();
+        String buildingData = serializeBuildingsForNetwork();
+        String projectileData = serializeProjectilesForNetwork();
+        
+        // Log sync details
+        int troopCount = troopData.isEmpty() ? 0 : troopData.split("\\|").length;
+        int buildingCount = buildingData.isEmpty() ? 0 : buildingData.split("\\|").length;
+        System.out.println("[NetworkBattle] HOST: Broadcasting state - Troops: " + troopCount + ", Buildings: " + buildingCount);
+        
+        networkService.send(NetworkMessage.fullStateSync(
+            troopData,
+            buildingData,
+            gameState.getGameTime(),
+            gameState.getPlayerElixir().getCurrentElixir(),
+            gameState.getBotElixir().getCurrentElixir(),
+            gameState.getPlayerScore(),
+            gameState.getBotScore(),
+            gameState.isDoubleElixir(),
+            gameState.isGameOver()
+        ));
+        
+        // 2. Send tower health sync
+        String towerData = serializeTowersForNetwork();
+        if (towerData != null && !towerData.isEmpty()) {
+            networkService.send(NetworkMessage.towerSync(towerData));
+        }
+        
+        // 3. Send projectile sync for visual effects
+        if (projectileData != null && !projectileData.isEmpty()) {
+            networkService.send(NetworkMessage.troopSync(projectileData)); // Reuse troopSync message type
+        }
+    }
+    
+    /**
+     * Serializes troops for network transmission.
+     * Format: cardName,worldX,worldY,health,isPlayerSide,state|...
+     */
+    private String serializeTroopsForNetwork() {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        
+        for (Troop troop : gameState.getActiveTroops()) {
+            if (!troop.isAlive()) continue;
+            
+            if (!first) sb.append("|");
+            first = false;
+            
+            Card card = troop.getBaseCard();
+            Vector2 pos = troop.getWorldPosition();
+            
+            sb.append(card != null ? card.getName() : "Unknown")
+              .append(",").append(String.format("%.2f", pos.getX()))
+              .append(",").append(String.format("%.2f", pos.getY()))
+              .append(",").append(troop.getCurrentHealth())
+              .append(",").append(troop.isPlayerSide())
+              .append(",").append(troop.getUnitState().name());
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Serializes buildings for network transmission.
+     * Format: cardName,gridX,gridY,health,isPlayerSide,lifetime,width,height,maxHealth,imagePath|...
+     */
+    private String serializeBuildingsForNetwork() {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        
+        for (Building building : gameState.getActiveBuildings()) {
+            if (!building.isAlive()) continue;
+            
+            if (!first) sb.append("|");
+            first = false;
+            
+            GridPosition pos = building.getPosition();
+            
+            sb.append(building.getCardName() != null ? building.getCardName() : "Building")
+              .append(",").append(pos.getX())
+              .append(",").append(pos.getY())
+              .append(",").append(building.getCurrentHealth())
+              .append(",").append(building.isPlayerSide())
+              .append(",").append(String.format("%.1f", building.getRemainingLifetime()))
+              .append(",").append(building.getWidth())
+              .append(",").append(building.getHeight())
+              .append(",").append(building.getMaxHealth())
+              .append(",").append(building.getImagePath() != null ? building.getImagePath() : "");
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Serializes projectiles for network transmission (for visual effects).
+     * Format: PROJ#x,y,targetX,targetY,isPlayerSide|...
+     */
+    private String serializeProjectilesForNetwork() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("PROJ#");
+        boolean first = true;
+        
+        for (Projectile proj : gameState.getProjectiles()) {
+            if (!proj.isActive()) continue;
+            
+            if (!first) sb.append("|");
+            first = false;
+            
+            Vector2 pos = proj.getPosition();
+            ICombatant target = proj.getTarget();
+            double targetX = pos.getX();
+            double targetY = pos.getY();
+            if (target != null && target.getCenterPosition() != null) {
+                targetX = target.getCenterPosition().getX();
+                targetY = target.getCenterPosition().getY();
+            }
+            
+            sb.append(String.format("%.2f", pos.getX()))
+              .append(",").append(String.format("%.2f", pos.getY()))
+              .append(",").append(String.format("%.2f", targetX))
+              .append(",").append(String.format("%.2f", targetY))
+              .append(",").append(proj.isPlayerSide());
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Serializes towers for network transmission.
+     * Format: towerType,isPlayerSide,currentHealth,maxHealth,gridX,gridY,isAlive;...
+     */
+    private String serializeTowersForNetwork() {
         if (gameState == null || gameState.getArena() == null) return null;
         
         StringBuilder sb = new StringBuilder();
@@ -333,86 +432,71 @@ public class NetworkBattleController implements GameEventListener {
             if (!first) sb.append(";");
             first = false;
             
+            GridPosition pos = tower.getPosition();
             sb.append(tower.getType().name())
               .append(",").append(tower.isPlayerSide())
               .append(",").append(tower.getCurrentHealth())
               .append(",").append(tower.getMaxHealth())
-              .append(",").append(tower.getPosition().getX())
-              .append(",").append(tower.getPosition().getY())
+              .append(",").append(pos != null ? pos.getX() : 0)
+              .append(",").append(pos != null ? pos.getY() : 0)
               .append(",").append(tower.isAlive());
         }
         
         return sb.toString();
     }
     
-    private void handleNetworkMessage(NetworkMessage message) {
-        System.out.println("[NetworkBattle] Received message type: " + message.getType());
+    /**
+     * Updates UI elements (called by both HOST and CLIENT).
+     */
+    private void updateUI(double deltaTime) {
+        elixirBar.update();
+        handView.update();
+        arenaView.update(deltaTime);
         
+        updateTimerDisplay();
+        updateScoreDisplay();
+        
+        // Check for Double Elixir
+        if (gameState.isDoubleElixir() && !doubleElixirShown) {
+            doubleElixirShown = true;
+            elixirBar.setDoubleElixirActive(true);
+        }
+    }
+    
+    // ==================== Network Message Handling ====================
+    
+    private void handleNetworkMessage(NetworkMessage message) {
         switch (message.getType()) {
             case CARD_PLACED:
-                System.out.println("[NetworkBattle] Processing CARD_PLACED message");
                 handleOpponentCardPlaced(message);
                 break;
                 
-            case TOWER_DAMAGED:
-                // Tower damage is handled by game state, but we can validate
-                break;
-                
-            case TOWER_DESTROYED:
-                handleTowerDestroyed(message);
-                break;
-                
-            case TIMER_SYNC:
-                // Client syncs timer with host (host is authoritative)
-                if (!isHost) {
-                    try {
-                        double hostTime = Double.parseDouble(message.getData());
-                        if (gameState != null) {
-                            gameState.setGameTime(hostTime);
-                        }
-                    } catch (NumberFormatException e) {
-                        // Ignore invalid timer data
-                    }
-                }
-                break;
-                
-            case GAME_STATE_SYNC:
-                // CLIENT: Apply authoritative game state from host
-                if (!isHost) {
-                    handleGameStateSync(message);
-                }
-                break;
-                
-            case SCORE_SYNC:
-                // CLIENT: Sync scores from host
-                if (!isHost) {
-                    handleScoreSync(message);
-                }
-                break;
-                
-            case TOWER_SYNC:
-                // CLIENT: Sync tower health from host
-                if (!isHost) {
-                    handleTowerSync(message);
-                }
-                break;
-                
             case FULL_STATE_SYNC:
-                // CLIENT: Apply complete entity state from host
                 if (!isHost) {
                     handleFullStateSync(message);
                 }
                 break;
                 
+            case TOWER_SYNC:
+                if (!isHost) {
+                    handleTowerSync(message);
+                }
+                break;
+                
+            case TROOP_SYNC:
+                // Used for projectile sync (reusing message type)
+                if (!isHost) {
+                    handleProjectileSync(message);
+                }
+                break;
+                
             case GAME_OVER:
-                // CLIENT: Handle game over from host
                 if (!isHost) {
                     handleGameOver(message);
                 }
                 break;
                 
             case HEARTBEAT:
-                // Calculate ping
                 if (message.getPlayerId() != networkService.getPlayerId()) {
                     currentPing = System.currentTimeMillis() - lastPingTime;
                     updatePingDisplay();
@@ -426,7 +510,6 @@ public class NetworkBattleController implements GameEventListener {
                 break;
                 
             case DEFEAT:
-                // Opponent sent defeat message (they forfeited/left)
                 if (message.getPlayerId() != networkService.getPlayerId()) {
                     handleOpponentForfeit();
                 }
@@ -442,176 +525,111 @@ public class NetworkBattleController implements GameEventListener {
     }
     
     /**
-     * Handles authoritative game state sync from host.
-     * The client applies this state to stay in sync with the host's game.
+     * CLIENT: Handles projectile sync from HOST for visual effects.
      */
-    private void handleGameStateSync(NetworkMessage message) {
-        double[] stateData = message.parseGameStateSync();
-        if (stateData == null || gameState == null) return;
+    private void handleProjectileSync(NetworkMessage message) {
+        String data = message.getData();
+        if (data == null || !data.startsWith("PROJ#")) return;
         
-        double hostGameTime = stateData[0];
-        double hostPlayerElixir = stateData[1];  // Host's player = our opponent
-        double hostBotElixir = stateData[2];     // Host's bot = us (the client)
-        int hostPlayerScore = (int) stateData[3];
-        int hostBotScore = (int) stateData[4];
-        boolean hostDoubleElixir = stateData[5] > 0.5;
+        String projData = data.substring(5);
+        if (projData.isEmpty()) return;
         
-        // Apply the host's authoritative state
-        // Note: From client's perspective, scores are inverted
-        // Host's playerScore = towers WE lost, Host's botScore = towers OPPONENT lost
-        gameState.applyHostStateSync(
-            hostGameTime,
-            hostPlayerElixir,
-            hostBotElixir,
-            hostBotScore,      // Client's score = Host's botScore (towers client destroyed)
-            hostPlayerScore,   // Opponent's score = Host's playerScore (towers host destroyed)
-            hostDoubleElixir
-        );
+        // Clear existing projectiles
+        gameState.getProjectiles().clear();
         
-        // Update double elixir UI
-        if (hostDoubleElixir && !doubleElixirShown) {
-            doubleElixirShown = true;
-            elixirBar.setDoubleElixirActive(true);
-        }
-        
-        System.out.println("[NetworkBattle] Applied host state: time=" + hostGameTime + 
-            ", scores=" + hostBotScore + "-" + hostPlayerScore);
-    }
-    
-    /**
-     * Handles score sync from host.
-     */
-    private void handleScoreSync(NetworkMessage message) {
-        int[] scores = message.parseScoreSync();
-        if (scores == null || gameState == null) return;
-        
-        // From client's perspective: host's playerScore = opponent's score, host's botScore = our score
-        gameState.setScores(scores[1], scores[0]);
-        updateScoreDisplay();
-    }
-    
-    /**
-     * Handles tower health sync from host.
-     * Format: towerType,isPlayerSide,currentHealth,maxHealth,gridX,gridY,isAlive;...
-     */
-    private void handleTowerSync(NetworkMessage message) {
-        String towerData = message.getTowerSyncData();
-        if (towerData == null || towerData.isEmpty() || gameState == null) return;
-        
-        String[] towers = towerData.split(";");
-        Arena arena = gameState.getArena();
-        
-        for (String towerStr : towers) {
-            String[] parts = towerStr.split(",");
-            if (parts.length < 7) continue;
+        String[] projectiles = projData.split("\\|");
+        for (String projStr : projectiles) {
+            if (projStr.isEmpty()) continue;
+            
+            String[] parts = projStr.split(",");
+            if (parts.length < 5) continue;
             
             try {
-                Tower.TowerType type = Tower.TowerType.valueOf(parts[0]);
-                boolean hostIsPlayerSide = Boolean.parseBoolean(parts[1]);
-                double currentHealth = Double.parseDouble(parts[2]);
-                int gridX = Integer.parseInt(parts[4]);
-                int gridY = Integer.parseInt(parts[5]);
-                boolean isAlive = Boolean.parseBoolean(parts[6]);
+                double x = Double.parseDouble(parts[0]);
+                double y = Double.parseDouble(parts[1]);
+                double targetX = Double.parseDouble(parts[2]);
+                double targetY = Double.parseDouble(parts[3]);
+                boolean hostIsPlayerSide = Boolean.parseBoolean(parts[4]);
                 
-                // From client's perspective, sides are inverted:
-                // Host's player towers = Client's opponent towers (at top for client)
-                // Host's opponent towers = Client's player towers (at bottom for client)
+                // Mirror for client perspective
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
+                double clientX = (Arena.WIDTH - 1.0) - x;
+                double clientY = (Arena.HEIGHT - 1.0) - y;
+                double clientTargetX = (Arena.WIDTH - 1.0) - targetX;
+                double clientTargetY = (Arena.HEIGHT - 1.0) - targetY;
                 
-                // Mirror Y coordinate for client's view
-                // Tower positions need special handling for 3x3 (princess) and 4x4 (king) footprints
-                int towerHeight = (type == Tower.TowerType.KING) ? 4 : 3;
-                int clientGridY = Arena.HEIGHT - towerHeight - gridY;
+                // Clamp to valid arena bounds
+                clientX = Math.max(0, Math.min(Arena.WIDTH - 1, clientX));
+                clientY = Math.max(0, Math.min(Arena.HEIGHT - 1, clientY));
+                clientTargetX = Math.max(0, Math.min(Arena.WIDTH - 1, clientTargetX));
+                clientTargetY = Math.max(0, Math.min(Arena.HEIGHT - 1, clientTargetY));
                 
-                // Find the tower at this position by iterating all towers
-                Tower targetTower = findTowerAtPosition(arena, type, clientIsPlayerSide, gridX, clientGridY);
+                // Create a visual-only projectile for rendering
+                Projectile proj = new Projectile(
+                    new Vector2(clientX, clientY),
+                    new Vector2(clientTargetX, clientTargetY),
+                    clientIsPlayerSide
+                );
+                gameState.addProjectile(proj);
                 
-                if (targetTower != null) {
-                    int oldHealth = (int) targetTower.getCurrentHealth();
-                    targetTower.setCurrentHealth((int) currentHealth);
-                    
-                    // If tower is destroyed, ensure it's marked
-                    if (!isAlive && targetTower.isAlive()) {
-                        targetTower.setCurrentHealth(0);
-                        System.out.println("[NetworkBattle] Tower destroyed via sync: " + type + " at (" + gridX + "," + clientGridY + ")");
-                        
-                        // If our king tower was destroyed, we lost!
-                        if (type == Tower.TowerType.KING && clientIsPlayerSide && !gameEnded) {
-                            System.out.println("[NetworkBattle] Our KING tower destroyed - we lost!");
-                            showDefeat("Your King Tower was destroyed!");
-                        }
-                        // If opponent's king tower was destroyed, we won!
-                        else if (type == Tower.TowerType.KING && !clientIsPlayerSide && !gameEnded) {
-                            System.out.println("[NetworkBattle] Enemy KING tower destroyed - we won!");
-                            showVictory("You destroyed the enemy King Tower!");
-                        }
-                    }
-                    
-                    if (oldHealth != (int) currentHealth) {
-                        System.out.println("[NetworkBattle] Tower health updated: " + type + " " + oldHealth + " -> " + (int) currentHealth);
-                    }
-                } else {
-                    System.err.println("[NetworkBattle] Could not find tower: " + type + " side=" + clientIsPlayerSide + " at (" + gridX + "," + clientGridY + ")");
-                }
             } catch (Exception e) {
-                System.err.println("[NetworkBattle] Failed to parse tower sync: " + towerStr + " - " + e.getMessage());
+                System.err.println("[NetworkBattle] Error parsing projectile: " + projStr);
             }
         }
     }
     
     /**
-     * Finds a tower at the given position.
+     * Handles opponent's card placement.
+     * 
+     * ARCHITECTURE:
+     * - HOST processes CARD_PLACED from CLIENT (spawns troops for the client)
+     * - CLIENT does NOT process CARD_PLACED from HOST (troops come via FULL_STATE_SYNC)
+     * 
+     * SYMMETRY: Both X and Y are mirrored (180° rotation) because players
+     * sit at opposite ends of the arena.
      */
-    private Tower findTowerAtPosition(Arena arena, Tower.TowerType type, boolean isPlayerSide, int gridX, int gridY) {
-        java.util.List<Tower> matchingTowers = arena.getTowersByType(type, isPlayerSide);
-        
-        for (Tower tower : matchingTowers) {
-            GridPosition pos = tower.getPosition();
-            if (pos != null) {
-                // Check if position matches (tower position is top-left corner)
-                if (pos.getX() == gridX && pos.getY() == gridY) {
-                    return tower;
-                }
-            }
+    private void handleOpponentCardPlaced(NetworkMessage message) {
+        // CLIENT: Do NOT spawn troops locally!
+        // CLIENT receives all entity positions via FULL_STATE_SYNC from HOST
+        if (!isHost) {
+            System.out.println("[NetworkBattle] CLIENT: CARD_PLACED received (entities will arrive via sync)");
+            return;
         }
         
-        // Fallback: if only one tower of this type and side, return it
-        if (matchingTowers.size() == 1) {
-            return matchingTowers.get(0);
+        // HOST: Process the client's card placement
+        String[] data = message.parseCardPlacement();
+        if (data == null) return;
+        
+        String cardName = data[0];
+        int x = (int) Double.parseDouble(data[1]);
+        int y = (int) Double.parseDouble(data[2]);
+        
+        // Mirror BOTH X and Y (180° rotation) for proper symmetry
+        // Formula: mirrored = (DIMENSION - 1) - position
+        // This gives proper symmetry: x + mirroredX = DIMENSION - 1
+        int mirroredX = (Arena.WIDTH - 1) - x;
+        int mirroredY = (Arena.HEIGHT - 1) - y;
+        
+        // Clamp to valid arena bounds (half of arena for opponent side)
+        mirroredX = Math.max(0, Math.min(Arena.WIDTH - 1, mirroredX));
+        mirroredY = Math.max(0, Math.min(Arena.HEIGHT / 2 - 1, mirroredY)); // Opponent spawns in top half
+        
+        Card card = model.getCardByName(cardName);
+        if (card == null) {
+            System.err.println("[NetworkBattle] Unknown card: " + cardName);
+            return;
         }
         
-        // For king tower, there's only one per side, so just return first match
-        if (type == Tower.TowerType.KING && !matchingTowers.isEmpty()) {
-            return matchingTowers.get(0);
-        }
+        System.out.println("[NetworkBattle] HOST: Spawning client's " + cardName + 
+            " at (" + mirroredX + ", " + mirroredY + ") [original: (" + x + ", " + y + ")]");
         
-        return null;
+        // Spawn as opponent (isPlayer=false from HOST's perspective = client's troop)
+        gameState.placeCard(false, card, mirroredX, mirroredY);
     }
     
     /**
-     * Handles game over message from host.
-     */
-    private void handleGameOver(NetworkMessage message) {
-        if (gameEnded) return;
-        
-        String[] data = message.parseGameOver();
-        if (data == null || data.length < 2) return;
-        
-        boolean hostWon = Boolean.parseBoolean(data[0]);
-        String reason = data[1];
-        
-        // From client's perspective: if host won, client lost (and vice versa)
-        if (hostWon) {
-            showDefeat(reason);
-        } else {
-            showVictory(reason);
-        }
-    }
-    
-    /**
-     * Handles full state sync from host - this is the key synchronization method.
-     * Receives all entity positions and game state from the authoritative host.
-     * Format: TROOPS#troops_data|BUILDINGS#buildings_data|GAME#gameTime,pElixir,bElixir,pScore,bScore,doubleElixir,gameOver
+     * CLIENT: Handles full state sync from HOST.
+     * Recreates all entities based on HOST's authoritative state.
      */
     private void handleFullStateSync(NetworkMessage message) {
         if (gameState == null) return;
@@ -620,7 +638,6 @@ public class NetworkBattleController implements GameEventListener {
         if (data == null || data.isEmpty()) return;
         
         try {
-            // Parse sections
             String[] sections = data.split("\\|");
             String troopData = "";
             String buildingData = "";
@@ -636,22 +653,64 @@ public class NetworkBattleController implements GameEventListener {
                 }
             }
             
-            // Clear existing entities and recreate from host state
-            gameState.clearEntities();
+            // Sync entities from HOST state without full clear
+            // Parse expected entities from HOST
+            java.util.Set<String> expectedTroops = new java.util.HashSet<>();
+            java.util.Set<String> expectedBuildings = new java.util.HashSet<>();
             
-            // Apply troop state (with mirroring for client perspective)
+            // Track what HOST expects to exist
             if (!troopData.isEmpty()) {
-                applyTroopState(troopData);
+                String[] troops = troopData.split("\\|");
+                for (String troop : troops) {
+                    if (!troop.isEmpty()) {
+                        expectedTroops.add(troop);
+                    }
+                }
+            }
+            
+            if (!buildingData.isEmpty()) {
+                String[] buildings = buildingData.split("\\|");
+                for (String building : buildings) {
+                    if (!building.isEmpty()) {
+                        expectedBuildings.add(building);
+                    }
+                }
+            }
+            
+            // Clear and recreate all entities to match HOST state exactly
+            try {
+                gameState.clearEntities();
+            } catch (Exception e) {
+                System.err.println("[NetworkBattle] Error clearing entities: " + e.getMessage());
+            }
+            
+            // Apply troop state (with mirroring)
+            if (!troopData.isEmpty()) {
+                try {
+                    applyTroopState(troopData);
+                } catch (Exception e) {
+                    System.err.println("[NetworkBattle] Error applying troop state: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
             
             // Apply building state (with mirroring)
             if (!buildingData.isEmpty()) {
-                applyBuildingState(buildingData);
+                try {
+                    applyBuildingState(buildingData);
+                } catch (Exception e) {
+                    System.err.println("[NetworkBattle] Error applying building state: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
             
             // Apply game state
             if (!gameData.isEmpty()) {
-                applyGameData(gameData);
+                try {
+                    applyGameData(gameData);
+                } catch (Exception e) {
+                    System.err.println("[NetworkBattle] Error applying game data: " + e.getMessage());
+                }
             }
             
         } catch (Exception e) {
@@ -661,8 +720,11 @@ public class NetworkBattleController implements GameEventListener {
     }
     
     /**
-     * Applies troop state from host.
-     * Format: cardName,worldX,worldY,health,isPlayer,state|...
+     * CLIENT: Applies troop state from HOST.
+     * Mirrors positions (180° rotation) and ownership for client's perspective.
+     * 
+     * Symmetry for WIDTH=18: position x mirrors to (WIDTH - 1 - x) = 17 - x
+     * This gives: 0↔17, 1↔16, 2↔15, ..., 8↔9, 9↔8
      */
     private void applyTroopState(String troopData) {
         String[] troops = troopData.split("\\|");
@@ -678,19 +740,25 @@ public class NetworkBattleController implements GameEventListener {
                 double worldX = Double.parseDouble(parts[1]);
                 double worldY = Double.parseDouble(parts[2]);
                 int health = Integer.parseInt(parts[3]);
-                boolean hostIsPlayer = Boolean.parseBoolean(parts[4]);
+                boolean hostIsPlayerSide = Boolean.parseBoolean(parts[4]);
                 String state = parts[5];
                 
-                // Mirror for client perspective:
-                // Host's player troops = Client's opponent troops
-                // Host's opponent troops = Client's player troops
-                boolean clientIsPlayer = !hostIsPlayer;
+                // MIRROR for client perspective:
+                // - HOST's player troops = CLIENT's opponent troops
+                // - HOST's opponent troops = CLIENT's player troops
+                boolean clientIsPlayerSide = !hostIsPlayerSide;
                 
-                // Mirror Y coordinate
-                double clientWorldY = (Arena.HEIGHT - 1) - worldY;
+                // Mirror BOTH X and Y (180° rotation)
+                // Formula: mirrored = (DIMENSION - 1) - position
+                // This gives proper symmetry: x + mirroredX = DIMENSION - 1
+                double clientWorldX = (Arena.WIDTH - 1.0) - worldX;
+                double clientWorldY = (Arena.HEIGHT - 1.0) - worldY;
                 
-                // Spawn troop at the mirrored position
-                gameState.spawnTroopAtPosition(cardName, worldX, clientWorldY, health, clientIsPlayer, state);
+                // Clamp to valid arena bounds
+                clientWorldX = Math.max(0, Math.min(Arena.WIDTH - 1.0, clientWorldX));
+                clientWorldY = Math.max(0, Math.min(Arena.HEIGHT - 1.0, clientWorldY));
+                
+                gameState.spawnTroopAtPosition(cardName, clientWorldX, clientWorldY, health, clientIsPlayerSide, state);
                 
             } catch (Exception e) {
                 System.err.println("[NetworkBattle] Error parsing troop: " + troopStr);
@@ -699,44 +767,76 @@ public class NetworkBattleController implements GameEventListener {
     }
     
     /**
-     * Applies building state from host.
-     * Format: cardName,gridX,gridY,health,isPlayer,lifetime|...
+     * CLIENT: Applies building state from HOST.
+     * Mirrors positions (180° rotation) for client's perspective.
+     * 
+     * Symmetry for WIDTH=18: column X (1-indexed) mirrors to column (19-X)
+     * In 0-indexed: x mirrors to (WIDTH - 1 - x) = 17 - x
+     * For buildings with width W: top-left at x mirrors to (WIDTH - 1) - (x + W - 1) = WIDTH - x - W
      */
     private void applyBuildingState(String buildingData) {
         String[] buildings = buildingData.split("\\|");
+        
+        System.out.println("[NetworkBattle] CLIENT: Applying " + buildings.length + " buildings from HOST, data: " + buildingData);
         
         for (String buildingStr : buildings) {
             if (buildingStr.isEmpty()) continue;
             
             String[] parts = buildingStr.split(",");
-            if (parts.length < 6) continue;
+            if (parts.length < 6) {
+                System.err.println("[NetworkBattle] Building parse error - insufficient parts (" + parts.length + "): " + buildingStr);
+                continue;
+            }
             
             try {
                 String cardName = parts[0];
                 int gridX = Integer.parseInt(parts[1]);
                 int gridY = Integer.parseInt(parts[2]);
                 int health = Integer.parseInt(parts[3]);
-                boolean hostIsPlayer = Boolean.parseBoolean(parts[4]);
+                boolean hostIsPlayerSide = Boolean.parseBoolean(parts[4]);
                 double lifetime = Double.parseDouble(parts[5]);
                 
+                // Get width and height if provided, default to 3
+                int width = parts.length > 6 ? Integer.parseInt(parts[6]) : 3;
+                int height = parts.length > 7 ? Integer.parseInt(parts[7]) : 3;
+                int maxHealth = parts.length > 8 ? Integer.parseInt(parts[8]) : health;
+                String imagePath = parts.length > 9 ? parts[9] : "";
+                
                 // Mirror for client perspective
-                boolean clientIsPlayer = !hostIsPlayer;
+                boolean clientIsPlayerSide = !hostIsPlayerSide;
                 
-                // Mirror Y coordinate (accounting for building height - assume 3x3)
-                int clientGridY = Arena.HEIGHT - 3 - gridY;
+                // Mirror BOTH X and Y (180° rotation)
+                // For 0-indexed positions in arena of size WIDTH x HEIGHT:
+                // Single point x mirrors to (WIDTH - 1 - x)
+                // Building top-left at x with width W: new top-left = (WIDTH - 1) - (x + W - 1) = WIDTH - x - W
+                int clientGridX = (Arena.WIDTH - 1) - (gridX + width - 1);
+                int clientGridY = (Arena.HEIGHT - 1) - (gridY + height - 1);
                 
-                // Spawn building at mirrored position
-                gameState.spawnBuildingAtPosition(cardName, gridX, clientGridY, health, clientIsPlayer, lifetime);
+                // Clamp to valid arena bounds
+                clientGridX = Math.max(0, Math.min(Arena.WIDTH - width, clientGridX));
+                clientGridY = Math.max(0, Math.min(Arena.HEIGHT - height, clientGridY));
+                
+                System.out.println("[NetworkBattle] CLIENT: Spawning building '" + cardName + 
+                    "' at (" + clientGridX + ", " + clientGridY + ") [HOST pos: (" + gridX + ", " + gridY + 
+                    "), size: " + width + "x" + height + ", playerSide: " + clientIsPlayerSide + "]");
+                
+                // Try to spawn using card catalog first, fall back to direct creation
+                boolean spawned = gameState.spawnBuildingDirect(cardName, clientGridX, clientGridY, 
+                    health, maxHealth, clientIsPlayerSide, lifetime, width, height, imagePath);
+                    
+                if (!spawned) {
+                    System.err.println("[NetworkBattle] Failed to spawn building: " + cardName);
+                }
                 
             } catch (Exception e) {
-                System.err.println("[NetworkBattle] Error parsing building: " + buildingStr);
+                System.err.println("[NetworkBattle] Error parsing building: " + buildingStr + " - " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }
     
     /**
-     * Applies game state data from host.
-     * Format: gameTime,pElixir,bElixir,pScore,bScore,doubleElixir,gameOver
+     * CLIENT: Applies game state data from HOST.
      */
     private void applyGameData(String gameData) {
         String[] parts = gameData.split(",");
@@ -752,27 +852,19 @@ public class NetworkBattleController implements GameEventListener {
             boolean gameOver = Boolean.parseBoolean(parts[6]);
             
             // Apply game state (inverted for client perspective)
-            // Client's score = Host's botScore (towers client destroyed on host)
-            // Client's opponent score = Host's playerScore (towers host destroyed)
-            gameState.applyHostStateSync(
-                gameTime,
-                hostPlayerElixir,
-                hostBotElixir,
-                hostBotScore,      // Client's score
-                hostPlayerScore,   // Opponent's score from client view
-                doubleElixir
-            );
+            // Client's score = Host's botScore (towers client destroyed)
+            // Client's opponent score = Host's playerScore
+            gameState.setGameTime(gameTime);
+            gameState.setScores(hostBotScore, hostPlayerScore);
             
-            // Update double elixir UI
+            // Sync elixir (client's elixir = host's bot elixir, since client is the "bot" from host's view)
+            gameState.getPlayerElixir().setCurrentElixir(hostBotElixir);
+            gameState.getBotElixir().setCurrentElixir(hostPlayerElixir);
+            
             if (doubleElixir && !doubleElixirShown) {
                 doubleElixirShown = true;
+                gameState.setDoubleElixir(true);
                 elixirBar.setDoubleElixirActive(true);
-            }
-            
-            // Handle game over from host
-            if (gameOver && !gameEnded) {
-                // Game over will be handled by GAME_OVER message with winner info
-                System.out.println("[NetworkBattle] Game over signal received from host");
             }
             
         } catch (Exception e) {
@@ -780,114 +872,133 @@ public class NetworkBattleController implements GameEventListener {
         }
     }
     
-    private void handleOpponentCardPlaced(NetworkMessage message) {
-        System.out.println("[NetworkBattle] handleOpponentCardPlaced called with: " + message.getData());
+    /**
+     * CLIENT: Handles tower health sync from HOST.
+     * 
+     * CRITICAL: Tower matching must account for mirrored perspective.
+     * HOST's player towers = CLIENT's enemy towers (at top)
+     * HOST's enemy towers = CLIENT's player towers (at bottom)
+     */
+    private void handleTowerSync(NetworkMessage message) {
+        String towerData = message.getTowerSyncData();
+        if (towerData == null || towerData.isEmpty() || gameState == null) return;
         
-        String[] data = message.parseCardPlacement();
-        if (data == null) {
-            System.err.println("[NetworkBattle] Failed to parse card placement data");
-            return;
-        }
+        String[] towers = towerData.split(";");
+        Arena arena = gameState.getArena();
         
-        String cardName = data[0];
-        int x = (int) Double.parseDouble(data[1]);
-        int y = (int) Double.parseDouble(data[2]);
-        
-        System.out.println("[NetworkBattle] Parsed: card=" + cardName + ", x=" + x + ", y=" + y);
-        
-        // Get the card from catalog
-        Card card = model.getCardByName(cardName);
-        if (card == null) {
-            System.err.println("[NetworkBattle] Unknown card: " + cardName);
-            return;
-        }
-        
-        // Mirror the Y position because:
-        // - Opponent placed at (x, y) on THEIR bottom half (y >= 16)
-        // - From OUR perspective, that's on the TOP half (enemy side)
-        // - So we mirror: newY = (Arena.HEIGHT - 1) - y
-        // Example: They place at y=20 -> We see at y=11 (top half, enemy territory)
-        int mirroredY = (Arena.HEIGHT - 1) - y;
-        
-        System.out.println("[NetworkBattle] Spawning opponent's " + cardName + " at (" + x + ", " + mirroredY + ") [original y=" + y + "]");
-        
-        // Spawn the card for the opponent (isPlayer=false means enemy from our perspective)
-        // Use placeCard with the card directly to bypass hand/elixir checks
-        gameState.placeCard(false, card, x, mirroredY);
-        
-        System.out.println("[NetworkBattle] ✓ Opponent card spawned successfully");
-    }
-    
-    private void handleTowerDestroyed(NetworkMessage message) {
-        // Score is tracked by game state
-        updateScoreDisplay();
-        
-        String towerName = message.getData();
-        if (towerName != null && towerName.contains("KING")) {
-            if (message.getPlayerId() == networkService.getPlayerId()) {
-                // Our tower was destroyed
-                showDefeat("Your King Tower was destroyed!");
-            } else {
-                showVictory("You destroyed the enemy King Tower!");
-            }
-        }
-    }
-    
-    private void handleOpponentDisconnected() {
-        if (gameEnded) return;
-        
-        System.out.println("[NetworkBattle] Opponent disconnected - awaiting reconnection or awarding victory");
-        showDisconnectionOverlay();
-        
-        // Start countdown - if opponent doesn't reconnect, award victory
-        final int[] countdown = {5};
-        Timeline countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            countdown[0]--;
-            if (reconnectCountdownLabel != null) {
-                reconnectCountdownLabel.setText(String.valueOf(countdown[0]));
-            }
+        for (String towerStr : towers) {
+            String[] parts = towerStr.split(",");
+            if (parts.length < 7) continue;
             
-            if (countdown[0] <= 0) {
-                hideDisconnectionOverlay();
-                showVictory("Opponent left the game - Victory!");
+            try {
+                Tower.TowerType type = Tower.TowerType.valueOf(parts[0]);
+                boolean hostIsPlayerSide = Boolean.parseBoolean(parts[1]);
+                int currentHealth = Integer.parseInt(parts[2]);
+                int maxHealth = Integer.parseInt(parts[3]);
+                int hostGridX = Integer.parseInt(parts[4]);
+                int hostGridY = Integer.parseInt(parts[5]);
+                boolean isAlive = Boolean.parseBoolean(parts[6]);
+                
+                // MIRROR for client perspective:
+                // HOST's player towers = CLIENT's enemy towers
+                boolean clientIsPlayerSide = !hostIsPlayerSide;
+                
+                // Find the tower by type and side
+                Tower targetTower = findTowerByTypeAndSide(arena, type, clientIsPlayerSide);
+                
+                if (targetTower != null) {
+                    int oldHealth = targetTower.getCurrentHealth();
+                    targetTower.setCurrentHealth(currentHealth);
+                    
+                    if (!isAlive && targetTower.isAlive()) {
+                        targetTower.setCurrentHealth(0);
+                        System.out.println("[NetworkBattle] Tower destroyed: " + type + " (client side: " + clientIsPlayerSide + ")");
+                        
+                        // Check win/lose conditions
+                        if (type == Tower.TowerType.KING) {
+                            if (clientIsPlayerSide) {
+                                // Our king destroyed = we lost
+                                showDefeat("Your King Tower was destroyed!");
+                            } else {
+                                // Enemy king destroyed = we won
+                                showVictory("You destroyed the enemy King Tower!");
+                            }
+                        }
+                    }
+                }
+                
+            } catch (Exception e) {
+                System.err.println("[NetworkBattle] Failed to parse tower sync: " + towerStr);
             }
-        }));
-        countdownTimer.setCycleCount(5);
-        countdownTimer.play();
+        }
     }
     
     /**
-     * Called when opponent explicitly forfeits (sends DEFEAT message).
-     * Awards immediate victory without waiting.
+     * Finds a tower by type and side.
+     * For PRINCESS towers, there may be multiple (left and right).
      */
-    private void handleOpponentForfeit() {
-        if (gameEnded) return;
-        
-        System.out.println("[NetworkBattle] Opponent forfeited - awarding victory!");
-        hideDisconnectionOverlay();
-        showVictory("Opponent forfeited - Victory!");
+    private Tower findTowerByTypeAndSide(Arena arena, Tower.TowerType type, boolean isPlayerSide) {
+        java.util.List<Tower> matching = arena.getTowersByType(type, isPlayerSide);
+        if (!matching.isEmpty()) {
+            return matching.get(0);  // Return first match
+        }
+        return null;
     }
     
+    /**
+     * CLIENT: Handles game over message from HOST.
+     */
+    private void handleGameOver(NetworkMessage message) {
+        if (gameEnded) return;
+        
+        String[] data = message.parseGameOver();
+        if (data == null || data.length < 2) return;
+        
+        boolean hostWon = Boolean.parseBoolean(data[0]);
+        String reason = data[1];
+        
+        // From client's perspective: if host won, client lost
+        if (hostWon) {
+            showDefeat(reason);
+        } else {
+            showVictory(reason);
+        }
+    }
+    
+    // ==================== Input Handling ====================
+    
+    /**
+     * Handles arena click for card placement.
+     * Both HOST and CLIENT can place cards on their own side.
+     */
     private void handleArenaClick(int tileX, int tileY) {
         int selectedIndex = handView.getSelectedIndex();
-        if (selectedIndex != -1) {
-            // Validate bounds
-            if (tileX >= 0 && tileX < Arena.WIDTH && tileY >= 0 && tileY < Arena.HEIGHT) {
-                Card card = gameState.getPlayerHand().getCard(selectedIndex);
+        if (selectedIndex == -1) return;
+        
+        if (tileX < 0 || tileX >= Arena.WIDTH || tileY < 0 || tileY >= Arena.HEIGHT) return;
+        
+        Card card = gameState.getPlayerHand().getCard(selectedIndex);
+        if (card == null) return;
+        
+        if (isHost) {
+            // HOST: Place card locally (authoritative)
+            if (gameState.placeCard(true, selectedIndex, tileX, tileY)) {
+                System.out.println("[NetworkBattle] HOST: Placed " + card.getName() + " at (" + tileX + ", " + tileY + ")");
+                // Will be included in FULL_STATE_SYNC
+                handView.clearSelection();
+                arenaView.highlightValidCells(false, false);
+            }
+        } else {
+            // CLIENT: Place locally for immediate visual feedback, then send to HOST
+            // HOST will sync it back to confirm/correct position
+            if (gameState.placeCard(true, selectedIndex, tileX, tileY)) {
+                System.out.println("[NetworkBattle] CLIENT: Placed " + card.getName() + " locally at (" + tileX + ", " + tileY + ")");
                 
-                // Try to place card
-                if (gameState.placeCard(true, selectedIndex, tileX, tileY)) {
-                    // Success - send to opponent
-                    if (card != null) {
-                        System.out.println("[NetworkBattle] YOU placed " + card.getName() + " at (" + tileX + ", " + tileY + ") - sending to opponent");
-                        networkService.sendCardPlaced(card.getName(), tileX, tileY);
-                    }
-                    
-                    handView.clearSelection();
-                    arenaView.highlightValidCells(false, false);
-                } else {
-                    System.out.println("[NetworkBattle] Failed to place card at (" + tileX + ", " + tileY + ")");
-                }
+                // Send to HOST (HOST will mirror coordinates and spawn on their side)
+                networkService.sendCardPlaced(card.getName(), tileX, tileY);
+                
+                handView.clearSelection();
+                arenaView.highlightValidCells(false, false);
             }
         }
     }
@@ -895,15 +1006,16 @@ public class NetworkBattleController implements GameEventListener {
     // ==================== Game Event Listener ====================
     
     @Override
-    public void onCardPlayed(boolean isPlayer, Card card, java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
-        // Card played events are handled by arena click
+    public void onCardPlayed(boolean isPlayer, Card card, java.util.List<ICombatant> spawnedUnits) {
+        // Handled by arena click
     }
     
     @Override
     public void onTowerDestroyed(boolean isPlayerTower, Tower tower) {
-        // Send tower destroyed message
-        String towerName = (isPlayerTower ? "PLAYER_" : "OPPONENT_") + tower.getType().name();
-        networkService.send(NetworkMessage.towerDestroyed(networkService.getPlayerId(), towerName));
+        if (isHost) {
+            String towerName = (isPlayerTower ? "PLAYER_" : "OPPONENT_") + tower.getType().name();
+            networkService.send(NetworkMessage.towerDestroyed(networkService.getPlayerId(), towerName));
+        }
         updateScoreDisplay();
     }
     
@@ -929,7 +1041,6 @@ public class NetworkBattleController implements GameEventListener {
     @FXML
     private void handlePause() {
         if (gameEnded) return;
-        
         SoundEffectUtil.playButtonClick();
         isPaused = true;
         showPauseMenu();
@@ -941,27 +1052,16 @@ public class NetworkBattleController implements GameEventListener {
         
         PauseMenuView menu = new PauseMenuView(new PauseMenuView.PauseMenuListener() {
             @Override
-            public void onResume() {
-                handleResume();
-            }
+            public void onResume() { handleResume(); }
             
             @Override
-            public void onSaveAndResume() {
-                // Network games can't be saved mid-match
-                handleResume();
-            }
+            public void onSaveAndResume() { handleResume(); }
             
             @Override
-            public void onSaveAndExit() {
-                // Network games can't be saved - treat as forfeit
-                forfeitAndExit();
-            }
+            public void onSaveAndExit() { forfeitAndExit(); }
             
             @Override
-            public void onExitWithoutSaving() {
-                // Player is forfeiting the match
-                forfeitAndExit();
-            }
+            public void onExitWithoutSaving() { forfeitAndExit(); }
         });
         
         pauseMenuContainer.getChildren().add(menu);
@@ -973,20 +1073,10 @@ public class NetworkBattleController implements GameEventListener {
         pauseMenuContainer.getChildren().clear();
     }
     
-    /**
-     * Called when a player forfeits/leaves the match.
-     * Sends defeat message to opponent (giving them the win) before exiting.
-     */
     private void forfeitAndExit() {
         if (!gameEnded && networkService != null && networkService.isConnected()) {
-            // Send defeat message so opponent wins
-            System.out.println("[NetworkBattle] Player forfeiting - sending DEFEAT to opponent");
             networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
-            
-            // Small delay to ensure message is sent before disconnecting
-            Timeline exitDelay = new Timeline(new KeyFrame(Duration.millis(200), e -> {
-                navigateToMenu();
-            }));
+            Timeline exitDelay = new Timeline(new KeyFrame(Duration.millis(200), e -> navigateToMenu()));
             exitDelay.play();
         } else {
             navigateToMenu();
@@ -1005,8 +1095,6 @@ public class NetworkBattleController implements GameEventListener {
     @FXML
     private void handleBackToMenu() {
         SoundEffectUtil.playButtonClick();
-        
-        // If game is still ongoing, treat as forfeit
         if (!gameEnded && networkService != null && networkService.isConnected()) {
             forfeitAndExit();
         } else {
@@ -1014,11 +1102,33 @@ public class NetworkBattleController implements GameEventListener {
         }
     }
     
+    private void handleOpponentDisconnected() {
+        if (gameEnded) return;
+        showDisconnectionOverlay();
+        
+        final int[] countdown = {5};
+        Timeline countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            countdown[0]--;
+            if (reconnectCountdownLabel != null) {
+                reconnectCountdownLabel.setText(String.valueOf(countdown[0]));
+            }
+            if (countdown[0] <= 0) {
+                hideDisconnectionOverlay();
+                showVictory("Opponent left the game - Victory!");
+            }
+        }));
+        countdownTimer.setCycleCount(5);
+        countdownTimer.play();
+    }
+    
+    private void handleOpponentForfeit() {
+        if (gameEnded) return;
+        hideDisconnectionOverlay();
+        showVictory("Opponent forfeited - Victory!");
+    }
+    
     // ==================== UI Updates ====================
     
-    /**
-     * Updates the timer display.
-     */
     private void updateTimerDisplay() {
         if (gameState == null || timerLabel == null) return;
         
@@ -1026,10 +1136,8 @@ public class NetworkBattleController implements GameEventListener {
         int minutes = (int) (time / 60);
         int seconds = (int) (time % 60);
         
-        String timerText = String.format("%d:%02d", minutes, seconds);
-        timerLabel.setText(timerText);
+        timerLabel.setText(String.format("%d:%02d", minutes, seconds));
         
-        // Change color when in double elixir time (last 60 seconds)
         if (time <= 60) {
             timerLabel.setStyle("-fx-text-fill: #ff6600; -fx-font-size: 32px; -fx-font-weight: bold;");
         } else {
@@ -1039,36 +1147,39 @@ public class NetworkBattleController implements GameEventListener {
     
     private void updateScoreDisplay() {
         if (gameState != null) {
-            playerScoreLabel.setText(String.valueOf(gameState.getPlayerScore()));
-            opponentScoreLabel.setText(String.valueOf(gameState.getBotScore()));
+            if (playerScoreLabel != null) playerScoreLabel.setText(String.valueOf(gameState.getPlayerScore()));
+            if (opponentScoreLabel != null) opponentScoreLabel.setText(String.valueOf(gameState.getBotScore()));
         }
     }
     
     private void updatePingDisplay() {
-        pingLabel.setText("Ping: " + currentPing + "ms");
+        if (pingLabel != null) pingLabel.setText("Ping: " + currentPing + "ms");
         
-        // Show lag indicator if ping is high
-        if (currentPing > 100) {
-            lagIndicator.setText("⚠ High Latency");
-            lagIndicator.setVisible(true);
-        } else {
-            lagIndicator.setVisible(false);
+        if (lagIndicator != null) {
+            if (currentPing > 100) {
+                lagIndicator.setText("⚠ High Latency");
+                lagIndicator.setVisible(true);
+            } else {
+                lagIndicator.setVisible(false);
+            }
         }
     }
     
     private void updateConnectionStatus(ConnectionState state) {
+        if (connectionIndicator == null) return;
+        
         switch (state) {
             case CONNECTED:
                 connectionIndicator.setFill(Color.LIME);
-                connectionStatusLabel.setText("Connected");
+                if (connectionStatusLabel != null) connectionStatusLabel.setText("Connected");
                 break;
             case RECONNECTING:
                 connectionIndicator.setFill(Color.ORANGE);
-                connectionStatusLabel.setText("Reconnecting...");
+                if (connectionStatusLabel != null) connectionStatusLabel.setText("Reconnecting...");
                 break;
             case DISCONNECTED:
                 connectionIndicator.setFill(Color.RED);
-                connectionStatusLabel.setText("Disconnected");
+                if (connectionStatusLabel != null) connectionStatusLabel.setText("Disconnected");
                 break;
             default:
                 break;
@@ -1076,22 +1187,24 @@ public class NetworkBattleController implements GameEventListener {
     }
     
     private void showDisconnectionOverlay() {
-        disconnectionOverlay.setVisible(true);
+        if (disconnectionOverlay != null) disconnectionOverlay.setVisible(true);
         isPaused = true;
     }
     
     private void hideDisconnectionOverlay() {
-        disconnectionOverlay.setVisible(false);
+        if (disconnectionOverlay != null) disconnectionOverlay.setVisible(false);
         isPaused = false;
     }
     
+    // ==================== Game End ====================
+    
     private void endGame() {
+        if (gameEnded) return;
         gameEnded = true;
         
         int playerScore = gameState.getPlayerScore();
         int opponentScore = gameState.getBotScore();
         
-        // Determine winner based on scores first
         if (playerScore > opponentScore) {
             showVictory("You destroyed more towers!");
             networkService.send(NetworkMessage.gameOver(true, "Opponent destroyed more towers!"));
@@ -1101,36 +1214,23 @@ public class NetworkBattleController implements GameEventListener {
             networkService.send(NetworkMessage.gameOver(false, "You destroyed more towers!"));
             networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
         } else {
-            // Tiebreaker: Compare lowest HP towers
-            // The player with the single lowest health tower loses
+            // Tiebreaker
             double playerLowestHP = getLowestTowerHealth(true);
             double opponentLowestHP = getLowestTowerHealth(false);
             
-            System.out.println("[NetworkBattle] Tiebreaker - Player lowest HP: " + playerLowestHP + 
-                ", Opponent lowest HP: " + opponentLowestHP);
-            
             if (playerLowestHP < opponentLowestHP) {
-                // Host has the weakest tower -> Host loses
                 showDefeat("Your lowest tower had less HP!");
                 networkService.send(NetworkMessage.gameOver(false, "Opponent's lowest tower had less HP!"));
-                networkService.send(NetworkMessage.defeat(networkService.getPlayerId()));
             } else if (opponentLowestHP < playerLowestHP) {
-                // Opponent has the weakest tower -> Host wins
                 showVictory("Opponent's lowest tower had less HP!");
                 networkService.send(NetworkMessage.gameOver(true, "Your lowest tower had less HP!"));
-                networkService.send(NetworkMessage.victory(networkService.getPlayerId()));
             } else {
-                // True draw - equal lowest HP (very rare)
                 showDraw();
-                // Send draw as neither won
-                networkService.send(NetworkMessage.gameOver(false, "Perfect draw - equal tower HP!"));
+                networkService.send(NetworkMessage.gameOver(false, "Perfect draw!"));
             }
         }
     }
     
-    /**
-     * Gets the lowest health among all alive towers for a player.
-     */
     private double getLowestTowerHealth(boolean isPlayer) {
         if (gameState == null || gameState.getArena() == null) return Double.MAX_VALUE;
         
@@ -1143,55 +1243,52 @@ public class NetworkBattleController implements GameEventListener {
     
     private void showVictory(String details) {
         gameEnded = true;
-        if (gameLoop != null) gameLoop.stop();
-        if (syncTimer != null) syncTimer.stop();
+        stopLoops();
         
-        resultLabel.setText("VICTORY!");
-        resultLabel.setStyle("-fx-text-fill: gold; -fx-font-size: 48px; -fx-font-weight: bold;");
-        resultDetailsLabel.setText(details);
-        resultOverlay.setVisible(true);
+        if (resultLabel != null) {
+            resultLabel.setText("VICTORY!");
+            resultLabel.setStyle("-fx-text-fill: gold; -fx-font-size: 48px; -fx-font-weight: bold;");
+        }
+        if (resultDetailsLabel != null) resultDetailsLabel.setText(details);
+        if (resultOverlay != null) resultOverlay.setVisible(true);
         
-        // Track achievements
-        ServiceFactory.getInstance().getAchievementService()
-                .updateProgress(AchievementType.FIRST_BLOOD, 1);
-        ServiceFactory.getInstance().getQuestService()
-                .updateProgress(QuestType.WIN_MATCHES, 1);
-        ServiceFactory.getInstance().getQuestService()
-                .updateProgress(QuestType.WIN_PVP_MATCH, 1);
+        ServiceFactory.getInstance().getAchievementService().updateProgress(AchievementType.FIRST_BLOOD, 1);
+        ServiceFactory.getInstance().getQuestService().updateProgress(QuestType.WIN_MATCHES, 1);
+        ServiceFactory.getInstance().getQuestService().updateProgress(QuestType.WIN_PVP_MATCH, 1);
     }
     
     private void showDefeat(String details) {
         gameEnded = true;
-        if (gameLoop != null) gameLoop.stop();
-        if (syncTimer != null) syncTimer.stop();
+        stopLoops();
         
-        resultLabel.setText("DEFEAT");
-        resultLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 48px; -fx-font-weight: bold;");
-        resultDetailsLabel.setText(details);
-        resultOverlay.setVisible(true);
+        if (resultLabel != null) {
+            resultLabel.setText("DEFEAT");
+            resultLabel.setStyle("-fx-text-fill: #ff4444; -fx-font-size: 48px; -fx-font-weight: bold;");
+        }
+        if (resultDetailsLabel != null) resultDetailsLabel.setText(details);
+        if (resultOverlay != null) resultOverlay.setVisible(true);
     }
     
     private void showDraw() {
         gameEnded = true;
-        if (gameLoop != null) gameLoop.stop();
-        if (syncTimer != null) syncTimer.stop();
+        stopLoops();
         
-        resultLabel.setText("DRAW");
-        resultLabel.setStyle("-fx-text-fill: #aaaaaa; -fx-font-size: 48px; -fx-font-weight: bold;");
-        resultDetailsLabel.setText("Equal towers destroyed!");
-        resultOverlay.setVisible(true);
+        if (resultLabel != null) {
+            resultLabel.setText("DRAW");
+            resultLabel.setStyle("-fx-text-fill: #aaaaaa; -fx-font-size: 48px; -fx-font-weight: bold;");
+        }
+        if (resultDetailsLabel != null) resultDetailsLabel.setText("Equal towers destroyed!");
+        if (resultOverlay != null) resultOverlay.setVisible(true);
+    }
+    
+    private void stopLoops() {
+        if (renderLoop != null) renderLoop.stop();
+        if (syncTimer != null) syncTimer.stop();
     }
     
     private void cleanup() {
-        // Unsubscribe from events
         GameEventBus.getInstance().unsubscribe(this);
-        
-        if (gameLoop != null) {
-            gameLoop.stop();
-        }
-        if (syncTimer != null) {
-            syncTimer.stop();
-        }
+        stopLoops();
         if (networkService != null) {
             networkService.disconnect();
         }

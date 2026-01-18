@@ -38,6 +38,22 @@ public class Projectile {
         double hitSpeed = Math.max(0.1, owner.getHitSpeed()); // Sanity check: min 0.1s
         this.speed = Math.max(1.0, dist / hitSpeed); // Ensure it actually moves (min speed 1.0)
     }
+    
+    /**
+     * Constructor for visual-only projectiles (used for network sync).
+     * These projectiles don't deal damage, only render.
+     */
+    public Projectile(Vector2 startPosition, Vector2 targetPosition, boolean isPlayerSide) {
+        this.owner = null;
+        this.target = null;
+        this.damage = 0;
+        this.areaEffect = false;
+        this.targetType = TargetType.GROUND;
+        this.isPlayerSide = isPlayerSide;
+        this.position = startPosition;
+        this.targetPosSnapshot = targetPosition;
+        this.speed = 8.0; // Default visual speed
+    }
 
     public void update(double deltaTime) {
         if (!active)
