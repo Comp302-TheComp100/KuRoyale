@@ -1,4 +1,4 @@
-package com.kuroyale.model.entities;
+package com.kuroyale.model.factory;
 
 import com.kuroyale.model.enums.BattleMode;
 import com.kuroyale.model.strategy.battle.*;

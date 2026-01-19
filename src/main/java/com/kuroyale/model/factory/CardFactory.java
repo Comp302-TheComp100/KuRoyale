@@ -1,4 +1,6 @@
-package com.kuroyale.model.entities;
+package com.kuroyale.model.factory;
+
+import com.kuroyale.model.entities.Card;
 
 import java.util.ArrayList;
 import java.util.List;
