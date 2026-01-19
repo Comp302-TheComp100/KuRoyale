@@ -10,7 +10,7 @@ import com.kuroyale.model.strategy.deck.DeckBuildingStrategy;
 import com.kuroyale.model.strategy.deck.RandomDeckStrategy;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.SoundEffectUtil;
-import com.kuroyale.view.CardView;
+import com.kuroyale.view.card.CardView;
 
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;

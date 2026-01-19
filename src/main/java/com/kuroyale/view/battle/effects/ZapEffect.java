@@ -2,7 +2,6 @@ package com.kuroyale.view.battle.effects;
 
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 
 /**
  * Handles Zap spell visual effects.

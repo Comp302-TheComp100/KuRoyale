@@ -1,4 +1,4 @@
-package com.kuroyale.view.battle;
+package com.kuroyale.view.battle.component;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;

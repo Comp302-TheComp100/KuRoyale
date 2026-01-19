@@ -1,4 +1,4 @@
-package com.kuroyale.view;
+package com.kuroyale.view.dialog;
 
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.enums.SpeedType;
@@ -137,7 +137,7 @@ public class CardInfoDialog extends StackPane {
         nameLabel.setWrapText(true);
         nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setMaxWidth(300);
-        
+
         HBox nameContainer = new HBox();
         nameContainer.setAlignment(Pos.CENTER);
         nameContainer.getChildren().add(nameLabel);
@@ -202,7 +202,7 @@ public class CardInfoDialog extends StackPane {
         nameLabel.setWrapText(true);
         nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setMaxWidth(300);
-        
+
         HBox nameContainer = new HBox();
         nameContainer.setAlignment(Pos.CENTER);
         nameContainer.getChildren().add(nameLabel);

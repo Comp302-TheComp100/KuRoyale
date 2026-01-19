@@ -68,8 +68,8 @@ public class SavedGamesController {
     // UI Construction (View/Controller concern)
 
     private javafx.scene.layout.HBox createSavedGameEntry(SavedGameState savedGame) {
-        return new com.kuroyale.view.SavedGameEntryView(savedGame,
-                new com.kuroyale.view.SavedGameEntryView.SavedGameListener() {
+        return new com.kuroyale.view.menu.SavedGameEntryView(savedGame,
+                new com.kuroyale.view.menu.SavedGameEntryView.SavedGameListener() {
                     @Override
                     public void onLoad() {
                         handleLoadGame(savedGame);

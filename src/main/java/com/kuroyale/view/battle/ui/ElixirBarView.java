@@ -1,4 +1,4 @@
-package com.kuroyale.view.battle;
+package com.kuroyale.view.battle.ui;
 
 import com.kuroyale.model.logic.ElixirManager;
 import javafx.geometry.Pos;

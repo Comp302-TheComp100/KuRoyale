@@ -6,7 +6,7 @@ import java.util.List;
 import com.kuroyale.model.entities.Challenge;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.SoundEffectUtil;
-import com.kuroyale.view.ChallengeDetailDialog;
+import com.kuroyale.view.dialog.ChallengeDetailDialog;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -25,11 +25,16 @@ import javafx.scene.shape.Line;
  */
 public class ChallengeSelectionController {
 
-    @FXML private AnchorPane root;
-    @FXML private Label titleLabel;
-    @FXML private ScrollPane challengeScrollPane;
-    @FXML private VBox challengeLadderContainer;
-    @FXML private Button backButton;
+    @FXML
+    private AnchorPane root;
+    @FXML
+    private Label titleLabel;
+    @FXML
+    private ScrollPane challengeScrollPane;
+    @FXML
+    private VBox challengeLadderContainer;
+    @FXML
+    private Button backButton;
 
     private final SceneLoader sceneLoader = new SceneLoader();
     private List<Challenge> challenges;
@@ -65,7 +70,8 @@ public class ChallengeSelectionController {
             }
 
             // Create challenge card
-            com.kuroyale.view.ChallengeCardView challengeCard = new com.kuroyale.view.ChallengeCardView(challenge, i,
+            com.kuroyale.view.card.ChallengeCardView challengeCard = new com.kuroyale.view.card.ChallengeCardView(
+                    challenge, i,
                     this::handleStartChallenge);
             challengeLadderContainer.getChildren().add(challengeCard);
         }
@@ -88,7 +94,7 @@ public class ChallengeSelectionController {
         return container;
     }
 
-    //Handles starting a challenge - shows detail dialog.
+    // Handles starting a challenge - shows detail dialog.
     private void handleStartChallenge(Challenge challenge) {
         SoundEffectUtil.playButtonClick();
 

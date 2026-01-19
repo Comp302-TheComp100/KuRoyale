@@ -5,7 +5,7 @@ import java.io.IOException;
 import com.kuroyale.model.state.Login;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.SoundEffectUtil;
-import com.kuroyale.view.LoginView;
+import com.kuroyale.view.menu.LoginView;
 
 import javafx.fxml.FXML;
 import javafx.scene.media.Media;

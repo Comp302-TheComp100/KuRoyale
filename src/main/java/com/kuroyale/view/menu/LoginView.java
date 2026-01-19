@@ -1,4 +1,4 @@
-package com.kuroyale.view;
+package com.kuroyale.view.menu;
 
 import javafx.geometry.Pos;
 import javafx.scene.Node;

@@ -12,7 +12,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 import com.kuroyale.util.GameConstants;
-import com.kuroyale.view.battle.PngSequenceSprite;
+import com.kuroyale.view.battle.component.PngSequenceSprite;
 import com.kuroyale.util.GameColors;
 import java.io.InputStream;
 import java.util.HashMap;

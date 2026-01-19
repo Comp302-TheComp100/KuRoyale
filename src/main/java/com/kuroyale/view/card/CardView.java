@@ -1,4 +1,4 @@
-package com.kuroyale.view;
+package com.kuroyale.view.card;
 
 import com.kuroyale.model.entities.Card;
 import javafx.geometry.Insets;

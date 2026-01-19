@@ -8,6 +8,9 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.kuroyale.view.*;
+import com.kuroyale.view.card.CardView;
+import com.kuroyale.view.card.DeckSlotView;
+import com.kuroyale.view.dialog.CardInfoDialog;
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.Deck;
 import com.kuroyale.model.logic.DeckBuilderModel;

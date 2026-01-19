@@ -10,6 +10,9 @@ import java.util.Map;
 import java.util.Set;
 
 import com.kuroyale.view.*;
+import com.kuroyale.view.card.CardView;
+import com.kuroyale.view.card.DeckSlotView;
+import com.kuroyale.view.dialog.CardInfoDialog;
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.Challenge;
 import com.kuroyale.model.entities.Deck;

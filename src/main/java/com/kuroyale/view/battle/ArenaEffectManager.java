@@ -7,6 +7,7 @@ import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.entities.Vector2;
 import com.kuroyale.model.enums.CardType;
 import com.kuroyale.model.enums.ComboType;
+import com.kuroyale.view.battle.component.PngSequenceSprite;
 import com.kuroyale.view.battle.effects.ActiveSpellVisual;
 import com.kuroyale.view.battle.effects.ArrowsEffect;
 import com.kuroyale.view.battle.effects.FireballEffect;

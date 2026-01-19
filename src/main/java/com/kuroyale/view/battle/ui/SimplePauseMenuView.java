@@ -1,4 +1,4 @@
-package com.kuroyale.view.battle;
+package com.kuroyale.view.battle.ui;
 
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;

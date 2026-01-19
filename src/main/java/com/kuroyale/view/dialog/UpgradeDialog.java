@@ -1,4 +1,4 @@
-package com.kuroyale.view;
+package com.kuroyale.view.dialog;
 
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.User;

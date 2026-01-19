@@ -11,9 +11,9 @@ import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.ServiceFactory;
 import com.kuroyale.util.SoundEffectUtil;
 import com.kuroyale.view.battle.BattleArenaView;
-import com.kuroyale.view.battle.ElixirBarView;
-import com.kuroyale.view.battle.HandView;
-import com.kuroyale.view.battle.PauseMenuView;
+import com.kuroyale.view.battle.ui.ElixirBarView;
+import com.kuroyale.view.battle.ui.HandView;
+import com.kuroyale.view.battle.ui.PauseMenuView;
 import com.kuroyale.event.GameEventBus;
 import com.kuroyale.event.GameEventListener;
 

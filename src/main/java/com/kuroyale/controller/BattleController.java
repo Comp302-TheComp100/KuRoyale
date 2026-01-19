@@ -5,8 +5,8 @@ import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.view.battle.BattleArenaView;
-import com.kuroyale.view.battle.ElixirBarView;
-import com.kuroyale.view.battle.HandView;
+import com.kuroyale.view.battle.ui.ElixirBarView;
+import com.kuroyale.view.battle.ui.HandView;
 import com.kuroyale.util.SceneLoader;
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
@@ -753,8 +753,8 @@ public class BattleController {
         pauseMenuContainer.getChildren().clear();
         pauseMenuContainer.setVisible(true);
 
-        com.kuroyale.view.battle.PauseMenuView menu = new com.kuroyale.view.battle.PauseMenuView(
-                new com.kuroyale.view.battle.PauseMenuView.PauseMenuListener() {
+        com.kuroyale.view.battle.ui.PauseMenuView menu = new com.kuroyale.view.battle.ui.PauseMenuView(
+                new com.kuroyale.view.battle.ui.PauseMenuView.PauseMenuListener() {
                     @Override
                     public void onResume() {
                         handleResume();

@@ -1,4 +1,4 @@
-package com.kuroyale.view;
+package com.kuroyale.view.card;
 
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
