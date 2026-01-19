@@ -30,4 +30,16 @@ public interface GameEventListener {
 
         default void onSpellDamageDealt(boolean isPlayer, int damage) {
         }
+<<<<<<< Updated upstream
+=======
+
+        default void onMatchStart() {
+        }
+
+        default void onMatchEnd(boolean playerWon) {
+        }
+
+        default void onEmojiPlayed(boolean isPlayer, String emojiName) {
+        }
+>>>>>>> Stashed changes
 }

@@ -37,6 +37,10 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private TowerRenderer towerRenderer;
     private BuildingRenderer buildingRenderer;
 
+    // Emoji System
+    private EmojiButton emojiButton;
+    private EmojiPanel emojiPanel;
+
     private final java.util.List<ActiveSpellVisual> activeSpellVisuals = new java.util.ArrayList<>();
 
     private static class ActiveSpellVisual {
@@ -80,6 +84,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
         bindLayers();
         setupInteractions();
+        setupEmojiSystem();
 
         // PvP mode: No sidebar (timer/score handled in controller)
         StackPane centerContainer = new StackPane(arenaPane);
@@ -114,6 +119,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
         bindLayers();
         setupInteractions();
+        setupEmojiSystem();
 
         StackPane centerContainer = new StackPane(arenaPane);
         // Explicitly center the arenaPane within the StackPane
@@ -162,6 +168,26 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         });
 
         arenaPane.setOnMouseExited(e -> clearHoverHighlight());
+    }
+
+    private void setupEmojiSystem() {
+        // Create emoji button
+        emojiButton = new EmojiButton();
+        emojiButton.setLayoutX(10);
+        emojiButton.setLayoutY(10);
+
+        emojiPanel = new EmojiPanel();
+        emojiPanel.setLayoutX(60); // To the right of the button
+        emojiPanel.setLayoutY(10);
+
+        emojiButton.setOnAction(e -> emojiPanel.toggle());
+
+        emojiPanel.setOnEmojiSelected(emojiName -> {
+            playEmoji(true, emojiName);
+            com.kuroyale.event.GameEventBus.getInstance().publishEmojiPlayed(true, emojiName);
+        });
+
+        arenaPane.getChildren().addAll(emojiButton, emojiPanel);
     }
 
     private void initRenderers() {
@@ -794,10 +820,75 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         javafx.scene.Node create(com.kuroyale.model.entities.ICombatant unit, double x, double y);
     }
 
+
+
     public javafx.scene.Node getTowerNode(com.kuroyale.model.entities.Tower tower) {
         if (tower == null || tower.getPosition() == null || towerRenderer == null) {
             return null;
         }
         return towerRenderer.getTowerVisual(tower.getPosition());
     }
+    
+
+
+
+    
+    /**
+     * Plays an emoji animation on the arena.
+     * @param isPlayer true if player emoji, false if opponent emoji
+     * 
+     * @param emojiNam   name of the emoji to play (e.g., "emoji_1")
+     * 
+     * 
+     */
+    private void playEmoji(boolean isPlayer, String emojiName) {
+        try { 
+            // Load emoji GIF
+            String emojiPath = "/gifs/emojis/" + emojiName + ".gif";
+            javafx.scene.image.Image emojiImage = new javafx.scene.image.Image(
+                    getClass().getResourceAsStream(emojiPath));
+
+            javafx.scene.image.ImageView emojiView = new javafx.scene.image.ImageView(emojiImage);
+            emojiView.setFitWidth(80);
+            emojiView.setFitHeight(80);
+            emojiView.setPreserveRatio(true);
+
+            // Position emoji - center horizontally, bottom for player, top for opponent
+            double centerX = (Arena.WIDTH * TILE_SIZE) / 2.0 - 40; // -40 to center the 80px image
+            double posY = isPlayer ? (Arena.HEIGHT * TILE_SIZE) - 120 : 40; // Player bottom, opponent top
+
+            emojiView.setLayoutX(centerX);
+            emojiView.setLayoutY(posY);
+            emojiView.setOpacity(0.0);
+
+            // Add to effect layer
+            effectLayer.getChildren().add(emojiView);
+
+            // Animation: Fade in, stay, fade out
+            javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(
+                    javafx.util.Duration.millis(300), emojiView);
+            fadeIn.setFromValue(0.0);
+            fadeIn.setToValue(1.0);
+
+            javafx.animation.PauseTransition stay = new javafx.animation.PauseTransition(
+                    javafx.util.Duration.seconds(2.5));
+
+            javafx.animation.FadeTransition fadeOut = new javafx.animation.FadeTransition(
+                    javafx.util.Duration.millis(500), emojiView);
+            fadeOut.setFromValue(1.0);
+            fadeOut.setToValue(0.0);
+
+            javafx.animation.SequentialTransition sequence = new javafx.animation.SequentialTransition(
+                    fadeIn, stay, fadeOut);
+            sequence.setOnFinished(e -> effectLayer.getChildren().remove(emojiView));
+            sequence.play();
+
+        } catch (Exception e) {
+            System.err.println("[BattleArenaView] Failed to play emoji: " + emojiName);
+            // e.printStackTrace(); // Suppress full stack trace to avoid spam if files missing
+        }
+            // 
+    }
+            // 
 }
+        
