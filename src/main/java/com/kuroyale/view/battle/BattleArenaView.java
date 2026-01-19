@@ -56,8 +56,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.gameState = null;
         this.pvpGameState = pvpGameState;
 
-        Arena arena = pvpGameState.getArena();
+           Aren
 
+    
         // Initialize layers
         this.grid = new GridPane();
         this.grid.setHgap(0);
