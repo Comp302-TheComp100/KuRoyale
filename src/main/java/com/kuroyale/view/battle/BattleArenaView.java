@@ -48,7 +48,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private TowerRenderer towerRenderer;
     private BuildingRenderer buildingRenderer;
 
-        // moji System
+    // moji System
     private EmojiButton emojiButton;
     private EmojiPanel emojiPanel;
 
@@ -69,9 +69,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     public void setOnGridClicked(java.util.function.BiConsumer<Integer, Integer> handler) {
         this.onGridClick = handler;
     }
-
-
-         *      */
 
     public BattleArenaView(com.kuroyale.model.logic.PvPGameState pvpGameState) {
         this.getStylesheets().add(getClass().getResource("/com/kuroyale/view/battle.css").toExternalForm());
@@ -385,7 +382,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         return (((long) x) << 32) | (y & 0xFFFFFFFFL);
     }
 
-    p       return grid;
+    public GridPane getGrid() {
+        return grid;
     }
 
     public int getTileSize() {
@@ -664,28 +662,19 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         }
     }
 
+    @FunctionalInterface
+    private interface AttachedVisualCreator {
         javafx.scene.Node create(com.kuroyale.model.entities.ICombatant unit, double x, double y);
     }
 
-
-
-    p
-
-    
-
-
-
-    
     /**
      * Plays an emoji animation on the arena.
-     * @param isPlayer true if player emoji, false if opponent emoji
      * 
-     * @param emojiNam   name of the emoji to play (e.g., "emoji_1")
-     * 
-     * 
+     * @param isPlayer  true if player emoji, false if opponent emoji
+     * @param emojiName name of the emoji to play (e.g., "emoji_1")
      */
-    private void playEmoji(boolean isPlayer, String emojiName) {
-        try { 
+    private void playEmoji(boolean isPlayer, String emojiName) { 
+        try {
             // Load emoji GIF
             String emojiPath = "/gifs/emojis/" + emojiName + ".gif";
             javafx.scene.image.Image emojiImage = new javafx.scene.image.Image(
@@ -726,11 +715,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             sequence.setOnFinished(e -> effectLayer.getChildren().remove(emojiView));
             sequence.play();
 
-     
-    Sy
-                  }
- 
-
-            // 
+        } catch (Exception e) {
+            System.err.println("Error playing emoji: " + e.getMessage());
+         }
+    }
 }
-        
