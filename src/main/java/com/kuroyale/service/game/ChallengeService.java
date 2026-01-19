@@ -1,4 +1,4 @@
-package com.kuroyale.service;
+package com.kuroyale.service.game;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -32,7 +32,7 @@ public class ChallengeService {
         // Removed initial loadProgress() as it requires username
     }
 
-    //Loads challenge data for the specified user.
+    // Loads challenge data for the specified user.
     public void loadForUser(String username) {
         this.currentUsername = username;
 
@@ -60,8 +60,10 @@ public class ChallengeService {
                 .orElse(null);
     }
 
-    /* Records a completed attempt for a challenge.
-     * Updates stats and unlocks the next challenge if won.*/
+    /*
+     * Records a completed attempt for a challenge.
+     * Updates stats and unlocks the next challenge if won.
+     */
     public void recordAttempt(int challengeId, boolean won, int timeSeconds, int damageDealt) {
         if (currentUsername == null)
             return;
@@ -85,7 +87,7 @@ public class ChallengeService {
         }
     }
 
-    //Saves challenge progress to simple JSON.
+    // Saves challenge progress to simple JSON.
     public void saveProgress() {
         if (currentUsername == null)
             return;

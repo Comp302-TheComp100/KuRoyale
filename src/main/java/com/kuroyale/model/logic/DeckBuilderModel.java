@@ -1,12 +1,12 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.entities.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.DeckManagementService;
+import com.kuroyale.model.entities.*;
+import com.kuroyale.service.auth.AuthenticationService;
+import com.kuroyale.service.management.DeckManagementService;
 import com.kuroyale.util.common.ServiceFactory;
 
 /*The Model component for the Deck Builder screen.

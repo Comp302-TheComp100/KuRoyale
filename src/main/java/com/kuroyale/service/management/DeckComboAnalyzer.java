@@ -1,4 +1,4 @@
-package com.kuroyale.service;
+package com.kuroyale.service.management;
 
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.Deck;

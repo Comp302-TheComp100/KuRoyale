@@ -1,7 +1,5 @@
 package com.kuroyale.view.battle.renderers;
 
-import com.kuroyale.model.entities.Projectile;
-import com.kuroyale.model.entities.Vector2;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -11,6 +9,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import com.kuroyale.model.entities.Projectile;
+import com.kuroyale.model.entities.Vector2;
 
 public class ProjectileRenderer {
     private final Pane unitLayer;

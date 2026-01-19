@@ -1,4 +1,4 @@
-package com.kuroyale.service.battle;
+package com.kuroyale.service.battle.core;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;

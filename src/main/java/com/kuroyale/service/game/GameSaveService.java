@@ -1,9 +1,9 @@
-package com.kuroyale.service;
+package com.kuroyale.service.game;
 
-import com.kuroyale.model.entities.*;
-import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
 import com.kuroyale.model.dto.*;
+import com.kuroyale.model.entities.*;
+import com.kuroyale.model.enums.*;
 
 import java.io.*;
 import java.nio.file.*;

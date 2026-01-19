@@ -1,8 +1,8 @@
 package com.kuroyale.model.strategy.pathfinding;
 
-import com.kuroyale.model.entities.*;
-
 import java.util.*;
+
+import com.kuroyale.model.entities.*;
 
 public class AirDirectPathfindingStrategy implements PathfindingStrategy {
     @Override

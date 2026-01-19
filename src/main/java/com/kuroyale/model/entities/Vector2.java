@@ -33,25 +33,30 @@ public class Vector2 implements Serializable {
         return GridPosition.tryCreate(gx, gy);
     }
 
-
     public Vector2 add(Vector2 other) {
         return new Vector2(this.x + other.x, this.y + other.y);
     }
+
     public Vector2 subtract(Vector2 other) {
         return new Vector2(this.x - other.x, this.y - other.y);
     }
+
     public Vector2 multiply(double scalar) {
         return new Vector2(this.x * scalar, this.y * scalar);
     }
+
     public double length() {
         return Math.sqrt(x * x + y * y);
     }
+
     public double lengthSquared() {
         return x * x + y * y;
     }
 
-    /*Returns a normalized (unit length) version of this vector.
-     * If length is zero, returns ZERO.*/
+    /*
+     * Returns a normalized (unit length) version of this vector.
+     * If length is zero, returns ZERO.
+     */
     public Vector2 normalize() {
         double len = length();
         if (len < 1e-9)
@@ -59,7 +64,7 @@ public class Vector2 implements Serializable {
         return new Vector2(x / len, y / len);
     }
 
-    //Calculates distance to another Vector2.
+    // Calculates distance to another Vector2.
     public double distanceTo(Vector2 other) {
         double dx = this.x - other.x;
         double dy = this.y - other.y;
@@ -88,6 +93,7 @@ public class Vector2 implements Serializable {
     public double getX() {
         return x;
     }
+
     public double getY() {
         return y;
     }

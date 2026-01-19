@@ -1,4 +1,4 @@
-package com.kuroyale.service;
+package com.kuroyale.service.network;
 
 import com.kuroyale.model.dto.NetworkMessage;
 import com.kuroyale.model.entities.ArenaLayout;

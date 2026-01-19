@@ -77,8 +77,10 @@ public class Hand {
         return nextCard;
     }
 
-    /* Restores the hand and draw pile from saved data.
-     * Used when loading a saved game to restore the exact card state.*/
+    /*
+     * Restores the hand and draw pile from saved data.
+     * Used when loading a saved game to restore the exact card state.
+     */
     public void restoreFromSaved(List<Card> handCards, List<Card> drawPileCards) {
         // Clear current state
         currentHand.clear();
@@ -103,5 +105,7 @@ public class Hand {
     }
 
     // Gets a copy of the draw pile as a list (for saving).
-    public List<Card> getDrawPileCards() {return new ArrayList<>(drawPile);}
+    public List<Card> getDrawPileCards() {
+        return new ArrayList<>(drawPile);
+    }
 }

@@ -1,9 +1,9 @@
 package com.kuroyale.view.dialog;
 
 import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.enums.SpeedType;
 import com.kuroyale.model.entities.User;
-import com.kuroyale.service.AuthenticationService;
+import com.kuroyale.model.enums.SpeedType;
+import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.ui.StyleHelper;
 

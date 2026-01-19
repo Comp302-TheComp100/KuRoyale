@@ -1,10 +1,10 @@
-package com.kuroyale.service.battle;
+package com.kuroyale.service.battle.core;
 
 import com.kuroyale.model.entities.Building;
-import com.kuroyale.model.entities.Troop;
-import com.kuroyale.model.entities.Tower;
-import com.kuroyale.model.entities.ICombatant;
 import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.ICombatant;
+import com.kuroyale.model.entities.Tower;
+import com.kuroyale.model.entities.Troop;
 
 public class CombatService {
 
@@ -247,7 +247,8 @@ public class CombatService {
 
         if (attacker instanceof Troop troop) {
             com.kuroyale.model.entities.CombatStats stats = troop.getCombatStats();
-            if (stats != null && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
+            if (stats != null
+                    && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
                 range = Math.max(range, com.kuroyale.util.config.GameConstants.MELEE_ATTACK_BUFFER);
             }
         }

@@ -23,47 +23,45 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
         |-- GameEventBus.java
         |-- GameEventListener.java
     |-- model/
-        |-- dto/
-            |-- NetworkGameStateSnapshot.java
-            |-- NetworkMessage.java
-            |-- SavedGameState.java
-        |-- entities/
-            |-- Achievement.java
-            |-- Arena.java
-            |-- ArenaLayout.java
-            |-- BattleStrategyFactory.java
-            |-- Building.java
-            |-- Card.java
-            |-- CardCatalog.java
-            |-- CardFactory.java
-            |-- Challenge.java
-            |-- ChallengeFactory.java
-            |-- CombatStats.java
-            |-- Deck.java
-            |-- GridCell.java
-            |-- GridPosition.java
-            |-- Hand.java
-            |-- ICombatant.java
-            |-- PlayerStats.java
-            |-- Projectile.java
-            |-- Quest.java
-            |-- Tower.java
-            |-- Troop.java
-            |-- User.java
-            |-- Vector2.java
-        |-- enums/
-            |-- AchievementType.java
-            |-- BattleMode.java
-            |-- CardType.java
-            |-- ChallengeType.java
-            |-- ComboType.java
-            |-- NetworkMessageType.java
-            |-- QuestType.java
-            |-- Rarity.java
-            |-- SpeedType.java
-            |-- TargetType.java
-            |-- TileType.java
-            |-- UnitState.java
+        |-- core/
+            |-- common/
+            |-- entities/
+                |-- Achievement.java
+                |-- Arena.java
+                |-- ArenaLayout.java
+                |-- BattleStrategyFactory.java
+                |-- Building.java
+                |-- Card.java
+                |-- CardCatalog.java
+                |-- CardFactory.java
+                |-- Challenge.java
+                |-- ChallengeFactory.java
+                |-- CombatStats.java
+                |-- Deck.java
+                |-- GridCell.java
+                |-- GridPosition.java
+                |-- Hand.java
+                |-- ICombatant.java
+                |-- PlayerStats.java
+                |-- Projectile.java
+                |-- Quest.java
+                |-- Tower.java
+                |-- Troop.java
+                |-- User.java
+                |-- Vector2.java
+            |-- enums/
+                |-- AchievementType.java
+                |-- BattleMode.java
+                |-- CardType.java
+                |-- ChallengeType.java
+                |-- ComboType.java
+                |-- NetworkMessageType.java
+                |-- QuestType.java
+                |-- Rarity.java
+                |-- SpeedType.java
+                |-- TargetType.java
+                |-- TileType.java
+                |-- UnitState.java
         |-- logic/
             |-- ArenaDesignModel.java
             |-- BattleModel.java
@@ -71,16 +69,22 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
             |-- ElixirManager.java
             |-- GameState.java
             |-- IBattleState.java
+            |-- Login.java
             |-- MenuModel.java
             |-- PvPGameState.java
             |-- SavedGamesModel.java
             |-- SettingsModel.java
             |-- SpatialGrid.java
             |-- TurnManager.java
+            |-- battle/
+        |-- registry/
         |-- state/
             |-- DeckBuilderState.java
-            |-- Login.java
             |-- PvPDeckBuilderSession.java
+            |-- dto/
+                |-- NetworkGameStateSnapshot.java
+                |-- NetworkMessage.java
+                |-- SavedGameState.java
         |-- strategy/
             |-- battle/
                 |-- BattleStrategy.java
@@ -100,37 +104,42 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
         |-- JsonUserRepository.java
         |-- UserRepository.java
     |-- service/
-        |-- AchievementService.java
-        |-- ArenaService.java
-        |-- AuthenticationService.java
-        |-- CardService.java
-        |-- ChallengeService.java
-        |-- DeckComboAnalyzer.java
-        |-- DeckManagementService.java
-        |-- GameSaveService.java
-        |-- GameStartValidator.java
-        |-- NetworkService.java
-        |-- QuestService.java
-        |-- RelayService.java
-        |-- UPnPService.java
+        |-- auth/
+            |-- AuthenticationService.java
+            |-- PasswordUtil.java
         |-- battle/
             |-- BotLogic.java
-            |-- CombatService.java
             |-- ComboService.java
-            |-- TargetingService.java
-            |-- TroopMovementService.java
+            |-- core/
+                |-- CombatService.java
+                |-- TargetingService.java
+                |-- TroopMovementService.java
+            |-- logic/
+        |-- game/
+            |-- AchievementService.java
+            |-- ChallengeService.java
+            |-- GameSaveService.java
+            |-- QuestService.java
+        |-- management/
+            |-- ArenaManagementService.java
+            |-- CardManagementService.java
+            |-- DeckComboAnalyzer.java
+            |-- DeckManagementService.java
+            |-- GameStartValidator.java
         |-- network/
             |-- AuthoritativeMatchLoop.java
             |-- NetworkInputQueue.java
+            |-- NetworkService.java
             |-- PerspectiveMapper.java
             |-- PlayerInput.java
+            |-- RelayService.java
+            |-- UPnPService.java
     |-- util/
         |-- audio/
             |-- AudioManager.java
             |-- SoundEffectUtil.java
             |-- SoundManager.java
         |-- common/
-            |-- PasswordUtil.java
             |-- ServiceFactory.java
             |-- SettingsManager.java
             |-- ValidationUtil.java

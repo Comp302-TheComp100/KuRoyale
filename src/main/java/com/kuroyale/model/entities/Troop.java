@@ -1,8 +1,9 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
 import java.util.ArrayDeque;
 import java.util.Deque;
+
+import com.kuroyale.model.enums.*;
 
 public class Troop implements ICombatant {
     private final Card baseCard;
@@ -136,7 +137,7 @@ public class Troop implements ICombatant {
     public int getCurrentHealth() {
         return currentHealth;
     }
-    
+
     /**
      * Sets current health directly (used for network sync).
      */

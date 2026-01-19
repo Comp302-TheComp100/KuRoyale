@@ -102,7 +102,8 @@ public class JsonUserRepository implements UserRepository {
                 }
             }
 
-            // Also supports legacy deck entries stored as objects {name, level} and migrates levels into cardLevels.
+            // Also supports legacy deck entries stored as objects {name, level} and
+            // migrates levels into cardLevels.
             if (jsonUser.has("deck")) {
                 JSONArray deckArray = jsonUser.getJSONArray("deck");
                 List<String> deck = new ArrayList<>();
@@ -263,4 +264,3 @@ public class JsonUserRepository implements UserRepository {
         }
     }
 }
-

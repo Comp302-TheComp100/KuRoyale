@@ -1,10 +1,10 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.kuroyale.model.enums.*;
 
 /*Represents the active game board during a match.
  * Information Expert: Knows the state of the board (cells, valid positions, occupancy).

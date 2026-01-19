@@ -1,4 +1,4 @@
-package com.kuroyale.service;
+package com.kuroyale.service.management;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,22 +16,21 @@ import com.kuroyale.repository.UserRepository;
  * Pure Fabrication: Manages arena operations without being a domain entityitself.
  * Creator: Creates Arena instances from ArenaLayout.
  * Low Coupling: Coordinates between Arena and User without duplicating Arena's logic.*/
-public class ArenaService {
+public class ArenaManagementService {
     private final UserRepository userRepository;
     private ArenaLayout savedLayout; // Fallback for when no user is logged in
     private User currentUser; // Track the current user
 
-    public ArenaService(UserRepository userRepository) {
+    public ArenaManagementService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    //Sets the current user for arena operations.
+    // Sets the current user for arena operations.
     public void setCurrentUser(User user) {
         this.currentUser = user;
     }
 
-
-    //Creates a default arena layout.
+    // Creates a default arena layout.
     public ArenaLayout createDefaultLayout() {
         ArenaLayout layout = new ArenaLayout("Default Arena");
         // Add a central 2x2 bridge across the river (y = 15,16)
@@ -92,7 +91,8 @@ public class ArenaService {
         return savedLayout;
     }
 
-    // placement validation combining all rules. Checks if a unit can be placed at the given position.
+    // placement validation combining all rules. Checks if a unit can be placed at
+    // the given position.
     public boolean isValidPlacement(Arena arena, GridPosition position) {
         if (arena == null || position == null) {
             return false;
@@ -100,24 +100,26 @@ public class ArenaService {
         return arena.canPlaceUnit(position);
     }
 
-    //Gets all positions where units can currently be placed.
+    // Gets all positions where units can currently be placed.
     public List<GridPosition> getValidPlacementPositions(Arena arena) {
         List<GridPosition> validPositions = new ArrayList<>();
         if (arena == null) {
             return validPositions;
         }
 
-        return arena.getAllCells().stream().filter(GridCell::canPlaceUnit).map(GridCell::getPosition).collect(Collectors.toList());
+        return arena.getAllCells().stream().filter(GridCell::canPlaceUnit).map(GridCell::getPosition)
+                .collect(Collectors.toList());
     }
 
-    //Gets all positions where units can be placed in a specific region.
+    // Gets all positions where units can be placed in a specific region.
     public List<GridPosition> getValidPlacementPositionsInRegion(
             Arena arena, GridPosition topLeft, GridPosition bottomRight) {
         if (arena == null) {
             return new ArrayList<>();
         }
 
-        return arena.getCellsInRegion(topLeft, bottomRight).stream().filter(GridCell::canPlaceUnit).map(GridCell::getPosition).collect(Collectors.toList());
+        return arena.getCellsInRegion(topLeft, bottomRight).stream().filter(GridCell::canPlaceUnit)
+                .map(GridCell::getPosition).collect(Collectors.toList());
     }
 
     // Counts the number of occupied cells in the arena.
@@ -128,13 +130,14 @@ public class ArenaService {
         return arena.getOccupiedCells().size();
     }
 
-    //Finds all units within a certain range from a central position.
+    // Finds all units within a certain range from a central position.
     public List<GridPosition> findUnitsInRange(Arena arena, GridPosition center, int range) {
         if (arena == null || center == null) {
             return new ArrayList<>();
         }
 
-        return arena.getCellsInRadius(center, range).stream().filter(GridCell::isOccupied).map(GridCell::getPosition).collect(Collectors.toList());
+        return arena.getCellsInRadius(center, range).stream().filter(GridCell::isOccupied).map(GridCell::getPosition)
+                .collect(Collectors.toList());
     }
 
     // Gets all occupied positions in the arena.
@@ -146,7 +149,7 @@ public class ArenaService {
         return arena.getOccupiedCells().stream().map(GridCell::getPosition).collect(Collectors.toList());
     }
 
-    //hecks if there's a walkable path between two positions.
+    // hecks if there's a walkable path between two positions.
     public boolean hasPathToTarget(Arena arena, GridPosition start, GridPosition target) {
         if (arena == null || start == null || target == null) {
             return false;
@@ -163,7 +166,8 @@ public class ArenaService {
         return startCell.isWalkable() && targetCell.isWalkable();
     }
 
-    //Gets a simple walkable path between two positions. Placehoder until a* algorithm
+    // Gets a simple walkable path between two positions. Placehoder until a*
+    // algorithm
     public List<GridPosition> getWalkablePath(Arena arena, GridPosition start, GridPosition end) {
         List<GridPosition> path = new ArrayList<>();
 
@@ -215,15 +219,16 @@ public class ArenaService {
         return path;
     }
 
-    //Gets all walkable positions adjacent to a given position.
+    // Gets all walkable positions adjacent to a given position.
     public List<GridPosition> getWalkableAdjacentPositions(Arena arena, GridPosition position) {
         if (arena == null || position == null) {
             return new ArrayList<>();
         }
 
         return arena.getAdjacentPositions(position).stream().filter(pos -> {
-                    GridCell cell = arena.getCell(pos);
-                    return cell != null && cell.isWalkable() && !cell.isOccupied();})
-                    .collect(Collectors.toList());
+            GridCell cell = arena.getCell(pos);
+            return cell != null && cell.isWalkable() && !cell.isOccupied();
+        })
+                .collect(Collectors.toList());
     }
 }

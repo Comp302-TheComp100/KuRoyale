@@ -1,9 +1,5 @@
 package com.kuroyale.view.battle.renderers;
 
-import com.kuroyale.model.entities.Arena;
-import com.kuroyale.model.entities.ArenaLayout;
-import com.kuroyale.model.entities.GridPosition;
-import com.kuroyale.model.entities.Tower;
 import javafx.scene.Node;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -13,6 +9,11 @@ import javafx.scene.shape.Rectangle;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.entities.Tower;
 
 public class TowerRenderer {
     private final GridPane grid;

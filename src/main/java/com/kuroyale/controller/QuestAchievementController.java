@@ -5,8 +5,8 @@ import java.util.List;
 
 import com.kuroyale.model.entities.Achievement;
 import com.kuroyale.model.entities.Quest;
-import com.kuroyale.service.AchievementService;
-import com.kuroyale.service.QuestService;
+import com.kuroyale.service.game.AchievementService;
+import com.kuroyale.service.game.QuestService;
 import com.kuroyale.util.audio.SoundEffectUtil;
 import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.ui.SceneLoader;
@@ -45,7 +45,7 @@ public class QuestAchievementController {
     private final SceneLoader sceneLoader = new SceneLoader();
     private final QuestService questService = ServiceFactory.getInstance().getQuestService();
     private final AchievementService achievementService = ServiceFactory.getInstance().getAchievementService();
-    private final com.kuroyale.service.AuthenticationService authService = ServiceFactory.getInstance()
+    private final com.kuroyale.service.auth.AuthenticationService authService = ServiceFactory.getInstance()
             .getAuthenticationService();
     private Timeline timerTimeline;
 

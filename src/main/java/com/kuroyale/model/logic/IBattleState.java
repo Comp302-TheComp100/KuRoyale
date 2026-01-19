@@ -1,12 +1,12 @@
 package com.kuroyale.model.logic;
 
+import java.util.List;
+
 import com.kuroyale.model.entities.Arena;
 import com.kuroyale.model.entities.Building;
-import com.kuroyale.model.entities.Troop;
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.GridPosition;
-
-import java.util.List;
+import com.kuroyale.model.entities.Troop;
 
 /**
  * Common interface for accessing and subtly modifying battle-related

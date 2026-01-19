@@ -1,11 +1,12 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+
+import com.kuroyale.model.enums.*;
+
 import java.util.HashSet;
 
 /**

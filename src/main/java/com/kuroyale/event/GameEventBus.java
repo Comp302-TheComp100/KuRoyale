@@ -1,9 +1,10 @@
 package com.kuroyale.event;
 
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.Tower;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Tower;
 
 /* Event Bus for broadcasting game events to registered listeners.
  * Facilitates loose coupling between the game engine (GameState) and
@@ -51,7 +52,8 @@ public class GameEventBus {
         new ArrayList<>(listeners).forEach(l -> l.onElixirSpent(isPlayer, amount));
     }
 
-    public void publishBuildingProduction(com.kuroyale.model.entities.Building building, String resource, int amount) {
+    public void publishBuildingProduction(com.kuroyale.model.entities.Building building, String resource,
+            int amount) {
         new ArrayList<>(listeners).forEach(l -> l.onBuildingProduction(building, resource, amount));
     }
 

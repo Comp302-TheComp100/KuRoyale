@@ -13,13 +13,13 @@ public enum NetworkMessageType {
     CONNECT_ACK("Connection acknowledged by host"),
     DISCONNECT("Player disconnecting gracefully"),
     HEARTBEAT("Keep-alive ping"),
-    
+
     // Lobby Messages
     PLAYER_INFO("Player name and deck info"),
     READY_STATUS("Player ready/not ready status"),
     LOBBY_UPDATE("Lobby state update"),
     MATCH_START("Match is starting"),
-    
+
     // Game State Synchronization (Host-Authoritative Model)
     ARENA_LAYOUT("Arena layout synchronization from host"),
     GAME_STATE_SYNC("Full authoritative game state from host - includes all entities, scores, timers"),
@@ -40,12 +40,12 @@ public enum NetworkMessageType {
     FULL_STATE_SYNC("Complete entity state sync - troops, buildings, projectiles from host"),
     AREA_EFFECT("Area effect visual sync - explosions, splash damage effects"),
     SPELL_CAST("Spell cast visual sync - spell animations like arrows, zap"),
-    
+
     // Match End Messages
     VICTORY("Player won the match"),
     DEFEAT("Player lost the match"),
     DRAW("Match ended in a draw"),
-    
+
     // Error Messages
     ERROR("Error occurred"),
     RECONNECT("Attempting to reconnect"),
@@ -61,4 +61,3 @@ public enum NetworkMessageType {
         return description;
     }
 }
-

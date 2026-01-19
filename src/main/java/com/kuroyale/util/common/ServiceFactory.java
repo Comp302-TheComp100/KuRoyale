@@ -3,13 +3,13 @@ package com.kuroyale.util.common;
 import com.kuroyale.model.entities.CardCatalog;
 import com.kuroyale.repository.JsonUserRepository;
 import com.kuroyale.repository.UserRepository;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.DeckManagementService;
-import com.kuroyale.service.ArenaService;
-import com.kuroyale.service.GameSaveService;
-import com.kuroyale.service.ChallengeService;
-import com.kuroyale.service.QuestService;
-import com.kuroyale.service.AchievementService;
+import com.kuroyale.service.auth.AuthenticationService;
+import com.kuroyale.service.game.AchievementService;
+import com.kuroyale.service.game.ChallengeService;
+import com.kuroyale.service.game.GameSaveService;
+import com.kuroyale.service.game.QuestService;
+import com.kuroyale.service.management.ArenaManagementService;
+import com.kuroyale.service.management.DeckManagementService;
 
 /*Service Factory for managing service instances and dependencies
  * Pure Fabrication - created to manage object creation and dependencies
@@ -23,7 +23,7 @@ public class ServiceFactory {
     private final CardCatalog cardCatalog;
     private final AuthenticationService authenticationService;
     private final DeckManagementService deckManagementService;
-    private final ArenaService arenaService;
+    private final ArenaManagementService arenaService;
     private final GameSaveService gameSaveService;
     private ChallengeService challengeService; // Lazy initialized
     private QuestService questService; // Lazy initialized
@@ -43,7 +43,7 @@ public class ServiceFactory {
         // Create services with dependencies
         this.authenticationService = new AuthenticationService(userRepository, cardCatalog);
         this.deckManagementService = new DeckManagementService(userRepository, cardCatalog);
-        this.arenaService = new ArenaService(userRepository);
+        this.arenaService = new ArenaManagementService(userRepository);
         this.gameSaveService = new GameSaveService();
     }
 
@@ -81,7 +81,7 @@ public class ServiceFactory {
     }
 
     // Gets the ArenaService instance
-    public ArenaService getArenaService() {
+    public ArenaManagementService getArenaService() {
         return arenaService;
     }
 
