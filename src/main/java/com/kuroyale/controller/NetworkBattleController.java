@@ -7,14 +7,12 @@ import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.dto.NetworkMessage;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
-import com.kuroyale.model.logic.*;
 import com.kuroyale.model.state.GameState;
 import com.kuroyale.service.game.BattleSessionService;
 import com.kuroyale.service.network.NetworkService;
 import com.kuroyale.service.network.NetworkService.ConnectionState;
 import com.kuroyale.util.audio.SoundEffectUtil;
 import com.kuroyale.util.common.ServiceFactory;
-import com.kuroyale.util.config.NetworkConfig;
 import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.battle.BattleArenaView;
 import com.kuroyale.view.battle.ui.ElixirBarView;
@@ -105,7 +103,6 @@ public class NetworkBattleController implements GameEventListener {
     private Label resultDetailsLabel;
 
     private final SceneLoader sceneLoader = new SceneLoader();
-    private final NetworkConfig config = NetworkConfig.getInstance();
     private final BattleSessionService model = new BattleSessionService();
 
     // Game components
@@ -116,7 +113,6 @@ public class NetworkBattleController implements GameEventListener {
     private HandView handView;
     private AnimationTimer renderLoop; // Render loop (both HOST and CLIENT)
     private Timeline syncTimer; // Sync timer (HOST only broadcasts)
-    private ArenaLayout currentArenaLayout;
 
     // Game state flags
     private boolean isPaused = false;
@@ -271,7 +267,6 @@ public class NetworkBattleController implements GameEventListener {
             layoutToUse = model.loadArenaLayout();
             System.out.println("[NetworkBattle] HOST using own arena layout: " + layoutToUse.getName());
         }
-        currentArenaLayout = layoutToUse;
 
         // Create Arena
         Arena arena = model.createArena(layoutToUse);
@@ -693,7 +688,6 @@ public class NetworkBattleController implements GameEventListener {
             String cardName = parts[1];
             int centerX = Integer.parseInt(parts[2]);
             int centerY = Integer.parseInt(parts[3]);
-            double range = Double.parseDouble(parts[4]);
 
             // Mirror for client perspective (180° rotation)
             boolean clientIsPlayer = !hostIsPlayer;
@@ -1169,7 +1163,6 @@ public class NetworkBattleController implements GameEventListener {
             int hostPlayerScore = Integer.parseInt(parts[3]);
             int hostBotScore = Integer.parseInt(parts[4]);
             boolean doubleElixir = Boolean.parseBoolean(parts[5]);
-            boolean gameOver = Boolean.parseBoolean(parts[6]);
 
             // Apply game state (inverted for client perspective)
             // Client's score = Host's botScore (towers client destroyed)

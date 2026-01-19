@@ -82,7 +82,6 @@ public class NetworkService {
     private boolean usingRelay = false;
 
     // Callback for connection status updates
-    private BiConsumer<Boolean, String> onUPnPStatusChanged;
     private BiConsumer<Boolean, String> onConnectionReady;
 
     public NetworkService() {
@@ -203,107 +202,6 @@ public class NetworkService {
     }
 
     /**
-     * Attempts to open a port via UPnP for internet connectivity.
-     * This runs asynchronously and updates the UI when complete.
-     */
-    private void openPortViaUPnP(int port) {
-        if (!upnpService.isInitialized()) {
-            // Wait for UPnP initialization then try
-            upnpService.initialize().thenCompose(available -> {
-                if (available) {
-                    return upnpService.openPort(port);
-                }
-                return CompletableFuture.completedFuture(false);
-            }).thenAccept(success -> {
-                upnpPortOpened = success;
-                handleUPnPResult(success, port);
-            });
-        } else if (upnpService.isUPnPAvailable()) {
-            upnpService.openPort(port).thenAccept(success -> {
-                upnpPortOpened = success;
-                handleUPnPResult(success, port);
-            });
-        } else {
-            System.out.println("[NetworkService] UPnP not available on this network");
-            // Fallback to showing local IP for same-network play
-            notifyConnectionReady(false, "LOCAL_ONLY", port);
-        }
-    }
-
-    /**
-     * Handles the UPnP result and notifies appropriate callbacks.
-     */
-    private void handleUPnPResult(boolean success, int port) {
-        if (success) {
-            String externalIP = upnpService.getExternalIP();
-            String connStr = upnpService.getConnectionString(port);
-
-            // Check for CGNAT (private IP ranges as "external" IP)
-            if (externalIP != null && isCGNAT(externalIP)) {
-                System.out.println("[NetworkService] CGNAT detected - internet play may not work");
-                notifyConnectionReady(false, "CGNAT_DETECTED", port);
-            } else {
-                System.out.println("[NetworkService] UPnP port opened! Share: " + connStr);
-                notifyConnectionReady(true, connStr, port);
-            }
-        } else {
-            System.out.println("[NetworkService] UPnP port opening failed");
-            notifyConnectionReady(false, "UPNP_FAILED", port);
-        }
-    }
-
-    /**
-     * Checks if the IP address indicates CGNAT (Carrier-Grade NAT).
-     * CGNAT uses private IP ranges as the "external" IP.
-     */
-    private boolean isCGNAT(String ip) {
-        if (ip == null)
-            return false;
-        // CGNAT typically uses 100.64.0.0/10 range, but ISPs also use 10.x.x.x
-        return ip.startsWith("10.") ||
-                ip.startsWith("100.64.") || ip.startsWith("100.65.") || ip.startsWith("100.66.") ||
-                ip.startsWith("100.67.") || ip.startsWith("100.68.") || ip.startsWith("100.69.") ||
-                ip.startsWith("100.70.") || ip.startsWith("100.71.") || ip.startsWith("100.72.") ||
-                ip.startsWith("100.73.") || ip.startsWith("100.74.") || ip.startsWith("100.75.") ||
-                ip.startsWith("100.76.") || ip.startsWith("100.77.") || ip.startsWith("100.78.") ||
-                ip.startsWith("100.79.") || ip.startsWith("100.80.") || ip.startsWith("100.81.") ||
-                ip.startsWith("100.82.") || ip.startsWith("100.83.") || ip.startsWith("100.84.") ||
-                ip.startsWith("100.85.") || ip.startsWith("100.86.") || ip.startsWith("100.87.") ||
-                ip.startsWith("100.88.") || ip.startsWith("100.89.") || ip.startsWith("100.90.") ||
-                ip.startsWith("100.91.") || ip.startsWith("100.92.") || ip.startsWith("100.93.") ||
-                ip.startsWith("100.94.") || ip.startsWith("100.95.") || ip.startsWith("100.96.") ||
-                ip.startsWith("100.97.") || ip.startsWith("100.98.") || ip.startsWith("100.99.") ||
-                ip.startsWith("100.100.") || ip.startsWith("100.101.") || ip.startsWith("100.102.") ||
-                ip.startsWith("100.103.") || ip.startsWith("100.104.") || ip.startsWith("100.105.") ||
-                ip.startsWith("100.106.") || ip.startsWith("100.107.") || ip.startsWith("100.108.") ||
-                ip.startsWith("100.109.") || ip.startsWith("100.110.") || ip.startsWith("100.111.") ||
-                ip.startsWith("100.112.") || ip.startsWith("100.113.") || ip.startsWith("100.114.") ||
-                ip.startsWith("100.115.") || ip.startsWith("100.116.") || ip.startsWith("100.117.") ||
-                ip.startsWith("100.118.") || ip.startsWith("100.119.") || ip.startsWith("100.120.") ||
-                ip.startsWith("100.121.") || ip.startsWith("100.122.") || ip.startsWith("100.123.") ||
-                ip.startsWith("100.124.") || ip.startsWith("100.125.") || ip.startsWith("100.126.") ||
-                ip.startsWith("100.127.") ||
-                ip.startsWith("192.168.") || ip.startsWith("172.16.") || ip.startsWith("172.17.") ||
-                ip.startsWith("172.18.") || ip.startsWith("172.19.") || ip.startsWith("172.20.") ||
-                ip.startsWith("172.21.") || ip.startsWith("172.22.") || ip.startsWith("172.23.") ||
-                ip.startsWith("172.24.") || ip.startsWith("172.25.") || ip.startsWith("172.26.") ||
-                ip.startsWith("172.27.") || ip.startsWith("172.28.") || ip.startsWith("172.29.") ||
-                ip.startsWith("172.30.") || ip.startsWith("172.31.");
-    }
-
-    /**
-     * Notifies callbacks about connection readiness.
-     */
-    private void notifyConnectionReady(boolean success, String status, int port) {
-        if (onConnectionReady != null) {
-            onConnectionReady.accept(success, status);
-        }
-        if (onUPnPStatusChanged != null) {
-            onUPnPStatusChanged.accept(success, status);
-        }
-    }
-
-    /**
      * Connects to a host using a room code via the FREE relay service.
      * 
      * @param roomCode   The room code shared by the host
@@ -341,28 +239,6 @@ public class NetworkService {
         return true;
     }
 
-    private void waitForClient() {
-        try {
-            System.out.println("[NetworkService] Waiting for client connection...");
-            clientSocket = serverSocket.accept();
-
-            setupStreams(clientSocket);
-            setState(ConnectionState.CONNECTED);
-
-            // Start receiving messages
-            startReceiving();
-            startHeartbeat();
-
-            System.out.println("[NetworkService] Client connected from " +
-                    clientSocket.getInetAddress().getHostAddress());
-
-        } catch (IOException e) {
-            if (running) {
-                handleError("Error accepting client: " + e.getMessage());
-            }
-        }
-    }
-
     private void setupStreams(Socket socket) throws IOException {
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
@@ -398,15 +274,6 @@ public class NetworkService {
                 }
             }
         });
-    }
-
-    private void startHeartbeat() {
-        heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
-        heartbeatScheduler.scheduleAtFixedRate(() -> {
-            if (state == ConnectionState.CONNECTED) {
-                send(NetworkMessage.heartbeat(playerId));
-            }
-        }, config.getHeartbeatInterval(), config.getHeartbeatInterval(), TimeUnit.MILLISECONDS);
     }
 
     private void handleMessage(NetworkMessage message) {
@@ -886,15 +753,6 @@ public class NetworkService {
 
     public void setOnError(Consumer<String> callback) {
         this.onError = callback;
-    }
-
-    /**
-     * Sets callback for UPnP status changes.
-     * 
-     * @param callback BiConsumer with (success, message)
-     */
-    public void setOnUPnPStatusChanged(BiConsumer<Boolean, String> callback) {
-        this.onUPnPStatusChanged = callback;
     }
 
     /**
