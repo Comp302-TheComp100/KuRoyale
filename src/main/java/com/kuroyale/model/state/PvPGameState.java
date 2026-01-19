@@ -1,86 +1,51 @@
 package com.kuroyale.model.state;
 
 import com.kuroyale.model.arena.Arena;
-import com.kuroyale.model.arena.GridCell;
-import com.kuroyale.model.arena.GridPosition;
-import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.ElixirManager;
 import com.kuroyale.model.logic.TurnManager;
-import com.kuroyale.model.logic.TurnManager.Turn;
 import com.kuroyale.event.GameEventBus;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
 /* Game state for Local Player vs Player battles.
  * Replaces BotLogic with second human player controls.
  * Uses TurnManager for turn-based gameplay.*/
-public class PvPGameState implements IBattleState {
+public class PvPGameState extends AbstractGameState {
 
     // Player 1 (left side - bottom half of arena)
     private final Hand player1Hand, player2Hand;
     private final ElixirManager player1Elixir, player2Elixir;
 
-    private final Arena arena;
     private final TurnManager turnManager;
-    private final List<PlacedCard> placedCards;
-    private final List<Troop> activeTroops;
-    private final List<Building> activeBuildings;
-    private final List<Projectile> activeProjectiles;
-    private final com.kuroyale.service.battle.core.TroopMovementService troopMovementService = new com.kuroyale.service.battle.core.TroopMovementService();
-    private final com.kuroyale.service.battle.core.CombatService combatService = new com.kuroyale.service.battle.core.CombatService();
 
-    private double gameTime = 180.0; // 3 minutes
     private int player1Score = 0, player2Score = 0;
-
-    private boolean isDoubleElixir = false, isGameOver = false;
-    private boolean isTiebreakerMode = false; // Tiebreaker: all towers drain health
-    private static final double TIEBREAKER_DRAIN_RATE = 100.0; // HP per second
     private TurnManager.Turn winner = null;
 
     private Set<Tower> scoredTowers = new HashSet<>();
-    private java.util.function.Function<String, Card> cardCatalog;
+
+    // Combo Service specific to PvP? Or should be general?
+    // Original had it here.
+    private final com.kuroyale.service.battle.logic.ComboService comboService = new com.kuroyale.service.battle.logic.ComboService();
 
     public PvPGameState(Deck player1Deck, Deck player2Deck, Arena arena) {
+        super(arena);
         this.player1Hand = new Hand(player1Deck);
         this.player1Elixir = new ElixirManager();
 
         this.player2Hand = new Hand(player2Deck);
         this.player2Elixir = new ElixirManager();
 
-        this.arena = arena;
         this.turnManager = new TurnManager();
-        this.placedCards = new ArrayList<>();
-        this.activeTroops = new ArrayList<>();
-        this.activeBuildings = new ArrayList<>();
-        this.activeProjectiles = new ArrayList<>();
 
         // Initialize Combo Service
         this.comboService.setGameState(this);
     }
 
-    @Override
-    public List<Projectile> getProjectiles() {
-        return activeProjectiles;
-    }
-
-    @Override
-    public void addProjectile(Projectile p) {
-        activeProjectiles.add(p);
-    }
-
-    private final com.kuroyale.service.battle.logic.ComboService comboService = new com.kuroyale.service.battle.logic.ComboService();
-
     public com.kuroyale.service.battle.logic.ComboService getComboService() {
         return comboService;
-    }
-
-    public void setCardCatalog(java.util.function.Function<String, Card> cardCatalog) {
-        this.cardCatalog = cardCatalog;
     }
 
     public void cleanup() {
@@ -89,6 +54,7 @@ public class PvPGameState implements IBattleState {
         }
     }
 
+    @Override
     public void update(double deltaTime) {
         updateGameTimer(deltaTime);
 
@@ -96,16 +62,16 @@ public class PvPGameState implements IBattleState {
         player1Elixir.update(deltaTime);
         player2Elixir.update(deltaTime);
 
-        updateEntities(deltaTime);
-        handleCombat(deltaTime);
-        cleanupEntities();
+        super.updateEntities(deltaTime);
+        super.handleCombat(deltaTime);
+        super.cleanupEntities();
         checkWinConditions();
     }
 
     private void updateGameTimer(double deltaTime) {
         // Handle tiebreaker mode: all towers drain health until one reaches 0
         if (isTiebreakerMode) {
-            updateTiebreakerMode(deltaTime);
+            super.updateTiebreakerMode(deltaTime);
             return;
         }
 
@@ -140,22 +106,8 @@ public class PvPGameState implements IBattleState {
         }
     }
 
-    /**
-     * Tiebreaker mode: All remaining towers lose health rapidly.
-     * The first tower(s) to reach 0 health determines the loser.
-     * If towers on both sides die simultaneously, count crowns for both.
-     */
-    private void updateTiebreakerMode(double deltaTime) {
-        double drainAmount = TIEBREAKER_DRAIN_RATE * deltaTime;
-
-        // Drain all living towers
-        for (Tower tower : arena.getAllTowers()) {
-            if (tower.isAlive()) {
-                double newHealth = tower.getCurrentHealth() - drainAmount;
-                tower.setCurrentHealth((int) Math.max(0, newHealth));
-            }
-        }
-
+    @Override
+    protected void checkTiebreakerWinCondition() {
         // Count all towers that reached 0 health and score them
         int player1TowersDied = 0;
         int player2TowersDied = 0;
@@ -217,59 +169,6 @@ public class PvPGameState implements IBattleState {
         }
     }
 
-    /**
-     * Clears all troops and buildings from the arena.
-     * Called when entering tiebreaker mode to ensure only tower health matters.
-     */
-    private void clearArenaUnits() {
-        // Remove all troops from spatial grid
-        for (Troop troop : activeTroops) {
-            arena.getSpatialGrid().remove(troop);
-        }
-        activeTroops.clear();
-
-        // Remove all buildings from spatial grid
-        for (Building building : activeBuildings) {
-            arena.getSpatialGrid().remove(building);
-        }
-        activeBuildings.clear();
-
-        // Clear projectiles too
-        activeProjectiles.clear();
-    }
-
-    private void updateEntities(double deltaTime) {
-        troopMovementService.updateTroops(deltaTime, this, activeTroops);
-
-        for (Building b : activeBuildings) {
-            if (b.isAlive()) {
-                b.update(deltaTime);
-            }
-        }
-    }
-
-    private void handleCombat(double deltaTime) {
-        combatService.update(deltaTime, this);
-        activeTroops.removeIf(t -> !t.isAlive());
-    }
-
-    private void cleanupEntities() {
-        java.util.Iterator<Building> it = activeBuildings.iterator();
-        while (it.hasNext()) {
-            Building b = it.next();
-            if (!b.isAlive()) {
-                arena.freeFootprint(b); // Clear occupied cells so new cards can be placed
-                arena.getSpatialGrid().remove(b);
-                it.remove();
-            }
-        }
-
-        if (!isGameOver) {
-            checkAndScoreDestroyedTowers();
-        }
-        arena.removeDeadTowers();
-    }
-
     private void checkWinConditions() {
         if (!isGameOver) {
             boolean player1KingAlive = arena.isPlayerKingAlive();
@@ -317,235 +216,21 @@ public class PvPGameState implements IBattleState {
 
         int cost = card.getCost();
         if (elixir.getCurrentElixir() >= cost) {
-            boolean success = spawnUnit(isPlayer1, card, x, y);
+            java.util.List<ICombatant> spawned = spawnUnit(isPlayer1, card, x, y);
 
-            if (success) {
+            if (spawned != null) {
                 elixir.spend(cost);
                 hand.playCard(handIndex);
                 GameEventBus.getInstance().publishElixirSpent(isPlayer1, cost);
+                return true;
             }
-
-            return success;
         }
 
         return false;
     }
 
-    private boolean spawnUnit(boolean isPlayer1, Card card, int x, int y) {
-        if (card == null)
-            return false;
-
-        java.util.List<ICombatant> spawnedUnits = null;
-        if (card.getType() == CardType.BUILDING) {
-            spawnedUnits = spawnBuilding(isPlayer1, card, x, y);
-        } else if (card.getType() == CardType.TROOP) {
-            spawnedUnits = spawnTroopGroup(isPlayer1, card, x, y);
-        } else if (card.getType() == CardType.SPELL) {
-            applySpellEffect(isPlayer1, card, x, y);
-            spawnedUnits = new java.util.ArrayList<>();
-        }
-
-        if (spawnedUnits != null) {
-            placedCards.add(new PlacedCard(card, x, y, isPlayer1));
-            // Publish for both players/bot so ComboService can detect
-            GameEventBus.getInstance().publishCardPlayed(isPlayer1, card, spawnedUnits);
-            return true;
-        }
-
-        return false;
-    }
-
-    private java.util.List<ICombatant> spawnBuilding(boolean isPlayer1, Card card, int x, int y) {
-        int bw = Math.max(1, card.getFootprintWidthTiles());
-        int bh = Math.max(1, card.getFootprintHeightTiles());
-
-        // Center the building on the clicked tile by offsetting top-left position
-        int topLeftX = x - (bw / 2);
-        int topLeftY = y - (bh / 2);
-
-        if (topLeftX < 0 || topLeftY < 0 || (topLeftX + bw) > Arena.WIDTH || (topLeftY + bh) > Arena.HEIGHT) {
-            return null;
-        }
-
-        for (int dx = 0; dx < bw; dx++) {
-            for (int dy = 0; dy < bh; dy++) {
-                GridCell c = arena.getCell(topLeftX + dx, topLeftY + dy);
-                if (c == null || c.isOccupied() || !c.isWalkable()) {
-                    return null;
-                }
-            }
-        }
-
-        GridPosition topLeft = GridPosition.tryCreate(topLeftX, topLeftY);
-        if (topLeft != null) {
-            Building building = new Building(topLeft, bw, bh, isPlayer1, card.getHp(), card.getImagePath(),
-                    card.getLifetime());
-            building.configureCombatFromCard(card);
-
-            if (card.getSpawnUnitName() != null) {
-                building.setAttackCooldown(1.0);
-            }
-
-            arena.occupyFootprint(building);
-            activeBuildings.add(building);
-            arena.getSpatialGrid().add(building);
-
-            java.util.List<ICombatant> result = new java.util.ArrayList<>();
-            result.add(building);
-            return result;
-        }
-        return null;
-    }
-
-    private java.util.List<ICombatant> spawnTroopGroup(boolean isPlayer1, Card card, int x, int y) {
-        final int[][] OFFSETS = {
-                { 0, 0 }, { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 },
-                { 1, 1 }, { -1, -1 }, { 1, -1 }, { -1, 1 },
-                { 2, 0 }, { -2, 0 }, { 0, 2 }, { 0, -2 }, { 2, 2 }, { -2, -2 }
-        };
-
-        int count = Math.max(1, card.getCount());
-        java.util.List<ICombatant> spawned = new java.util.ArrayList<>();
-
-        for (int i = 0; i < count; i++) {
-            int[] offset = (i < OFFSETS.length) ? OFFSETS[i] : OFFSETS[0];
-            int spawnX = x + offset[0];
-            int spawnY = y + offset[1];
-
-            boolean isValidPos = (spawnX >= 0 && spawnX < Arena.WIDTH && spawnY >= 0 && spawnY < Arena.HEIGHT);
-            if (isValidPos) {
-                GridCell cell = arena.getCell(spawnX, spawnY);
-                if (cell == null || !cell.isWalkable()) {
-                    isValidPos = false;
-                }
-            }
-
-            if (!isValidPos) {
-                spawnX = x;
-                spawnY = y;
-            }
-
-            GridPosition spawn = GridPosition.tryCreate(spawnX, spawnY);
-            if (spawn != null) {
-                Troop troop = new Troop(card, spawn, isPlayer1);
-                activeTroops.add(troop);
-                arena.getSpatialGrid().add(troop);
-                spawned.add(troop);
-            }
-        }
-        return spawned.isEmpty() ? null : spawned;
-    }
-
-    // Spawns troops directly (used by buildings/spells)
-    public boolean spawnTroopDirectly(boolean isPlayerSide, Card card, int x, int y, int count) {
-        if (card == null)
-            return false;
-
-        Card spawnCard = card;
-        if (count > 0 && count != card.getCount()) {
-            spawnCard = new Card(card.getName(), card.getCost(), card.getType(), card.getRarity(),
-                    card.getBaseHp(), card.getBaseDamage(), card.getHitSpeed(), card.getRange(),
-                    card.getSpeed(), card.getTarget(), card.isAirUnit(), card.isAreaEffect(),
-                    card.getDescription(), count, card.getLifetime());
-            spawnCard.setLevel(card.getLevel());
-        }
-
-        return spawnTroopGroup(isPlayerSide, spawnCard, x, y) != null;
-    }
-
-    public GridPosition getFrontPosition(Building b) {
-        if (b == null)
-            return null;
-        int bw = b.getWidth(), bh = b.getHeight(), x = b.getPosition().getX(), y = b.getPosition().getY();
-
-        int spawnX = x + bw / 2;
-        int spawnY;
-
-        if (b.isPlayerSide()) {
-            spawnY = y - 1; // "Above" for player 1 (bottom side)
-        } else {
-            spawnY = y + bh; // "Below" for player 2 (top side)
-        }
-
-        // Check if spawn position lands on river AND is not walkable (not a bridge)
-        // If it's on a bridge, spawn normally so troops can walk across
-        if (spawnY == com.kuroyale.util.config.GameConstants.RIVER_ROW_1 ||
-                spawnY == com.kuroyale.util.config.GameConstants.RIVER_ROW_2) {
-            GridCell frontCell = arena.getCell(spawnX, spawnY);
-            // Only shift if the cell is not walkable (water, not bridge)
-            if (frontCell == null || !frontCell.isWalkable()) {
-                // Shift X based on building's position: if on right half, go left; otherwise go
-                // right
-                int centerX = Arena.WIDTH / 2;
-                if (spawnX >= centerX) {
-                    spawnX = x - 1; // Spawn to the left of building
-                } else {
-                    spawnX = x + bw; // Spawn to the right of building
-                }
-                // Also shift Y off the river to a walkable tile
-                if (b.isPlayerSide()) {
-                    // Player side: move below the river (y > 16)
-                    spawnY = com.kuroyale.util.config.GameConstants.RIVER_ROW_2 + 1; // y = 17
-                } else {
-                    // Bot side: move above the river (y < 15)
-                    spawnY = com.kuroyale.util.config.GameConstants.RIVER_ROW_1 - 1; // y = 14
-                }
-            }
-        }
-
-        return GridPosition.tryCreate(spawnX, spawnY);
-    }
-
-    public Card getCardByName(String name) {
-        if (cardCatalog != null) {
-            return cardCatalog.apply(name);
-        }
-        return null;
-    }
-
-    public ElixirManager getElixirManager(boolean isPlayerSide) {
-        return isPlayerSide ? player1Elixir : player2Elixir;
-    }
-
-    private void applySpellEffect(boolean isPlayer1, Card spell, int x, int y) {
-        // Check for Projectile-based spells (Fireball, Rocket)
-        if ("Fireball".equalsIgnoreCase(spell.getName()) || "Rocket".equalsIgnoreCase(spell.getName())) {
-            GridPosition targetGrid = GridPosition.tryCreate(x, y);
-            if (targetGrid == null)
-                return;
-
-            // Determine Start Position (King Tower)
-            Vector2 startPos = new Vector2(Arena.WIDTH / 2.0, isPlayer1 ? Arena.HEIGHT : 0);
-
-            // Try to find actual King Tower
-            Tower kingTower = arena.getKingTower(isPlayer1);
-            if (kingTower != null && kingTower.getCenterPosition() != null) {
-                startPos = new Vector2(kingTower.getCenterPosition().getX() + 0.5,
-                        kingTower.getCenterPosition().getY() + 0.5);
-            }
-
-            Vector2 targetPos = new Vector2(targetGrid.getX() + 0.5, targetGrid.getY() + 0.5);
-
-            // Create Projectile
-            Projectile spellProjectile = new Projectile(kingTower, startPos, targetPos, spell);
-            addProjectile(spellProjectile);
-            return;
-        }
-
-        double radius = Math.max(0, spell.getRange());
-        double damage = Math.max(0, spell.getDamage());
-        GridPosition center = GridPosition.tryCreate(x, y);
-        if (center == null)
-            return;
-
-        com.kuroyale.event.GameEventBus.getInstance().publishSpellCast(isPlayer1, spell, center);
-
-        Vector2 centerVec = Vector2.fromGridPosition(center);
-        combatService.applyAreaDamage(this, centerVec, radius, damage, TargetType.BOTH, isPlayer1, true,
-                spell.getStunDuration(), spell.getName());
-    }
-
-    private void checkAndScoreDestroyedTowers() {
+    @Override
+    protected void checkAndScoreDestroyedTowers() {
         Set<Tower> towers = arena.getAllTowers();
 
         for (Tower tower : towers) {
@@ -600,13 +285,13 @@ public class PvPGameState implements IBattleState {
         return turnManager;
     }
 
-    public Arena getArena() {
-        return arena;
+    @Override
+    public ElixirManager getElixirManager(boolean isPlayer1) {
+        return isPlayer1 ? player1Elixir : player2Elixir;
     }
 
-    public double getGameTime() {
-        return gameTime;
-    }
+    // Arena, GameTime, isDoubleElixir, isGameOver, isTiebreakerMode getters are now
+    // inherited from AbstractGameState
 
     public int getPlayer1Score() {
         return player1Score;
@@ -616,45 +301,8 @@ public class PvPGameState implements IBattleState {
         return player2Score;
     }
 
-    public boolean isDoubleElixir() {
-        return isDoubleElixir;
-    }
-
-    public boolean isGameOver() {
-        return isGameOver;
-    }
-
-    public boolean isTiebreakerMode() {
-        return isTiebreakerMode;
-    }
-
     public TurnManager.Turn getWinner() {
         return winner;
     }
 
-    public List<Troop> getActiveTroops() {
-        return activeTroops;
-    }
-
-    public List<Building> getActiveBuildings() {
-        return activeBuildings;
-    }
-
-    public List<PlacedCard> getPlacedCards() {
-        return placedCards;
-    }
-
-    // Inner class for placed cards
-    public static class PlacedCard {
-        public final Card card;
-        public final int x, y;
-        public final boolean isPlayer1;
-
-        public PlacedCard(Card card, int x, int y, boolean isPlayer1) {
-            this.card = card;
-            this.x = x;
-            this.y = y;
-            this.isPlayer1 = isPlayer1;
-        }
-    }
 }

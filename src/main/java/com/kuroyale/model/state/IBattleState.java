@@ -31,4 +31,15 @@ public interface IBattleState {
     List<com.kuroyale.model.entities.Projectile> getProjectiles();
 
     void addProjectile(com.kuroyale.model.entities.Projectile p);
+
+    // New common methods for GameState/PvPGameState unification
+    void update(double deltaTime);
+
+    boolean isGameOver();
+
+    boolean isDoubleElixir();
+
+    boolean isTiebreakerMode();
+
+    double getGameTime();
 }

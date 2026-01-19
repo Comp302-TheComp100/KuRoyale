@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.entities.Tower;
-import com.kuroyale.model.entities.Tower.TowerType;
 import com.kuroyale.model.enums.*;
 
 /*Represents the active game board during a match.
