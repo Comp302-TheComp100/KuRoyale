@@ -12,6 +12,7 @@ import com.kuroyale.model.core.entities.Vector2;
 import com.kuroyale.model.logic.GameState;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Immutable snapshot of the complete game state for network synchronization.
@@ -162,15 +163,15 @@ public class NetworkGameStateSnapshot {
 
         // Core state
         sb.append(tick).append("~");
-        sb.append(String.format("%.2f", gameTime)).append("~");
+        sb.append(String.format(Locale.US, "%.2f", gameTime)).append("~");
         sb.append(player1Score).append("~");
         sb.append(player2Score).append("~");
         sb.append(isDoubleElixir ? "1" : "0").append("~");
         sb.append(isGameOver ? "1" : "0").append("~");
         sb.append(isTiebreakerMode ? "1" : "0").append("~");
         sb.append(winner).append("~");
-        sb.append(String.format("%.2f", player1Elixir)).append("~");
-        sb.append(String.format("%.2f", player2Elixir)).append("~");
+        sb.append(String.format(Locale.US, "%.2f", player1Elixir)).append("~");
+        sb.append(String.format(Locale.US, "%.2f", player2Elixir)).append("~");
 
         // Towers
         sb.append(serializeTowers()).append("~");
@@ -434,7 +435,8 @@ public class NetworkGameStateSnapshot {
 
         public String serialize() {
             return id + ":" + type + ":" + (isPlayerSide ? "1" : "0") + ":" +
-                    health + ":" + maxHealth + ":" + String.format("%.1f", x) + ":" + String.format("%.1f", y);
+                    health + ":" + maxHealth + ":" + String.format(Locale.US, "%.1f", x) + ":"
+                    + String.format(Locale.US, "%.1f", y);
         }
 
         public static TowerSnapshot deserialize(String data) {
@@ -524,8 +526,8 @@ public class NetworkGameStateSnapshot {
         public String serialize() {
             return id + ":" + cardName + ":" + (isPlayerSide ? "1" : "0") + ":" +
                     health + ":" + maxHealth + ":" +
-                    String.format("%.2f", x) + ":" + String.format("%.2f", y) + ":" +
-                    String.format("%.2f", targetX) + ":" + String.format("%.2f", targetY);
+                    String.format(Locale.US, "%.2f", x) + ":" + String.format(Locale.US, "%.2f", y) + ":" +
+                    String.format(Locale.US, "%.2f", targetX) + ":" + String.format(Locale.US, "%.2f", targetY);
         }
 
         public static TroopSnapshot deserialize(String data) {
@@ -621,8 +623,8 @@ public class NetworkGameStateSnapshot {
         public String serialize() {
             return id + ":" + cardName + ":" + (isPlayerSide ? "1" : "0") + ":" +
                     health + ":" + maxHealth + ":" +
-                    String.format("%.2f", x) + ":" + String.format("%.2f", y) + ":" +
-                    String.format("%.2f", remainingLifetime);
+                    String.format(Locale.US, "%.2f", x) + ":" + String.format(Locale.US, "%.2f", y) + ":" +
+                    String.format(Locale.US, "%.2f", remainingLifetime);
         }
 
         public static BuildingSnapshot deserialize(String data) {
@@ -712,8 +714,8 @@ public class NetworkGameStateSnapshot {
 
         public String serialize() {
             return id + ":" + (isPlayerSide ? "1" : "0") + ":" +
-                    String.format("%.2f", x) + ":" + String.format("%.2f", y) + ":" +
-                    String.format("%.2f", targetX) + ":" + String.format("%.2f", targetY);
+                    String.format(Locale.US, "%.2f", x) + ":" + String.format(Locale.US, "%.2f", y) + ":" +
+                    String.format(Locale.US, "%.2f", targetX) + ":" + String.format(Locale.US, "%.2f", targetY);
         }
 
         public static ProjectileSnapshot deserialize(String data) {
