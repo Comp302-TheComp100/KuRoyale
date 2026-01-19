@@ -1,11 +1,11 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.view.battle.renderers.BuildingRenderer;
-
+import com.kuroyale.model.arena.Arena;
 import com.kuroyale.model.arena.GridCell;
 import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.enums.TileType;
 import com.kuroyale.model.state.GameState;
+import com.kuroyale.view.battle.renderers.BuildingRenderer;
 import com.kuroyale.view.battle.renderers.ProjectileRenderer;
 import com.kuroyale.view.battle.renderers.TowerRenderer;
 import com.kuroyale.view.battle.renderers.TroopRenderer;
@@ -16,9 +16,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.control.Button;
-import java.util.function.BiConsumer;
-import com.kuroyale.model.arena.Arena;
 
 /**
  * Refactored BattleArenaView with improved cohesion.
@@ -28,7 +25,6 @@ import com.kuroyale.model.arena.Arena;
  * - ArenaEffectManager: Visual effects and animations
  * - Specialized renderers: TroopRenderer, TowerRenderer, etc.
  */
-
 public class BattleArenaView extends javafx.scene.layout.BorderPane implements com.kuroyale.event.GameEventListener {
     private final GridPane grid;
     private final Pane unitLayer;
@@ -42,12 +38,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
     private static final int TILE_SIZE = com.kuroyale.util.config.GameConstants.TILE_SIZE;
 
-    private EmojiButton emojiButton;
-    private EmojiPanel emojiPanel;
-
     // Delegated components
-    private BiConsumer<Integer, Integer> onGridClick;
-
     private ArenaInputHandler inputHandler;
     private ArenaEffectManager effectManager;
 
@@ -56,10 +47,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private ProjectileRenderer projectileRenderer;
     private TowerRenderer towerRenderer;
     private BuildingRenderer buildingRenderer;
-
-    private int currentHoveredTileX = -1;
-    private int currentHoveredTileY = -1;
-    private javafx.scene.Node currentHoveredOverlay = null;
 
     /**
      * Constructor for PvP mode.
@@ -88,8 +75,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
         bindLayers();
         initializeComponents();
-        setupInteractions();
-        setupEmojiSystem();
 
         // PvP mode: No sidebar
         StackPane centerContainer = new StackPane(arenaPane);
@@ -126,8 +111,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
         bindLayers();
         initializeComponents();
-        setupInteractions();
-        setupEmojiSystem();
 
         StackPane centerContainer = new StackPane(arenaPane);
         StackPane.setAlignment(arenaPane, javafx.geometry.Pos.CENTER);
@@ -149,84 +132,10 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         unitLayer.layoutYProperty().bind(grid.layoutYProperty());
         effectLayer.layoutXProperty().bind(grid.layoutXProperty());
         effectLayer.layoutYProperty().bind(grid.layoutYProperty());
-        highlightLayer.layoutXProperty().bind(grid.layoutXProperty().add(TILE_SIZE / 2.0));
-        highlightLayer.layoutYProperty().bind(grid.layoutYProperty().add(TILE_SIZE / 2.0));
-    }
-
-    private void setupEmojiSystem() {
-        // Create emoji button
-        emojiButton = new EmojiButton();
-        emojiButton.setLayoutX(10);
-        emojiButton.setLayoutY(10);
-
-        emojiPanel = new EmojiPanel();
-        emojiPanel.setLayoutX(60); // To the right of the button
-        emojiPanel.setLayoutY(10);
-
-        emojiButton.setOnAction(e -> emojiPanel.toggle());
-
-        emojiPanel.setOnEmojiSelected(emojiName -> {
-            playEmoji(true, emojiName);
-            com.kuroyale.event.GameEventBus.getInstance().publishEmojiPlayed(true, emojiName);
-        });
-
-        arenaPane.getChildren().addAll(emojiButton, emojiPanel);
-    }
-
-    /**
-     * Plays an emoji animation on the arena.
-     * 
-     * @param isPlayer  true if player emoji, false if opponent emoji
-     * @param emojiName name of the emoji to play (e.g., "emoji_1")
-     */
-    private void playEmoji(boolean isPlayer, String emojiName) {
-        try {
-            // Load emoji GIF
-            String emojiPath = "/gifs/emojis/" + emojiName + ".gif";
-            javafx.scene.image.Image emojiImage = new javafx.scene.image.Image(
-                    getClass().getResourceAsStream(emojiPath));
-
-            javafx.scene.image.ImageView emojiView = new javafx.scene.image.ImageView(emojiImage);
-            emojiView.setFitWidth(80);
-            emojiView.setFitHeight(80);
-            emojiView.setPreserveRatio(true);
-
-            // Position emoji - center horizontally, bottom for player, top for opponent
-            double centerX = (Arena.WIDTH * TILE_SIZE) / 2.0 - 40; // -40 to center the 80px image
-            double posY = isPlayer ? (Arena.HEIGHT * TILE_SIZE) - 120 : 40; // Player bottom, opponent top
-
-            emojiView.setLayoutX(centerX);
-            emojiView.setLayoutY(posY);
-            emojiView.setOpacity(0.0);
-
-            // Add to effect layer
-            effectLayer.getChildren().add(emojiView);
-
-            // Animation: Fade in, stay, fade out
-            javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(
-                    javafx.util.Duration.millis(300), emojiView);
-            fadeIn.setFromValue(0.0);
-            fadeIn.setToValue(1.0);
-
-            javafx.animation.PauseTransition stay = new javafx.animation.PauseTransition(
-                    javafx.util.Duration.seconds(2.5));
-
-            javafx.animation.FadeTransition fadeOut = new javafx.animation.FadeTransition(
-                    javafx.util.Duration.millis(500), emojiView);
-            fadeOut.setFromValue(1.0);
-            fadeOut.setToValue(0.0);
-
-            javafx.animation.SequentialTransition sequence = new javafx.animation.SequentialTransition(
-                    fadeIn, stay, fadeOut);
-            //
-            sequence.setOnFinished(e -> effectLayer.getChildren().remove(emojiView));
-            sequence.play();
-
-        } catch (Exception e) {
-            System.err.println("[BattleArenaView] Failed to play emoji: " + emojiName);
-            // e.printStackTrace(); // Suppress full stack trace to avoid spam if files
-            // missing
-        }
+        highlightLayer.layoutXProperty().bind(grid.layoutXProperty());
+        highlightLayer.layoutYProperty().bind(grid.layoutYProperty());
+        debugLayer.layoutXProperty().bind(grid.layoutXProperty());
+        debugLayer.layoutYProperty().bind(grid.layoutYProperty());
     }
 
     private void initializeComponents() {
@@ -239,91 +148,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.projectileRenderer = new ProjectileRenderer(unitLayer, TILE_SIZE);
         this.towerRenderer = new TowerRenderer(grid, TILE_SIZE, this::indexCellNode);
         this.buildingRenderer = new BuildingRenderer(unitLayer, TILE_SIZE, this::getGridCell);
-    }
-
-    private void setupInteractions() {
-        arenaPane.setOnMouseClicked(e -> {
-            if (onGridClick != null) {
-                int[] coords = calculateTileCoordinates(e.getX(), e.getY());
-                if (coords != null) {
-                    onGridClick.accept(coords[0], coords[1]);
-                }
-            }
-        });
-
-        arenaPane.setOnMouseMoved(e -> {
-            int[] coords = calculateTileCoordinates(e.getX(), e.getY());
-            if (coords != null) {
-                highlightHoveredTile(coords[0], coords[1]);
-            } else {
-                clearHoverHighlight();
-            }
-        });
-
-        arenaPane.setOnMouseExited(e -> clearHoverHighlight());
-    }
-
-    private int[] calculateTileCoordinates(double mouseX, double mouseY) {
-        double gridOffsetX = grid.getLayoutX();
-        double gridOffsetY = grid.getLayoutY();
-        double gridX = mouseX - gridOffsetX;
-        double gridY = mouseY - gridOffsetY;
-        int tileX = (int) Math.floor(gridX / TILE_SIZE);
-        int tileY = (int) Math.floor(gridY / TILE_SIZE);
-        if (tileX >= 0 && tileX < Arena.WIDTH && tileY >= 0 && tileY < Arena.HEIGHT) {
-            return new int[] { tileX, tileY };
-        }
-        return null;
-    }
-
-    private void highlightHoveredTile(int tileX, int tileY) {
-        if (currentHoveredTileX == tileX && currentHoveredTileY == tileY) {
-            return;
-        }
-
-        clearHoverHighlight();
-
-        javafx.scene.Node node = getGridCell(tileX, tileY);
-        if (node == null) {
-            return;
-        }
-
-        if (node instanceof StackPane) {
-            return;
-        }
-
-        javafx.geometry.Point2D topLeft = node.localToParent(0, 0);
-
-        double cellX = topLeft.getX();
-        double cellY = topLeft.getY();
-
-        Rectangle overlay = new Rectangle(TILE_SIZE, TILE_SIZE);
-
-        overlay.setFill(com.kuroyale.util.config.GameColors.HOVER_FILL);
-        overlay.setStroke(com.kuroyale.util.config.GameColors.HOVER_STROKE);
-        overlay.setStrokeWidth(2.0);
-        overlay.setStrokeType(javafx.scene.shape.StrokeType.INSIDE);
-
-        overlay.setLayoutX(cellX + TILE_SIZE / 2.0 - TILE_SIZE / 2.0);
-        overlay.setLayoutY(cellY);
-
-        overlay.setMouseTransparent(true);
-
-        unitLayer.getChildren().add(overlay);
-
-        currentHoveredTileX = tileX;
-        currentHoveredTileY = tileY;
-        currentHoveredOverlay = overlay;
-    }
-
-    private void clearHoverHighlight() {
-        if (currentHoveredOverlay != null) {
-            unitLayer.getChildren().remove(currentHoveredOverlay);
-            currentHoveredOverlay = null;
-        }
-
-        currentHoveredTileX = -1;
-        currentHoveredTileY = -1;
     }
 
     // ==========================================
