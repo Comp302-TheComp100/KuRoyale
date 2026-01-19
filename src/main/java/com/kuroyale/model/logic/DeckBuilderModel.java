@@ -7,7 +7,7 @@ import java.util.Map;
 
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.DeckManagementService;
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.common.ServiceFactory;
 
 /*The Model component for the Deck Builder screen.
  * Encapsulates business logic for deck operations and card management.*/

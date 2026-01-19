@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.common;
 
 /*Utility class for validation of business rules
  * Pure Fabrication - created to handle validation concerns
@@ -9,8 +9,10 @@ public class ValidationUtil {
     private static final int MIN_USERNAME_LENGTH = 3;
     private static final int MAX_USERNAME_LENGTH = 20;
 
-    /*Validates a password against business rules
-     * Rules: At least 8 characters, contains at least one number and one letter */
+    /*
+     * Validates a password against business rules
+     * Rules: At least 8 characters, contains at least one number and one letter
+     */
     public static boolean isValidPassword(String password) {
         if (password == null || password.length() < MIN_PASSWORD_LENGTH) {
             return false;
@@ -30,8 +32,10 @@ public class ValidationUtil {
         return hasNumber && hasLetter;
     }
 
-    /*Validates a username against business rules
-     * Rules: 3-20 characters, alphanumeric only*/
+    /*
+     * Validates a username against business rules
+     * Rules: 3-20 characters, alphanumeric only
+     */
     public static boolean isValidUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
             return false;
@@ -55,11 +59,12 @@ public class ValidationUtil {
 
     // Gets a descriptive message for password validation requirements
     public static String getPasswordRequirements() {
-        return "Password must be at least " + MIN_PASSWORD_LENGTH + " characters and contain at least one number and one letter";
+        return "Password must be at least " + MIN_PASSWORD_LENGTH
+                + " characters and contain at least one number and one letter";
     }
-    //Gets a descriptive message for username validation requirements
+
+    // Gets a descriptive message for username validation requirements
     public static String getUsernameRequirements() {
         return "Username must be " + MIN_USERNAME_LENGTH + "-" + MAX_USERNAME_LENGTH + " alphanumeric characters";
     }
 }
-

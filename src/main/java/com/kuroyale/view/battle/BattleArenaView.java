@@ -36,7 +36,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private final com.kuroyale.model.logic.PvPGameState pvpGameState;
     private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
 
-    private static final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
+    private static final int TILE_SIZE = com.kuroyale.util.config.GameConstants.TILE_SIZE;
 
     // Delegated components
     private ArenaInputHandler inputHandler;

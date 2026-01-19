@@ -7,10 +7,10 @@ import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.NetworkService;
 import com.kuroyale.service.NetworkService.ConnectionState;
-import com.kuroyale.util.NetworkConfig;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.ServiceFactory;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.common.ServiceFactory;
+import com.kuroyale.util.config.NetworkConfig;
+import com.kuroyale.util.ui.SceneLoader;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -495,6 +495,6 @@ public class NetworkLobbyController {
     }
 
     private void showError(String message) {
-        com.kuroyale.util.ThemedAlertManager.show("Network Error", message);
+        com.kuroyale.util.ui.ThemedAlertManager.show("Network Error", message);
     }
 }

@@ -1,6 +1,6 @@
 package com.kuroyale.view.battle.renderers;
 
-import com.kuroyale.util.GameColors;
+import com.kuroyale.util.config.GameColors;
 
 import javafx.geometry.Pos;
 import javafx.scene.layout.StackPane;

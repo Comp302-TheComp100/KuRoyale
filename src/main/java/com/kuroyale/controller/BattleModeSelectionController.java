@@ -7,8 +7,8 @@ import com.kuroyale.model.entities.BattleStrategyFactory;
 import com.kuroyale.model.enums.BattleMode;
 import com.kuroyale.model.logic.MenuModel;
 import com.kuroyale.model.strategy.battle.BattleStrategy;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.ui.SceneLoader;
 
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -164,10 +164,10 @@ public class BattleModeSelectionController {
     }
 
     private void showError(String message) {
-        com.kuroyale.util.ThemedAlertManager.show("Error", message);
+        com.kuroyale.util.ui.ThemedAlertManager.show("Error", message);
     }
 
     private void showComingSoon(String modeName, String message) {
-        com.kuroyale.util.ThemedAlertManager.show(modeName, message);
+        com.kuroyale.util.ui.ThemedAlertManager.show(modeName, message);
     }
 }

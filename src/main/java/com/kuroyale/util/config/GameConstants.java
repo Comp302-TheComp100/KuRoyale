@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.config;
 
 public class GameConstants {
     // Grid Dimensions

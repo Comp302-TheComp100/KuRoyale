@@ -4,8 +4,8 @@ import com.kuroyale.model.entities.*;
 
 import java.io.IOException;
 import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.util.ServiceFactory;
-import com.kuroyale.util.ValidationUtil;
+import com.kuroyale.util.common.ServiceFactory;
+import com.kuroyale.util.common.ValidationUtil;
 
 // The Model component for the Login screen. Encapsulates authentication and validation business rules.
 public class Login {

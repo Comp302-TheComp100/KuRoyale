@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.game;
 
 import com.kuroyale.model.entities.*;
 
@@ -96,8 +96,8 @@ public class CombatUtils {
 
         // Melee buffering
         if (attacker instanceof Troop troop && troop.isMelee()) {
-            range = Math.max(range, com.kuroyale.util.GameConstants.MELEE_MIN_RANGE);
-            double threshold = Math.max(com.kuroyale.util.GameConstants.MELEE_ATTACK_BUFFER, range);
+            range = Math.max(range, com.kuroyale.util.config.GameConstants.MELEE_MIN_RANGE);
+            double threshold = Math.max(com.kuroyale.util.config.GameConstants.MELEE_ATTACK_BUFFER, range);
             return dist <= threshold;
         }
 

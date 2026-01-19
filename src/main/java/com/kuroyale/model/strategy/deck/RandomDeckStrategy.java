@@ -7,7 +7,7 @@ import java.util.List;
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.CardCatalog;
 import com.kuroyale.model.entities.Deck;
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.common.ServiceFactory;
 
 /**
  * Strategy Pattern: Generates a random deck from available cards.

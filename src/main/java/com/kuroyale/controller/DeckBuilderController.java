@@ -17,10 +17,10 @@ import com.kuroyale.model.logic.DeckBuilderModel;
 import com.kuroyale.model.entities.User;
 import com.kuroyale.model.enums.ComboType;
 import com.kuroyale.service.DeckComboAnalyzer;
-import com.kuroyale.util.ButtonFactory;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.SoundEffectUtil;
-import com.kuroyale.util.StyleHelper;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.ui.ButtonFactory;
+import com.kuroyale.util.ui.SceneLoader;
+import com.kuroyale.util.ui.StyleHelper;
 import com.kuroyale.model.state.PvPDeckBuilderSession;
 
 import javafx.fxml.FXML;

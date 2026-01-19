@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class TowerRenderer {
     private final GridPane grid;
-    private final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
+    private final int TILE_SIZE = com.kuroyale.util.config.GameConstants.TILE_SIZE;
     private final Map<String, HealthBarRenderer.HealthBarNodes> towerHpNodes = new HashMap<>();
     private final Map<GridPosition, Node> activeTowerVisuals = new HashMap<>();
 
@@ -35,7 +35,7 @@ public class TowerRenderer {
     public void renderTowers(Arena arena) {
         if (arena.getLayout() != null) {
             ArenaLayout layout = arena.getLayout();
-            com.kuroyale.util.GameAssets assets = com.kuroyale.util.GameAssets.getInstance();
+            com.kuroyale.util.ui.GameAssets assets = com.kuroyale.util.ui.GameAssets.getInstance();
 
             // Princess Towers
             if (layout.getPrincessTowerPositions() != null) {
@@ -98,7 +98,7 @@ public class TowerRenderer {
             towerStack.getChildren().add(imageView);
         } else {
             Rectangle rect = new Rectangle(TILE_SIZE * size, TILE_SIZE * size);
-            rect.setFill(com.kuroyale.util.GameColors.DEFAULT);
+            rect.setFill(com.kuroyale.util.config.GameColors.DEFAULT);
             towerStack.getChildren().add(rect);
         }
 
@@ -106,11 +106,11 @@ public class TowerRenderer {
         Tower tower = arena.getTowerAt(x, y);
         double currentHealth = (tower != null) ? tower.getCurrentHealth() : 1.0;
 
-        double width = (size == 4) ? com.kuroyale.util.GameConstants.HEALTH_BAR_WIDTH_LARGE
-                : com.kuroyale.util.GameConstants.HEALTH_BAR_WIDTH_STANDARD;
+        double width = (size == 4) ? com.kuroyale.util.config.GameConstants.HEALTH_BAR_WIDTH_LARGE
+                : com.kuroyale.util.config.GameConstants.HEALTH_BAR_WIDTH_STANDARD;
 
         HealthBarRenderer.HealthBarNodes hpNodes = HealthBarRenderer.createDetailedHealthBar(
-                width, com.kuroyale.util.GameConstants.HEALTH_BAR_HEIGHT_TEXT, currentHealth);
+                width, com.kuroyale.util.config.GameConstants.HEALTH_BAR_HEIGHT_TEXT, currentHealth);
 
         // Store nodes for updates
         towerHpNodes.put(x + "_" + y, hpNodes);

@@ -3,7 +3,7 @@ package com.kuroyale.service.battle;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
-import com.kuroyale.util.CombatUtils;
+import com.kuroyale.util.game.CombatUtils;
 
 import java.util.ArrayList;
 
@@ -58,7 +58,7 @@ public class TargetingService {
         Vector2 bestPos = null;
 
         // Compute detection radius: ranged cards use range+2, melee use base radius
-        double detectionRadius = com.kuroyale.util.GameConstants.BASE_DETECTION_RADIUS;
+        double detectionRadius = com.kuroyale.util.config.GameConstants.BASE_DETECTION_RADIUS;
         double cardRange = troop.getBaseCard().getRange();
         if (cardRange > 0) {
             detectionRadius = cardRange + 2.0;

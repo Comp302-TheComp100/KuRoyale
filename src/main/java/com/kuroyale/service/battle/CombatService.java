@@ -248,7 +248,7 @@ public class CombatService {
         if (attacker instanceof Troop troop) {
             com.kuroyale.model.entities.CombatStats stats = troop.getCombatStats();
             if (stats != null && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
-                range = Math.max(range, com.kuroyale.util.GameConstants.MELEE_ATTACK_BUFFER);
+                range = Math.max(range, com.kuroyale.util.config.GameConstants.MELEE_ATTACK_BUFFER);
             }
         }
 
@@ -290,11 +290,11 @@ public class CombatService {
     }
 
     private boolean isInAttackRange(ICombatant attacker, ICombatant target) {
-        return com.kuroyale.util.CombatUtils.isInRange(attacker, target);
+        return com.kuroyale.util.game.CombatUtils.isInRange(attacker, target);
     }
 
     private double getDistanceToTarget(ICombatant attacker, ICombatant target) {
-        return com.kuroyale.util.CombatUtils.getDistance(attacker, target);
+        return com.kuroyale.util.game.CombatUtils.getDistance(attacker, target);
     }
 
     /**

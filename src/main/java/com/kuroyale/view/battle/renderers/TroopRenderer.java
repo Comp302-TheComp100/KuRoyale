@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class TroopRenderer {
-    private static final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
+    private static final int TILE_SIZE = com.kuroyale.util.config.GameConstants.TILE_SIZE;
 
     private final Pane unitLayer;
 
@@ -338,8 +338,8 @@ public class TroopRenderer {
         final HealthBarRenderer.HealthBarNodes nodes;
 
         HealthBarVisual() {
-            double barWidth = com.kuroyale.util.GameConstants.TILE_SIZE * 0.9;
-            double barHeight = com.kuroyale.util.GameConstants.HEALTH_BAR_HEIGHT;
+            double barWidth = com.kuroyale.util.config.GameConstants.TILE_SIZE * 0.9;
+            double barHeight = com.kuroyale.util.config.GameConstants.HEALTH_BAR_HEIGHT;
 
             this.nodes = HealthBarRenderer.createSimpleHealthBar(barWidth, barHeight);
         }
@@ -352,12 +352,12 @@ public class TroopRenderer {
         void update(double visualX, double visualY, double cellWidth, double cellHeight,
                 double healthPct, boolean isPlayerSide) {
 
-            double barWidth = com.kuroyale.util.GameConstants.TILE_SIZE * 0.9;
+            double barWidth = com.kuroyale.util.config.GameConstants.TILE_SIZE * 0.9;
             double centerX = visualX + cellWidth / 2.0;
             double centerY = visualY + cellHeight / 2.0;
 
             nodes.root.setLayoutX(centerX - barWidth / 2.0);
-            nodes.root.setLayoutY(centerY - (com.kuroyale.util.GameConstants.TILE_SIZE / 2.5) - 6);
+            nodes.root.setLayoutY(centerY - (com.kuroyale.util.config.GameConstants.TILE_SIZE / 2.5) - 6);
 
             HealthBarRenderer.updateHealthBar(nodes, healthPct, 1.0, isPlayerSide);
         }

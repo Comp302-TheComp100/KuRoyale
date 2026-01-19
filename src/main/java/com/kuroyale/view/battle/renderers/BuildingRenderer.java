@@ -2,6 +2,9 @@ package com.kuroyale.view.battle.renderers;
 
 import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.logic.GameState;
+import com.kuroyale.util.config.GameColors;
+import com.kuroyale.util.config.GameConstants;
+
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.image.Image;
@@ -11,9 +14,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
-import com.kuroyale.util.GameConstants;
 import com.kuroyale.view.battle.component.PngSequenceSprite;
-import com.kuroyale.util.GameColors;
+
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;

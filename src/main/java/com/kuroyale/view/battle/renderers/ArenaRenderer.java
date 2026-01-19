@@ -2,10 +2,10 @@ package com.kuroyale.view.battle.renderers;
 
 import com.kuroyale.model.entities.Arena;
 import com.kuroyale.model.entities.ArenaLayout;
-import com.kuroyale.util.GameConstants;
 import com.kuroyale.model.entities.GridCell;
 import com.kuroyale.model.entities.GridPosition;
 import com.kuroyale.model.enums.TileType;
+import com.kuroyale.util.config.GameConstants;
 
 import javafx.geometry.Pos;
 import javafx.scene.image.Image;
@@ -77,22 +77,24 @@ public class ArenaRenderer {
     private void renderStructureImages(ArenaLayout layout, ArenaInteractionListener listener) {
         // Render User Princess Towers
         for (GridPosition p : layout.getPrincessTowerPositions()) {
-            addTowerImage(p.getX(), p.getY(), com.kuroyale.util.GameAssets.getInstance().getPrincessTowerUser(), true,
+            addTowerImage(p.getX(), p.getY(), com.kuroyale.util.ui.GameAssets.getInstance().getPrincessTowerUser(),
+                    true,
                     false, listener);
             // Mirror Computer Princess
             addTowerImage(p.getX(), Arena.HEIGHT - 3 - p.getY(),
-                    com.kuroyale.util.GameAssets.getInstance().getPrincessTowerComputer(), false,
+                    com.kuroyale.util.ui.GameAssets.getInstance().getPrincessTowerComputer(), false,
                     false, null);
         }
 
         // Render User King Tower
         if (layout.getKingTowerPosition() != null) {
             GridPosition p = layout.getKingTowerPosition();
-            addTowerImage(p.getX(), p.getY(), com.kuroyale.util.GameAssets.getInstance().getKingTowerUser(), true, true,
+            addTowerImage(p.getX(), p.getY(), com.kuroyale.util.ui.GameAssets.getInstance().getKingTowerUser(), true,
+                    true,
                     listener);
             // Mirror Computer King (4x4)
             addTowerImage(p.getX(), Arena.HEIGHT - 4 - p.getY(),
-                    com.kuroyale.util.GameAssets.getInstance().getKingTowerComputer(), false, true, null);
+                    com.kuroyale.util.ui.GameAssets.getInstance().getKingTowerComputer(), false, true, null);
         }
     }
 
@@ -129,18 +131,18 @@ public class ArenaRenderer {
         double height = GameConstants.HEALTH_BAR_HEIGHT_TEXT;
 
         Rectangle bg = new Rectangle(width, height);
-        bg.setFill(com.kuroyale.util.GameColors.HEALTH_BAR_BG);
-        bg.setStroke(com.kuroyale.util.GameColors.HEALTH_BAR_STROKE);
+        bg.setFill(com.kuroyale.util.config.GameColors.HEALTH_BAR_BG);
+        bg.setStroke(com.kuroyale.util.config.GameColors.HEALTH_BAR_STROKE);
         bg.setStrokeWidth(0.5);
 
         double healthPercentage = currentHealth / maxHealth;
         Rectangle fg = new Rectangle(width * healthPercentage, height);
-        fg.setFill(com.kuroyale.util.GameColors.PLAYER_TEAM);
+        fg.setFill(com.kuroyale.util.config.GameColors.PLAYER_TEAM);
 
         Text healthText = new Text(String.format("%.0f", currentHealth));
         healthText.setFont(Font.font("Arial Black", FontWeight.BOLD, 10));
-        healthText.setFill(com.kuroyale.util.GameColors.TEXT_FILL);
-        healthText.setStroke(com.kuroyale.util.GameColors.TEXT_STROKE);
+        healthText.setFill(com.kuroyale.util.config.GameColors.TEXT_FILL);
+        healthText.setStroke(com.kuroyale.util.config.GameColors.TEXT_STROKE);
         healthText.setStrokeWidth(0.5);
 
         StackPane healthBarContainer = new StackPane();

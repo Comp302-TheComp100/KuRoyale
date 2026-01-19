@@ -7,7 +7,7 @@ import com.kuroyale.model.entities.CardCatalog;
 import com.kuroyale.model.entities.Deck;
 import com.kuroyale.model.entities.User;
 import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.common.ServiceFactory;
 
 /**
  * Strategy Pattern: Loads the current user's saved deck.

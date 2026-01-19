@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.ui;
 
 import javafx.scene.image.Image;
 

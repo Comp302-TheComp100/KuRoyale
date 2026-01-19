@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.audio;
 
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -10,8 +10,11 @@ public class SoundEffectUtil {
     private static MediaPlayer buttonClickPlayer;
     private static Media buttonClickMedia;
 
-    /*Plays the button click sound effect
-     * Stops any currently playing sound before starting a new one to prevent overlapping */
+    /*
+     * Plays the button click sound effect
+     * Stops any currently playing sound before starting a new one to prevent
+     * overlapping
+     */
     public static void playButtonClick() {
         AudioManager audioManager = AudioManager.getInstance();
         if (!audioManager.isButtonSoundsEnabled()) {

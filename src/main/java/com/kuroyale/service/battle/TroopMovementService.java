@@ -15,7 +15,7 @@ public class TroopMovementService {
     private final PathfindingStrategy groundStrategy = new GroundPathfindingStrategy();
     private final PathfindingStrategy airStrategy = new AirDirectPathfindingStrategy();
 
-    private static final double WAYPOINT_THRESHOLD = com.kuroyale.util.GameConstants.WAYPOINT_THRESHOLD;
+    private static final double WAYPOINT_THRESHOLD = com.kuroyale.util.config.GameConstants.WAYPOINT_THRESHOLD;
 
     public void updateTroops(double deltaTime, IBattleState state, List<Troop> troops) {
         Arena arena = state.getArena();

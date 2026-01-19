@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.common;
 
 import java.util.prefs.Preferences;
 

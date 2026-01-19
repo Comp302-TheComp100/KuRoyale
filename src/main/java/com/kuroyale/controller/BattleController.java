@@ -3,11 +3,12 @@ package com.kuroyale.controller;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.view.battle.BattleArenaView;
 import com.kuroyale.view.battle.ui.ElixirBarView;
 import com.kuroyale.view.battle.ui.HandView;
-import com.kuroyale.util.SceneLoader;
+
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.layout.HBox;
@@ -260,7 +261,7 @@ public class BattleController {
                     }
 
                     // 3. Play Sound Effect via SoundManager
-                    com.kuroyale.util.SoundManager.getInstance().play("combo");
+                    com.kuroyale.util.audio.SoundManager.getInstance().play("combo");
                 });
             }
         });
@@ -413,20 +414,20 @@ public class BattleController {
         com.kuroyale.event.GameEventBus.getInstance().publishMatchEnd(playerWon);
 
         // Track Challenge Completion (Quest)
-        com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+        com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                 .updateProgress(com.kuroyale.model.enums.QuestType.COMPLETE_CHALLENGES, 1);
 
         if (playerWon) {
             // Track Win Quests
-            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                     .updateProgress(com.kuroyale.model.enums.QuestType.WIN_MATCHES, 1);
 
             // Track Achievements
-            com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                     .updateProgress(com.kuroyale.model.enums.AchievementType.CHALLENGE_MASTER, 1);
 
             if (stars == 3) {
-                com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                         .updateProgress(com.kuroyale.model.enums.AchievementType.THREE_STAR_HERO, 1);
             }
         }
@@ -524,7 +525,7 @@ public class BattleController {
         com.kuroyale.event.GameEventBus.getInstance().publishMatchEnd(playerWon);
 
         // Track Matches Played (Veteran Player Achievement)
-        com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+        com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                 .updateProgress(com.kuroyale.model.enums.AchievementType.VETERAN_PLAYER, 1);
 
         int baseGold = 0;
@@ -537,21 +538,21 @@ public class BattleController {
             titleStyle = "victory-text";
 
             // Track Win Quests
-            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                     .updateProgress(com.kuroyale.model.enums.QuestType.WIN_MATCHES, 1);
-            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                     .updateProgress(com.kuroyale.model.enums.QuestType.WIN_PVP_MATCH, 1);
 
             // Track Win Without Losing Tower
             if (gameState.getBotScore() == 0) {
-                com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                         .updateProgress(com.kuroyale.model.enums.QuestType.WIN_WITHOUT_LOSING_TOWER, 1);
             }
 
             // Track Win Achievements
-            com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                     .updateProgress(com.kuroyale.model.enums.AchievementType.FIRST_BLOOD, 1);
-            com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                     .updateProgress(com.kuroyale.model.enums.AchievementType.UNDEFEATED, 1);
         } else if (isDraw) {
             baseGold = 75;
@@ -780,7 +781,7 @@ public class BattleController {
     }
 
     private void showSaveConfirmation() {
-        com.kuroyale.util.ThemedAlertManager.show(
+        com.kuroyale.util.ui.ThemedAlertManager.show(
                 "Game Saved",
                 "Match saved successfully! You can resume it later from the main menu.");
     }

@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.game;
 
 import com.kuroyale.model.entities.Arena;
 import com.kuroyale.model.entities.GridPosition;
@@ -15,12 +15,12 @@ public class CoordinateSystem {
 
     public static final int TILE_SIZE = 18; // Pixels per tile
 
-    //Checks if a coordinate is within the arena bounds.
+    // Checks if a coordinate is within the arena bounds.
     public static boolean isValid(int x, int y) {
         return x >= 0 && x < Arena.WIDTH && y >= 0 && y < Arena.HEIGHT;
     }
 
-    //Converts screen pixel coordinates to grid coordinates.
+    // Converts screen pixel coordinates to grid coordinates.
     public static GridPosition pixelToGrid(double pixelX, double pixelY) {
         int x = (int) (pixelX / TILE_SIZE);
         int y = (int) (pixelY / TILE_SIZE);
@@ -31,19 +31,19 @@ public class CoordinateSystem {
         return null;
     }
 
-    //Converts grid coordinates to top-left pixel coordinates.
+    // Converts grid coordinates to top-left pixel coordinates.
     public static double[] gridToPixel(int x, int y) {
         return new double[] { x * TILE_SIZE, y * TILE_SIZE };
     }
 
-    //Checks if a position is valid for card deployment based on the player side.
+    // Checks if a position is valid for card deployment based on the player side.
     public static boolean isDeployableSide(int x, int y, boolean isUser) {
         if (!isValid(x, y))
             return false;
 
         // User side: y > 16 (Rows 17-31)
         // Computer side: y < 15 (Rows 0-14)
-        // Bridge/River area (15, 16) is  neutral or restricted on game state.
+        // Bridge/River area (15, 16) is neutral or restricted on game state.
 
         if (isUser) {
             return y > 16;
@@ -52,7 +52,7 @@ public class CoordinateSystem {
         }
     }
 
-    //Gets the center pixel coordinate of a tile.
+    // Gets the center pixel coordinate of a tile.
     public static double[] getTileCenter(int x, int y) {
         return new double[] { (x * TILE_SIZE) + (TILE_SIZE / 2.0), (y * TILE_SIZE) + (TILE_SIZE / 2.0) };
     }

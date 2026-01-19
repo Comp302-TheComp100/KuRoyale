@@ -1,6 +1,6 @@
 package com.kuroyale;
 
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.common.ServiceFactory;
 
 import javafx.application.Application;
 import javafx.scene.Parent;

@@ -28,7 +28,7 @@ import javafx.scene.shape.Rectangle;
  * - Combo text animations
  */
 public class ArenaEffectManager {
-    private static final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
+    private static final int TILE_SIZE = com.kuroyale.util.config.GameConstants.TILE_SIZE;
 
     private final Pane arenaPane;
     private final Pane unitLayer;

@@ -17,7 +17,7 @@ import javafx.scene.shape.Rectangle;
  * - Valid placement area highlighting
  */
 public class ArenaInputHandler {
-    private static final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
+    private static final int TILE_SIZE = com.kuroyale.util.config.GameConstants.TILE_SIZE;
 
     private final Pane arenaPane;
     private final GridPane grid;
@@ -97,7 +97,7 @@ public class ArenaInputHandler {
         if (!show)
             return;
 
-        gc.setFill(com.kuroyale.util.GameColors.HIGHLIGHT_VALID);
+        gc.setFill(com.kuroyale.util.config.GameColors.HIGHLIGHT_VALID);
 
         if (isSpell) {
             gc.fillRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
@@ -125,7 +125,7 @@ public class ArenaInputHandler {
         if (!show)
             return;
 
-        gc.setFill(com.kuroyale.util.GameColors.HIGHLIGHT_VALID_P2);
+        gc.setFill(com.kuroyale.util.config.GameColors.HIGHLIGHT_VALID_P2);
 
         if (isSpell) {
             gc.fillRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
@@ -166,8 +166,8 @@ public class ArenaInputHandler {
 
         Rectangle overlay = new Rectangle(TILE_SIZE, TILE_SIZE);
 
-        overlay.setFill(com.kuroyale.util.GameColors.HOVER_FILL);
-        overlay.setStroke(com.kuroyale.util.GameColors.HOVER_STROKE);
+        overlay.setFill(com.kuroyale.util.config.GameColors.HOVER_FILL);
+        overlay.setStroke(com.kuroyale.util.config.GameColors.HOVER_STROKE);
         overlay.setStrokeWidth(2.0);
         overlay.setStrokeType(javafx.scene.shape.StrokeType.INSIDE);
 

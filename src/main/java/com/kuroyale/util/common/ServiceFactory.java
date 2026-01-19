@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.common;
 
 import com.kuroyale.model.entities.CardCatalog;
 import com.kuroyale.repository.JsonUserRepository;

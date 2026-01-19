@@ -3,8 +3,8 @@ package com.kuroyale.controller;
 import java.io.IOException;
 
 import com.kuroyale.model.state.Login;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.menu.LoginView;
 
 import javafx.fxml.FXML;
@@ -72,9 +72,11 @@ public class LoginController {
                 stopStartMusic();
 
                 // Load user-specific data into services
-                com.kuroyale.util.ServiceFactory.getInstance().getQuestService().loadForUser(user.getUsername());
-                com.kuroyale.util.ServiceFactory.getInstance().getAchievementService().loadForUser(user.getUsername());
-                com.kuroyale.util.ServiceFactory.getInstance().getChallengeService().loadForUser(user.getUsername());
+                com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService().loadForUser(user.getUsername());
+                com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
+                        .loadForUser(user.getUsername());
+                com.kuroyale.util.common.ServiceFactory.getInstance().getChallengeService()
+                        .loadForUser(user.getUsername());
 
                 navigateToMainMenu();
             } else {
@@ -111,9 +113,11 @@ public class LoginController {
                 stopStartMusic();
 
                 // Load user-specific data into services
-                com.kuroyale.util.ServiceFactory.getInstance().getQuestService().loadForUser(user.getUsername());
-                com.kuroyale.util.ServiceFactory.getInstance().getAchievementService().loadForUser(user.getUsername());
-                com.kuroyale.util.ServiceFactory.getInstance().getChallengeService().loadForUser(user.getUsername());
+                com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService().loadForUser(user.getUsername());
+                com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
+                        .loadForUser(user.getUsername());
+                com.kuroyale.util.common.ServiceFactory.getInstance().getChallengeService()
+                        .loadForUser(user.getUsername());
 
                 navigateToMainMenu();
             } else {

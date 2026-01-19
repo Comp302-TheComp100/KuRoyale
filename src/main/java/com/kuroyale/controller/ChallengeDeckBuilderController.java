@@ -17,10 +17,10 @@ import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.Challenge;
 import com.kuroyale.model.entities.Deck;
 import com.kuroyale.model.logic.DeckBuilderModel;
-import com.kuroyale.util.ButtonFactory;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.SoundEffectUtil;
-import com.kuroyale.util.StyleHelper;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.ui.ButtonFactory;
+import com.kuroyale.util.ui.SceneLoader;
+import com.kuroyale.util.ui.StyleHelper;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -704,7 +704,7 @@ public class ChallengeDeckBuilderController {
 
         List<String> errors = currentChallenge.validateDeck(deck.getCards());
         if (!errors.isEmpty() || !deck.isFull()) {
-            com.kuroyale.util.ThemedAlertManager.show(
+            com.kuroyale.util.ui.ThemedAlertManager.show(
                     "Invalid Deck",
                     errors.isEmpty() ? "You need 8 cards in your deck." : errors.get(0));
             return;
@@ -729,7 +729,7 @@ public class ChallengeDeckBuilderController {
             // Start game logic (handled by controller.startChallengeGame -> startGame)
         } catch (IOException e) {
             e.printStackTrace();
-            com.kuroyale.util.ThemedAlertManager.show(
+            com.kuroyale.util.ui.ThemedAlertManager.show(
                     "Error",
                     "Failed to start challenge: " + e.getMessage());
         }

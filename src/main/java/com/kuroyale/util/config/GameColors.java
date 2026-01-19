@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.config;
 
 import javafx.scene.paint.Color;
 

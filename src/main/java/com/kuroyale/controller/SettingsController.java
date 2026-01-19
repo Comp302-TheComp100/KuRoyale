@@ -2,7 +2,8 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 import com.kuroyale.model.logic.SettingsModel;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.SoundEffectUtil;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -11,14 +12,19 @@ import javafx.scene.layout.StackPane;
 
 public class SettingsController {
 
-    @FXML private StackPane root;
-    @FXML private Slider musicSlider;
-    @FXML private Slider sfxSlider;
-    @FXML private CheckBox buttonSoundsCheckBox;
-    @FXML private Button backButton;
+    @FXML
+    private StackPane root;
+    @FXML
+    private Slider musicSlider;
+    @FXML
+    private Slider sfxSlider;
+    @FXML
+    private CheckBox buttonSoundsCheckBox;
+    @FXML
+    private Button backButton;
 
     private final SettingsModel model = new SettingsModel();
-    private final com.kuroyale.util.SceneLoader sceneLoader = new com.kuroyale.util.SceneLoader();
+    private final com.kuroyale.util.ui.SceneLoader sceneLoader = new com.kuroyale.util.ui.SceneLoader();
 
     @FXML
     private void initialize() {

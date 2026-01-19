@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.ui;
 
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
@@ -23,8 +23,13 @@ public class ButtonFactory {
             this.fallbackColor = fallbackColor;
         }
 
-        public String getImagePath() {return imagePath;}
-        public String getFallbackColor() {return fallbackColor;}
+        public String getImagePath() {
+            return imagePath;
+        }
+
+        public String getFallbackColor() {
+            return fallbackColor;
+        }
     }
 
     public static Button createButton(ButtonType type, String text) {
@@ -58,12 +63,24 @@ public class ButtonFactory {
 
         return button;
     }
-    //Creates a inforamtion button
-    public static Button createInfoButton() {return createButton(ButtonType.INFO, "INFO");}
-    //Creates a use button
-    public static Button createUseButton() {return createButton(ButtonType.ACTION, "USE");}
-    //Creates a replace button
-    public static Button createReplaceButton() {return createButton(ButtonType.ACTION, "REPLACE");}
-    //Creates a remove button
-    public static Button createRemoveButton() {return createButton(ButtonType.REMOVE, "REMOVE");}
+
+    // Creates a inforamtion button
+    public static Button createInfoButton() {
+        return createButton(ButtonType.INFO, "INFO");
+    }
+
+    // Creates a use button
+    public static Button createUseButton() {
+        return createButton(ButtonType.ACTION, "USE");
+    }
+
+    // Creates a replace button
+    public static Button createReplaceButton() {
+        return createButton(ButtonType.ACTION, "REPLACE");
+    }
+
+    // Creates a remove button
+    public static Button createRemoveButton() {
+        return createButton(ButtonType.REMOVE, "REMOVE");
+    }
 }

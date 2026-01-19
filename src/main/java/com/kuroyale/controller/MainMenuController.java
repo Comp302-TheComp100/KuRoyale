@@ -6,10 +6,10 @@ import java.util.List;
 import com.kuroyale.model.logic.MenuModel; // Import the new Model
 import com.kuroyale.model.entities.User;
 import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.util.AudioManager;
-import com.kuroyale.util.SceneLoader; // Import the new utility
-import com.kuroyale.util.ServiceFactory;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.AudioManager;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.common.ServiceFactory;
+import com.kuroyale.util.ui.SceneLoader;
 
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -196,7 +196,7 @@ public class MainMenuController {
     }
 
     private void showError(String message) {
-        com.kuroyale.util.ThemedAlertManager.show(root.getScene().getWindow(), "Error", message, null);
+        com.kuroyale.util.ui.ThemedAlertManager.show(root.getScene().getWindow(), "Error", message, null);
     }
 
     private void updateGoldDisplay() {

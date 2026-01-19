@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.ui;
 
 import javafx.css.PseudoClass;
 import javafx.scene.effect.InnerShadow;
@@ -39,7 +39,8 @@ public class StyleHelper {
 
     // Font family (used in inline styles)
     public static final String FONT_FAMILY = "Clash";
-    //Get inner shadow effect for recessed elements
+
+    // Get inner shadow effect for recessed elements
     public static InnerShadow getInnerShadowEffect() {
         InnerShadow innerShadow = new InnerShadow();
         innerShadow.setColor(Color.rgb(0, 0, 0, 0.5));

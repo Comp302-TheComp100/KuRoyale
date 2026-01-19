@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.audio;
 
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;

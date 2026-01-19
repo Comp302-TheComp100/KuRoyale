@@ -4,8 +4,8 @@ import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.enums.SpeedType;
 import com.kuroyale.model.entities.User;
 import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.util.ServiceFactory;
-import com.kuroyale.util.StyleHelper;
+import com.kuroyale.util.common.ServiceFactory;
+import com.kuroyale.util.ui.StyleHelper;
 
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Insets;

@@ -1,7 +1,7 @@
 package com.kuroyale.model.strategy.battle;
 
 import com.kuroyale.controller.BattleController;
-import com.kuroyale.util.SceneLoader;
+import com.kuroyale.util.ui.SceneLoader;
 
 /**
  * Strategy for Local Player vs Player battle (same device).

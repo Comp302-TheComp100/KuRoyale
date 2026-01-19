@@ -5,7 +5,8 @@ import com.kuroyale.model.dto.*;
 
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.GameSaveService;
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.common.ServiceFactory;
+
 import java.util.List;
 
 /*The Model component for the Saved Games screen.

@@ -7,9 +7,9 @@ import com.kuroyale.model.entities.Achievement;
 import com.kuroyale.model.entities.Quest;
 import com.kuroyale.service.AchievementService;
 import com.kuroyale.service.QuestService;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.ServiceFactory;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.common.ServiceFactory;
+import com.kuroyale.util.ui.SceneLoader;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;

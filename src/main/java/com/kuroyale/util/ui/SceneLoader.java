@@ -1,4 +1,4 @@
-package com.kuroyale.util;
+package com.kuroyale.util.ui;
 
 import java.io.IOException;
 
@@ -11,7 +11,8 @@ import javafx.stage.Stage;
 //Utility class to centralize the logic for loading new JavaFX scenes.
 public class SceneLoader {
 
-    // Functional interface to allow the calling controller to initialize the newly loaded controller
+    // Functional interface to allow the calling controller to initialize the newly
+    // loaded controller
     @FunctionalInterface
     public interface ControllerInitializer {
         void initialize(Object controller);

@@ -2,8 +2,9 @@ package com.kuroyale.controller;
 
 import com.kuroyale.model.dto.SavedGameState;
 import com.kuroyale.model.logic.SavedGamesModel; // Import the new Model
-import com.kuroyale.util.SceneLoader; // Assuming SceneLoader is available
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.ui.SceneLoader;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -106,7 +107,7 @@ public class SavedGamesController {
         // Show confirmation dialog using themed alert
         // For confirmation dialogs, we'll use a simple approach: just delete on click
         // since ThemedAlertController is for info/error messages
-        com.kuroyale.util.ThemedAlertManager.showConfirmation(
+        com.kuroyale.util.ui.ThemedAlertManager.showConfirmation(
                 "Delete Saved Game",
                 "This will permanently delete the saved game. Are you sure?",
                 () -> {
@@ -139,6 +140,6 @@ public class SavedGamesController {
     // Utility Methods (Controller/View concern)
 
     private void showError(String message) {
-        com.kuroyale.util.ThemedAlertManager.show("Error", message);
+        com.kuroyale.util.ui.ThemedAlertManager.show("Error", message);
     }
 }

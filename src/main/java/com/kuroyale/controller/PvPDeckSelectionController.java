@@ -8,8 +8,8 @@ import com.kuroyale.model.state.PvPDeckBuilderSession;
 import com.kuroyale.model.strategy.deck.CustomDeckStrategy;
 import com.kuroyale.model.strategy.deck.DeckBuildingStrategy;
 import com.kuroyale.model.strategy.deck.RandomDeckStrategy;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.card.CardView;
 
 import javafx.collections.FXCollections;
@@ -367,6 +367,6 @@ public class PvPDeckSelectionController {
     }
 
     private void showError(String message) {
-        com.kuroyale.util.ThemedAlertManager.show(root.getScene().getWindow(), "Error", message, null);
+        com.kuroyale.util.ui.ThemedAlertManager.show(root.getScene().getWindow(), "Error", message, null);
     }
 }

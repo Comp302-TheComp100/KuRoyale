@@ -1,4 +1,6 @@
-package com.kuroyale.util;
+package com.kuroyale.util.ui;
+
+import com.kuroyale.util.audio.SoundEffectUtil;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;

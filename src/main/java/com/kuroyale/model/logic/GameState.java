@@ -855,8 +855,8 @@ public class GameState implements IBattleState {
 
         // Check if spawn position lands on river AND is not walkable (not a bridge)
         // If it's on a bridge, spawn normally so troops can walk across
-        if (spawnY == com.kuroyale.util.GameConstants.RIVER_ROW_1 ||
-                spawnY == com.kuroyale.util.GameConstants.RIVER_ROW_2) {
+        if (spawnY == com.kuroyale.util.config.GameConstants.RIVER_ROW_1 ||
+                spawnY == com.kuroyale.util.config.GameConstants.RIVER_ROW_2) {
             GridCell frontCell = arena.getCell(spawnX, spawnY);
             // Only shift if the cell is not walkable (water, not bridge)
             if (frontCell == null || !frontCell.isWalkable()) {
@@ -871,10 +871,10 @@ public class GameState implements IBattleState {
                 // Also shift Y off the river to a walkable tile
                 if (b.isPlayerSide()) {
                     // Player side: move below the river (y > 16)
-                    spawnY = com.kuroyale.util.GameConstants.RIVER_ROW_2 + 1; // y = 17
+                    spawnY = com.kuroyale.util.config.GameConstants.RIVER_ROW_2 + 1; // y = 17
                 } else {
                     // Bot side: move above the river (y < 15)
-                    spawnY = com.kuroyale.util.GameConstants.RIVER_ROW_1 - 1; // y = 14
+                    spawnY = com.kuroyale.util.config.GameConstants.RIVER_ROW_1 - 1; // y = 14
                 }
             }
         }

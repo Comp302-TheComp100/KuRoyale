@@ -1,6 +1,6 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.util.AudioManager;
+import com.kuroyale.util.audio.AudioManager;
 
 /*The Model component for the Settings screen.
  * Encapsulates business logic for application settings operations.*/

@@ -2,10 +2,10 @@ package com.kuroyale.controller;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.battle.BattleArenaView;
 import com.kuroyale.view.battle.ui.ElixirBarView;
 import com.kuroyale.view.battle.ui.HandView;
-import com.kuroyale.util.SceneLoader;
 
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
@@ -195,7 +195,7 @@ public class PvPBattleController {
                     }
 
                     // 2. Play Sound Effect via SoundManager
-                    com.kuroyale.util.SoundManager.getInstance().play("combo");
+                    com.kuroyale.util.audio.SoundManager.getInstance().play("combo");
                 });
             }
         });

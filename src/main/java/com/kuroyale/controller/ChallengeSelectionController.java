@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.List;
 
 import com.kuroyale.model.entities.Challenge;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.dialog.ChallengeDetailDialog;
 
 import javafx.fxml.FXML;
@@ -54,7 +54,7 @@ public class ChallengeSelectionController {
     }
 
     private void loadChallenges() {
-        challenges = com.kuroyale.util.ServiceFactory.getInstance().getChallengeService().getAllChallenges();
+        challenges = com.kuroyale.util.common.ServiceFactory.getInstance().getChallengeService().getAllChallenges();
     }
 
     private void buildLadderUI() {
