@@ -155,3 +155,51 @@
     padding: 10px 30px;
     min-width: 300px;
 }
+
+/* Emoji System */
+.emoji-menu-button {
+    -fx-background-color: rgba(40, 40, 40, 0.85);
+    -fx-background-radius: 50%;
+    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-border-width: 2;
+    -fx-border-radius: 50%;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.6), 8, 0, 0, 2);
+}
+
+.emoji-menu-button:hover {
+    -fx-background-color: rgba(60, 60, 60, 0.95);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.emoji-menu-button:pressed {
+    -fx-background-color: rgba(30, 30, 30, 0.95);
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+.emoji-panel {
+    -fx-background-color: linear-gradient(to bottom, #6b4423, #4a2f1a);
+    -fx-background-radius: 12;
+    -fx-border-color: #2a1810;
+    -fx-border-width: 3;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.8), 15, 0, 0, 5);
+}
+
+.emoji-item {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(255, 255, 255, 0.2);
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-cursor: hand;
+}
+
+.emoji-item:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+    -fx-border-color: rgba(255, 255, 255, 0.5);
+    -fx-effect: dropshadow(three-pass-box, rgba(255, 255, 255, 0.3), 5, 0, 0, 0);
+}
