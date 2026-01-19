@@ -84,6 +84,10 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         StackPane centerContainer = new StackPane(arenaPane);
         centerContainer.setAlignment(javafx.geometry.Pos.CENTER);
         centerContainer.setPadding(new javafx.geometry.Insets(0, 0, 0, 0));
+
+        // Shift arena significantly to the left
+        arenaPane.setTranslateX(-160);
+
         this.setCenter(centerContainer);
 
         initRenderers();
