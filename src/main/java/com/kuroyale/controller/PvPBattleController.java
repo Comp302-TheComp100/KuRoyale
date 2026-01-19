@@ -2,10 +2,10 @@ package com.kuroyale.controller;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.battle.BattleArenaView;
-import com.kuroyale.view.battle.ElixirBar;
-import com.kuroyale.view.battle.HandView;
-import com.kuroyale.util.SceneLoader;
+import com.kuroyale.view.battle.ui.ElixirBarView;
+import com.kuroyale.view.battle.ui.HandView;
 
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
@@ -65,8 +65,8 @@ public class PvPBattleController {
 
     private PvPGameState gameState;
     private BattleArenaView arenaView;
-    private ElixirBar player1ElixirBar;
-    private ElixirBar player2ElixirBar;
+    private ElixirBarView player1ElixirBar;
+    private ElixirBarView player2ElixirBar;
     private HandView player1HandView;
     private HandView player2HandView;
     private AnimationTimer gameLoop;
@@ -113,7 +113,7 @@ public class PvPBattleController {
         setupArenaClickHandler();
 
         // Initialize Player 1 UI (left side)
-        player1ElixirBar = new ElixirBar(gameState.getPlayer1Elixir());
+        player1ElixirBar = new ElixirBarView(gameState.getPlayer1Elixir());
         player1ElixirContainer.getChildren().add(player1ElixirBar);
 
         player1HandView = new HandView(gameState.getPlayer1Hand(), gameState.getPlayer1Elixir());
@@ -121,7 +121,7 @@ public class PvPBattleController {
         player1HandContainer.getChildren().add(player1HandView);
 
         // Initialize Player 2 UI (right side)
-        player2ElixirBar = new ElixirBar(gameState.getPlayer2Elixir());
+        player2ElixirBar = new ElixirBarView(gameState.getPlayer2Elixir());
         player2ElixirContainer.getChildren().add(player2ElixirBar);
 
         player2HandView = new HandView(gameState.getPlayer2Hand(), gameState.getPlayer2Elixir());
@@ -180,7 +180,8 @@ public class PvPBattleController {
             }
 
             @Override
-            public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration) {
+            public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
+                    double duration, String effectType) {
             }
 
             @Override
@@ -194,7 +195,7 @@ public class PvPBattleController {
                     }
 
                     // 2. Play Sound Effect via SoundManager
-                    com.kuroyale.util.SoundManager.getInstance().play("combo");
+                    com.kuroyale.util.audio.SoundManager.getInstance().play("combo");
                 });
             }
         });
@@ -486,25 +487,15 @@ public class PvPBattleController {
         pauseMenuContainer.getChildren().clear();
         pauseMenuContainer.setVisible(true);
 
-        com.kuroyale.view.battle.PauseMenuView menu = new com.kuroyale.view.battle.PauseMenuView(
-                new com.kuroyale.view.battle.PauseMenuView.PauseMenuListener() {
+        com.kuroyale.view.battle.ui.SimplePauseMenuView menu = new com.kuroyale.view.battle.ui.SimplePauseMenuView(
+                new com.kuroyale.view.battle.ui.SimplePauseMenuView.SimplePauseMenuListener() {
                     @Override
                     public void onResume() {
                         handleResume();
                     }
 
                     @Override
-                    public void onSaveAndResume() {
-                        handleResume();
-                    }
-
-                    @Override
-                    public void onSaveAndExit() {
-                        handleExit();
-                    }
-
-                    @Override
-                    public void onExitWithoutSaving() {
+                    public void onExit() {
                         handleExit();
                     }
                 });

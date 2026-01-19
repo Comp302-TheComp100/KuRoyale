@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.kuroyale.util.PasswordUtil;
+import com.kuroyale.util.common.PasswordUtil;
 
 /*Represents a user account with username, password hash, and saved deck
  * Information Expert - User knows about its own data and has responsibility for operations on that data*/

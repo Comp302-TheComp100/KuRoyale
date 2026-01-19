@@ -1,35 +1,46 @@
 package com.kuroyale.view.battle;
 
 import com.kuroyale.model.entities.Arena;
-import com.kuroyale.model.logic.GameState;
 import com.kuroyale.model.entities.GridCell;
+import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.enums.TileType;
+import com.kuroyale.model.logic.GameState;
+import com.kuroyale.view.battle.renderers.BuildingRenderer;
+import com.kuroyale.view.battle.renderers.ProjectileRenderer;
+import com.kuroyale.view.battle.renderers.TowerRenderer;
+import com.kuroyale.view.battle.renderers.TroopRenderer;
+
+import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-
 import javafx.scene.shape.Rectangle;
 
-// Renders the battle arena and placed units.
+/**
+ * Refactored BattleArenaView with improved cohesion.
+ * 
+ * This class now acts as a coordinator, delegating responsibilities to:
+ * - ArenaInputHandler: Mouse input and highlighting
+ * - ArenaEffectManager: Visual effects and animations
+ * - Specialized renderers: TroopRenderer, TowerRenderer, etc.
+ */
 public class BattleArenaView extends javafx.scene.layout.BorderPane implements com.kuroyale.event.GameEventListener {
     private final GridPane grid;
     private final Pane unitLayer;
     private final Pane effectLayer;
     private final Canvas highlightLayer;
+    private final Canvas debugLayer;
     private final Pane arenaPane;
     private final GameState gameState;
-    private final com.kuroyale.model.logic.PvPGameState pvpGameState; // For PvP mode
+    private final com.kuroyale.model.logic.PvPGameState pvpGameState;
     private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
 
-    // Track hovered tile for highlighting
-    private int currentHoveredTileX = -1;
-    private int currentHoveredTileY = -1;
-    private javafx.scene.Node currentHoveredOverlay = null;
+    private static final int TILE_SIZE = com.kuroyale.util.config.GameConstants.TILE_SIZE;
 
-    private static final int TILE_SIZE = com.kuroyale.util.GameConstants.TILE_SIZE;
+    // Delegated components
+    private ArenaInputHandler inputHandler;
+    private ArenaEffectManager effectManager;
 
     // Renderers
     private TroopRenderer troopRenderer;
@@ -37,7 +48,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private TowerRenderer towerRenderer;
     private BuildingRenderer buildingRenderer;
 
-    // Emoji System
+        // moji System
     private EmojiButton emojiButton;
     private EmojiPanel emojiPanel;
 
@@ -59,9 +70,9 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.onGridClick = handler;
     }
 
-    /**
-     * Constructor for PvP mode.
-     */
+
+         *      */
+
     public BattleArenaView(com.kuroyale.model.logic.PvPGameState pvpGameState) {
         this.getStylesheets().add(getClass().getResource("/com/kuroyale/view/battle.css").toExternalForm());
         this.gameState = null;
@@ -69,7 +80,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
         Arena arena = pvpGameState.getArena();
 
-        // Initialize with common setup
+        // Initialize layers
         this.grid = new GridPane();
         this.grid.setHgap(0);
         this.grid.setVgap(0);
@@ -79,14 +90,17 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.effectLayer.setMouseTransparent(true);
         this.highlightLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
         this.highlightLayer.setMouseTransparent(true);
-        this.arenaPane = new Pane(grid, highlightLayer, unitLayer, effectLayer);
+        this.debugLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        this.debugLayer.setMouseTransparent(true);
+        this.arenaPane = new Pane(grid, highlightLayer, unitLayer, effectLayer, debugLayer);
         arenaPane.setPrefSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
 
         bindLayers();
+        initializeComponents();
         setupInteractions();
         setupEmojiSystem();
 
-        // PvP mode: No sidebar (timer/score handled in controller)
+        // PvP mode: No sidebar
         StackPane centerContainer = new StackPane(arenaPane);
         centerContainer.setAlignment(javafx.geometry.Pos.CENTER);
         centerContainer.setPadding(new javafx.geometry.Insets(0, 0, 0, 0));
@@ -104,7 +118,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.gameState = gameState;
         this.pvpGameState = null;
 
-        // Center Arena
+        // Initialize layers
         this.grid = new GridPane();
         this.grid.setHgap(0);
         this.grid.setVgap(0);
@@ -114,20 +128,20 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.effectLayer.setMouseTransparent(true);
         this.highlightLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
         this.highlightLayer.setMouseTransparent(true);
-        this.arenaPane = new Pane(grid, highlightLayer, unitLayer, effectLayer);
+        this.debugLayer = new Canvas(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
+        this.debugLayer.setMouseTransparent(true);
+        this.arenaPane = new Pane(grid, highlightLayer, unitLayer, effectLayer, debugLayer);
         arenaPane.setPrefSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
 
         bindLayers();
+        initializeComponents();
         setupInteractions();
         setupEmojiSystem();
 
         StackPane centerContainer = new StackPane(arenaPane);
-        // Explicitly center the arenaPane within the StackPane
         StackPane.setAlignment(arenaPane, javafx.geometry.Pos.CENTER);
-        // Constrain arenaPane to its preferred size so it doesn't stretch
         arenaPane.setMaxSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
         arenaPane.setMinSize(Arena.WIDTH * TILE_SIZE, Arena.HEIGHT * TILE_SIZE);
-        // Shift arena 20px to the left
         arenaPane.setTranslateX(-10);
 
         this.setCenter(centerContainer);
@@ -198,146 +212,42 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     }
 
     // ==========================================
-    // Visual Effects
+    // Public API
     // ==========================================
+
+    public void setOnGridClicked(java.util.function.BiConsumer<Integer, Integer> handler) {
+        inputHandler.setOnGridClicked(handler);
+    }
+
+    public void highlightValidCells(boolean show, boolean isSpell) {
+        inputHandler.highlightValidCells(show, isSpell, getArena());
+    }
+
+    public void highlightPlayer2ValidCells(boolean show, boolean isSpell) {
+        inputHandler.highlightPlayer2ValidCells(show, isSpell, getArena());
+    }
 
     public void showComboText(String text) {
-        javafx.scene.control.Label label = new javafx.scene.control.Label(text + "!");
-        label.setStyle(
-                "-fx-font-size: 32px; -fx-text-fill: gold; -fx-font-weight: bold; -fx-effect: dropshadow(three-pass-box, black, 10, 0, 0, 0);");
-
-        // Center relative to arena size using layoutX/Y binding (but strictly centered)
-        // We use subtract(200) to move it higher as requested
-        label.layoutXProperty().bind(arenaPane.widthProperty().subtract(label.widthProperty()).divide(2));
-        label.layoutYProperty()
-                .bind(arenaPane.heightProperty().subtract(label.heightProperty()).divide(2).subtract(200));
-
-        // Add to effectLayer so it's on top and not cleared
-        arenaPane.getChildren().add(label);
-
-        javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(javafx.util.Duration.seconds(2.0),
-                label);
-        ft.setFromValue(1.0);
-        ft.setToValue(0.0);
-        ft.setOnFinished(e -> arenaPane.getChildren().remove(label));
-
-        javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(
-                javafx.util.Duration.seconds(2.0), label);
-        tt.setByY(-50);
-
-        javafx.animation.ParallelTransition pt = new javafx.animation.ParallelTransition(ft, tt);
-        pt.play();
+        effectManager.showComboText(text);
     }
 
-    public void playDamageEffect(com.kuroyale.model.entities.Tower tower) {
+    public void playDamageEffect(Tower tower) {
         javafx.scene.Node towerNode = getTowerNode(tower);
-        if (towerNode != null && towerNode instanceof StackPane) {
-            StackPane stack = (StackPane) towerNode;
-
-            // 1. Red Overlay Flash
-            Rectangle overlay = new Rectangle(stack.getWidth(), stack.getHeight());
-            overlay.setFill(Color.RED);
-            overlay.setOpacity(0.0);
-            overlay.setMouseTransparent(true);
-
-            stack.getChildren().add(overlay);
-
-            javafx.animation.FadeTransition flash = new javafx.animation.FadeTransition(
-                    javafx.util.Duration.millis(100), overlay);
-            flash.setFromValue(0.0);
-            flash.setToValue(0.3);
-            flash.setCycleCount(2);
-            flash.setAutoReverse(true);
-            flash.setOnFinished(e -> stack.getChildren().remove(overlay));
-            flash.play();
-
-            // 2. Shake
-            javafx.animation.TranslateTransition shake = new javafx.animation.TranslateTransition(
-                    javafx.util.Duration.millis(50), towerNode);
-            shake.setByX(2);
-            shake.setCycleCount(4);
-            shake.setAutoReverse(true);
-            shake.play();
-        }
+        effectManager.playTowerDamageEffect(tower, towerNode);
     }
 
-    public void playTowerDeathEffect(com.kuroyale.model.entities.Tower tower) {
-        // Use robust position calculation
+    public void playTowerDeathEffect(Tower tower) {
         javafx.geometry.Point2D center = getTowerCenterPosition(tower);
-        if (center == null)
-            return;
-
-        double startX = center.getX();
-        double startY = center.getY();
-
-        // 1. Procedural Explosion
-        javafx.scene.shape.Circle explosionCore = new javafx.scene.shape.Circle(10, Color.ORANGE);
-        explosionCore.setStroke(Color.RED);
-        explosionCore.setStrokeWidth(2);
-        explosionCore.setTranslateX(startX);
-        explosionCore.setTranslateY(startY);
-
-        javafx.scene.shape.Circle explosionRing = new javafx.scene.shape.Circle(10, Color.TRANSPARENT);
-        explosionRing.setStroke(Color.YELLOW);
-        explosionRing.setStrokeWidth(4);
-        explosionRing.setTranslateX(startX);
-        explosionRing.setTranslateY(startY);
-
-        // Add to effectLayer
-        effectLayer.getChildren().addAll(explosionCore, explosionRing);
-
-        javafx.animation.Timeline explodeAnim = new javafx.animation.Timeline(
-                new javafx.animation.KeyFrame(javafx.util.Duration.ZERO,
-                        new javafx.animation.KeyValue(explosionCore.radiusProperty(), 10),
-                        new javafx.animation.KeyValue(explosionCore.opacityProperty(), 1.0)),
-                new javafx.animation.KeyFrame(javafx.util.Duration.millis(400),
-                        new javafx.animation.KeyValue(explosionCore.radiusProperty(), 60),
-                        new javafx.animation.KeyValue(explosionCore.opacityProperty(), 0.0)),
-                new javafx.animation.KeyFrame(javafx.util.Duration.ZERO,
-                        new javafx.animation.KeyValue(explosionRing.radiusProperty(), 10),
-                        new javafx.animation.KeyValue(explosionRing.opacityProperty(), 1.0),
-                        new javafx.animation.KeyValue(explosionRing.strokeWidthProperty(), 4)),
-                new javafx.animation.KeyFrame(javafx.util.Duration.millis(600),
-                        new javafx.animation.KeyValue(explosionRing.radiusProperty(), 80),
-                        new javafx.animation.KeyValue(explosionRing.opacityProperty(), 0.0),
-                        new javafx.animation.KeyValue(explosionRing.strokeWidthProperty(), 0)));
-
-        explodeAnim.setOnFinished(e -> effectLayer.getChildren().removeAll(explosionCore, explosionRing));
-        explodeAnim.play();
+        effectManager.playTowerDeathEffect(center);
     }
 
-    /**
-     * Calculates the center position of a tower in the arena pane coordinates.
-     * Robust against the visual node being removed.
-     */
-    public javafx.geometry.Point2D getTowerCenterPosition(com.kuroyale.model.entities.Tower tower) {
-        if (tower == null)
-            return null;
-
-        // Try getting visual node first (most accurate for scene graph)
-        javafx.scene.Node node = getTowerNode(tower);
-        if (node != null && node.getParent() != null) {
-            javafx.geometry.Bounds bounds = node.getBoundsInParent();
-            return new javafx.geometry.Point2D(bounds.getCenterX(), bounds.getCenterY());
-        }
-
-        // Fallback: Calculate from grid position and type
-        com.kuroyale.model.entities.GridPosition pos = tower.getPosition();
-        if (pos == null)
-            return null;
-
-        int size = (tower.getType() == com.kuroyale.model.entities.Tower.TowerType.KING) ? 4 : 3;
-
-        // Grid is at (0,0) in arenaPane usually, but let's double check alignment using
-        // TILE_SIZE
-        double x = (pos.getX() + size / 2.0) * TILE_SIZE;
-        double y = (pos.getY() + size / 2.0) * TILE_SIZE;
-
-        return new javafx.geometry.Point2D(x, y);
+    public void showComboEffect(com.kuroyale.model.enums.ComboType combo,
+            java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
+        effectManager.showComboEffect(combo, affectedUnits);
     }
 
     // ==========================================
-    // Logic Methods
+    // Rendering
     // ==========================================
 
     private void renderArena() {
@@ -393,7 +303,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         troopRenderer.render(gameState);
         buildingRenderer.render(gameState);
         projectileRenderer.render(gameState.getProjectiles(), deltaTime);
-        updateSpellEffects(deltaTime);
+        effectManager.update(deltaTime);
     }
 
     public void updatePvP(double deltaTime) {
@@ -405,20 +315,62 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         troopRenderer.renderPvP(pvpGameState);
         buildingRenderer.renderPvP(pvpGameState);
         projectileRenderer.render(pvpGameState.getProjectiles(), deltaTime);
-        updateSpellEffects(deltaTime);
+        effectManager.update(deltaTime);
     }
 
-    private int[] calculateTileCoordinates(double mouseX, double mouseY) {
-        double gridOffsetX = grid.getLayoutX();
-        double gridOffsetY = grid.getLayoutY();
-        double gridX = mouseX - gridOffsetX;
-        double gridY = mouseY - gridOffsetY;
-        int tileX = (int) Math.floor(gridX / TILE_SIZE);
-        int tileY = (int) Math.floor(gridY / TILE_SIZE);
-        if (tileX >= 0 && tileX < Arena.WIDTH && tileY >= 0 && tileY < Arena.HEIGHT) {
-            return new int[] { tileX, tileY };
+    // ==========================================
+    // Event Handlers (GameEventListener)
+    // ==========================================
+
+    @Override
+    public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
+            double duration, String effectType) {
+        effectManager.playAreaEffect(isPlayerSource, center, radius, duration, effectType);
+    }
+
+    @Override
+    public void onSpellCast(boolean isPlayer, com.kuroyale.model.entities.Card spell,
+            com.kuroyale.model.entities.GridPosition center) {
+        effectManager.playSpellCast(isPlayer, spell, center);
+    }
+
+    // ==========================================
+    // Helper Methods
+    // ==========================================
+
+    /**
+     * Calculates the center position of a tower in the arena pane coordinates.
+     * Robust against the visual node being removed.
+     */
+    public javafx.geometry.Point2D getTowerCenterPosition(Tower tower) {
+        if (tower == null)
+            return null;
+
+        // Try getting visual node first (most accurate for scene graph)
+        javafx.scene.Node node = getTowerNode(tower);
+        if (node != null && node.getParent() != null) {
+            javafx.geometry.Bounds bounds = node.getBoundsInParent();
+            return new javafx.geometry.Point2D(bounds.getCenterX(), bounds.getCenterY());
         }
-        return null;
+
+        // Fallback: Calculate from grid position and type
+        com.kuroyale.model.entities.GridPosition pos = tower.getPosition();
+        if (pos == null)
+            return null;
+
+        int size = (tower.getType() == Tower.TowerType.KING) ? 4 : 3;
+
+        double x = (pos.getX() + size / 2.0) * TILE_SIZE;
+        double y = (pos.getY() + size / 2.0) * TILE_SIZE;
+
+        return new javafx.geometry.Point2D(x, y);
+    }
+
+    public javafx.scene.Node getTowerNode(Tower tower) {
+        if (tower == null || tower.getPosition() == null || towerRenderer == null) {
+            return null;
+        }
+        return towerRenderer.getTowerVisual(tower.getPosition());
     }
 
     private javafx.scene.Node getGridCell(int x, int y) {
@@ -433,110 +385,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         return (((long) x) << 32) | (y & 0xFFFFFFFFL);
     }
 
-    public void highlightValidCells(boolean show, boolean isSpell) {
-        GraphicsContext gc = highlightLayer.getGraphicsContext2D();
-        gc.clearRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
-
-        if (!show)
-            return;
-
-        gc.setFill(com.kuroyale.util.GameColors.HIGHLIGHT_VALID);
-
-        if (isSpell) {
-            gc.fillRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
-        } else {
-            Arena arena = getArena();
-            if (arena == null)
-                return;
-            for (int x = 0; x < Arena.WIDTH; x++) {
-                for (int y = Arena.HEIGHT / 2; y < Arena.HEIGHT; y++) {
-                    GridCell cell = arena.getCell(x, y);
-                    if (cell.getTileType() == TileType.GRASS) {
-                        gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                    }
-                }
-            }
-        }
-    }
-
-    public void highlightPlayer2ValidCells(boolean show, boolean isSpell) {
-        GraphicsContext gc = highlightLayer.getGraphicsContext2D();
-        gc.clearRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
-
-        if (!show)
-            return;
-
-        gc.setFill(com.kuroyale.util.GameColors.HIGHLIGHT_VALID_P2);
-
-        if (isSpell) {
-            gc.fillRect(0, 0, highlightLayer.getWidth(), highlightLayer.getHeight());
-        } else {
-            Arena arena = getArena();
-            if (arena == null)
-                return;
-            for (int x = 0; x < Arena.WIDTH; x++) {
-                for (int y = 0; y < Arena.HEIGHT / 2; y++) {
-                    GridCell cell = arena.getCell(x, y);
-                    if (cell.getTileType() == TileType.GRASS) {
-                        gc.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                    }
-                }
-            }
-        }
-    }
-
-    private void highlightHoveredTile(int tileX, int tileY) {
-        if (currentHoveredTileX == tileX && currentHoveredTileY == tileY) {
-            return;
-        }
-
-        clearHoverHighlight();
-
-        javafx.scene.Node node = getGridCell(tileX, tileY);
-        if (node == null) {
-            return;
-        }
-
-        if (node instanceof StackPane) {
-            return;
-        }
-
-        javafx.geometry.Point2D topLeft = node.localToParent(0, 0);
-
-        double cellX = topLeft.getX();
-        double cellY = topLeft.getY();
-
-        Rectangle overlay = new Rectangle(TILE_SIZE, TILE_SIZE);
-
-        overlay.setFill(com.kuroyale.util.GameColors.HOVER_FILL);
-        overlay.setStroke(com.kuroyale.util.GameColors.HOVER_STROKE);
-        overlay.setStrokeWidth(2.0);
-        overlay.setStrokeType(javafx.scene.shape.StrokeType.INSIDE);
-
-        overlay.setLayoutX(cellX + TILE_SIZE / 2.0 - TILE_SIZE / 2.0);
-        overlay.setLayoutY(cellY);
-
-        overlay.setMouseTransparent(true);
-
-        unitLayer.getChildren().add(overlay);
-
-        currentHoveredTileX = tileX;
-        currentHoveredTileY = tileY;
-        currentHoveredOverlay = overlay;
-    }
-
-    private void clearHoverHighlight() {
-        if (currentHoveredOverlay != null) {
-            unitLayer.getChildren().remove(currentHoveredOverlay);
-            currentHoveredOverlay = null;
-        }
-
-        currentHoveredTileX = -1;
-        currentHoveredTileY = -1;
-    }
-
-    public GridPane getGrid() {
-        return grid;
+    p       return grid;
     }
 
     public int getTileSize() {
@@ -815,19 +664,13 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         }
     }
 
-    @FunctionalInterface
-    private interface AttachedVisualCreator {
         javafx.scene.Node create(com.kuroyale.model.entities.ICombatant unit, double x, double y);
     }
 
 
 
-    public javafx.scene.Node getTowerNode(com.kuroyale.model.entities.Tower tower) {
-        if (tower == null || tower.getPosition() == null || towerRenderer == null) {
-            return null;
-        }
-        return towerRenderer.getTowerVisual(tower.getPosition());
-    }
+    p
+
     
 
 
@@ -883,12 +726,11 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             sequence.setOnFinished(e -> effectLayer.getChildren().remove(emojiView));
             sequence.play();
 
-        } catch (Exception e) {
-            System.err.println("[BattleArenaView] Failed to play emoji: " + emojiName);
-            // e.printStackTrace(); // Suppress full stack trace to avoid spam if files missing
-        }
-            // 
-    }
+     
+    Sy
+                  }
+ 
+
             // 
 }
         

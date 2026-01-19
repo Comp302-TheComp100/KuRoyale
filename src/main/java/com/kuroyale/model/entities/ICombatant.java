@@ -13,9 +13,14 @@ public interface ICombatant {
     boolean isAirUnit();
 
     // Position & Geometry
-    GridPosition getPosition(); // Top-left position
+    GridPosition getPosition(); // Top-left position (discrete grid)
 
-    GridPosition getCenterPosition(); // Center for range calculations
+    GridPosition getCenterPosition(); // Center for range calculations (discrete grid)
+
+    // World coordinates (continuous, sub-tile precision)
+    Vector2 getWorldPosition(); // World position of entity
+
+    Vector2 getCenterWorldPosition(); // Center in world coordinates
 
     int getWidth();
 

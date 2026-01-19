@@ -9,8 +9,8 @@ import java.util.List;
 import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.GameSaveService;
+import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.service.ChallengeService;
-import com.kuroyale.util.ServiceFactory;
 
 /*The Model component for the Battle screen.
  * Encapsulates business logic for game initialization, save/load operations.*/
@@ -24,7 +24,7 @@ public class BattleModel {
     private final ArenaService arenaService;
     private final GameSaveService gameSaveService;
     private final ChallengeService challengeService;
-    private final com.kuroyale.service.CardCatalog cardCatalog;
+    private final com.kuroyale.model.entities.CardCatalog cardCatalog;
 
     public BattleModel() {
         ServiceFactory factory = ServiceFactory.getInstance();
@@ -233,6 +233,10 @@ public class BattleModel {
 
         if (bonus > 0) {
             authService.awardGoldToCurrentUser(bonus);
+
+            // Track GOLD_HOARDER achievement
+            ServiceFactory.getInstance().getAchievementService()
+                    .updateProgress(com.kuroyale.model.enums.AchievementType.GOLD_HOARDER, bonus);
         }
     }
 

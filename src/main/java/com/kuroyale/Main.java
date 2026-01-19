@@ -1,6 +1,6 @@
 package com.kuroyale;
 
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.common.ServiceFactory;
 
 import javafx.application.Application;
 import javafx.scene.Parent;
@@ -27,7 +27,7 @@ public class Main extends Application {
             Image icon = new Image(getClass().getResourceAsStream("/images/Clash_Royale_App_Icon (1).png"));
             primaryStage.getIcons().add(icon);
 
-            com.kuroyale.view.LoginView loginView = new com.kuroyale.view.LoginView();
+            com.kuroyale.view.menu.LoginView loginView = new com.kuroyale.view.menu.LoginView();
             new com.kuroyale.controller.LoginController(loginView);
             Parent root = loginView;
 

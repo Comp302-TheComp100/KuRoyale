@@ -3,16 +3,15 @@ package com.kuroyale.controller;
 import java.io.IOException;
 import java.util.List;
 
+import com.kuroyale.model.entities.BattleStrategyFactory;
 import com.kuroyale.model.enums.BattleMode;
 import com.kuroyale.model.logic.MenuModel;
-import com.kuroyale.service.battle.BattleStrategy;
-import com.kuroyale.service.battle.BattleStrategyFactory;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.model.strategy.battle.BattleStrategy;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.ui.SceneLoader;
 
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
@@ -165,18 +164,10 @@ public class BattleModeSelectionController {
     }
 
     private void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText("An error occurred");
-        alert.setContentText(message);
-        alert.showAndWait();
+        com.kuroyale.util.ui.ThemedAlertManager.show("Error", message);
     }
 
     private void showComingSoon(String modeName, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Coming Soon");
-        alert.setHeaderText(modeName);
-        alert.setContentText(message);
-        alert.showAndWait();
+        com.kuroyale.util.ui.ThemedAlertManager.show(modeName, message);
     }
 }

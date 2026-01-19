@@ -8,8 +8,8 @@ import java.util.List;
 
 import com.kuroyale.service.ArenaService;
 import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.util.ServiceFactory;
-import com.kuroyale.util.GameConstants;
+import com.kuroyale.util.common.ServiceFactory;
+import com.kuroyale.util.config.GameConstants;
 
 /*The Model component for the Arena Design screen.
  * Encapsulates business logic for arena layout operations.*/
@@ -271,4 +271,3 @@ public class ArenaDesignModel {
         return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
     }
 }
-

@@ -25,13 +25,15 @@ public class PvPGameState implements IBattleState {
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
     private final List<Projectile> activeProjectiles;
-    private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
-    private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
+    private final com.kuroyale.service.battle.TroopMovementService troopMovementService = new com.kuroyale.service.battle.TroopMovementService();
+    private final com.kuroyale.service.battle.CombatService combatService = new com.kuroyale.service.battle.CombatService();
 
     private double gameTime = 180.0; // 3 minutes
     private int player1Score = 0, player2Score = 0;
 
     private boolean isDoubleElixir = false, isGameOver = false;
+    private boolean isTiebreakerMode = false; // Tiebreaker: all towers drain health
+    private static final double TIEBREAKER_DRAIN_RATE = 100.0; // HP per second
     private TurnManager.Turn winner = null;
 
     private Set<Tower> scoredTowers = new HashSet<>();
@@ -65,9 +67,9 @@ public class PvPGameState implements IBattleState {
         activeProjectiles.add(p);
     }
 
-    private final com.kuroyale.service.ComboService comboService = new com.kuroyale.service.ComboService();
+    private final com.kuroyale.service.battle.ComboService comboService = new com.kuroyale.service.battle.ComboService();
 
-    public com.kuroyale.service.ComboService getComboService() {
+    public com.kuroyale.service.battle.ComboService getComboService() {
         return comboService;
     }
 
@@ -95,6 +97,12 @@ public class PvPGameState implements IBattleState {
     }
 
     private void updateGameTimer(double deltaTime) {
+        // Handle tiebreaker mode: all towers drain health until one reaches 0
+        if (isTiebreakerMode) {
+            updateTiebreakerMode(deltaTime);
+            return;
+        }
+
         if (gameTime > 0) {
             gameTime -= deltaTime;
 
@@ -108,35 +116,120 @@ public class PvPGameState implements IBattleState {
             if (gameTime <= 0) {
                 gameTime = 0;
                 if (!isGameOver) {
-                    isGameOver = true;
                     if (player1Score > player2Score) {
+                        isGameOver = true;
                         winner = TurnManager.Turn.PLAYER_1;
                     } else if (player2Score > player1Score) {
+                        isGameOver = true;
                         winner = TurnManager.Turn.PLAYER_2;
                     } else {
-                        // Tiebreaker: Compare lowest HP towers
-                        double p1MinHP = getLowestTowerHealth(true);
-                        double p2MinHP = getLowestTowerHealth(false);
-
-                        if (p1MinHP < p2MinHP) {
-                            winner = TurnManager.Turn.PLAYER_2; // Player 1 has weaker tower
-                        } else if (p2MinHP < p1MinHP) {
-                            winner = TurnManager.Turn.PLAYER_1; // Player 2 has weaker tower
-                        } else {
-                            winner = null; // Draw
-                        }
+                        // Equal scores: Enter tiebreaker mode
+                        // All remaining towers start losing health rapidly
+                        isTiebreakerMode = true;
+                        // Clear all troops and buildings so they don't affect tiebreaker
+                        clearArenaUnits();
                     }
                 }
             }
         }
     }
 
-    private double getLowestTowerHealth(boolean isPlayer1Side) {
-        return arena.getAllTowers().stream()
-                .filter(t -> t.isPlayerSide() == isPlayer1Side && t.isAlive())
-                .mapToDouble(Tower::getCurrentHealth)
-                .min()
-                .orElse(Double.MAX_VALUE); // If no towers alive, return max so opponent wins tiebreaker
+    /**
+     * Tiebreaker mode: All remaining towers lose health rapidly.
+     * The first tower(s) to reach 0 health determines the loser.
+     * If towers on both sides die simultaneously, count crowns for both.
+     */
+    private void updateTiebreakerMode(double deltaTime) {
+        double drainAmount = TIEBREAKER_DRAIN_RATE * deltaTime;
+
+        // Drain all living towers
+        for (Tower tower : arena.getAllTowers()) {
+            if (tower.isAlive()) {
+                double newHealth = tower.getCurrentHealth() - drainAmount;
+                tower.setCurrentHealth((int) Math.max(0, newHealth));
+            }
+        }
+
+        // Count all towers that reached 0 health and score them
+        int player1TowersDied = 0;
+        int player2TowersDied = 0;
+        boolean anyKingDied = false;
+        boolean player1KingDied = false;
+        boolean player2KingDied = false;
+
+        for (Tower tower : arena.getAllTowers()) {
+            if (tower.getCurrentHealth() <= 0) {
+                boolean isPlayer1Tower = tower.isPlayerSide();
+                boolean isKingTower = tower.getType() == Tower.TowerType.KING;
+
+                if (isKingTower) {
+                    anyKingDied = true;
+                    if (isPlayer1Tower) {
+                        player1KingDied = true;
+                    } else {
+                        player2KingDied = true;
+                    }
+                }
+
+                if (isPlayer1Tower) {
+                    player1TowersDied++;
+                } else {
+                    player2TowersDied++;
+                }
+            }
+        }
+
+        // If any towers died, end the game
+        if (player1TowersDied > 0 || player2TowersDied > 0) {
+            // Award crowns based on what died
+            if (anyKingDied) {
+                // King tower death = 3 crowns
+                if (player1KingDied) {
+                    player2Score = 3;
+                }
+                if (player2KingDied) {
+                    player1Score = 3;
+                }
+            } else {
+                // Princess towers = 1 crown each
+                player2Score += player1TowersDied;
+                player1Score += player2TowersDied;
+            }
+
+            // End the game
+            isGameOver = true;
+
+            // Determine winner based on final scores
+            if (player1Score > player2Score) {
+                winner = TurnManager.Turn.PLAYER_1;
+            } else if (player2Score > player1Score) {
+                winner = TurnManager.Turn.PLAYER_2;
+            } else {
+                // Still tied after simultaneous deaths = draw
+                winner = null;
+            }
+        }
+    }
+
+    /**
+     * Clears all troops and buildings from the arena.
+     * Called when entering tiebreaker mode to ensure only tower health matters.
+     */
+    private void clearArenaUnits() {
+        // Remove all troops from spatial grid
+        for (Troop troop : activeTroops) {
+            arena.getSpatialGrid().remove(troop);
+        }
+        activeTroops.clear();
+
+        // Remove all buildings from spatial grid
+        for (Building building : activeBuildings) {
+            arena.getSpatialGrid().remove(building);
+        }
+        activeBuildings.clear();
+
+        // Clear projectiles too
+        activeProjectiles.clear();
     }
 
     private void updateEntities(double deltaTime) {
@@ -159,6 +252,7 @@ public class PvPGameState implements IBattleState {
         while (it.hasNext()) {
             Building b = it.next();
             if (!b.isAlive()) {
+                arena.freeFootprint(b); // Clear occupied cells so new cards can be placed
                 arena.getSpatialGrid().remove(b);
                 it.remove();
             }
@@ -367,6 +461,32 @@ public class PvPGameState implements IBattleState {
             spawnY = y + bh; // "Below" for player 2 (top side)
         }
 
+        // Check if spawn position lands on river AND is not walkable (not a bridge)
+        // If it's on a bridge, spawn normally so troops can walk across
+        if (spawnY == com.kuroyale.util.config.GameConstants.RIVER_ROW_1 ||
+                spawnY == com.kuroyale.util.config.GameConstants.RIVER_ROW_2) {
+            GridCell frontCell = arena.getCell(spawnX, spawnY);
+            // Only shift if the cell is not walkable (water, not bridge)
+            if (frontCell == null || !frontCell.isWalkable()) {
+                // Shift X based on building's position: if on right half, go left; otherwise go
+                // right
+                int centerX = Arena.WIDTH / 2;
+                if (spawnX >= centerX) {
+                    spawnX = x - 1; // Spawn to the left of building
+                } else {
+                    spawnX = x + bw; // Spawn to the right of building
+                }
+                // Also shift Y off the river to a walkable tile
+                if (b.isPlayerSide()) {
+                    // Player side: move below the river (y > 16)
+                    spawnY = com.kuroyale.util.config.GameConstants.RIVER_ROW_2 + 1; // y = 17
+                } else {
+                    // Bot side: move above the river (y < 15)
+                    spawnY = com.kuroyale.util.config.GameConstants.RIVER_ROW_1 - 1; // y = 14
+                }
+            }
+        }
+
         return GridPosition.tryCreate(spawnX, spawnY);
     }
 
@@ -382,14 +502,41 @@ public class PvPGameState implements IBattleState {
     }
 
     private void applySpellEffect(boolean isPlayer1, Card spell, int x, int y) {
+        // Check for Projectile-based spells (Fireball, Rocket)
+        if ("Fireball".equalsIgnoreCase(spell.getName()) || "Rocket".equalsIgnoreCase(spell.getName())) {
+            GridPosition targetGrid = GridPosition.tryCreate(x, y);
+            if (targetGrid == null)
+                return;
+
+            // Determine Start Position (King Tower)
+            Vector2 startPos = new Vector2(Arena.WIDTH / 2.0, isPlayer1 ? Arena.HEIGHT : 0);
+
+            // Try to find actual King Tower
+            Tower kingTower = arena.getKingTower(isPlayer1);
+            if (kingTower != null && kingTower.getCenterPosition() != null) {
+                startPos = new Vector2(kingTower.getCenterPosition().getX() + 0.5,
+                        kingTower.getCenterPosition().getY() + 0.5);
+            }
+
+            Vector2 targetPos = new Vector2(targetGrid.getX() + 0.5, targetGrid.getY() + 0.5);
+
+            // Create Projectile
+            Projectile spellProjectile = new Projectile(kingTower, startPos, targetPos, spell);
+            addProjectile(spellProjectile);
+            return;
+        }
+
         double radius = Math.max(0, spell.getRange());
         double damage = Math.max(0, spell.getDamage());
         GridPosition center = GridPosition.tryCreate(x, y);
         if (center == null)
             return;
 
-        combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer1, true,
-                spell.getStunDuration());
+        com.kuroyale.event.GameEventBus.getInstance().publishSpellCast(isPlayer1, spell, center);
+
+        Vector2 centerVec = Vector2.fromGridPosition(center);
+        combatService.applyAreaDamage(this, centerVec, radius, damage, TargetType.BOTH, isPlayer1, true,
+                spell.getStunDuration(), spell.getName());
     }
 
     private void checkAndScoreDestroyedTowers() {
@@ -469,6 +616,10 @@ public class PvPGameState implements IBattleState {
 
     public boolean isGameOver() {
         return isGameOver;
+    }
+
+    public boolean isTiebreakerMode() {
+        return isTiebreakerMode;
     }
 
     public TurnManager.Turn getWinner() {

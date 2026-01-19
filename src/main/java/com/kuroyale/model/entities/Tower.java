@@ -90,10 +90,30 @@ public class Tower implements ICombatant {
             return null;
         int w = getWidth();
         int h = getHeight();
-        // Center = topLeft + (size-1)/2
-        int cx = position.getX() + (w > 0 ? (w - 1) / 2 : 0);
-        int cy = position.getY() + (h > 0 ? (h - 1) / 2 : 0);
+        // Center = topLeft + size/2 (this gives proper center for both odd and even
+        // widths)
+        int cx = position.getX() + (w > 0 ? w / 2 : 0);
+        int cy = position.getY() + (h > 0 ? h / 2 : 0);
         return GridPosition.tryCreate(cx, cy);
+    }
+
+    @Override
+    public Vector2 getWorldPosition() {
+        if (position == null)
+            return null;
+        return Vector2.fromGridPosition(position);
+    }
+
+    @Override
+    public Vector2 getCenterWorldPosition() {
+        if (position == null)
+            return null;
+        int w = getWidth();
+        int h = getHeight();
+        // Precise center using floating point
+        return new Vector2(
+                position.getX() + w / 2.0,
+                position.getY() + h / 2.0);
     }
 
     // Actually, can't check Arena.java easily here inside the class without passing

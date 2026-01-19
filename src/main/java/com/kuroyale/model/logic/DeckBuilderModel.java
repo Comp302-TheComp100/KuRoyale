@@ -7,7 +7,7 @@ import java.util.Map;
 
 import com.kuroyale.service.AuthenticationService;
 import com.kuroyale.service.DeckManagementService;
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.common.ServiceFactory;
 
 /*The Model component for the Deck Builder screen.
  * Encapsulates business logic for deck operations and card management.*/
@@ -15,7 +15,7 @@ public class DeckBuilderModel {
 
     private final AuthenticationService authService;
     private final DeckManagementService deckService;
-    private final com.kuroyale.service.CardCatalog cardCatalog;
+    private final com.kuroyale.model.entities.CardCatalog cardCatalog;
 
     public DeckBuilderModel() {
         ServiceFactory factory = ServiceFactory.getInstance();

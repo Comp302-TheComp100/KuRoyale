@@ -5,12 +5,12 @@ import java.io.IOException;
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.Deck;
 import com.kuroyale.model.state.PvPDeckBuilderSession;
-import com.kuroyale.model.strategy.CustomDeckStrategy;
-import com.kuroyale.model.strategy.DeckBuildingStrategy;
-import com.kuroyale.model.strategy.RandomDeckStrategy;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.SoundEffectUtil;
-import com.kuroyale.view.CardView;
+import com.kuroyale.model.strategy.deck.CustomDeckStrategy;
+import com.kuroyale.model.strategy.deck.DeckBuildingStrategy;
+import com.kuroyale.model.strategy.deck.RandomDeckStrategy;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.ui.SceneLoader;
+import com.kuroyale.view.card.CardView;
 
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -367,6 +367,6 @@ public class PvPDeckSelectionController {
     }
 
     private void showError(String message) {
-        com.kuroyale.view.ThemedAlertController.show(root.getScene().getWindow(), "Error", message, null);
+        com.kuroyale.util.ui.ThemedAlertManager.show(root.getScene().getWindow(), "Error", message, null);
     }
 }

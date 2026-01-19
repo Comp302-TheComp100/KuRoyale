@@ -61,7 +61,7 @@
 
                 <VBox spacing="10.0">
                     <children>
-                        <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleSave" styleClass="menu-button" text="Save Layout" />
+                        <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleSave" styleClass="menu-button" text="Check Layout" />
                         <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleBack" styleClass="menu-button" text="Back" />
                     </children>
                 </VBox>

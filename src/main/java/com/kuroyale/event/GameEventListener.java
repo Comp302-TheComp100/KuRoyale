@@ -7,6 +7,10 @@ public interface GameEventListener {
                         java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
         }
 
+        default void onSpellCast(boolean isPlayer, com.kuroyale.model.entities.Card spell,
+                        com.kuroyale.model.entities.GridPosition center) {
+        }
+
         default void onTowerDestroyed(boolean isPlayerTower, com.kuroyale.model.entities.Tower tower) {
         }
 
@@ -16,9 +20,9 @@ public interface GameEventListener {
         default void onBuildingProduction(com.kuroyale.model.entities.Building building, String resource, int amount) {
         }
 
-        default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
+        default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center,
                         double radius,
-                        double duration) {
+                        double duration, String effectType) {
         }
 
         default void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
@@ -29,9 +33,9 @@ public interface GameEventListener {
         }
 
         default void onSpellDamageDealt(boolean isPlayer, int damage) {
-        }
-<<<<<<< Updated upstream
-=======
+        }<<<<<<<
+
+        Updated upstream=======
 
         default void onMatchStart() {
         }
@@ -40,6 +44,7 @@ public interface GameEventListener {
         }
 
         default void onEmojiPlayed(boolean isPlayer, String emojiName) {
-        }
->>>>>>> Stashed changes
+        }>>>>>>>
+
+        Stashed changes
 }

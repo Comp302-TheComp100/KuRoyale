@@ -7,9 +7,9 @@ import com.kuroyale.model.entities.Achievement;
 import com.kuroyale.model.entities.Quest;
 import com.kuroyale.service.AchievementService;
 import com.kuroyale.service.QuestService;
-import com.kuroyale.util.SceneLoader;
-import com.kuroyale.util.ServiceFactory;
-import com.kuroyale.util.SoundEffectUtil;
+import com.kuroyale.util.audio.SoundEffectUtil;
+import com.kuroyale.util.common.ServiceFactory;
+import com.kuroyale.util.ui.SceneLoader;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -25,14 +25,22 @@ import javafx.util.Duration;
  * Manages daily quests and permanent achievements display.*/
 public class QuestAchievementController {
 
-    @FXML private AnchorPane root;
-    @FXML private Button backButton;
-    @FXML private Label titleLabel;
-    @FXML private TabPane tabPane;
-    @FXML private VBox questsContainer;
-    @FXML private VBox questCardsContainer;
-    @FXML private Label resetTimerLabel;
-    @FXML private VBox achievementsContainer;
+    @FXML
+    private AnchorPane root;
+    @FXML
+    private Button backButton;
+    @FXML
+    private Label titleLabel;
+    @FXML
+    private TabPane tabPane;
+    @FXML
+    private VBox questsContainer;
+    @FXML
+    private VBox questCardsContainer;
+    @FXML
+    private Label resetTimerLabel;
+    @FXML
+    private VBox achievementsContainer;
 
     private final SceneLoader sceneLoader = new SceneLoader();
     private final QuestService questService = ServiceFactory.getInstance().getQuestService();
@@ -74,7 +82,7 @@ public class QuestAchievementController {
 
     private void addQuestCard(String description, String progress, int reward, boolean completed, boolean claimed,
             String questId) {
-        com.kuroyale.view.QuestCardView card = new com.kuroyale.view.QuestCardView(
+        com.kuroyale.view.card.QuestCardView card = new com.kuroyale.view.card.QuestCardView(
                 description, progress, reward, completed, claimed, () -> handleClaimQuest(questId));
         questCardsContainer.getChildren().add(card);
     }
@@ -120,7 +128,7 @@ public class QuestAchievementController {
 
     private void addAchievementCard(String name, String description, int progress, int target, int reward,
             boolean unlocked, boolean claimed, com.kuroyale.model.enums.AchievementType type) {
-        com.kuroyale.view.AchievementCardView card = new com.kuroyale.view.AchievementCardView(
+        com.kuroyale.view.card.AchievementCardView card = new com.kuroyale.view.card.AchievementCardView(
                 name, description, progress, target, reward, unlocked, claimed, () -> handleClaimAchievement(type));
         achievementsContainer.getChildren().add(card);
     }

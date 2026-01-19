@@ -3,10 +3,10 @@ package com.kuroyale.controller;
 import com.kuroyale.model.entities.Arena;
 import com.kuroyale.model.logic.ArenaDesignModel;
 import com.kuroyale.model.entities.ArenaLayout;
-import com.kuroyale.util.GameConstants;
 import com.kuroyale.model.enums.TileType;
-import com.kuroyale.view.battle.ArenaRenderer;
-import com.kuroyale.util.SceneLoader;
+import com.kuroyale.util.config.GameConstants;
+import com.kuroyale.util.ui.SceneLoader;
+import com.kuroyale.view.battle.renderers.ArenaRenderer;
 
 import javafx.fxml.FXML;
 
@@ -71,11 +71,12 @@ public class ArenaDesignController {
         try {
             if (draggablePrincessTower != null) {
                 draggablePrincessTower
-                        .setFill(new ImagePattern(com.kuroyale.util.GameAssets.getInstance().getPrincessTowerUser()));
+                        .setFill(
+                                new ImagePattern(com.kuroyale.util.ui.GameAssets.getInstance().getPrincessTowerUser()));
             }
             if (draggableKingTower != null) {
                 draggableKingTower
-                        .setFill(new ImagePattern(com.kuroyale.util.GameAssets.getInstance().getKingTowerUser()));
+                        .setFill(new ImagePattern(com.kuroyale.util.ui.GameAssets.getInstance().getKingTowerUser()));
             }
             if (draggableBridge != null) {
                 draggableBridge.setFill(javafx.scene.paint.Color.SADDLEBROWN);
@@ -282,7 +283,7 @@ public class ArenaDesignController {
             }
             try {
                 model.saveArenaLayout(currentLayout);
-                com.kuroyale.view.ThemedAlertController.show(arenaGrid.getScene().getWindow(), "Success",
+                com.kuroyale.util.ui.ThemedAlertManager.show(arenaGrid.getScene().getWindow(), "Success",
                         "Arena layout saved successfully!",
                         this::handleBack);
             } catch (IOException e) {
@@ -302,6 +303,6 @@ public class ArenaDesignController {
     }
 
     private void showAlert(String title, String content) {
-        com.kuroyale.view.ThemedAlertController.show(arenaGrid.getScene().getWindow(), title, content, null);
+        com.kuroyale.util.ui.ThemedAlertManager.show(arenaGrid.getScene().getWindow(), title, content, null);
     }
 }

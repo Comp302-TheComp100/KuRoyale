@@ -45,11 +45,18 @@ public class Arena {
             }
         }
 
-        // Apply bridges from layout
+        // Apply bridges from layout with Y-axis symmetry
+        // Both players should see symmetric bridges from their perspective
         if (layout != null && layout.getBridgePositions() != null) {
             for (GridPosition p : layout.getBridgePositions()) {
+                // Place bridge at original position
                 if (isValidPosition(p.getX(), p.getY())) {
                     grid[p.getX()][p.getY()].setTileType(TileType.BRIDGE);
+                }
+                // Mirror bridge on Y-axis: y' = HEIGHT - 1 - y
+                int mirroredY = HEIGHT - 1 - p.getY();
+                if (isValidPosition(p.getX(), mirroredY)) {
+                    grid[p.getX()][mirroredY].setTileType(TileType.BRIDGE);
                 }
             }
         }
@@ -362,6 +369,10 @@ public class Arena {
     public boolean isBotKingAlive() {
         return getAllTowers().stream()
                 .anyMatch(t -> t.getType() == Tower.TowerType.KING && !t.isPlayerSide() && t.isAlive());
+    }
+
+    public Tower getKingTower(boolean isPlayer) {
+        return getTowersByType(Tower.TowerType.KING, isPlayer).stream().findFirst().orElse(null);
     }
 
     // Occupies the footprint of a building on the grid

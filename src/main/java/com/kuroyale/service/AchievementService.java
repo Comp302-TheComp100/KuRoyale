@@ -28,6 +28,9 @@ public class AchievementService implements GameEventListener {
     private final Map<AchievementType, Achievement> achievements;
     private String currentUsername;
 
+    // Win streak tracking for UNDEFEATED achievement
+    private int currentWinStreak = 0;
+
     public AchievementService() {
         String userHome = System.getProperty("user.home");
         this.dataPath = Paths.get(userHome, ".kuroyale");
@@ -142,6 +145,11 @@ public class AchievementService implements GameEventListener {
                         }
                     }
                 }
+
+                // Load win streak
+                if (json.has("currentWinStreak")) {
+                    currentWinStreak = json.getInt("currentWinStreak");
+                }
             }
         } catch (Exception e) {
             System.err.println("Failed to load achievements: " + e.getMessage());
@@ -167,6 +175,11 @@ public class AchievementService implements GameEventListener {
 
             Files.writeString(dataPath.resolve(String.format(ACHIEVEMENT_FILE_TEMPLATE, currentUsername)),
                     json.toString(2));
+
+            // Save win streak separately in the same file
+            json.put("currentWinStreak", currentWinStreak);
+            Files.writeString(dataPath.resolve(String.format(ACHIEVEMENT_FILE_TEMPLATE, currentUsername)),
+                    json.toString(2));
         } catch (IOException e) {
             System.err.println("Failed to save achievements: " + e.getMessage());
         }
@@ -189,5 +202,35 @@ public class AchievementService implements GameEventListener {
             return; // Only track enemy towers destroyed
 
         updateProgress(AchievementType.TOWER_HUNTER, 1);
+    }
+
+    @Override
+    public void onSpellDamageDealt(boolean isPlayer, int damage) {
+        if (isPlayer) {
+            updateProgress(AchievementType.SPELL_MASTER, damage);
+        }
+    }
+
+    @Override
+    public void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
+            java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
+        updateProgress(AchievementType.COMBO_EXPERT, 1);
+    }
+
+    @Override
+    public void onMatchEnd(boolean playerWon) {
+        if (playerWon) {
+            currentWinStreak++;
+            // Set progress to current streak (UNDEFEATED needs 5 in a row)
+            setProgress(AchievementType.UNDEFEATED, currentWinStreak);
+        } else {
+            currentWinStreak = 0;
+            // Reset UNDEFEATED progress on loss (if not already unlocked)
+            Achievement undefeated = achievements.get(AchievementType.UNDEFEATED);
+            if (undefeated != null && !undefeated.isUnlocked()) {
+                undefeated.setProgress(0);
+            }
+        }
+        saveAchievements();
     }
 }

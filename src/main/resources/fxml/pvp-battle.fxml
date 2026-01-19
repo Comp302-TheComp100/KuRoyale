@@ -30,7 +30,6 @@
                     </VBox>
 
                     <Button text="Pause" onAction="#handlePause" styleClass="menu-button-small"/>
-                    <Button text="Exit Battle" onAction="#handleExit" styleClass="menu-button-small"/>
                 </VBox>
             </left>
 
@@ -62,6 +61,9 @@
 
                     <!-- Time and Score Panel (Far Right) -->
                     <VBox fx:id="infoPanel" spacing="20" alignment="CENTER" prefWidth="280" style="-fx-padding: 20; -fx-background-color: rgba(0,0,0,0.5);">
+                        <HBox alignment="TOP_RIGHT" style="-fx-padding: 0;">
+                            <Button text="Exit Battle" onAction="#handleExit" styleClass="menu-button-small"/>
+                        </HBox>
                         <Label text="TIME" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
                         <Label fx:id="timeLabel" text="03:00" style="-fx-text-fill: white; -fx-font-size: 32px; -fx-font-weight: bold;"/>
 

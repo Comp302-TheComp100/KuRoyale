@@ -3,11 +3,12 @@ package com.kuroyale.controller;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.view.battle.BattleArenaView;
-import com.kuroyale.view.battle.ElixirBar;
-import com.kuroyale.view.battle.HandView;
-import com.kuroyale.util.SceneLoader;
+import com.kuroyale.view.battle.ui.ElixirBarView;
+import com.kuroyale.view.battle.ui.HandView;
+
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.layout.HBox;
@@ -71,7 +72,7 @@ public class BattleController {
 
     private GameState gameState;
     private BattleArenaView arenaView;
-    private ElixirBar elixirBar;
+    private ElixirBarView elixirBar;
     private HandView handView;
     private AnimationTimer gameLoop;
     private ArenaLayout currentArenaLayout;
@@ -87,7 +88,7 @@ public class BattleController {
 
     private boolean doubleElixirShown = false;
     private boolean gameOverShown = false;
-    private com.kuroyale.service.ComboService comboService;
+    private com.kuroyale.service.battle.ComboService comboService;
     private int savedComboCount = 0; // For restoring combo count from saved games
 
     /**
@@ -165,6 +166,9 @@ public class BattleController {
             }
         }
 
+        // Notify quest system that a match is starting
+        com.kuroyale.event.GameEventBus.getInstance().publishMatchStart();
+
         // Initialize UI Components
         arenaView = new BattleArenaView(gameState);
         arenaContainer.getChildren().add(arenaView);
@@ -178,7 +182,7 @@ public class BattleController {
             handleArenaClick(tileX, tileY);
         });
 
-        elixirBar = new ElixirBar(gameState.getPlayerElixir());
+        elixirBar = new ElixirBarView(gameState.getPlayerElixir());
         elixirContainer.getChildren().add(elixirBar);
 
         handView = new HandView(gameState.getPlayerHand(), gameState.getPlayerElixir());
@@ -236,7 +240,9 @@ public class BattleController {
             }
 
             @Override
-            public void onAreaEffect(boolean isPlayerSource, GridPosition center, double radius, double duration) {
+            public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
+                    double duration,
+                    String effectType) {
             }
 
             @Override
@@ -256,7 +262,7 @@ public class BattleController {
                     }
 
                     // 3. Play Sound Effect via SoundManager
-                    com.kuroyale.util.SoundManager.getInstance().play("combo");
+                    com.kuroyale.util.audio.SoundManager.getInstance().play("combo");
                 });
             }
         });
@@ -264,7 +270,7 @@ public class BattleController {
         // Initialize Combo Service
         if (comboService != null)
             comboService.cleanup();
-        comboService = new com.kuroyale.service.ComboService();
+        comboService = new com.kuroyale.service.battle.ComboService();
         comboService.setGameState(gameState);
 
         // Restore combo count from saved game if applicable
@@ -405,21 +411,24 @@ public class BattleController {
         // Record attempt
         model.recordChallengeAttempt(currentChallenge.getId(), playerWon, timeSeconds, damageTaken);
 
+        // Notify quest system about match end
+        com.kuroyale.event.GameEventBus.getInstance().publishMatchEnd(playerWon);
+
         // Track Challenge Completion (Quest)
-        com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+        com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                 .updateProgress(com.kuroyale.model.enums.QuestType.COMPLETE_CHALLENGES, 1);
 
         if (playerWon) {
             // Track Win Quests
-            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                     .updateProgress(com.kuroyale.model.enums.QuestType.WIN_MATCHES, 1);
 
             // Track Achievements
-            com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                     .updateProgress(com.kuroyale.model.enums.AchievementType.CHALLENGE_MASTER, 1);
 
             if (stars == 3) {
-                com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+                com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                         .updateProgress(com.kuroyale.model.enums.AchievementType.THREE_STAR_HERO, 1);
             }
         }
@@ -513,8 +522,11 @@ public class BattleController {
             isDraw = true;
         }
 
+        // Notify quest system about match end
+        com.kuroyale.event.GameEventBus.getInstance().publishMatchEnd(playerWon);
+
         // Track Matches Played (Veteran Player Achievement)
-        com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+        com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                 .updateProgress(com.kuroyale.model.enums.AchievementType.VETERAN_PLAYER, 1);
 
         int baseGold = 0;
@@ -527,21 +539,21 @@ public class BattleController {
             titleStyle = "victory-text";
 
             // Track Win Quests
-            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                     .updateProgress(com.kuroyale.model.enums.QuestType.WIN_MATCHES, 1);
-            com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                     .updateProgress(com.kuroyale.model.enums.QuestType.WIN_PVP_MATCH, 1);
 
             // Track Win Without Losing Tower
             if (gameState.getBotScore() == 0) {
-                com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
+                com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
                         .updateProgress(com.kuroyale.model.enums.QuestType.WIN_WITHOUT_LOSING_TOWER, 1);
             }
 
             // Track Win Achievements
-            com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                     .updateProgress(com.kuroyale.model.enums.AchievementType.FIRST_BLOOD, 1);
-            com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()
+            com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                     .updateProgress(com.kuroyale.model.enums.AchievementType.UNDEFEATED, 1);
         } else if (isDraw) {
             baseGold = 75;
@@ -743,8 +755,8 @@ public class BattleController {
         pauseMenuContainer.getChildren().clear();
         pauseMenuContainer.setVisible(true);
 
-        com.kuroyale.view.battle.PauseMenuView menu = new com.kuroyale.view.battle.PauseMenuView(
-                new com.kuroyale.view.battle.PauseMenuView.PauseMenuListener() {
+        com.kuroyale.view.battle.ui.PauseMenuView menu = new com.kuroyale.view.battle.ui.PauseMenuView(
+                new com.kuroyale.view.battle.ui.PauseMenuView.PauseMenuListener() {
                     @Override
                     public void onResume() {
                         handleResume();
@@ -770,13 +782,9 @@ public class BattleController {
     }
 
     private void showSaveConfirmation() {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.INFORMATION);
-        alert.setTitle("Game Saved");
-        alert.setHeaderText("Success");
-        alert.setContentText("Match saved successfully! You can resume it later from the main menu.");
-
-        alert.showAndWait();
+        com.kuroyale.util.ui.ThemedAlertManager.show(
+                "Game Saved",
+                "Match saved successfully! You can resume it later from the main menu.");
     }
 
     private void showSaveConfirmationBrief() {

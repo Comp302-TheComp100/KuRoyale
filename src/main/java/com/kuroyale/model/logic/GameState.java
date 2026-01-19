@@ -2,6 +2,7 @@ package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
+import com.kuroyale.service.battle.BotLogic;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.event.GameEventBus;
 
@@ -20,20 +21,22 @@ public class GameState implements IBattleState {
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
     private final List<Projectile> activeProjectiles;
-    private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
-    private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
+    private final com.kuroyale.service.battle.TroopMovementService troopMovementService = new com.kuroyale.service.battle.TroopMovementService();
+    private final com.kuroyale.service.battle.CombatService combatService = new com.kuroyale.service.battle.CombatService();
 
     private double gameTime = 180.0; // 3 minutes
     private int playerScore = 0, botScore = 0;
 
     private boolean isDoubleElixir = false, isGameOver = false, playerWon = false, isDraw = false;
+    private boolean isTiebreakerMode = false; // Tiebreaker: all towers drain health
+    private static final double TIEBREAKER_DRAIN_RATE = 100.0; // HP per second
 
     // Track towers that have already been scored to avoid double-counting
     private java.util.Set<Tower> scoredTowers = new java.util.HashSet<>();
 
     // Challenge Context
     private ChallengeType activeChallenge;
-    
+
     // Network mode flag - when true, bot AI is disabled (opponent is a real player)
     private boolean networkMode = false;
 
@@ -76,14 +79,15 @@ public class GameState implements IBattleState {
     public void setActiveChallenge(ChallengeType activeChallenge) {
         this.activeChallenge = activeChallenge;
     }
-    
+
     /**
-     * Enables network mode - disables bot AI so opponent is controlled by real player.
+     * Enables network mode - disables bot AI so opponent is controlled by real
+     * player.
      */
     public void setNetworkMode(boolean networkMode) {
         this.networkMode = networkMode;
     }
-    
+
     public boolean isNetworkMode() {
         return networkMode;
     }
@@ -135,8 +139,8 @@ public class GameState implements IBattleState {
         playerElixir.update(deltaTime);
         botElixir.update(deltaTime);
 
-        // Only run bot AI if NOT in network mode (opponent is a real player in network mode)
-        if (!isGameOver && !networkMode) {
+        // Only run bot AI if NOT in network mode, NOT game over, and NOT in tiebreaker
+        if (!isGameOver && !networkMode && !isTiebreakerMode) {
             updateBot(deltaTime);
         }
 
@@ -147,6 +151,12 @@ public class GameState implements IBattleState {
     }
 
     private void updateGameTimer(double deltaTime) {
+        // Handle tiebreaker mode: all towers drain health until one reaches 0
+        if (isTiebreakerMode) {
+            updateTiebreakerMode(deltaTime);
+            return;
+        }
+
         if (gameTime > 0) {
             gameTime -= deltaTime;
 
@@ -160,41 +170,121 @@ public class GameState implements IBattleState {
             if (gameTime <= 0) {
                 gameTime = 0;
                 if (!isGameOver) {
-                    isGameOver = true;
                     if (playerScore > botScore) {
+                        isGameOver = true;
                         playerWon = true;
                     } else if (botScore > playerScore) {
-                        // Bot wins
+                        isGameOver = true;
                         playerWon = false;
                     } else {
-                        // Tiebreaker: Compare lowest HP towers
-                        // The side with the single lowest health tower loses.
-                        double playerMinHP = getLowestTowerHealth(true);
-                        double botMinHP = getLowestTowerHealth(false);
-
-                        if (playerMinHP < botMinHP) {
-                            // Player has the weakest tower -> Player loses
-                            playerWon = false;
-                        } else if (botMinHP < playerMinHP) {
-                            // Bot has the weakest tower -> Player wins
-                            playerWon = true;
-                        } else {
-                            // Equal lowest HP -> True Draw (very rare)
-                            isDraw = true;
-                            playerWon = false;
-                        }
+                        // Equal scores: Enter tiebreaker mode
+                        // All remaining towers start losing health rapidly
+                        isTiebreakerMode = true;
+                        // Clear all troops and buildings so they don't affect tiebreaker
+                        clearArenaUnits();
                     }
                 }
             }
         }
     }
 
-    private double getLowestTowerHealth(boolean isPlayer) {
-        return arena.getAllTowers().stream()
-                .filter(t -> t.isPlayerSide() == isPlayer && t.isAlive())
-                .mapToDouble(Tower::getCurrentHealth)
-                .min()
-                .orElse(0.0);
+    /**
+     * Tiebreaker mode: All remaining towers lose health rapidly.
+     * The first tower(s) to reach 0 health determines the loser.
+     * If towers on both sides die simultaneously, count crowns for both.
+     */
+    private void updateTiebreakerMode(double deltaTime) {
+        double drainAmount = TIEBREAKER_DRAIN_RATE * deltaTime;
+
+        // Drain all living towers
+        for (Tower tower : arena.getAllTowers()) {
+            if (tower.isAlive()) {
+                double newHealth = tower.getCurrentHealth() - drainAmount;
+                tower.setCurrentHealth((int) Math.max(0, newHealth));
+            }
+        }
+
+        // Count all towers that reached 0 health and score them
+        int playerTowersDied = 0;
+        int botTowersDied = 0;
+        boolean anyKingDied = false;
+        boolean playerKingDied = false;
+        boolean botKingDied = false;
+
+        for (Tower tower : arena.getAllTowers()) {
+            if (tower.getCurrentHealth() <= 0) {
+                boolean isPlayerTower = tower.isPlayerSide();
+                boolean isKingTower = tower.getType() == Tower.TowerType.KING;
+
+                if (isKingTower) {
+                    anyKingDied = true;
+                    if (isPlayerTower) {
+                        playerKingDied = true;
+                    } else {
+                        botKingDied = true;
+                    }
+                }
+
+                if (isPlayerTower) {
+                    playerTowersDied++;
+                } else {
+                    botTowersDied++;
+                }
+            }
+        }
+
+        // If any towers died, end the game
+        if (playerTowersDied > 0 || botTowersDied > 0) {
+            // Award crowns based on what died
+            if (anyKingDied) {
+                // King tower death = 3 crowns
+                if (playerKingDied) {
+                    botScore = 3;
+                }
+                if (botKingDied) {
+                    playerScore = 3;
+                }
+            } else {
+                // Princess towers = 1 crown each
+                botScore += playerTowersDied;
+                playerScore += botTowersDied;
+            }
+
+            // End the game
+            isGameOver = true;
+
+            // Determine winner based on final scores
+            if (playerScore > botScore) {
+                playerWon = true;
+            } else if (botScore > playerScore) {
+                playerWon = false;
+            } else {
+                // Still tied after simultaneous deaths = draw
+                isDraw = true;
+                playerWon = false;
+            }
+        }
+    }
+
+    /**
+     * Clears all troops and buildings from the arena.
+     * Called when entering tiebreaker mode to ensure only tower health matters.
+     */
+    private void clearArenaUnits() {
+        // Remove all troops from spatial grid
+        for (Troop troop : activeTroops) {
+            arena.getSpatialGrid().remove(troop);
+        }
+        activeTroops.clear();
+
+        // Remove all buildings from spatial grid and clear footprints
+        for (Building building : activeBuildings) {
+            arena.getSpatialGrid().remove(building);
+        }
+        activeBuildings.clear();
+
+        // Clear projectiles too
+        activeProjectiles.clear();
     }
 
     private void updateBot(double deltaTime) {
@@ -229,6 +319,7 @@ public class GameState implements IBattleState {
         while (it.hasNext()) {
             Building b = it.next();
             if (!b.isAlive()) {
+                arena.freeFootprint(b); // Clear occupied cells so new cards can be placed
                 arena.getSpatialGrid().remove(b);
                 it.remove();
             }
@@ -273,6 +364,14 @@ public class GameState implements IBattleState {
 
     public boolean isDraw() {
         return isDraw;
+    }
+
+    /**
+     * Returns whether tiebreaker mode is active.
+     * In tiebreaker mode, the player with the lowest health tower loses.
+     */
+    public boolean isTiebreakerMode() {
+        return gameTime <= 0 && playerScore == botScore;
     }
 
     public int getPlayerDamageTaken() {
@@ -347,12 +446,373 @@ public class GameState implements IBattleState {
     public double getGameTime() {
         return gameTime;
     }
-    
+
     /**
      * Sets the game time (used for network sync where host is authoritative).
      */
     public void setGameTime(double gameTime) {
         this.gameTime = Math.max(0, gameTime);
+    }
+
+    /**
+     * Sets the scores (used for network sync where host is authoritative).
+     */
+    public void setScores(int playerScore, int botScore) {
+        this.playerScore = playerScore;
+        this.botScore = botScore;
+    }
+
+    /**
+     * Sets the player score directly (used for network sync).
+     */
+    public void setPlayerScore(int score) {
+        this.playerScore = score;
+    }
+
+    /**
+     * Sets the bot/opponent score directly (used for network sync).
+     */
+    public void setBotScore(int score) {
+        this.botScore = score;
+    }
+
+    /**
+     * Sets the double elixir state (used for network sync).
+     */
+    public void setDoubleElixir(boolean isDoubleElixir) {
+        this.isDoubleElixir = isDoubleElixir;
+        if (isDoubleElixir) {
+            playerElixir.setDoubleElixir(true);
+            botElixir.setDoubleElixir(true);
+        }
+    }
+
+    /**
+     * Applies a full game state sync from the authoritative host.
+     * Used by the client to update its local state.
+     */
+    public void applyHostStateSync(double gameTime, double playerElixirValue, double botElixirValue,
+            int playerScore, int botScore, boolean isDoubleElixir) {
+        this.gameTime = Math.max(0, gameTime);
+        this.playerScore = playerScore;
+        this.botScore = botScore;
+
+        // Sync elixir values - client sees these inverted (their elixir is the "bot"
+        // from host's perspective)
+        // The client's "player" elixir should match the host's "bot" elixir (since
+        // client is the opponent)
+        this.playerElixir.setCurrentElixir(botElixirValue); // Client's elixir = Host's opponent elixir
+        this.botElixir.setCurrentElixir(playerElixirValue); // Client's opponent = Host's player
+
+        if (isDoubleElixir && !this.isDoubleElixir) {
+            this.isDoubleElixir = true;
+            this.playerElixir.setDoubleElixir(true);
+            this.botElixir.setDoubleElixir(true);
+        }
+    }
+
+    /**
+     * Light update for client - updates movement and visuals but NOT scoring.
+     * The authoritative scores and game state come from the host.
+     * This keeps the game visually smooth while ensuring consistent outcomes.
+     */
+    public void updateClientOnly(double deltaTime) {
+        // Update elixir regeneration for responsive UI
+        playerElixir.update(deltaTime);
+        botElixir.update(deltaTime);
+
+        // Update timer locally (will be corrected by host sync)
+        if (gameTime > 0) {
+            gameTime -= deltaTime;
+
+            // Check for Double Elixir locally (host will confirm)
+            if (gameTime <= 60.0 && !isDoubleElixir) {
+                isDoubleElixir = true;
+                playerElixir.setDoubleElixir(true);
+                botElixir.setDoubleElixir(true);
+            }
+        }
+
+        // Update troop movement for visual smoothness
+        troopMovementService.updateTroops(deltaTime, this, activeTroops);
+
+        // Update buildings (lifetime, animations)
+        for (Building b : activeBuildings) {
+            if (b.isAlive()) {
+                b.update(deltaTime);
+            }
+        }
+
+        // Run combat for visual effects (damage numbers, animations)
+        // But do NOT calculate scores - those come from host
+        combatService.update(deltaTime, this);
+
+        // Remove dead troops (visual cleanup)
+        activeTroops.removeIf(t -> !t.isAlive());
+
+        // Cleanup dead buildings
+        java.util.Iterator<Building> it = activeBuildings.iterator();
+        while (it.hasNext()) {
+            Building b = it.next();
+            if (!b.isAlive()) {
+                arena.getSpatialGrid().remove(b);
+                it.remove();
+            }
+        }
+
+        // Remove dead towers (visual cleanup - scores come from host)
+        arena.removeDeadTowers();
+
+        // NOTE: Do NOT update scores or check win conditions here
+        // Those are authoritative from the host
+    }
+
+    /**
+     * Render-only update for network client.
+     * Client receives all entity positions from host and just renders them.
+     * No game logic is run locally - this just updates UI elements.
+     */
+    public void updateRenderOnly(double deltaTime) {
+        // Only update elixir for responsive UI (will be corrected by host sync)
+        playerElixir.update(deltaTime);
+
+        // Everything else (troops, combat, towers) comes from host via full state sync
+        // No local simulation!
+    }
+
+    /**
+     * Serializes all troops for network transmission.
+     * Format: cardName,worldX,worldY,health,isPlayer,state|cardName,...
+     */
+    public String serializeTroops() {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+
+        for (Troop troop : activeTroops) {
+            if (!first)
+                sb.append("|");
+            first = false;
+
+            Card card = troop.getBaseCard();
+            Vector2 pos = troop.getWorldPosition();
+
+            sb.append(card != null ? card.getName() : "Unknown")
+                    .append(",").append(String.format("%.2f", pos.getX()))
+                    .append(",").append(String.format("%.2f", pos.getY()))
+                    .append(",").append(troop.getCurrentHealth())
+                    .append(",").append(troop.isPlayerSide())
+                    .append(",").append(troop.getUnitState().name());
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Serializes all buildings for network transmission.
+     * Format: cardName,gridX,gridY,health,isPlayer,lifetime|...
+     */
+    public String serializeBuildings() {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+
+        for (Building building : activeBuildings) {
+            if (!first)
+                sb.append("|");
+            first = false;
+
+            GridPosition pos = building.getPosition();
+
+            sb.append(building.getCardName() != null ? building.getCardName() : "Building")
+                    .append(",").append(pos.getX())
+                    .append(",").append(pos.getY())
+                    .append(",").append(building.getCurrentHealth())
+                    .append(",").append(building.isPlayerSide())
+                    .append(",").append(String.format("%.1f", building.getRemainingLifetime()));
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Clears all troops and buildings - used before applying host state.
+     */
+    public void clearEntities() {
+        // Remove from spatial grid first
+        for (Troop troop : activeTroops) {
+            arena.getSpatialGrid().remove(troop);
+        }
+        for (Building building : activeBuildings) {
+            arena.getSpatialGrid().remove(building);
+        }
+
+        activeTroops.clear();
+        activeBuildings.clear();
+    }
+
+    /**
+     * Removes a specific troop (for network sync when troop dies on host).
+     */
+    public void removeTroop(Troop troop) {
+        if (troop != null) {
+            arena.getSpatialGrid().remove(troop);
+            activeTroops.remove(troop);
+        }
+    }
+
+    /**
+     * Clears only buildings - used for smarter network sync.
+     */
+    public void clearBuildings() {
+        for (Building building : activeBuildings) {
+            arena.getSpatialGrid().remove(building);
+        }
+        activeBuildings.clear();
+    }
+
+    /**
+     * Removes a specific building (for network sync when building is destroyed on
+     * host).
+     */
+    public void removeBuilding(Building building) {
+        if (building != null) {
+            arena.getSpatialGrid().remove(building);
+            activeBuildings.remove(building);
+        }
+    }
+
+    /**
+     * Spawns a troop at exact world position (for network sync).
+     * Used by client to recreate host's troop state.
+     */
+    public void spawnTroopAtPosition(String cardName, double worldX, double worldY, int health, boolean isPlayer,
+            String state) {
+        Card card = getCardByName(cardName);
+        if (card == null) {
+            System.err.println("[GameState] Unknown card for troop spawn: " + cardName);
+            return;
+        }
+
+        // Create troop at approximate grid position
+        int gridX = (int) worldX;
+        int gridY = (int) worldY;
+        GridPosition spawn = GridPosition.tryCreate(
+                Math.max(0, Math.min(gridX, Arena.WIDTH - 1)),
+                Math.max(0, Math.min(gridY, Arena.HEIGHT - 1)));
+
+        if (spawn != null) {
+            Troop troop = new Troop(card, spawn, isPlayer);
+            // Set exact world position
+            troop.setWorldPosition(new Vector2(worldX, worldY));
+            troop.setCurrentHealth(health);
+
+            // Set unit state for proper animation rendering
+            if (state != null && !state.isEmpty()) {
+                try {
+                    troop.setUnitState(com.kuroyale.model.enums.UnitState.valueOf(state));
+                } catch (IllegalArgumentException e) {
+                    // Default to MOVING if state is invalid
+                    troop.setUnitState(com.kuroyale.model.enums.UnitState.MOVING);
+                }
+            }
+
+            activeTroops.add(troop);
+            arena.getSpatialGrid().add(troop);
+        }
+    }
+
+    /**
+     * Spawns a building at position (for network sync).
+     */
+    public void spawnBuildingAtPosition(String cardName, int gridX, int gridY, int health, boolean isPlayer,
+            double lifetime) {
+        Card card = getCardByName(cardName);
+        if (card == null) {
+            System.err.println("[GameState] Unknown card for building spawn: '" + cardName + "' - cardCatalog is "
+                    + (cardCatalog != null ? "set" : "NULL"));
+            return;
+        }
+
+        int bw = Math.max(1, card.getFootprintWidthTiles());
+        int bh = Math.max(1, card.getFootprintHeightTiles());
+
+        // Clamp position to valid bounds
+        int clampedX = Math.max(0, Math.min(gridX, Arena.WIDTH - bw));
+        int clampedY = Math.max(0, Math.min(gridY, Arena.HEIGHT - bh));
+
+        GridPosition pos = GridPosition.tryCreate(clampedX, clampedY);
+        if (pos != null) {
+            Building building = new Building(pos, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
+                    card.getLifetime());
+            building.configureCombatFromCard(card);
+            building.setCurrentHealth(health);
+            building.setRemainingLifetime(lifetime);
+
+            activeBuildings.add(building);
+            arena.getSpatialGrid().add(building);
+            System.out.println("[GameState] Building '" + cardName + "' spawned at (" + clampedX + ", " + clampedY
+                    + ") size " + bw + "x" + bh);
+        } else {
+            System.err.println(
+                    "[GameState] Failed to create GridPosition for building at (" + clampedX + ", " + clampedY + ")");
+        }
+    }
+
+    /**
+     * Spawns a building directly without relying on card catalog (for network
+     * sync).
+     * This is a fallback method when card lookup fails.
+     */
+    public boolean spawnBuildingDirect(String cardName, int gridX, int gridY, int health, int maxHealth,
+            boolean isPlayer, double lifetime, int width, int height, String imagePath) {
+
+        // First try using card catalog
+        Card card = getCardByName(cardName);
+        if (card != null) {
+            // Use card-based spawn
+            int bw = Math.max(1, card.getFootprintWidthTiles());
+            int bh = Math.max(1, card.getFootprintHeightTiles());
+
+            int clampedX = Math.max(0, Math.min(gridX, Arena.WIDTH - bw));
+            int clampedY = Math.max(0, Math.min(gridY, Arena.HEIGHT - bh));
+
+            GridPosition pos = GridPosition.tryCreate(clampedX, clampedY);
+            if (pos != null) {
+                Building building = new Building(pos, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
+                        card.getLifetime());
+                building.configureCombatFromCard(card);
+                building.setCurrentHealth(health);
+                building.setRemainingLifetime(lifetime);
+
+                activeBuildings.add(building);
+                arena.getSpatialGrid().add(building);
+                System.out.println("[GameState] Building '" + cardName + "' spawned via card at (" + clampedX + ", "
+                        + clampedY + ")");
+                return true;
+            }
+        }
+
+        // Fallback: Create building directly with provided data
+        int clampedX = Math.max(0, Math.min(gridX, Arena.WIDTH - width));
+        int clampedY = Math.max(0, Math.min(gridY, Arena.HEIGHT - height));
+
+        GridPosition pos = GridPosition.tryCreate(clampedX, clampedY);
+        if (pos != null) {
+            String imgPath = (imagePath != null && !imagePath.isEmpty()) ? imagePath
+                    : "images/cards/building_default.png";
+            Building building = new Building(pos, width, height, isPlayer, maxHealth, imgPath, (int) lifetime);
+            building.setCardName(cardName);
+            building.setCurrentHealth(health);
+            building.setRemainingLifetime(lifetime);
+
+            activeBuildings.add(building);
+            arena.getSpatialGrid().add(building);
+            System.out.println("[GameState] Building '" + cardName + "' spawned DIRECTLY at (" + clampedX + ", "
+                    + clampedY + ") size " + width + "x" + height);
+            return true;
+        }
+
+        System.err.println("[GameState] Failed to spawn building '" + cardName + "' at (" + gridX + ", " + gridY + ")");
+        return false;
     }
 
     public int getPlayerScore() {
@@ -391,6 +851,32 @@ public class GameState implements IBattleState {
             spawnY = y - 1; // "Above" the building for player
         } else {
             spawnY = y + bh; // "Below" the building for bot
+        }
+
+        // Check if spawn position lands on river AND is not walkable (not a bridge)
+        // If it's on a bridge, spawn normally so troops can walk across
+        if (spawnY == com.kuroyale.util.config.GameConstants.RIVER_ROW_1 ||
+                spawnY == com.kuroyale.util.config.GameConstants.RIVER_ROW_2) {
+            GridCell frontCell = arena.getCell(spawnX, spawnY);
+            // Only shift if the cell is not walkable (water, not bridge)
+            if (frontCell == null || !frontCell.isWalkable()) {
+                // Shift X based on building's position: if on right half, go left; otherwise go
+                // right
+                int centerX = Arena.WIDTH / 2;
+                if (spawnX >= centerX) {
+                    spawnX = x - 1; // Spawn to the left of building
+                } else {
+                    spawnX = x + bw; // Spawn to the right of building
+                }
+                // Also shift Y off the river to a walkable tile
+                if (b.isPlayerSide()) {
+                    // Player side: move below the river (y > 16)
+                    spawnY = com.kuroyale.util.config.GameConstants.RIVER_ROW_2 + 1; // y = 17
+                } else {
+                    // Bot side: move above the river (y < 15)
+                    spawnY = com.kuroyale.util.config.GameConstants.RIVER_ROW_1 - 1; // y = 14
+                }
+            }
         }
 
         return GridPosition.tryCreate(spawnX, spawnY);
@@ -517,14 +1003,43 @@ public class GameState implements IBattleState {
     // Apply spell effects: simple AoE damage around target (affects enemy troops,
     // buildings, and towers)
     private void applySpellEffect(boolean isPlayer, Card spell, int x, int y) {
+
+        // Check for Projectile-based spells (Fireball, Rocket)
+        if ("Fireball".equalsIgnoreCase(spell.getName()) || "Rocket".equalsIgnoreCase(spell.getName())) {
+            GridPosition targetGrid = GridPosition.tryCreate(x, y);
+            if (targetGrid == null)
+                return;
+
+            // Determine Start Position (King Tower)
+            Vector2 startPos = new Vector2(Arena.WIDTH / 2.0, isPlayer ? Arena.HEIGHT : 0); // Default bottom/top center
+
+            // Try to find actual King Tower
+            Tower kingTower = arena.getKingTower(isPlayer);
+            if (kingTower != null && kingTower.getCenterPosition() != null) {
+                startPos = new Vector2(kingTower.getCenterPosition().getX() + 0.5,
+                        kingTower.getCenterPosition().getY() + 0.5);
+            }
+
+            Vector2 targetPos = new Vector2(targetGrid.getX() + 0.5, targetGrid.getY() + 0.5);
+
+            // Create Projectile
+            Projectile spellProjectile = new Projectile(kingTower, startPos, targetPos, spell);
+            addProjectile(spellProjectile);
+            return;
+        }
+
         double radius = Math.max(0, spell.getRange());
         double damage = Math.max(0, spell.getDamage());
         GridPosition center = GridPosition.tryCreate(x, y);
         if (center == null)
             return;
 
-        combatService.applyAreaDamage(this, center, radius, damage, TargetType.BOTH, isPlayer, true,
-                spell.getStunDuration());
+        com.kuroyale.event.GameEventBus.getInstance().publishSpellCast(isPlayer, spell, center);
+
+        Vector2 centerVec = Vector2.fromGridPosition(center);
+
+        combatService.applyAreaDamage(this, centerVec, radius, damage, TargetType.BOTH, isPlayer, true,
+                spell.getStunDuration(), spell.getName());
     }
 
     /*
@@ -546,7 +1061,9 @@ public class GameState implements IBattleState {
         double damage = attacker.getCombatStats() != null ? attacker.getCombatStats().getDamage() : 0;
         TargetType targetType = attacker.getBaseCard() != null ? attacker.getBaseCard().getTarget() : TargetType.BOTH;
 
-        combatService.applyAreaDamage(this, center, radius, damage, targetType, attacker.isPlayerSide(), false, 0.0);
+        Vector2 centerVec = Vector2.fromGridPosition(center);
+        combatService.applyAreaDamage(this, centerVec, radius, damage, targetType, attacker.isPlayerSide(), false, 0.0,
+                "Generic");
     }
 
     /*
@@ -622,8 +1139,257 @@ public class GameState implements IBattleState {
         return activeTroops;
     }
 
+    /**
+     * Alias for getActiveTroops() - used for network sync compatibility.
+     */
+    public List<Troop> getTroops() {
+        return activeTroops;
+    }
+
     public List<Building> getActiveBuildings() {
         return activeBuildings;
+    }
+
+    /**
+     * Alias for getActiveBuildings() - used for network sync compatibility.
+     */
+    public List<Building> getBuildings() {
+        return activeBuildings;
+    }
+
+    // ==================== Network State Synchronization ====================
+
+    /**
+     * Applies authoritative state from a network snapshot.
+     * This is called by the CLIENT to update its local state to match the host's.
+     * 
+     * This method performs FULL STATE SYNCHRONIZATION:
+     * - Core game values (time, scores, flags)
+     * - Elixir values (for display)
+     * - Tower health
+     * - Troop positions and health
+     * - Building positions and health
+     * - Projectile positions
+     * 
+     * @param snapshot The authoritative game state from the host
+     */
+    public void applyNetworkSnapshot(NetworkGameStateSnapshot snapshot) {
+        if (snapshot == null)
+            return;
+
+        // Apply core game state
+        this.gameTime = snapshot.getGameTime();
+        this.playerScore = snapshot.getPlayer1Score();
+        this.botScore = snapshot.getPlayer2Score();
+        this.isDoubleElixir = snapshot.isDoubleElixir();
+        this.isGameOver = snapshot.isGameOver();
+        this.isTiebreakerMode = snapshot.isTiebreakerMode();
+
+        // Apply winner state
+        if (snapshot.isGameOver()) {
+            switch (snapshot.getWinner()) {
+                case 1 -> {
+                    playerWon = true;
+                    isDraw = false;
+                }
+                case 2 -> {
+                    playerWon = false;
+                    isDraw = false;
+                }
+                case 3 -> {
+                    playerWon = false;
+                    isDraw = true;
+                }
+                default -> {
+                }
+            }
+        }
+
+        // Apply elixir values (client sees snapshot's player1 as "my" elixir after
+        // perspective mapping)
+        playerElixir.setCurrentElixir(snapshot.getPlayer1Elixir());
+        botElixir.setCurrentElixir(snapshot.getPlayer2Elixir());
+
+        // Enable double elixir if needed
+        if (snapshot.isDoubleElixir() && !playerElixir.isDoubleElixir()) {
+            playerElixir.setDoubleElixir(true);
+            botElixir.setDoubleElixir(true);
+        }
+
+        // Apply tower health from snapshot
+        applyTowerHealthFromSnapshot(snapshot.getTowers());
+
+        // Apply troop state from snapshot
+        applyTroopsFromSnapshot(snapshot.getTroops());
+
+        // Apply building state from snapshot
+        applyBuildingsFromSnapshot(snapshot.getBuildings());
+
+        // Apply projectile state from snapshot
+        applyProjectilesFromSnapshot(snapshot.getProjectiles());
+    }
+
+    /**
+     * Applies tower health values from the authoritative snapshot.
+     * 
+     * Matching logic: After perspective mapping, the snapshot's isPlayerSide
+     * matches the local tower's isPlayerSide. We match by type AND isPlayerSide.
+     */
+    private void applyTowerHealthFromSnapshot(List<NetworkGameStateSnapshot.TowerSnapshot> towerSnapshots) {
+        if (towerSnapshots == null)
+            return;
+
+        for (NetworkGameStateSnapshot.TowerSnapshot ts : towerSnapshots) {
+            // Find matching tower in arena by type and side
+            // After perspective mapping, isPlayerSide in snapshot matches local tower's
+            // isPlayerSide
+            for (Tower tower : arena.getAllTowers()) {
+                if (tower.getType().name().equals(ts.getType()) &&
+                        tower.isPlayerSide() == ts.isPlayerSide()) {
+                    tower.setCurrentHealth(ts.getHealth());
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies troop state from the authoritative snapshot.
+     * This syncs positions and health of troops.
+     */
+    private void applyTroopsFromSnapshot(List<NetworkGameStateSnapshot.TroopSnapshot> troopSnapshots) {
+        if (troopSnapshots == null)
+            return;
+
+        // Build a map of snapshot troops by ID for efficient lookup
+        java.util.Map<Integer, NetworkGameStateSnapshot.TroopSnapshot> snapshotMap = new java.util.HashMap<>();
+        for (NetworkGameStateSnapshot.TroopSnapshot ts : troopSnapshots) {
+            snapshotMap.put(ts.getId(), ts);
+        }
+
+        // Update existing troops and mark for removal if not in snapshot
+        java.util.List<Troop> toRemove = new java.util.ArrayList<>();
+        java.util.Set<Integer> matchedIds = new java.util.HashSet<>();
+
+        for (Troop troop : activeTroops) {
+            int troopId = System.identityHashCode(troop);
+            NetworkGameStateSnapshot.TroopSnapshot ts = snapshotMap.get(troopId);
+
+            if (ts != null) {
+                // Update troop state
+                troop.setCurrentHealth(ts.getHealth());
+                troop.setWorldPosition(ts.getX(), ts.getY());
+                troop.setTargetWorldPosition(ts.getTargetX(), ts.getTargetY());
+                matchedIds.add(troopId);
+            } else {
+                // Troop not in snapshot - mark for removal
+                toRemove.add(troop);
+            }
+        }
+
+        // Remove troops not in snapshot
+        activeTroops.removeAll(toRemove);
+
+        // Add new troops from snapshot (troops that exist in snapshot but not locally)
+        for (NetworkGameStateSnapshot.TroopSnapshot ts : troopSnapshots) {
+            if (!matchedIds.contains(ts.getId())) {
+                // Create new troop from snapshot
+                Card card = cardCatalog != null ? cardCatalog.apply(ts.getCardName()) : null;
+                if (card != null) {
+                    GridPosition spawnPos = new GridPosition((int) ts.getX(), (int) ts.getY());
+                    Troop newTroop = new Troop(card, spawnPos, ts.isPlayerSide());
+                    newTroop.setCurrentHealth(ts.getHealth());
+                    newTroop.setWorldPosition(ts.getX(), ts.getY());
+                    activeTroops.add(newTroop);
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies building state from the authoritative snapshot.
+     */
+    private void applyBuildingsFromSnapshot(List<NetworkGameStateSnapshot.BuildingSnapshot> buildingSnapshots) {
+        if (buildingSnapshots == null)
+            return;
+
+        // Build a map of snapshot buildings by ID
+        java.util.Map<Integer, NetworkGameStateSnapshot.BuildingSnapshot> snapshotMap = new java.util.HashMap<>();
+        for (NetworkGameStateSnapshot.BuildingSnapshot bs : buildingSnapshots) {
+            snapshotMap.put(bs.getId(), bs);
+        }
+
+        // Update existing buildings and mark for removal if not in snapshot
+        java.util.List<Building> toRemove = new java.util.ArrayList<>();
+        java.util.Set<Integer> matchedIds = new java.util.HashSet<>();
+
+        for (Building building : activeBuildings) {
+            int buildingId = System.identityHashCode(building);
+            NetworkGameStateSnapshot.BuildingSnapshot bs = snapshotMap.get(buildingId);
+
+            if (bs != null) {
+                // Update building state
+                building.setCurrentHealth(bs.getHealth());
+                matchedIds.add(buildingId);
+            } else {
+                // Building not in snapshot - mark for removal
+                toRemove.add(building);
+            }
+        }
+
+        // Remove buildings not in snapshot
+        activeBuildings.removeAll(toRemove);
+
+        // Add new buildings from snapshot
+        for (NetworkGameStateSnapshot.BuildingSnapshot bs : buildingSnapshots) {
+            if (!matchedIds.contains(bs.getId())) {
+                Card card = cardCatalog != null ? cardCatalog.apply(bs.getCardName()) : null;
+                if (card != null) {
+                    GridPosition pos = new GridPosition((int) bs.getX(), (int) bs.getY());
+                    int bw = Math.max(1, card.getFootprintWidthTiles());
+                    int bh = Math.max(1, card.getFootprintHeightTiles());
+                    Building newBuilding = new Building(pos, bw, bh, bs.isPlayerSide(),
+                            card.getHp(), card.getImagePath(), card.getLifetime());
+                    newBuilding.configureCombatFromCard(card);
+                    newBuilding.setCurrentHealth(bs.getHealth());
+                    activeBuildings.add(newBuilding);
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies projectile state from the authoritative snapshot.
+     * Projectiles are ephemeral so we just sync their positions.
+     */
+    private void applyProjectilesFromSnapshot(List<NetworkGameStateSnapshot.ProjectileSnapshot> projectileSnapshots) {
+        if (projectileSnapshots == null)
+            return;
+
+        // For simplicity, just update positions of existing projectiles
+        // Projectiles are very short-lived so exact sync isn't critical
+        java.util.Map<Integer, NetworkGameStateSnapshot.ProjectileSnapshot> snapshotMap = new java.util.HashMap<>();
+        for (NetworkGameStateSnapshot.ProjectileSnapshot ps : projectileSnapshots) {
+            snapshotMap.put(ps.getId(), ps);
+        }
+
+        // Update existing projectiles
+        for (Projectile proj : activeProjectiles) {
+            int projId = System.identityHashCode(proj);
+            NetworkGameStateSnapshot.ProjectileSnapshot ps = snapshotMap.get(projId);
+            if (ps != null) {
+                proj.setPosition(new Vector2(ps.getX(), ps.getY()));
+            }
+        }
+    }
+
+    /**
+     * Sets the game over state directly (used for network sync).
+     */
+    public void setGameOver(boolean isGameOver, boolean playerWon, boolean isDraw) {
+        this.isGameOver = isGameOver;
+        this.playerWon = playerWon;
+        this.isDraw = isDraw;
     }
 
     // Inner class to track placed units

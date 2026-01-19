@@ -2,7 +2,7 @@ package com.kuroyale.service;
 
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.User;
-import com.kuroyale.util.ServiceFactory;
+import com.kuroyale.util.common.ServiceFactory;
 
 /* Service for handling card-related operations like upgrades.
  * Validates business rules and delegates to services.*/

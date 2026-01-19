@@ -2,6 +2,7 @@ package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.GridPosition;
 import com.kuroyale.model.entities.ICombatant;
+import com.kuroyale.model.entities.Vector2;
 
 import java.util.*;
 
@@ -38,12 +39,16 @@ public class SpatialGrid {
         this.entityBucketMap = new HashMap<>();
     }
 
-    // Adds an entity to the spatial grid based on its center position
+    // Adds an entity to the spatial grid based on its center world position
     public void add(ICombatant entity) {
-        if (entity == null || entity.getPosition() == null)
+        if (entity == null)
             return;
 
-        int bucketIndex = getBucketIndex(entity.getCenterPosition());
+        Vector2 worldPos = entity.getCenterWorldPosition();
+        if (worldPos == null)
+            return;
+
+        int bucketIndex = getBucketIndex(worldPos);
         if (bucketIndex != -1) {
             buckets.get(bucketIndex).add(entity);
             entityBucketMap.put(entity, bucketIndex);
@@ -66,10 +71,14 @@ public class SpatialGrid {
      * Should be called whenever an entity moves significantly (changes buckets).
      */
     public void update(ICombatant entity) {
-        if (entity == null || entity.getPosition() == null)
+        if (entity == null)
             return;
 
-        int newBucketIndex = getBucketIndex(entity.getCenterPosition());
+        Vector2 worldPos = entity.getCenterWorldPosition();
+        if (worldPos == null)
+            return;
+
+        int newBucketIndex = getBucketIndex(worldPos);
         Integer oldBucketIndex = entityBucketMap.get(entity);
 
         if (oldBucketIndex != null && oldBucketIndex == newBucketIndex) {
@@ -91,18 +100,18 @@ public class SpatialGrid {
         }
     }
 
-    // Retrieves all entities in the buckets overlapping the query radius around the
-    // center.
-    public List<ICombatant> getNearby(GridPosition center, double radius) {
+    /**
+     * Retrieves all entities in the buckets overlapping the query radius around the
+     * center.
+     * Uses Vector2 for sub-tile precision.
+     */
+    public List<ICombatant> getNearby(Vector2 center, double radius) {
         List<ICombatant> results = new ArrayList<>();
         if (center == null)
             return results;
 
-        // Determine range of buckets to check
-        // Convert radius to bucket units
-        int centerCol = center.getX() / BUCKET_SIZE;
-        int centerRow = center.getY() / BUCKET_SIZE;
-
+        int centerCol = (int) (center.getX() / BUCKET_SIZE);
+        int centerRow = (int) (center.getY() / BUCKET_SIZE);
         int radiusInBuckets = (int) Math.ceil(radius / BUCKET_SIZE);
 
         int minCol = Math.max(0, centerCol - radiusInBuckets);
@@ -120,16 +129,36 @@ public class SpatialGrid {
         return results;
     }
 
-    private int getBucketIndex(GridPosition pos) {
+    /**
+     * Retrieves all entities in the buckets overlapping the query radius around the
+     * center.
+     * 
+     * @deprecated Use getNearby(Vector2, double) for sub-tile precision.
+     */
+    @Deprecated
+    public List<ICombatant> getNearby(GridPosition center, double radius) {
+        if (center == null)
+            return new ArrayList<>();
+        return getNearby(new Vector2(center.getX() + 0.5, center.getY() + 0.5), radius);
+    }
+
+    private int getBucketIndex(Vector2 pos) {
         if (pos == null)
             return -1;
-        int col = pos.getX() / BUCKET_SIZE;
-        int row = pos.getY() / BUCKET_SIZE;
+        int col = (int) (pos.getX() / BUCKET_SIZE);
+        int row = (int) (pos.getY() / BUCKET_SIZE);
 
         if (col < 0 || col >= cols || row < 0 || row >= rows)
             return -1;
 
         return row * cols + col;
+    }
+
+    @Deprecated
+    private int getBucketIndex(GridPosition pos) {
+        if (pos == null)
+            return -1;
+        return getBucketIndex(new Vector2(pos.getX() + 0.5, pos.getY() + 0.5));
     }
 
     public void clear() {

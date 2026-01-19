@@ -10,18 +10,18 @@ import java.util.List;
 
 /**
  * Represents a message sent over the network between players.
- * Implements the network protocol format: MESSAGE_TYPE|player_id|data|timestamp
- * Data fields use ';' as internal delimiter to avoid conflict with '|'.
+ * Implements the network protocol format: MESSAGE_TYPE§§§player_id§§§data§§§timestamp
  * 
- * Examples:
- * - CARD_PLACED|1|Knight;5.2,3.8|00:45
- * - TOWER_DAMAGED|2|CrownLeft;450|01:23
- * - ELIXIR_UPDATE|1|7|01:24
+ * IMPORTANT: Protocol uses §§§ as delimiter to avoid collision with:
+ * - | used between entities (troops, buildings)
+ * - @@ used between sections (TROOPS, BUILDINGS, GAME)
+ * - , used for entity fields
+ * - ; used for other data
  */
 public class NetworkMessage implements Serializable {
     private static final long serialVersionUID = 1L;
-    private static final String DELIMITER = "|";
-    private static final String DATA_DELIMITER = ";";  // Use different delimiter for data fields
+    private static final String DELIMITER = "§§§";  // Unique protocol delimiter
+    private static final String DATA_DELIMITER = ";";
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("mm:ss");
     
     private final NetworkMessageType type;
@@ -44,7 +44,7 @@ public class NetworkMessage implements Serializable {
     
     /**
      * Creates a network message from a protocol string.
-     * @param protocolString The string in format MESSAGE_TYPE|player_id|data|timestamp
+     * @param protocolString The string in format MESSAGE_TYPE§§§player_id§§§data§§§timestamp
      * @return The parsed NetworkMessage, or null if invalid
      */
     public static NetworkMessage fromProtocolString(String protocolString) {
@@ -52,7 +52,8 @@ public class NetworkMessage implements Serializable {
             return null;
         }
         
-        String[] parts = protocolString.split("\\|", 4);
+        // Split by our unique delimiter §§§
+        String[] parts = protocolString.split("§§§", 4);
         if (parts.length < 3) {
             return null;
         }
@@ -171,6 +172,72 @@ public class NetworkMessage implements Serializable {
         return new NetworkMessage(NetworkMessageType.ARENA_LAYOUT, 1, sb.toString());
     }
     
+    /**
+     * Creates a game state sync message (sent by host to client).
+     * Format: gameTime;playerElixir;botElixir;playerScore;botScore;isDoubleElixir
+     */
+    public static NetworkMessage gameStateSync(double gameTime, double playerElixir, double botElixir, 
+            int playerScore, int botScore, boolean isDoubleElixir) {
+        String data = String.format("%.3f;%.3f;%.3f;%d;%d;%b", 
+                gameTime, playerElixir, botElixir, playerScore, botScore, isDoubleElixir);
+        return new NetworkMessage(NetworkMessageType.GAME_STATE_SYNC, 1, data);
+    }
+    
+    /**
+     * Creates a troop sync message (sent by host to client).
+     * Format: troopId,cardName,x,y,health,isPlayer:troopId,cardName,x,y,health,isPlayer:...
+     */
+    public static NetworkMessage troopSync(String troopData) {
+        return new NetworkMessage(NetworkMessageType.TROOP_SYNC, 1, troopData);
+    }
+    
+    /**
+     * Creates a score sync message (sent by host to client).
+     * Format: playerScore;botScore
+     */
+    public static NetworkMessage scoreSync(int playerScore, int botScore) {
+        return new NetworkMessage(NetworkMessageType.SCORE_SYNC, 1, playerScore + DATA_DELIMITER + botScore);
+    }
+    
+    /**
+     * Creates a tower sync message (sent by host to client).
+     * Format: towerType,isPlayerSide,currentHealth,maxHealth,isAlive;towerType,isPlayerSide,...
+     */
+    public static NetworkMessage towerSync(String towerData) {
+        return new NetworkMessage(NetworkMessageType.TOWER_SYNC, 1, towerData);
+    }
+    
+    /**
+     * Section delimiter for FULL_STATE_SYNC - must be different from entity delimiter (|)
+     */
+    public static final String SECTION_DELIMITER = "@@";
+    
+    /**
+     * Creates a full state sync message with all entities.
+     * Format: TROOPS#troops_data@@BUILDINGS#buildings_data@@GAME#gameTime,pElixir,bElixir,pScore,bScore,doubleElixir,gameOver
+     * Note: Uses @@ as section delimiter to avoid collision with | used between entities
+     */
+    public static NetworkMessage fullStateSync(String troopData, String buildingData, 
+            double gameTime, double playerElixir, double botElixir,
+            int playerScore, int botScore, boolean doubleElixir, boolean gameOver) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("TROOPS#").append(troopData != null ? troopData : "");
+        sb.append(SECTION_DELIMITER).append("BUILDINGS#").append(buildingData != null ? buildingData : "");
+        sb.append(SECTION_DELIMITER).append("GAME#").append(String.format("%.2f,%.2f,%.2f,%d,%d,%b,%b", 
+                gameTime, playerElixir, botElixir, playerScore, botScore, doubleElixir, gameOver));
+        return new NetworkMessage(NetworkMessageType.FULL_STATE_SYNC, 1, sb.toString());
+    }
+    
+    /**
+     * Creates a game over message (sent by host to client).
+     * Format: winnerIsHost;reason
+     * winnerIsHost: true if host won, false if client won
+     * reason: description of why (e.g., "King Tower destroyed", "More towers", "Lower HP tower")
+     */
+    public static NetworkMessage gameOver(boolean hostWon, String reason) {
+        return new NetworkMessage(NetworkMessageType.GAME_OVER, 1, hostWon + DATA_DELIMITER + reason);
+    }
+    
     public static NetworkMessage victory(int playerId) {
         return new NetworkMessage(NetworkMessageType.VICTORY, playerId, "");
     }
@@ -185,6 +252,26 @@ public class NetworkMessage implements Serializable {
     
     public static NetworkMessage opponentDisconnected() {
         return new NetworkMessage(NetworkMessageType.OPPONENT_DISCONNECTED, 0, "");
+    }
+    
+    /**
+     * Creates an area effect message for visual sync (explosions, splash damage).
+     * Format: isPlayerSource;centerX;centerY;radius;duration;effectType
+     */
+    public static NetworkMessage areaEffect(boolean isPlayerSource, double centerX, double centerY, 
+            double radius, double duration, String effectType) {
+        String data = String.format("%b;%.2f;%.2f;%.2f;%.2f;%s", 
+                isPlayerSource, centerX, centerY, radius, duration, effectType);
+        return new NetworkMessage(NetworkMessageType.AREA_EFFECT, 1, data);
+    }
+    
+    /**
+     * Creates a spell cast message for visual sync (arrows, zap, etc.).
+     * Format: isPlayer;cardName;centerX;centerY;range
+     */
+    public static NetworkMessage spellCast(boolean isPlayer, String cardName, int centerX, int centerY, double range) {
+        String data = String.format("%b;%s;%d;%d;%.2f", isPlayer, cardName, centerX, centerY, range);
+        return new NetworkMessage(NetworkMessageType.SPELL_CAST, 1, data);
     }
     
     // Getters
@@ -277,6 +364,65 @@ public class NetworkMessage implements Serializable {
             System.err.println("[NetworkMessage] Failed to parse arena layout: " + e.getMessage());
             return null;
         }
+    }
+    
+    /**
+     * Parses game state sync data from the message.
+     * @return double array with [gameTime, playerElixir, botElixir, playerScore, botScore, isDoubleElixir (1.0 or 0.0)]
+     */
+    public double[] parseGameStateSync() {
+        if (type != NetworkMessageType.GAME_STATE_SYNC) return null;
+        try {
+            String[] parts = data.split(";");
+            if (parts.length < 6) return null;
+            return new double[] {
+                Double.parseDouble(parts[0]),  // gameTime
+                Double.parseDouble(parts[1]),  // playerElixir
+                Double.parseDouble(parts[2]),  // botElixir
+                Double.parseDouble(parts[3]),  // playerScore
+                Double.parseDouble(parts[4]),  // botScore
+                Boolean.parseBoolean(parts[5]) ? 1.0 : 0.0  // isDoubleElixir
+            };
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Parses score sync data from the message.
+     * @return int array with [playerScore, botScore] or null if invalid
+     */
+    public int[] parseScoreSync() {
+        if (type != NetworkMessageType.SCORE_SYNC) return null;
+        try {
+            String[] parts = data.split(";");
+            if (parts.length < 2) return null;
+            return new int[] {
+                Integer.parseInt(parts[0]),
+                Integer.parseInt(parts[1])
+            };
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Parses game over data from the message.
+     * @return String array with [hostWon (true/false), reason] or null if invalid
+     */
+    public String[] parseGameOver() {
+        if (type != NetworkMessageType.GAME_OVER) return null;
+        String[] parts = data.split(";", 2);
+        return parts.length >= 2 ? parts : null;
+    }
+    
+    /**
+     * Gets the raw tower sync data string.
+     * @return Tower data string or null
+     */
+    public String getTowerSyncData() {
+        if (type != NetworkMessageType.TOWER_SYNC) return null;
+        return data;
     }
     
     @Override

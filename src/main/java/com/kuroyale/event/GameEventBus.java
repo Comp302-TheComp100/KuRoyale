@@ -39,6 +39,10 @@ public class GameEventBus {
         new ArrayList<>(listeners).forEach(l -> l.onCardPlayed(isPlayer, card, spawnedUnits));
     }
 
+    public void publishSpellCast(boolean isPlayer, Card spell, com.kuroyale.model.entities.GridPosition center) {
+        new ArrayList<>(listeners).forEach(l -> l.onSpellCast(isPlayer, spell, center));
+    }
+
     public void publishTowerDestroyed(boolean isPlayerTower, Tower tower) {
         new ArrayList<>(listeners).forEach(l -> l.onTowerDestroyed(isPlayerTower, tower));
     }
@@ -51,10 +55,16 @@ public class GameEventBus {
         new ArrayList<>(listeners).forEach(l -> l.onBuildingProduction(building, resource, amount));
     }
 
-    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
-            double radius, double duration) {
+    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center,
+            double radius, double duration, String effectType) {
+        new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration, effectType));
+    }
 
-        new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration));
+    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
+            double radius, double duration, String effectType) {
+        publishAreaEffect(isPlayerSource, com.kuroyale.model.entities.Vector2.fromGridPosition(center), radius,
+                duration,
+                effectType);
     }
 
     public void publishComboTriggered(com.kuroyale.model.enums.ComboType combo,
@@ -68,9 +78,9 @@ public class GameEventBus {
 
     public void publishSpellDamageDealt(boolean isPlayer, int damage) {
         new ArrayList<>(listeners).forEach(l -> l.onSpellDamageDealt(isPlayer, damage));
-    }
-<<<<<<< Updated upstream
-=======
+    }<<<<<<<
+
+    Updated upstream=======
 
     public void publishMatchStart() {
         new ArrayList<>(listeners).forEach(l -> l.onMatchStart());
@@ -82,6 +92,7 @@ public class GameEventBus {
 
     public void publishEmojiPlayed(boolean isPlayer, String emojiName) {
         new ArrayList<>(listeners).forEach(l -> l.onEmojiPlayed(isPlayer, emojiName));
-    }
->>>>>>> Stashed changes
+    }>>>>>>>
+
+    Stashed changes
 }

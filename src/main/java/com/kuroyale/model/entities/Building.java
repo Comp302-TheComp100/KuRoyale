@@ -106,10 +106,28 @@ public class Building implements ICombatant {
     public GridPosition getCenterPosition() {
         if (position == null)
             return null;
-        // Center = topLeft + (size-1)/2
-        int cx = position.getX() + (width > 0 ? (width - 1) / 2 : 0);
-        int cy = position.getY() + (height > 0 ? (height - 1) / 2 : 0);
+        // Center = topLeft + size/2 (this gives proper center for both odd and even
+        // widths)
+        int cx = position.getX() + (width > 0 ? width / 2 : 0);
+        int cy = position.getY() + (height > 0 ? height / 2 : 0);
         return GridPosition.tryCreate(cx, cy);
+    }
+
+    @Override
+    public Vector2 getWorldPosition() {
+        if (position == null)
+            return null;
+        return Vector2.fromGridPosition(position);
+    }
+
+    @Override
+    public Vector2 getCenterWorldPosition() {
+        if (position == null)
+            return null;
+        // Precise center using floating point
+        return new Vector2(
+                position.getX() + width / 2.0,
+                position.getY() + height / 2.0);
     }
 
     public int getWidth() {
@@ -130,6 +148,17 @@ public class Building implements ICombatant {
 
     public int getCurrentHealth() {
         return currentHealth;
+    }
+    
+    /**
+     * Sets current health directly (used for network sync).
+     */
+    public void setCurrentHealth(int health) {
+        this.currentHealth = Math.max(0, Math.min(maxHealth, health));
+    }
+    
+    public void setRemainingLifetime(double lifetime) {
+        this.remainingLifetime = Math.max(0, lifetime);
     }
 
     public String getImagePath() {
