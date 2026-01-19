@@ -502,6 +502,30 @@ public class PvPGameState implements IBattleState {
     }
 
     private void applySpellEffect(boolean isPlayer1, Card spell, int x, int y) {
+        // Check for Projectile-based spells (Fireball, Rocket)
+        if ("Fireball".equalsIgnoreCase(spell.getName()) || "Rocket".equalsIgnoreCase(spell.getName())) {
+            GridPosition targetGrid = GridPosition.tryCreate(x, y);
+            if (targetGrid == null)
+                return;
+
+            // Determine Start Position (King Tower)
+            Vector2 startPos = new Vector2(Arena.WIDTH / 2.0, isPlayer1 ? Arena.HEIGHT : 0);
+
+            // Try to find actual King Tower
+            Tower kingTower = arena.getKingTower(isPlayer1);
+            if (kingTower != null && kingTower.getCenterPosition() != null) {
+                startPos = new Vector2(kingTower.getCenterPosition().getX() + 0.5,
+                        kingTower.getCenterPosition().getY() + 0.5);
+            }
+
+            Vector2 targetPos = new Vector2(targetGrid.getX() + 0.5, targetGrid.getY() + 0.5);
+
+            // Create Projectile
+            Projectile spellProjectile = new Projectile(kingTower, startPos, targetPos, spell);
+            addProjectile(spellProjectile);
+            return;
+        }
+
         double radius = Math.max(0, spell.getRange());
         double damage = Math.max(0, spell.getDamage());
         GridPosition center = GridPosition.tryCreate(x, y);

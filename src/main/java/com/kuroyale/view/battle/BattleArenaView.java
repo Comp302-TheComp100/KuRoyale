@@ -1,17 +1,17 @@
 package com.kuroyale.view.battle;
 
 import com.kuroyale.model.entities.Arena;
-import com.kuroyale.model.logic.GameState;
 import com.kuroyale.model.entities.GridCell;
-import com.kuroyale.model.enums.TileType;
 import com.kuroyale.model.enums.CardType;
+import com.kuroyale.model.enums.TileType;
+import com.kuroyale.model.logic.GameState;
+
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-
 import javafx.scene.shape.Rectangle;
 
 // Renders the battle arena and placed units.
@@ -622,7 +622,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             boolean isFireball = "Fireball".equalsIgnoreCase(effectType);
             boolean isRocket = "Rocket".equalsIgnoreCase(effectType);
             boolean isZap = "Zap".equalsIgnoreCase(effectType);
-
+            boolean isArrow = "Arrows".equalsIgnoreCase(effectType);
             double cx = center.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
             double cy = center.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
             double rPixels = radius * TILE_SIZE;
@@ -676,23 +676,116 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
                 gifView.setMouseTransparent(true);
                 unitLayer.getChildren().add(gifView);
                 activeSpellVisuals.add(new ActiveSpellVisual(gifView, duration));
-            } else {
-                // Default visual for other spells (Arrows, etc.)
-                javafx.scene.shape.Circle aoe = new javafx.scene.shape.Circle(cx, cy, rPixels);
-                aoe.setFill(isPlayerSource ? com.kuroyale.util.GameColors.AOE_PLAYER
-                        : com.kuroyale.util.GameColors.AOE_ENEMY);
-                aoe.setStroke(com.kuroyale.util.GameColors.AOE_STROKE);
-                aoe.setStrokeWidth(2.5);
-                // Add glow effect for better visibility
-                javafx.scene.effect.DropShadow glow = new javafx.scene.effect.DropShadow();
-                glow.setColor(isPlayerSource ? javafx.scene.paint.Color.CYAN : javafx.scene.paint.Color.ORANGERED);
-                glow.setRadius(15);
-                glow.setSpread(0.4);
-                aoe.setEffect(glow);
-                unitLayer.getChildren().add(aoe);
-                activeSpellVisuals.add(new ActiveSpellVisual(aoe, duration));
+            } else if (isArrow) {
+                // Arrows büyüsü - birden fazla ok gökten yağar
+                int arrowCount = 8;
+                double spreadRadius = rPixels * 0.8;
+
+                // 1. ÖNCE Alan göstergesi (daire) görünsün
+                javafx.scene.shape.Circle areaIndicator = new javafx.scene.shape.Circle(cx, cy, rPixels);
+                areaIndicator.setFill(javafx.scene.paint.Color.rgb(255, 100, 0, 0.15));
+                areaIndicator.setStroke(javafx.scene.paint.Color.rgb(255, 150, 0, 0.5));
+                areaIndicator.setStrokeWidth(2.0);
+                areaIndicator.setMouseTransparent(true);
+                unitLayer.getChildren().add(areaIndicator);
+                activeSpellVisuals.add(new ActiveSpellVisual(areaIndicator, duration));
+
+                // 2. SONRA Oklar gecikmeyle başlasın
+                double startY = isPlayerSource ? (cy + 200) : (cy - 200);
+
+                for (int i = 0; i < arrowCount; i++) {
+                    double offsetX = (Math.random() - 0.5) * spreadRadius * 2;
+                    double offsetY = (Math.random() - 0.5) * spreadRadius * 2;
+                    double targetX = cx + offsetX;
+                    double targetY = cy + offsetY;
+                    double startX = targetX + (Math.random() - 0.5) * 80;
+
+                    javafx.scene.shape.Rectangle arrowVisual = new javafx.scene.shape.Rectangle(25, 3);
+                    arrowVisual.setArcWidth(3);
+                    arrowVisual.setArcHeight(3);
+                    arrowVisual.setFill(javafx.scene.paint.Color.rgb(139, 90, 43));
+
+                    javafx.scene.effect.DropShadow trailGlow = new javafx.scene.effect.DropShadow();
+                    trailGlow.setColor(javafx.scene.paint.Color.ORANGE);
+                    trailGlow.setRadius(8);
+                    trailGlow.setSpread(0.3);
+                    arrowVisual.setEffect(trailGlow);
+                    arrowVisual.setMouseTransparent(true);
+                    arrowVisual.setVisible(false); // Başlangıçta gizli
+                    unitLayer.getChildren().add(arrowVisual);
+
+                    javafx.scene.shape.QuadCurve arrowPath = new javafx.scene.shape.QuadCurve();
+                    arrowPath.setStartX(startX);
+                    arrowPath.setStartY(startY);
+                    arrowPath.setEndX(targetX);
+                    arrowPath.setEndY(targetY);
+
+                    double midX = (startX + targetX) / 2.0;
+                    double midY = (startY + targetY) / 2.0;
+                    double arcAmount = isPlayerSource ? 60.0 : -60.0;
+                    arrowPath.setControlX(midX);
+                    arrowPath.setControlY(midY + arcAmount);
+                    arrowPath.setVisible(false);
+                    unitLayer.getChildren().add(arrowPath);
+
+                    javafx.animation.PathTransition pathTransition = new javafx.animation.PathTransition();
+                    // Her ok için gecikme: daire sonrası + sıralı gecikme
+                    double delayMs = (i * 40) + Math.random() * 60;
+                    pathTransition.setDuration(javafx.util.Duration.millis(300 + Math.random() * 100));
+                    pathTransition.setPath(arrowPath);
+                    pathTransition.setNode(arrowVisual);
+                    pathTransition
+                            .setOrientation(javafx.animation.PathTransition.OrientationType.ORTHOGONAL_TO_TANGENT);
+                    pathTransition.setCycleCount(1);
+
+                    final javafx.scene.shape.Rectangle fArrow = arrowVisual;
+                    final javafx.scene.shape.QuadCurve fPath = arrowPath;
+                    final double fTargetX = targetX, fTargetY = targetY;
+
+                    pathTransition.setOnFinished(e -> {
+                        unitLayer.getChildren().remove(fArrow);
+                        unitLayer.getChildren().remove(fPath);
+                        createImpactEffect(fTargetX, fTargetY, unitLayer);
+                    });
+
+                    javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(
+                            javafx.util.Duration.millis(delayMs));
+                    delay.setOnFinished(e -> {
+                        fArrow.setVisible(true); // Ok görünür olsun
+                        pathTransition.play();
+                    });
+                    delay.play();
+                }
             }
         });
+    }
+
+    private void createImpactEffect(double x, double y, javafx.scene.layout.Pane layer) {
+        javafx.scene.shape.Circle impact = new javafx.scene.shape.Circle(x, y, 0); // Başlangıç yarıçapı 0
+        impact.setFill(javafx.scene.paint.Color.rgb(255, 200, 0, 0.8)); // Sarı-turuncu yarı saydam
+        impact.setStroke(javafx.scene.paint.Color.WHITE);
+        impact.setStrokeWidth(2.0);
+        impact.setMouseTransparent(true);
+
+        layer.getChildren().add(impact);
+
+        // İki animasyonu paralel oynat: Büyüme ve Sönme
+        javafx.animation.ScaleTransition scale = new javafx.animation.ScaleTransition(javafx.util.Duration.millis(300),
+                impact);
+        scale.setFromX(0.1);
+        scale.setFromY(0.1);
+        scale.setToX(1.5);
+        scale.setToY(1.5); // 1.5 katına büyüsün
+
+        javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(javafx.util.Duration.millis(300),
+                impact);
+        fade.setFromValue(1.0);
+        fade.setToValue(0.0); // Görünmez olsun
+
+        javafx.animation.ParallelTransition impactAnim = new javafx.animation.ParallelTransition(scale, fade);
+        impactAnim.setOnFinished(e -> layer.getChildren().remove(impact)); // Bitince kaldır
+        impactAnim.play();
+
     }
 
     private void updateSpellEffects(double deltaTime) {

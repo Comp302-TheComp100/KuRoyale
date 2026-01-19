@@ -56,6 +56,12 @@ public class ProjectileRenderer {
                 node.setLayoutY(pos.getY() * TILE_SIZE);
             }
 
+            // Rotate rocket based on direction (enemy rockets face down towards player)
+            if (isRocket(p)) {
+                // Player rockets go up (0 degrees), enemy rockets go down (180 degrees)
+                node.setRotate(p.isPlayerSide() ? 0 : 180);
+            }
+
             // Ensure visibility
             if (!unitLayer.getChildren().contains(node)) {
                 unitLayer.getChildren().add(node);
