@@ -54,6 +54,18 @@
                    prefWidth="620" prefHeight="300">
         </AnchorPane>
         
+        <!-- Random Deck Button - positioned bottom-right of deck area -->
+        <ImageView fx:id="randomDeckButton"
+                   layoutX="845" layoutY="315"
+                   fitWidth="110" fitHeight="80"
+                   preserveRatio="true"
+                   pickOnBounds="true"
+                   onMouseClicked="#handleRandomDeck">
+            <image>
+                <Image url="@../images/random_deck_button.png"/>
+            </image>
+        </ImageView>
+        
         <!-- Cards Grid Area - transparent scroll pane, only cards scroll -->
         <ScrollPane fx:id="cardsScrollPane" 
                    layoutX="0" layoutY="390"

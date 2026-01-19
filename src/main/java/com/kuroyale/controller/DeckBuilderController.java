@@ -2,6 +2,7 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +36,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
+import javafx.scene.image.ImageView;
 import javafx.scene.shape.Rectangle;
 
 /* Controller for the deck builder screen
@@ -87,6 +89,8 @@ public class DeckBuilderController {
     private VBox comboList;
     @FXML
     private ScrollPane comboScrollPane;
+    @FXML
+    private ImageView randomDeckButton;
 
     private final DeckBuilderModel model = new DeckBuilderModel();
     private final SceneLoader sceneLoader = new SceneLoader();
@@ -795,6 +799,41 @@ public class DeckBuilderController {
                 e.printStackTrace();
             }
         }
+    }
+
+    /**
+     * Handles click on the Random Deck button.
+     * Generates a random deck of 8 cards.
+     */
+    @FXML
+    private void handleRandomDeck() {
+        SoundEffectUtil.playButtonClick();
+
+        // Clear current deck
+        deck.clear();
+        for (DeckSlotView slot : deckSlots) {
+            slot.clear();
+        }
+
+        // Get all available cards and shuffle
+        List<Card> allCards = new ArrayList<>(model.getAllCards());
+        Collections.shuffle(allCards);
+
+        // Take first 8 cards
+        int cardsToAdd = Math.min(8, allCards.size());
+        for (int i = 0; i < cardsToAdd; i++) {
+            Card card = allCards.get(i);
+            deck.addCard(card);
+            deckSlots.get(i).setCard(card);
+        }
+
+        // Update UI
+        reorganizeCardGrid();
+        updateAverageElixirCost();
+        saveDeck();
+        updateComboPanel();
+
+        System.out.println("[RANDOM DECK] Generated deck: " + deck.getCardNames());
     }
 
     // Updates the combo panel to show available combos based on current deck
