@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Represents a message sent over the network between players.
@@ -178,7 +179,7 @@ public class NetworkMessage implements Serializable {
      */
     public static NetworkMessage gameStateSync(double gameTime, double playerElixir, double botElixir, 
             int playerScore, int botScore, boolean isDoubleElixir) {
-        String data = String.format("%.3f;%.3f;%.3f;%d;%d;%b", 
+        String data = String.format(Locale.US, "%.3f;%.3f;%.3f;%d;%d;%b", 
                 gameTime, playerElixir, botElixir, playerScore, botScore, isDoubleElixir);
         return new NetworkMessage(NetworkMessageType.GAME_STATE_SYNC, 1, data);
     }
@@ -223,7 +224,7 @@ public class NetworkMessage implements Serializable {
         StringBuilder sb = new StringBuilder();
         sb.append("TROOPS#").append(troopData != null ? troopData : "");
         sb.append(SECTION_DELIMITER).append("BUILDINGS#").append(buildingData != null ? buildingData : "");
-        sb.append(SECTION_DELIMITER).append("GAME#").append(String.format("%.2f,%.2f,%.2f,%d,%d,%b,%b", 
+        sb.append(SECTION_DELIMITER).append("GAME#").append(String.format(Locale.US, "%.2f,%.2f,%.2f,%d,%d,%b,%b", 
                 gameTime, playerElixir, botElixir, playerScore, botScore, doubleElixir, gameOver));
         return new NetworkMessage(NetworkMessageType.FULL_STATE_SYNC, 1, sb.toString());
     }
@@ -260,7 +261,7 @@ public class NetworkMessage implements Serializable {
      */
     public static NetworkMessage areaEffect(boolean isPlayerSource, double centerX, double centerY, 
             double radius, double duration, String effectType) {
-        String data = String.format("%b;%.2f;%.2f;%.2f;%.2f;%s", 
+        String data = String.format(Locale.US, "%b;%.2f;%.2f;%.2f;%.2f;%s", 
                 isPlayerSource, centerX, centerY, radius, duration, effectType);
         return new NetworkMessage(NetworkMessageType.AREA_EFFECT, 1, data);
     }
@@ -270,7 +271,7 @@ public class NetworkMessage implements Serializable {
      * Format: isPlayer;cardName;centerX;centerY;range
      */
     public static NetworkMessage spellCast(boolean isPlayer, String cardName, int centerX, int centerY, double range) {
-        String data = String.format("%b;%s;%d;%d;%.2f", isPlayer, cardName, centerX, centerY, range);
+        String data = String.format(Locale.US, "%b;%s;%d;%d;%.2f", isPlayer, cardName, centerX, centerY, range);
         return new NetworkMessage(NetworkMessageType.SPELL_CAST, 1, data);
     }
     
