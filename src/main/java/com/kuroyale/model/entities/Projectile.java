@@ -43,7 +43,7 @@ public class Projectile {
         double hitSpeed = Math.max(0.1, owner.getHitSpeed()); // Sanity check: min 0.1s
         this.speed = Math.max(1.0, dist / hitSpeed); // Ensure it actually moves (min speed 1.0)
     }
-    
+
     /**
      * Constructor for visual-only projectiles (used for network sync).
      * These projectiles don't deal damage, only render.
@@ -122,7 +122,7 @@ public class Projectile {
     public Vector2 getPosition() {
         return position;
     }
-    
+
     /**
      * Sets position directly (used for network sync).
      */

@@ -2,7 +2,6 @@ package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
-
 import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;
@@ -25,8 +24,8 @@ public class PvPGameState implements IBattleState {
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
     private final List<Projectile> activeProjectiles;
-    private final com.kuroyale.service.battle.TroopMovementService troopMovementService = new com.kuroyale.service.battle.TroopMovementService();
-    private final com.kuroyale.service.battle.CombatService combatService = new com.kuroyale.service.battle.CombatService();
+    private final com.kuroyale.service.battle.core.TroopMovementService troopMovementService = new com.kuroyale.service.battle.core.TroopMovementService();
+    private final com.kuroyale.service.battle.core.CombatService combatService = new com.kuroyale.service.battle.core.CombatService();
 
     private double gameTime = 180.0; // 3 minutes
     private int player1Score = 0, player2Score = 0;

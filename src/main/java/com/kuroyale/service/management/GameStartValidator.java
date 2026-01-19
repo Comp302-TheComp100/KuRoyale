@@ -1,18 +1,20 @@
-package com.kuroyale.service;
-
-import com.kuroyale.model.entities.ArenaLayout;
-import com.kuroyale.model.entities.User;
+package com.kuroyale.service.management;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.entities.User;
 
 /*Service for validating game start conditions.
  * High Cohesion - focused solely on validation logic.
  * Information Expert - knows the rules for valid game configurations.*/
 public class GameStartValidator {
 
-    /*Validates all game start conditions and returns a list of error messages.
-     * If the list is empty, all validations passed. */
+    /*
+     * Validates all game start conditions and returns a list of error messages.
+     * If the list is empty, all validations passed.
+     */
     public List<String> validateGameStart(User user) {
         List<String> errors = new ArrayList<>();
 
@@ -43,7 +45,7 @@ public class GameStartValidator {
         return errors;
     }
 
-    //Validates that the user has a complete deck of 8 cards.
+    // Validates that the user has a complete deck of 8 cards.
     private boolean validateDeck(User user) {
         if (user == null || user.getDeck() == null) {
             return false;
@@ -54,14 +56,15 @@ public class GameStartValidator {
         return cardCount == 8;
     }
 
-    //Validates that the arena has exactly 2 princess towers and 1 king tower.
+    // Validates that the arena has exactly 2 princess towers and 1 king tower.
     private String validateTowers(ArenaLayout layout) {
         if (layout == null) {
             return "Arena layout is missing.";
         }
 
         // Check princess towers
-        int princessTowerCount = layout.getPrincessTowerPositions() != null ? layout.getPrincessTowerPositions().size() : 0;
+        int princessTowerCount = layout.getPrincessTowerPositions() != null ? layout.getPrincessTowerPositions().size()
+                : 0;
 
         if (princessTowerCount != 2) {
             return String.format("Arena must have exactly 2 Princess Towers (found %d). Please redesign your arena.",
@@ -76,7 +79,7 @@ public class GameStartValidator {
         return null; // All tower validations passed
     }
 
-    //Validates that the arena has 1, 2 or 3 bridges.
+    // Validates that the arena has 1, 2 or 3 bridges.
     private String validateBridges(ArenaLayout layout) {
         if (layout == null) {
             return "Arena layout is missing.";

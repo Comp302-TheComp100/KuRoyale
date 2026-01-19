@@ -1,4 +1,4 @@
-package com.kuroyale.util.common;
+package com.kuroyale.service.auth;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

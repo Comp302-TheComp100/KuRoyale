@@ -1,9 +1,8 @@
-package com.kuroyale.service;
+package com.kuroyale.service.game;
 
 import com.kuroyale.event.GameEventBus;
 import com.kuroyale.event.GameEventListener;
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.Tower;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +15,8 @@ import java.util.Map;
 import org.json.JSONObject;
 
 import com.kuroyale.model.entities.Achievement;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.enums.AchievementType;
 
 /*Service for managing permanent achievements.

@@ -4,8 +4,8 @@ import com.kuroyale.model.dto.NetworkMessage;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
-import com.kuroyale.service.NetworkService;
-import com.kuroyale.service.NetworkService.ConnectionState;
+import com.kuroyale.service.network.NetworkService;
+import com.kuroyale.service.network.NetworkService.ConnectionState;
 import com.kuroyale.util.audio.SoundEffectUtil;
 import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.config.NetworkConfig;
@@ -28,6 +28,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import java.util.Locale;
 import javafx.util.Duration;
 
 /**
@@ -412,8 +413,8 @@ public class NetworkBattleController implements GameEventListener {
             Vector2 pos = troop.getWorldPosition();
 
             sb.append(card != null ? card.getName() : "Unknown")
-                    .append(",").append(String.format("%.2f", pos.getX()))
-                    .append(",").append(String.format("%.2f", pos.getY()))
+                    .append(",").append(String.format(Locale.US, "%.2f", pos.getX()))
+                    .append(",").append(String.format(Locale.US, "%.2f", pos.getY()))
                     .append(",").append(troop.getCurrentHealth())
                     .append(",").append(troop.isPlayerSide())
                     .append(",").append(troop.getUnitState().name());
@@ -446,7 +447,7 @@ public class NetworkBattleController implements GameEventListener {
                     .append(",").append(pos.getY())
                     .append(",").append(building.getCurrentHealth())
                     .append(",").append(building.isPlayerSide())
-                    .append(",").append(String.format("%.1f", building.getRemainingLifetime()))
+                    .append(",").append(String.format(Locale.US, "%.1f", building.getRemainingLifetime()))
                     .append(",").append(building.getWidth())
                     .append(",").append(building.getHeight())
                     .append(",").append(building.getMaxHealth())
@@ -482,10 +483,10 @@ public class NetworkBattleController implements GameEventListener {
                 targetY = target.getCenterPosition().getY();
             }
 
-            sb.append(String.format("%.2f", pos.getX()))
-                    .append(",").append(String.format("%.2f", pos.getY()))
-                    .append(",").append(String.format("%.2f", targetX))
-                    .append(",").append(String.format("%.2f", targetY))
+            sb.append(String.format(Locale.US, "%.2f", pos.getX()))
+                    .append(",").append(String.format(Locale.US, "%.2f", pos.getY()))
+                    .append(",").append(String.format(Locale.US, "%.2f", targetX))
+                    .append(",").append(String.format(Locale.US, "%.2f", targetY))
                     .append(",").append(proj.isPlayerSide());
         }
 

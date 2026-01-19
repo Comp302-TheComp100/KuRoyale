@@ -193,7 +193,7 @@ public class UpgradeDialog extends StackPane {
     }
 
     private void handleConfirm() {
-        com.kuroyale.service.CardService service = new com.kuroyale.service.CardService();
+        com.kuroyale.service.management.CardManagementService service = new com.kuroyale.service.management.CardManagementService();
         try {
             service.upgradeCard(card, user);
 

@@ -1,12 +1,9 @@
-package com.kuroyale.service.battle;
+package com.kuroyale.service.battle.core;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
-import com.kuroyale.model.strategy.*;
-import com.kuroyale.model.strategy.pathfinding.AirDirectPathfindingStrategy;
-import com.kuroyale.model.strategy.pathfinding.GroundPathfindingStrategy;
-import com.kuroyale.model.strategy.pathfinding.PathfindingStrategy;
+import com.kuroyale.model.strategy.pathfinding.*;
 
 import java.util.*;
 

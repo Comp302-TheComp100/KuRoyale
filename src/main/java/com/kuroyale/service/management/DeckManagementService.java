@@ -1,4 +1,4 @@
-package com.kuroyale.service;
+package com.kuroyale.service.management;
 
 import java.io.IOException;
 import java.util.ArrayList;

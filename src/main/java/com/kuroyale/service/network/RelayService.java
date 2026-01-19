@@ -1,4 +1,4 @@
-package com.kuroyale.service;
+package com.kuroyale.service.network;
 
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
@@ -26,54 +26,54 @@ import java.util.function.Consumer;
  * 4. All messages are relayed through the free public broker
  */
 public class RelayService {
-    
+
     // FREE public MQTT brokers - multiple for fallback
     private static final String[] BROKER_HOSTS = {
-        "broker.hivemq.com",
-        "test.mosquitto.org",
-        "broker.emqx.io"
+            "broker.hivemq.com",
+            "test.mosquitto.org",
+            "broker.emqx.io"
     };
-    private static final int[] BROKER_PORTS = {1883, 1883, 1883};
+    private static final int[] BROKER_PORTS = { 1883, 1883, 1883 };
     private static final String TOPIC_PREFIX = "kuroyale/game/";
-    
+
     // Retry configuration
     private static final int MAX_RETRY_ATTEMPTS = 3;
     private static final long INITIAL_RETRY_DELAY_MS = 1000;
-    
+
     private static RelayService instance;
-    
+
     private Mqtt5AsyncClient client;
     private String roomCode;
     private String playerId;
     private boolean isHost;
     private boolean connected = false;
     private int currentBrokerIndex = 0;
-    
+
     // Callbacks
     private Consumer<String> onMessageReceived;
     private Consumer<Boolean> onConnectionChanged;
     private Consumer<String> onPlayerJoined;
     private Consumer<String> onError;
-    
+
     private RelayService() {
         // Generate a unique player ID for this session
         regeneratePlayerId();
     }
-    
+
     /**
      * Regenerates the player ID to avoid connection collisions.
      */
     private void regeneratePlayerId() {
         this.playerId = UUID.randomUUID().toString().substring(0, 8);
     }
-    
+
     public static synchronized RelayService getInstance() {
         if (instance == null) {
             instance = new RelayService();
         }
         return instance;
     }
-    
+
     /**
      * Resets the service for a fresh connection attempt.
      */
@@ -82,7 +82,7 @@ public class RelayService {
         regeneratePlayerId();
         currentBrokerIndex = 0;
     }
-    
+
     /**
      * Creates a new game room and returns the room code.
      * Share this code with your friend to let them join.
@@ -91,7 +91,7 @@ public class RelayService {
         this.isHost = true;
         this.roomCode = generateRoomCode();
         regeneratePlayerId(); // Fresh ID for each room
-        
+
         return connectWithRetry(0).thenApply(success -> {
             if (success) {
                 subscribeToRoom();
@@ -100,7 +100,7 @@ public class RelayService {
             return null;
         });
     }
-    
+
     /**
      * Joins an existing game room using a room code.
      */
@@ -108,7 +108,7 @@ public class RelayService {
         this.isHost = false;
         this.roomCode = code.toUpperCase().trim();
         regeneratePlayerId(); // Fresh ID for each join attempt
-        
+
         return connectWithRetry(0).thenCompose(success -> {
             if (success) {
                 subscribeToRoom();
@@ -119,7 +119,7 @@ public class RelayService {
             return CompletableFuture.completedFuture(false);
         });
     }
-    
+
     /**
      * Connects to the MQTT broker with retry logic and broker fallback.
      */
@@ -129,18 +129,18 @@ public class RelayService {
             handleError("All connection attempts failed. Please try again later.");
             return CompletableFuture.completedFuture(false);
         }
-        
+
         // Calculate which broker to try
         currentBrokerIndex = (attempt / MAX_RETRY_ATTEMPTS) % BROKER_HOSTS.length;
         String brokerHost = BROKER_HOSTS[currentBrokerIndex];
         int brokerPort = BROKER_PORTS[currentBrokerIndex];
-        
+
         // Calculate delay with exponential backoff
         int retryWithinBroker = attempt % MAX_RETRY_ATTEMPTS;
         long delay = retryWithinBroker == 0 ? 0 : INITIAL_RETRY_DELAY_MS * (1L << (retryWithinBroker - 1));
-        
+
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        
+
         // Apply delay if this is a retry
         if (delay > 0) {
             System.out.println("[Relay] Waiting " + delay + "ms before retry...");
@@ -152,36 +152,36 @@ public class RelayService {
                 return future;
             }
         }
-        
+
         // Try to connect
         connectToBroker(brokerHost, brokerPort)
-            .whenComplete((success, throwable) -> {
-                if (throwable != null || !success) {
-                    String error = throwable != null ? throwable.getMessage() : "Connection failed";
-                    System.out.println("[Relay] Attempt " + (attempt + 1) + " failed: " + error);
-                    
-                    // Try next attempt
-                    connectWithRetry(attempt + 1)
-                        .whenComplete((retrySuccess, retryError) -> {
-                            future.complete(retrySuccess);
-                        });
-                } else {
-                    future.complete(true);
-                }
-            });
-        
+                .whenComplete((success, throwable) -> {
+                    if (throwable != null || !success) {
+                        String error = throwable != null ? throwable.getMessage() : "Connection failed";
+                        System.out.println("[Relay] Attempt " + (attempt + 1) + " failed: " + error);
+
+                        // Try next attempt
+                        connectWithRetry(attempt + 1)
+                                .whenComplete((retrySuccess, retryError) -> {
+                                    future.complete(retrySuccess);
+                                });
+                    } else {
+                        future.complete(true);
+                    }
+                });
+
         return future;
     }
-    
+
     /**
      * Connects to a specific MQTT broker.
      */
     private CompletableFuture<Boolean> connectToBroker(String host, int port) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        
+
         try {
             System.out.println("[Relay] Connecting to " + host + ":" + port + "...");
-            
+
             // Disconnect existing client if any
             if (client != null) {
                 try {
@@ -191,21 +191,21 @@ public class RelayService {
                 }
                 client = null;
             }
-            
+
             // Create a unique client ID with timestamp to avoid collisions
             String clientId = "kuroyale-" + playerId + "-" + System.currentTimeMillis() % 100000;
-            
+
             client = MqttClient.builder()
                     .useMqttVersion5()
                     .serverHost(host)
                     .serverPort(port)
                     .identifier(clientId)
                     .automaticReconnect()
-                        .initialDelay(1, TimeUnit.SECONDS)
-                        .maxDelay(30, TimeUnit.SECONDS)
-                        .applyAutomaticReconnect()
+                    .initialDelay(1, TimeUnit.SECONDS)
+                    .maxDelay(30, TimeUnit.SECONDS)
+                    .applyAutomaticReconnect()
                     .buildAsync();
-            
+
             client.connect()
                     .orTimeout(10, TimeUnit.SECONDS)
                     .whenComplete((connAck, throwable) -> {
@@ -219,22 +219,22 @@ public class RelayService {
                             future.complete(true);
                         }
                     });
-            
+
         } catch (Exception e) {
             System.err.println("[Relay] Error: " + e.getMessage());
             future.complete(false);
         }
-        
+
         return future;
     }
-    
+
     /**
      * Subscribes to the room topic to receive messages.
      */
     private void subscribeToRoom() {
         String topic = TOPIC_PREFIX + roomCode;
         System.out.println("[Relay] Subscribing to room: " + roomCode);
-        
+
         client.subscribeWith()
                 .topicFilter(topic)
                 .callback(this::handleMessage)
@@ -247,25 +247,27 @@ public class RelayService {
                     }
                 });
     }
-    
+
     /**
      * Handles incoming messages from the relay.
      */
     private void handleMessage(Mqtt5Publish publish) {
         String payload = new String(publish.getPayloadAsBytes(), StandardCharsets.UTF_8);
-        
+
         // Parse message format: "SENDER_ID|MESSAGE"
         int separatorIndex = payload.indexOf('|');
-        if (separatorIndex == -1) return;
-        
+        if (separatorIndex == -1)
+            return;
+
         String senderId = payload.substring(0, separatorIndex);
         String message = payload.substring(separatorIndex + 1);
-        
+
         // Ignore our own messages
-        if (senderId.equals(playerId)) return;
-        
+        if (senderId.equals(playerId))
+            return;
+
         System.out.println("[Relay] Received: " + message);
-        
+
         // Handle system messages
         if (message.startsWith("PLAYER_JOINED:")) {
             String joinedPlayerId = message.substring("PLAYER_JOINED:".length());
@@ -274,13 +276,13 @@ public class RelayService {
             }
             return;
         }
-        
+
         // Forward to callback
         if (onMessageReceived != null) {
             onMessageReceived.accept(message);
         }
     }
-    
+
     /**
      * Sends a game message to the other player.
      */
@@ -289,10 +291,10 @@ public class RelayService {
             System.err.println("[Relay] Cannot send - not connected");
             return;
         }
-        
+
         String topic = TOPIC_PREFIX + roomCode;
         String payload = playerId + "|" + message;
-        
+
         client.publishWith()
                 .topic(topic)
                 .payload(payload.getBytes(StandardCharsets.UTF_8))
@@ -303,20 +305,20 @@ public class RelayService {
                     }
                 });
     }
-    
+
     /**
      * Sends a system message (for connection management).
      */
     private void sendSystemMessage(String message) {
         send(message);
     }
-    
+
     /**
      * Disconnects from the relay.
      */
     public void disconnect() {
         connected = false;
-        
+
         if (client != null) {
             System.out.println("[Relay] Disconnecting...");
             try {
@@ -329,7 +331,7 @@ public class RelayService {
         }
         roomCode = null;
     }
-    
+
     /**
      * Generates a random 6-character room code.
      */
@@ -341,49 +343,49 @@ public class RelayService {
         }
         return code.toString();
     }
-    
+
     // Getters
-    
+
     public String getRoomCode() {
         return roomCode;
     }
-    
+
     public boolean isHost() {
         return isHost;
     }
-    
+
     public boolean isConnected() {
         return connected;
     }
-    
+
     public String getPlayerId() {
         return playerId;
     }
-    
+
     // Callback setters
-    
+
     public void setOnMessageReceived(Consumer<String> callback) {
         this.onMessageReceived = callback;
     }
-    
+
     public void setOnConnectionChanged(Consumer<Boolean> callback) {
         this.onConnectionChanged = callback;
     }
-    
+
     public void setOnPlayerJoined(Consumer<String> callback) {
         this.onPlayerJoined = callback;
     }
-    
+
     public void setOnError(Consumer<String> callback) {
         this.onError = callback;
     }
-    
+
     private void notifyConnectionChanged(boolean connected) {
         if (onConnectionChanged != null) {
             onConnectionChanged.accept(connected);
         }
     }
-    
+
     private void handleError(String error) {
         if (onError != null) {
             onError.accept(error);

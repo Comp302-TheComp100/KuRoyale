@@ -1,9 +1,9 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.kuroyale.model.enums.*;
 
 /*Factory class for creating all card instances in the game
  * Separates card creation logic from the Card model

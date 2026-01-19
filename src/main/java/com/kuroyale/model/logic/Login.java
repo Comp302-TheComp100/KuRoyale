@@ -1,9 +1,10 @@
-package com.kuroyale.model.state;
+package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
+import com.kuroyale.service.auth.AuthenticationService;
 
 import java.io.IOException;
-import com.kuroyale.service.AuthenticationService;
+
 import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.common.ValidationUtil;
 

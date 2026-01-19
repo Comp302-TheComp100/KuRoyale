@@ -1,8 +1,8 @@
 package com.kuroyale.model.entities;
 
-import com.kuroyale.model.enums.*;
-
 import java.util.List;
+
+import com.kuroyale.model.enums.*;
 
 /**
  * Represents a challenge in Challenge Mode.

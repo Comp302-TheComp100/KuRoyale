@@ -2,7 +2,7 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
-import com.kuroyale.model.state.Login;
+import com.kuroyale.model.logic.Login;
 import com.kuroyale.util.audio.SoundEffectUtil;
 import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.menu.LoginView;
