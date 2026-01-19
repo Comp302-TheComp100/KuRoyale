@@ -8,12 +8,47 @@ import com.kuroyale.model.entities.Troop;
 
 public class CombatService {
 
+    private static final class PendingAttack {
+        final Troop attacker;
+        final ICombatant target;
+        final boolean melee;
+        final double remainingAttackCycleSeconds;
+        double timeToHitSeconds;
+
+        PendingAttack(Troop attacker, ICombatant target, boolean melee, double timeToHitSeconds,
+                double remainingAttackCycleSeconds) {
+            this.attacker = attacker;
+            this.target = target;
+            this.melee = melee;
+            this.timeToHitSeconds = timeToHitSeconds;
+            this.remainingAttackCycleSeconds = remainingAttackCycleSeconds;
+        }
+    }
+
+    private final java.util.Map<ICombatant, PendingAttack> pendingAttacks = new java.util.IdentityHashMap<>();
+
     // Core single-target damage methods
     public void applyDamage(ICombatant attacker, ICombatant target) {
         if (attacker == null || target == null)
             return;
         int dmg = attacker.getDamage();
         target.takeDamage(dmg);
+    }
+
+    private void scheduleTroopAttack(Troop attacker, ICombatant target) {
+        if (attacker == null || target == null) {
+            return;
+        }
+        if (pendingAttacks.containsKey(attacker)) {
+            return;
+        }
+
+        double hitSpeed = Math.max(0.1, attacker.getHitSpeed());
+        double hitMoment = hitSpeed * 0.5;
+        double remaining = Math.max(0.05, hitSpeed - hitMoment);
+
+        boolean melee = attacker.isMelee();
+        pendingAttacks.put(attacker, new PendingAttack(attacker, target, melee, hitMoment, remaining));
     }
 
     // Orchestrates combat for all entities in the game state.
@@ -60,6 +95,8 @@ public class CombatService {
             processCombatant(tower, state, deltaTime);
         }
 
+        updatePendingAttacks(deltaTime, state);
+
         // 4. Projectiles (Orphaned or Active)
         java.util.List<com.kuroyale.model.entities.Projectile> projectiles = state.getProjectiles();
         java.util.Iterator<com.kuroyale.model.entities.Projectile> it = projectiles.iterator();
@@ -91,6 +128,69 @@ public class CombatService {
                 }
                 it.remove();
             }
+        }
+    }
+
+    private void updatePendingAttacks(double deltaTime, com.kuroyale.model.state.IBattleState state) {
+        if (pendingAttacks.isEmpty()) {
+            return;
+        }
+
+        java.util.Iterator<java.util.Map.Entry<ICombatant, PendingAttack>> it = pendingAttacks.entrySet().iterator();
+        while (it.hasNext()) {
+            java.util.Map.Entry<ICombatant, PendingAttack> entry = it.next();
+            PendingAttack pa = entry.getValue();
+
+            if (pa == null || pa.attacker == null || !pa.attacker.isAlive()) {
+                it.remove();
+                continue;
+            }
+
+            if (pa.attacker.isStunned()) {
+                it.remove();
+                continue;
+            }
+
+            pa.timeToHitSeconds -= deltaTime;
+            if (pa.timeToHitSeconds > 0) {
+                continue;
+            }
+
+            ICombatant target = pa.target;
+            if (target == null || !target.isAlive()) {
+                it.remove();
+                continue;
+            }
+
+            if (!isInAttackRange(pa.attacker, target) || !pa.attacker.canTarget(target)) {
+                it.remove();
+                continue;
+            }
+
+            if (pa.melee) {
+                if (pa.attacker.isAreaEffect()) {
+                    com.kuroyale.model.arena.GridPosition targetPos = target.getPosition();
+                    if (target instanceof Tower || target instanceof com.kuroyale.model.entities.Building) {
+                        targetPos = target.getCenterPosition();
+                    }
+                    applyAreaDamage(state,
+                            com.kuroyale.model.arena.Vector2.fromGridPosition(targetPos),
+                            1.0,
+                            pa.attacker.getDamage(),
+                            pa.attacker.getTargetType(),
+                            pa.attacker.isPlayerSide(),
+                            false,
+                            0.0,
+                            "Generic");
+                } else {
+                    applyDamage(pa.attacker, target);
+                }
+            } else {
+                double travelTime = Math.max(0.05, pa.remainingAttackCycleSeconds);
+                state.addProjectile(new com.kuroyale.model.entities.Projectile(pa.attacker, target, travelTime));
+            }
+
+            it.remove();
         }
     }
 
@@ -164,8 +264,13 @@ public class CombatService {
         // 4. Combat Application
         if (target != null) {
             if (cd <= 0) {
-                performAttack(attacker, target, state);
-                attacker.setAttackCooldown(attacker.getHitSpeed());
+                if (attacker instanceof Troop troop) {
+                    scheduleTroopAttack(troop, target);
+                    attacker.setAttackCooldown(attacker.getHitSpeed());
+                } else {
+                    performAttack(attacker, target, state);
+                    attacker.setAttackCooldown(attacker.getHitSpeed());
+                }
             } else {
                 attacker.setAttackCooldown(cd);
             }
