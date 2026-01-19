@@ -248,6 +248,10 @@ public class BotLogic {
                 continue;
             }
 
+            if (c.getType() == CardType.SPELL) {
+                continue;
+            }
+
             if (threat.hasAirThreat) {
                 if (c.getType() != CardType.SPELL && c.getTarget() != TargetType.BOTH
                         && c.getTarget() != TargetType.AIR) {
@@ -275,8 +279,35 @@ public class BotLogic {
 
             score += Math.min(10.0, (threat.threatElixir - c.getCost()));
 
-            int desiredX = pullX;
-            int desiredY = (c.getType() == CardType.BUILDING) ? buildingY : troopY;
+            int desiredX;
+            int desiredY;
+
+            if (c.getType() == CardType.BUILDING) {
+                desiredX = pullX;
+                desiredY = buildingY;
+            } else {
+                // Troop logic
+                if (threat.hasBuildingOnlyThreat && threat.focusWorld != null) {
+                    // Against Giant/Hog, don't pull to center with troops - they won't follow.
+                    // Intercept them directly.
+                    int threatX = (int) threat.focusWorld.getX();
+                    int threatY = (int) threat.focusWorld.getY();
+
+                    if (c.getRange() <= 2.5) {
+                        // Melee/Short range: Place directly on/near them
+                        desiredX = threatX;
+                        desiredY = threatY;
+                    } else {
+                        // Ranged: Stay in their lane but at a safe dist
+                        desiredX = threatX;
+                        desiredY = troopY;
+                    }
+                } else {
+                    // Standard unit: Pull to center to maximize travel time and tower help
+                    desiredX = pullX;
+                    desiredY = troopY;
+                }
+            }
 
             GridPosition p = findNearbyValidPlacement(gameState, c, desiredX, desiredY);
             if (p == null) {
@@ -427,12 +458,19 @@ public class BotLogic {
                 continue;
             }
 
-            double requiredValue = spell.getCost();
-            if (bestTarget.value < requiredValue) {
+            // Value is scaled by 100 in findBestSpellTarget
+            double estimatedElixirValue = bestTarget.value / 100.0;
+
+            // Efficiency check: Don't use spell if we don't get at least near-equal value
+            // Allow slight negative trade for swarm threats or desperation
+            double minRequiredValue = spell.getCost() - 0.5;
+
+            if (estimatedElixirValue < minRequiredValue) {
                 continue;
             }
 
-            double score = (bestTarget.value - requiredValue) * 15.0;
+            double score = (estimatedElixirValue - spell.getCost()) * 20.0;
+
             if (threat != null && threat.hasSwarmThreat && CardProfiles.hasRole(spell, CardRole.AOE_SPELL)) {
                 score += 30.0;
             }
@@ -475,7 +513,7 @@ public class BotLogic {
                 travelTime = dist / 15.0;
             }
 
-            int value = 0;
+            double totalValue = 0.0;
             for (Troop t : enemies) {
                 if (t == null || !t.isAlive() || t.getWorldPosition() == null) {
                     continue;
@@ -487,7 +525,23 @@ public class BotLogic {
                 if (center.distanceTo(predicted) <= radius) {
                     Card base = t.getBaseCard();
                     if (base != null) {
-                        value += Math.max(0, base.getCost());
+                        int spellDamage = spell.getDamage();
+                        // Special reduction for Crown Tower damage is usually 30-40% in CR,
+                        // but here we are targeting troops.
+
+                        // Calculate effectiveness
+                        int currentHp = t.getCurrentHealth();
+                        int maxHp = base.getHp(); // Using base HP (level adj handled in card)
+                        if (maxHp <= 0)
+                            maxHp = 1;
+
+                        int damageDealt = Math.min(currentHp, spellDamage);
+
+                        // Value is proportional to the elixir worth of the health removed
+                        double unitCost = (double) base.getCost() / Math.max(1, base.getCount());
+                        double damagePercent = (double) damageDealt / maxHp;
+
+                        totalValue += unitCost * damagePercent;
                     }
                 }
             }
@@ -497,8 +551,9 @@ public class BotLogic {
                 continue;
             }
 
-            if (best == null || value > best.value) {
-                best = new SpellTarget(grid.getX(), grid.getY(), value);
+            // We want value > cost to be efficient
+            if (best == null || totalValue > best.value) {
+                best = new SpellTarget(grid.getX(), grid.getY(), (int) (totalValue * 100)); // Scale for int value
             }
         }
         return best;
