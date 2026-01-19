@@ -36,9 +36,12 @@ public interface GameEventListener {
         default void onSpellDamageDealt(boolean isPlayer, int damage) {
         }
 
-        default void onMatchStart() {
+        public default void onMatchStart() {
         }
 
-        default void onMatchEnd(boolean playerWon) {
+        public default void onMatchEnd(boolean playerWon) {
+        }
+
+        public default void onEmojiPlayed(boolean isPlayer, String emojiName) {
         }
 }

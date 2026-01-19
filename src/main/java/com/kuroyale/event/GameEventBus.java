@@ -89,4 +89,8 @@ public class GameEventBus {
     public void publishMatchEnd(boolean playerWon) {
         new ArrayList<>(listeners).forEach(l -> l.onMatchEnd(playerWon));
     }
+
+    public void publishEmojiPlayed(boolean isPlayer, String emojiName) {
+        new ArrayList<>(listeners).forEach(l -> l.onEmojiPlayed(isPlayer, emojiName));
+    }
 }

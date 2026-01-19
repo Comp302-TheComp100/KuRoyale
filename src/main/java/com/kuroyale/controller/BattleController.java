@@ -106,6 +106,7 @@ public class BattleController {
         this.loadedSavedGame = savedGame;
     }
 
+
     // Starts a challenge match with specific rules and deck.
     public void startChallengeGame(Challenge challenge, Deck playerDeck) {
         this.currentChallenge = challenge;
