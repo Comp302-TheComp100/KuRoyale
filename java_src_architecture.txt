@@ -23,45 +23,48 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
         |-- GameEventBus.java
         |-- GameEventListener.java
     |-- model/
-        |-- core/
-            |-- common/
-            |-- entities/
-                |-- Achievement.java
-                |-- Arena.java
-                |-- ArenaLayout.java
-                |-- BattleStrategyFactory.java
-                |-- Building.java
-                |-- Card.java
-                |-- CardCatalog.java
-                |-- CardFactory.java
-                |-- Challenge.java
-                |-- ChallengeFactory.java
-                |-- CombatStats.java
-                |-- Deck.java
-                |-- GridCell.java
-                |-- GridPosition.java
-                |-- Hand.java
-                |-- ICombatant.java
-                |-- PlayerStats.java
-                |-- Projectile.java
-                |-- Quest.java
-                |-- Tower.java
-                |-- Troop.java
-                |-- User.java
-                |-- Vector2.java
-            |-- enums/
-                |-- AchievementType.java
-                |-- BattleMode.java
-                |-- CardType.java
-                |-- ChallengeType.java
-                |-- ComboType.java
-                |-- NetworkMessageType.java
-                |-- QuestType.java
-                |-- Rarity.java
-                |-- SpeedType.java
-                |-- TargetType.java
-                |-- TileType.java
-                |-- UnitState.java
+        |-- dto/
+            |-- NetworkGameStateSnapshot.java
+            |-- NetworkMessage.java
+            |-- SavedGameState.java
+        |-- entities/
+            |-- Achievement.java
+            |-- Arena.java
+            |-- ArenaLayout.java
+            |-- Building.java
+            |-- Card.java
+            |-- CardCatalog.java
+            |-- Challenge.java
+            |-- CombatStats.java
+            |-- Deck.java
+            |-- GridCell.java
+            |-- GridPosition.java
+            |-- Hand.java
+            |-- ICombatant.java
+            |-- PlayerStats.java
+            |-- Projectile.java
+            |-- Quest.java
+            |-- Tower.java
+            |-- Troop.java
+            |-- User.java
+            |-- Vector2.java
+        |-- enums/
+            |-- AchievementType.java
+            |-- BattleMode.java
+            |-- CardType.java
+            |-- ChallengeType.java
+            |-- ComboType.java
+            |-- NetworkMessageType.java
+            |-- QuestType.java
+            |-- Rarity.java
+            |-- SpeedType.java
+            |-- TargetType.java
+            |-- TileType.java
+            |-- UnitState.java
+        |-- factory/
+            |-- BattleStrategyFactory.java
+            |-- CardFactory.java
+            |-- ChallengeFactory.java
         |-- logic/
             |-- ArenaDesignModel.java
             |-- BattleModel.java
@@ -76,15 +79,9 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
             |-- SettingsModel.java
             |-- SpatialGrid.java
             |-- TurnManager.java
-            |-- battle/
-        |-- registry/
         |-- state/
             |-- DeckBuilderState.java
             |-- PvPDeckBuilderSession.java
-            |-- dto/
-                |-- NetworkGameStateSnapshot.java
-                |-- NetworkMessage.java
-                |-- SavedGameState.java
         |-- strategy/
             |-- battle/
                 |-- BattleStrategy.java
@@ -110,6 +107,10 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
         |-- battle/
             |-- BotLogic.java
             |-- ComboService.java
+            |-- ai/
+                |-- CardProfile.java
+                |-- CardProfiles.java
+                |-- CardRole.java
             |-- core/
                 |-- CombatService.java
                 |-- TargetingService.java

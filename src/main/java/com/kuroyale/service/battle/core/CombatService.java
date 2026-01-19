@@ -17,7 +17,7 @@ public class CombatService {
     }
 
     // Orchestrates combat for all entities in the game state.
-    public void update(double deltaTime, com.kuroyale.model.logic.IBattleState state) {
+    public void update(double deltaTime, com.kuroyale.model.state.IBattleState state) {
         if (state == null)
             return;
 
@@ -94,7 +94,7 @@ public class CombatService {
         }
     }
 
-    private void processBuildingProduction(Building b, com.kuroyale.model.logic.IBattleState state, double deltaTime) {
+    private void processBuildingProduction(Building b, com.kuroyale.model.state.IBattleState state, double deltaTime) {
         if (b.isStunned()) {
             return;
         }
@@ -115,7 +115,7 @@ public class CombatService {
         }
     }
 
-    private void processCombatant(ICombatant attacker, com.kuroyale.model.logic.IBattleState state, double deltaTime) {
+    private void processCombatant(ICombatant attacker, com.kuroyale.model.state.IBattleState state, double deltaTime) {
         if (!attacker.isAlive())
             return;
 
@@ -186,7 +186,7 @@ public class CombatService {
         }
     }
 
-    private void spawnUnitsFromBuilding(Building b, com.kuroyale.model.logic.IBattleState state) {
+    private void spawnUnitsFromBuilding(Building b, com.kuroyale.model.state.IBattleState state) {
         Card base = b.getBaseCard();
         if (base == null || base.getSpawnUnitName() == null)
             return;
@@ -202,7 +202,7 @@ public class CombatService {
         }
     }
 
-    private void performAttack(ICombatant attacker, ICombatant target, com.kuroyale.model.logic.IBattleState state) {
+    private void performAttack(ICombatant attacker, ICombatant target, com.kuroyale.model.state.IBattleState state) {
         boolean isMelee = false;
 
         if (attacker instanceof Troop t) {
@@ -236,7 +236,7 @@ public class CombatService {
         }
     }
 
-    private ICombatant findNearestTarget(ICombatant attacker, com.kuroyale.model.logic.IBattleState state) {
+    private ICombatant findNearestTarget(ICombatant attacker, com.kuroyale.model.state.IBattleState state) {
         ICombatant best = null;
         double bestDist = Double.MAX_VALUE;
         com.kuroyale.model.entities.Vector2 center = attacker.getCenterWorldPosition();
@@ -341,7 +341,7 @@ public class CombatService {
     /**
      * Centralized Area Damage logic using world coordinates (Vector2).
      */
-    public void applyAreaDamage(com.kuroyale.model.logic.IBattleState gameState,
+    public void applyAreaDamage(com.kuroyale.model.state.IBattleState gameState,
             com.kuroyale.model.entities.Vector2 center,
             double radiusTiles,
             double damage,

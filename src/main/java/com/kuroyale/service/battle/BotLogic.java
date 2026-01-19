@@ -4,6 +4,7 @@ import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.CardType;
 import com.kuroyale.model.enums.TargetType;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.model.state.GameState;
 import com.kuroyale.service.battle.ai.CardProfiles;
 import com.kuroyale.service.battle.ai.CardRole;
 
@@ -337,7 +338,8 @@ public class BotLogic {
             }
 
             if (threat.hasAirThreat) {
-                if (c.getType() != CardType.SPELL && c.getTarget() != TargetType.BOTH && c.getTarget() != TargetType.AIR) {
+                if (c.getType() != CardType.SPELL && c.getTarget() != TargetType.BOTH
+                        && c.getTarget() != TargetType.AIR) {
                     continue;
                 }
                 if (c.getType() == CardType.TROOP && !CardProfiles.hasRole(c, CardRole.RANGED_DPS)
@@ -543,7 +545,8 @@ public class BotLogic {
             return null;
         }
 
-        boolean isProjectileSpell = "Fireball".equalsIgnoreCase(spell.getName()) || "Rocket".equalsIgnoreCase(spell.getName());
+        boolean isProjectileSpell = "Fireball".equalsIgnoreCase(spell.getName())
+                || "Rocket".equalsIgnoreCase(spell.getName());
         Vector2 start = new Vector2(Arena.WIDTH / 2.0, 0);
         Tower king = gameState.getArena().getKingTower(false);
         if (king != null && king.getCenterWorldPosition() != null) {
@@ -904,7 +907,8 @@ public class BotLogic {
         public final int lane;
         public final Vector2 focusWorld;
 
-        public ThreatReport(int threatElixir, boolean hasAirThreat, boolean hasSwarmThreat, boolean hasBuildingOnlyThreat,
+        public ThreatReport(int threatElixir, boolean hasAirThreat, boolean hasSwarmThreat,
+                boolean hasBuildingOnlyThreat,
                 int lane, Vector2 focusWorld) {
             this.threatElixir = threatElixir;
             this.hasAirThreat = hasAirThreat;

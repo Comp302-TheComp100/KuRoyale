@@ -44,13 +44,13 @@ public class ComboService implements GameEventListener {
     private final java.util.Map<ComboType, Long> playerComboCooldowns = new java.util.HashMap<>();
     private final java.util.Map<ComboType, Long> opponentComboCooldowns = new java.util.HashMap<>();
 
-    private com.kuroyale.model.logic.IBattleState gameState; // Reference to apply global effects like Elixir refund
+    private com.kuroyale.model.state.IBattleState gameState; // Reference to apply global effects like Elixir refund
 
     public ComboService() {
         GameEventBus.getInstance().subscribe(this);
     }
 
-    public void setGameState(com.kuroyale.model.logic.IBattleState gameState) {
+    public void setGameState(com.kuroyale.model.state.IBattleState gameState) {
         this.gameState = gameState;
     }
 

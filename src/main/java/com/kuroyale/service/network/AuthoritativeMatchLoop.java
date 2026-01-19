@@ -1,9 +1,9 @@
 package com.kuroyale.service.network;
 
-import com.kuroyale.model.logic.GameState;
 import com.kuroyale.model.dto.NetworkGameStateSnapshot;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.logic.ElixirManager;
+import com.kuroyale.model.state.GameState;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;

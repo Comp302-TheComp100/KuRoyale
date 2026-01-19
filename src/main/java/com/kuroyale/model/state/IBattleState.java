@@ -1,4 +1,4 @@
-package com.kuroyale.model.logic;
+package com.kuroyale.model.state;
 
 import java.util.List;
 
@@ -7,6 +7,7 @@ import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.GridPosition;
 import com.kuroyale.model.entities.Troop;
+import com.kuroyale.model.logic.ElixirManager;
 
 /**
  * Common interface for accessing and subtly modifying battle-related

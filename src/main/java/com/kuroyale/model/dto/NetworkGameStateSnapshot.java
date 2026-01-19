@@ -9,7 +9,8 @@ import com.kuroyale.model.entities.Projectile;
 import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.entities.Troop;
 import com.kuroyale.model.entities.Vector2;
-import com.kuroyale.model.logic.GameState;
+import com.kuroyale.model.state.GameState;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;

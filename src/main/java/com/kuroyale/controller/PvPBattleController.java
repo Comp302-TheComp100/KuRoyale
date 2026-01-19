@@ -2,6 +2,7 @@ package com.kuroyale.controller;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.service.game.BattleSessionService;
 import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.battle.BattleArenaView;
 import com.kuroyale.view.battle.ui.ElixirBarView;
@@ -74,7 +75,7 @@ public class PvPBattleController {
     private boolean gameOverShown = false;
 
     private final SceneLoader sceneLoader = new SceneLoader();
-    private final BattleModel model = new BattleModel();
+    private final BattleSessionService model = new BattleSessionService();
 
     @FXML
     public void initialize() {

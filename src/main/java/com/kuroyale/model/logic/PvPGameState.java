@@ -2,6 +2,7 @@ package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
+import com.kuroyale.model.state.IBattleState;
 import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;

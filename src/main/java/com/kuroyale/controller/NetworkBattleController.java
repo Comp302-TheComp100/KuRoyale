@@ -4,6 +4,8 @@ import com.kuroyale.model.dto.NetworkMessage;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.model.state.GameState;
+import com.kuroyale.service.game.BattleSessionService;
 import com.kuroyale.service.network.NetworkService;
 import com.kuroyale.service.network.NetworkService.ConnectionState;
 import com.kuroyale.util.audio.SoundEffectUtil;
@@ -100,7 +102,7 @@ public class NetworkBattleController implements GameEventListener {
 
     private final SceneLoader sceneLoader = new SceneLoader();
     private final NetworkConfig config = NetworkConfig.getInstance();
-    private final BattleModel model = new BattleModel();
+    private final BattleSessionService model = new BattleSessionService();
 
     // Game components
     private NetworkService networkService;

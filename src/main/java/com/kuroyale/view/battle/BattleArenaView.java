@@ -4,7 +4,7 @@ import com.kuroyale.model.entities.Arena;
 import com.kuroyale.model.entities.GridCell;
 import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.enums.TileType;
-import com.kuroyale.model.logic.GameState;
+import com.kuroyale.model.state.GameState;
 import com.kuroyale.view.battle.renderers.BuildingRenderer;
 import com.kuroyale.view.battle.renderers.ProjectileRenderer;
 import com.kuroyale.view.battle.renderers.TowerRenderer;

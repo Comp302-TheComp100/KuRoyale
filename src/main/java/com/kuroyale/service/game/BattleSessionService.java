@@ -1,20 +1,19 @@
-package com.kuroyale.model.logic;
+package com.kuroyale.service.game;
 
 import com.kuroyale.model.dto.*;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
+import com.kuroyale.model.state.GameState;
 
 import java.util.List;
 
 import com.kuroyale.service.auth.AuthenticationService;
-import com.kuroyale.service.game.ChallengeService;
-import com.kuroyale.service.game.GameSaveService;
 import com.kuroyale.service.management.ArenaManagementService;
 import com.kuroyale.util.common.ServiceFactory;
 
 /*The Model component for the Battle screen.
  * Encapsulates business logic for game initialization, save/load operations.*/
-public class BattleModel {
+public class BattleSessionService {
 
     private static final int VICTORY_GOLD = 150;
     private static final int DRAW_GOLD = 75;
@@ -26,7 +25,7 @@ public class BattleModel {
     private final ChallengeService challengeService;
     private final com.kuroyale.model.entities.CardCatalog cardCatalog;
 
-    public BattleModel() {
+    public BattleSessionService() {
         ServiceFactory factory = ServiceFactory.getInstance();
         this.authService = factory.getAuthenticationService();
         this.arenaService = factory.getArenaService();

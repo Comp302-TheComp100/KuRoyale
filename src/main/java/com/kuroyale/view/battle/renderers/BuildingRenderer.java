@@ -1,7 +1,7 @@
 package com.kuroyale.view.battle.renderers;
 
 import com.kuroyale.model.entities.Building;
-import com.kuroyale.model.logic.GameState;
+import com.kuroyale.model.state.GameState;
 import com.kuroyale.util.config.GameColors;
 import com.kuroyale.util.config.GameConstants;
 

@@ -1,6 +1,7 @@
 package com.kuroyale.service.game;
 
 import com.kuroyale.model.logic.*;
+import com.kuroyale.model.state.GameState;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;

@@ -1,9 +1,10 @@
-package com.kuroyale.model.logic;
+package com.kuroyale.model.state;
 
 import com.kuroyale.service.battle.BotLogic;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
+import com.kuroyale.model.logic.ElixirManager;
 import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;

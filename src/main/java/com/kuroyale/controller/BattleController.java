@@ -1,6 +1,7 @@
 package com.kuroyale.controller;
 
-import com.kuroyale.model.logic.*;
+import com.kuroyale.model.state.GameState;
+import com.kuroyale.service.game.BattleSessionService;
 import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.model.entities.*;
@@ -79,7 +80,7 @@ public class BattleController {
     private boolean isPaused = false;
     private SavedGameState loadedSavedGame = null;
 
-    private final BattleModel model = new BattleModel();
+    private final BattleSessionService model = new BattleSessionService();
     private final SceneLoader sceneLoader = new SceneLoader();
 
     // Challenge Mode Context
