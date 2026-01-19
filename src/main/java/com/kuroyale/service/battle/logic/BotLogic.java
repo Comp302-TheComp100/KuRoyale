@@ -14,20 +14,16 @@ import com.kuroyale.service.battle.ai.CardRole;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 //Basic AI for the opponent. Waits for full elixir, then places a random affordable unit at the bridge.
 public class BotLogic {
     private final ElixirManager elixirManager;
     private final Hand hand;
-    private final Random random;
     private double timeSinceLastMove;
     private static final double MOVE_DELAY = 2.0; // Seconds between moves
 
     // Tracking for combo logic
     private Card lastPlayedCard;
-    private double timeSinceLastPlayed; // Seconds
-    private static final double COMBO_WINDOW = 5.0;
 
     private static final double FORCE_PLAY_ELIXIR = 9.5;
     private static final double PASSIVE_ELIXIR_THRESHOLD = 9.0;
@@ -39,15 +35,12 @@ public class BotLogic {
     public BotLogic(Deck deck) {
         this.elixirManager = new ElixirManager();
         this.hand = new Hand(deck);
-        this.random = new Random();
         this.timeSinceLastMove = 0;
-        this.timeSinceLastPlayed = 100.0; // Start with no recent play
     }
 
     // Updates bot state and decides on moves
     public Move update(double deltaTime, GameState gameState) {
         timeSinceLastMove += deltaTime;
-        timeSinceLastPlayed += deltaTime;
 
         // 1. Wait until elixir is high (>= 7) or full
         // 2. Wait for move delay
@@ -94,7 +87,6 @@ public class BotLogic {
         timeSinceLastMove = 0;
 
         lastPlayedCard = cardToPlay;
-        timeSinceLastPlayed = 0;
 
         return move;
     }
@@ -300,12 +292,10 @@ public class BotLogic {
         }
 
         Card defensiveBuilding = null;
-        int defensiveBuildingIdx = -1;
         for (int idx : playable) {
             Card c = hand.getCard(idx);
             if (c != null && c.getType() == CardType.BUILDING && CardProfiles.hasRole(c, CardRole.DEFENSIVE_BUILDING)) {
                 defensiveBuilding = c;
-                defensiveBuildingIdx = idx;
                 break;
             }
         }
@@ -315,7 +305,7 @@ public class BotLogic {
             int y = com.kuroyale.util.config.GameConstants.RIVER_ROW_1 - 4;
             GridPosition p = findNearbyValidPlacement(gameState, defensiveBuilding, x, y);
             if (p != null) {
-                return new CandidateMove(defensiveBuilding, defensiveBuildingIdx, p.getX(), p.getY(), 100.0);
+                return new CandidateMove(defensiveBuilding, p.getX(), p.getY(), 100.0);
             }
         }
 
@@ -378,7 +368,7 @@ public class BotLogic {
 
             if (score > bestScore) {
                 bestScore = score;
-                best = new CandidateMove(c, idx, p.getX(), p.getY(), score);
+                best = new CandidateMove(c, p.getX(), p.getY(), score);
             }
         }
 
@@ -418,7 +408,7 @@ public class BotLogic {
             if (behindKing != null) {
                 GridPosition p = findNearbyValidPlacement(gameState, giant, behindKing.getX(), behindKing.getY());
                 if (p != null) {
-                    return new CandidateMove(giant, giantIdx, p.getX(), p.getY(), 60.0);
+                    return new CandidateMove(giant, p.getX(), p.getY(), 60.0);
                 }
             }
         }
@@ -436,7 +426,6 @@ public class BotLogic {
         int desiredY = com.kuroyale.util.config.GameConstants.RIVER_ROW_1 - 1;
 
         Card best = null;
-        int bestIdx = -1;
         double bestScore = Double.NEGATIVE_INFINITY;
         for (int idx : playable) {
             Card c = hand.getCard(idx);
@@ -459,7 +448,6 @@ public class BotLogic {
             if (score > bestScore) {
                 bestScore = score;
                 best = c;
-                bestIdx = idx;
             }
         }
 
@@ -471,7 +459,7 @@ public class BotLogic {
         if (p == null) {
             return null;
         }
-        return new CandidateMove(best, bestIdx, p.getX(), p.getY(), 40.0);
+        return new CandidateMove(best, p.getX(), p.getY(), 40.0);
     }
 
     private Troop findFriendlyTankCrossingBridge(GameState gameState) {
@@ -533,7 +521,7 @@ public class BotLogic {
             }
             if (score > bestScore) {
                 bestScore = score;
-                best = new CandidateMove(spell, idx, bestTarget.x, bestTarget.y, score);
+                best = new CandidateMove(spell, bestTarget.x, bestTarget.y, score);
             }
         }
 
@@ -674,7 +662,7 @@ public class BotLogic {
         if (valid == null) {
             return null;
         }
-        return new CandidateMove(c, bestIdx, valid.getX(), valid.getY(), 1.0);
+        return new CandidateMove(c, valid.getX(), valid.getY(), 1.0);
     }
 
     private List<Integer> findAffordableHandIndices() {
@@ -709,34 +697,6 @@ public class BotLogic {
         int y = Math.max(0, topLeft.getY() - 2);
         int x = Math.max(2, Math.min(Arena.WIDTH - 3, topLeft.getX() + 2));
         return GridPosition.tryCreate(x, y);
-    }
-
-    private GridPosition getBotPrincessLaneAnchor(GameState gameState, int lane) {
-        if (gameState == null || gameState.getArena() == null) {
-            return null;
-        }
-
-        List<Tower> princess = gameState.getArena().getTowersByType(Tower.TowerType.PRINCESS, false);
-        if (princess == null || princess.isEmpty()) {
-            return null;
-        }
-
-        Tower left = null;
-        Tower right = null;
-        for (Tower t : princess) {
-            if (t == null || t.getCenterPosition() == null) {
-                continue;
-            }
-            if (left == null || t.getCenterPosition().getX() < left.getCenterPosition().getX()) {
-                left = t;
-            }
-            if (right == null || t.getCenterPosition().getX() > right.getCenterPosition().getX()) {
-                right = t;
-            }
-        }
-
-        Tower chosen = (lane == 0) ? left : right;
-        return chosen != null ? chosen.getCenterPosition() : null;
     }
 
     private GridPosition findNearbyValidPlacement(GameState gameState, Card card, int desiredX, int desiredY) {
@@ -889,14 +849,12 @@ public class BotLogic {
 
     private static final class CandidateMove {
         private final Card card;
-        private final int handIndex;
         private final int x;
         private final int y;
         private final double score;
 
-        private CandidateMove(Card card, int handIndex, int x, int y, double score) {
+        private CandidateMove(Card card, int x, int y, double score) {
             this.card = card;
-            this.handIndex = handIndex;
             this.x = x;
             this.y = y;
             this.score = score;
