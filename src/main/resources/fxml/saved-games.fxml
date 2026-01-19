@@ -33,7 +33,10 @@
         <ScrollPane fx:id="savedGamesScrollPane" 
                     fitToWidth="true" 
                     prefHeight="400"
-                    style="-fx-background: transparent; -fx-background-color: rgba(0,0,0,0.5);">
+                    hbarPolicy="NEVER"
+                    vbarPolicy="NEVER"
+                    styleClass="scroll-pane-transparent"
+                    style="-fx-background: transparent; -fx-background-color: rgba(0,0,0,0.5); -fx-control-inner-background: transparent;">
             <VBox fx:id="savedGamesContainer" spacing="15" style="-fx-padding: 20;">
                 <!-- Saved game entries will be added dynamically -->
             </VBox>
