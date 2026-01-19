@@ -65,15 +65,25 @@ public class ElixirBarView extends VBox {
         progressBar.setProgress(current / max);
 
         // Only update style if state changed
-        if (isDoubleElixir != lastDoubleElixirState) {
+        // Check for custom multiplier (e.g. 7x mode)
+        double multiplier = elixirManager.getElixirMultiplier();
+
+        // Only update style if state changed
+        if (isDoubleElixir != lastDoubleElixirState || multiplier != 1.0) {
             lastDoubleElixirState = isDoubleElixir;
-            if (isDoubleElixir) {
+
+            if (multiplier >= 7.0) {
+                doubleElixirLabel.setText("x" + (int) multiplier);
+                if (!doubleElixirLabel.getStyleClass().contains("double-elixir-active")) {
+                    doubleElixirLabel.getStyleClass().add("double-elixir-active");
+                }
+            } else if (isDoubleElixir) {
                 doubleElixirLabel.setText("x2");
                 if (!doubleElixirLabel.getStyleClass().contains("double-elixir-active")) {
                     doubleElixirLabel.getStyleClass().add("double-elixir-active");
                 }
             } else {
-                doubleElixirLabel.setText("x1");
+                doubleElixirLabel.setText("x" + (int) multiplier); // Defaults to x1
                 doubleElixirLabel.getStyleClass().remove("double-elixir-active");
             }
         }
