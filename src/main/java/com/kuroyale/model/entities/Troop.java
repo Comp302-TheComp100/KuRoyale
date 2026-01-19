@@ -136,7 +136,7 @@ public class Troop implements ICombatant {
     public int getCurrentHealth() {
         return currentHealth;
     }
-
+    
     /**
      * Sets current health directly (used for network sync).
      */

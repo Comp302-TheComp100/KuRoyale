@@ -24,8 +24,8 @@ public enum NetworkMessageType {
     ARENA_LAYOUT("Arena layout synchronization from host"),
     GAME_STATE_SYNC("Full authoritative game state from host - includes all entities, scores, timers"),
     PLAYER_INPUT("Player input intent: seq:playerId:type:cardName:x:y:clientTime"),
-    CARD_PLACED("Card placement on arena (legacy)"),
-    CLIENT_INPUT("Client input: card placement request sent to host for validation (legacy)"),
+    CARD_PLACED("Card placement on arena"),
+    CLIENT_INPUT("Client input: card placement request sent to host for validation"),
     REQUEST_SNAPSHOT("Client requests full state snapshot for resync"),
     UNIT_MOVE("Unit movement update"),
     UNIT_ATTACK("Unit attacking"),
@@ -33,6 +33,11 @@ public enum NetworkMessageType {
     TOWER_DESTROYED("Tower was destroyed"),
     ELIXIR_UPDATE("Elixir level changed"),
     TIMER_SYNC("Game timer synchronization"),
+    TROOP_SYNC("Troop positions and health sync from host"),
+    SCORE_SYNC("Score synchronization from host"),
+    TOWER_SYNC("Tower health synchronization from host"),
+    GAME_OVER("Game over with winner info from host"),
+    FULL_STATE_SYNC("Complete entity state sync - troops, buildings, projectiles from host"),
     
     // Match End Messages
     VICTORY("Player won the match"),

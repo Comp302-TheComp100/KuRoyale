@@ -10,18 +10,18 @@ import java.util.List;
 
 /**
  * Represents a message sent over the network between players.
- * Implements the network protocol format: MESSAGE_TYPE|player_id|data|timestamp
- * Data fields use ';' as internal delimiter to avoid conflict with '|'.
+ * Implements the network protocol format: MESSAGE_TYPE§§§player_id§§§data§§§timestamp
  * 
- * Examples:
- * - CARD_PLACED|1|Knight;5.2,3.8|00:45
- * - TOWER_DAMAGED|2|CrownLeft;450|01:23
- * - ELIXIR_UPDATE|1|7|01:24
+ * IMPORTANT: Protocol uses §§§ as delimiter to avoid collision with:
+ * - | used between entities (troops, buildings)
+ * - @@ used between sections (TROOPS, BUILDINGS, GAME)
+ * - , used for entity fields
+ * - ; used for other data
  */
 public class NetworkMessage implements Serializable {
     private static final long serialVersionUID = 1L;
-    private static final String DELIMITER = "|";
-    private static final String DATA_DELIMITER = ";";  // Use different delimiter for data fields
+    private static final String DELIMITER = "§§§";  // Unique protocol delimiter
+    private static final String DATA_DELIMITER = ";";
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("mm:ss");
     
     private final NetworkMessageType type;
@@ -44,7 +44,7 @@ public class NetworkMessage implements Serializable {
     
     /**
      * Creates a network message from a protocol string.
-     * @param protocolString The string in format MESSAGE_TYPE|player_id|data|timestamp
+     * @param protocolString The string in format MESSAGE_TYPE§§§player_id§§§data§§§timestamp
      * @return The parsed NetworkMessage, or null if invalid
      */
     public static NetworkMessage fromProtocolString(String protocolString) {
@@ -52,7 +52,8 @@ public class NetworkMessage implements Serializable {
             return null;
         }
         
-        String[] parts = protocolString.split("\\|", 4);
+        // Split by our unique delimiter §§§
+        String[] parts = protocolString.split("§§§", 4);
         if (parts.length < 3) {
             return null;
         }
@@ -172,35 +173,69 @@ public class NetworkMessage implements Serializable {
     }
     
     /**
-     * Creates a full game state sync message (host-authoritative).
-     * This is the core of the authoritative game loop - sent by host every tick.
+     * Creates a game state sync message (sent by host to client).
+     * Format: gameTime;playerElixir;botElixir;playerScore;botScore;isDoubleElixir
      */
-    public static NetworkMessage gameStateSync(NetworkGameStateSnapshot snapshot) {
-        return new NetworkMessage(NetworkMessageType.GAME_STATE_SYNC, 1, snapshot.serialize());
+    public static NetworkMessage gameStateSync(double gameTime, double playerElixir, double botElixir, 
+            int playerScore, int botScore, boolean isDoubleElixir) {
+        String data = String.format("%.3f;%.3f;%.3f;%d;%d;%b", 
+                gameTime, playerElixir, botElixir, playerScore, botScore, isDoubleElixir);
+        return new NetworkMessage(NetworkMessageType.GAME_STATE_SYNC, 1, data);
     }
     
     /**
-     * Creates a client input message for card placement request.
-     * Client sends this to host; host validates and applies if valid.
+     * Creates a troop sync message (sent by host to client).
+     * Format: troopId,cardName,x,y,health,isPlayer:troopId,cardName,x,y,health,isPlayer:...
      */
-    public static NetworkMessage clientInput(int playerId, String cardName, double x, double y) {
-        return new NetworkMessage(NetworkMessageType.CLIENT_INPUT, playerId,
-                cardName + DATA_DELIMITER + x + "," + y);
+    public static NetworkMessage troopSync(String troopData) {
+        return new NetworkMessage(NetworkMessageType.TROOP_SYNC, 1, troopData);
     }
     
     /**
-     * Creates a player input message (new format for authoritative model).
-     * Format: seq:playerId:type:cardName:x:y:clientTime
+     * Creates a score sync message (sent by host to client).
+     * Format: playerScore;botScore
      */
-    public static NetworkMessage playerInput(com.kuroyale.service.network.PlayerInput input) {
-        return new NetworkMessage(NetworkMessageType.PLAYER_INPUT, input.getPlayerId(), input.serialize());
+    public static NetworkMessage scoreSync(int playerScore, int botScore) {
+        return new NetworkMessage(NetworkMessageType.SCORE_SYNC, 1, playerScore + DATA_DELIMITER + botScore);
     }
     
     /**
-     * Creates a request for a full state snapshot (for client resync).
+     * Creates a tower sync message (sent by host to client).
+     * Format: towerType,isPlayerSide,currentHealth,maxHealth,isAlive;towerType,isPlayerSide,...
      */
-    public static NetworkMessage requestSnapshot(int playerId) {
-        return new NetworkMessage(NetworkMessageType.REQUEST_SNAPSHOT, playerId, "");
+    public static NetworkMessage towerSync(String towerData) {
+        return new NetworkMessage(NetworkMessageType.TOWER_SYNC, 1, towerData);
+    }
+    
+    /**
+     * Section delimiter for FULL_STATE_SYNC - must be different from entity delimiter (|)
+     */
+    public static final String SECTION_DELIMITER = "@@";
+    
+    /**
+     * Creates a full state sync message with all entities.
+     * Format: TROOPS#troops_data@@BUILDINGS#buildings_data@@GAME#gameTime,pElixir,bElixir,pScore,bScore,doubleElixir,gameOver
+     * Note: Uses @@ as section delimiter to avoid collision with | used between entities
+     */
+    public static NetworkMessage fullStateSync(String troopData, String buildingData, 
+            double gameTime, double playerElixir, double botElixir,
+            int playerScore, int botScore, boolean doubleElixir, boolean gameOver) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("TROOPS#").append(troopData != null ? troopData : "");
+        sb.append(SECTION_DELIMITER).append("BUILDINGS#").append(buildingData != null ? buildingData : "");
+        sb.append(SECTION_DELIMITER).append("GAME#").append(String.format("%.2f,%.2f,%.2f,%d,%d,%b,%b", 
+                gameTime, playerElixir, botElixir, playerScore, botScore, doubleElixir, gameOver));
+        return new NetworkMessage(NetworkMessageType.FULL_STATE_SYNC, 1, sb.toString());
+    }
+    
+    /**
+     * Creates a game over message (sent by host to client).
+     * Format: winnerIsHost;reason
+     * winnerIsHost: true if host won, false if client won
+     * reason: description of why (e.g., "King Tower destroyed", "More towers", "Lower HP tower")
+     */
+    public static NetworkMessage gameOver(boolean hostWon, String reason) {
+        return new NetworkMessage(NetworkMessageType.GAME_OVER, 1, hostWon + DATA_DELIMITER + reason);
     }
     
     public static NetworkMessage victory(int playerId) {
@@ -261,37 +296,6 @@ public class NetworkMessage implements Serializable {
     }
     
     /**
-     * Parses client input data (card placement request).
-     * @return String array with [cardName, x, y] or null if invalid
-     */
-    public String[] parseClientInput() {
-        if (type != NetworkMessageType.CLIENT_INPUT) return null;
-        String[] parts = data.split(";");
-        if (parts.length < 2) return null;
-        String[] coords = parts[1].split(",");
-        if (coords.length < 2) return null;
-        return new String[] { parts[0], coords[0], coords[1] };
-    }
-    
-    /**
-     * Parses player input data (new authoritative model format).
-     * @return PlayerInput or null if invalid
-     */
-    public com.kuroyale.service.network.PlayerInput parsePlayerInput() {
-        if (type != NetworkMessageType.PLAYER_INPUT) return null;
-        return com.kuroyale.service.network.PlayerInput.deserialize(data);
-    }
-    
-    /**
-     * Parses full game state sync data.
-     * @return NetworkGameStateSnapshot or null if invalid
-     */
-    public NetworkGameStateSnapshot parseGameStateSync() {
-        if (type != NetworkMessageType.GAME_STATE_SYNC) return null;
-        return NetworkGameStateSnapshot.deserialize(data);
-    }
-    
-    /**
      * Parses arena layout from the message.
      * @return ArenaLayout or null if invalid
      */
@@ -340,6 +344,65 @@ public class NetworkMessage implements Serializable {
             System.err.println("[NetworkMessage] Failed to parse arena layout: " + e.getMessage());
             return null;
         }
+    }
+    
+    /**
+     * Parses game state sync data from the message.
+     * @return double array with [gameTime, playerElixir, botElixir, playerScore, botScore, isDoubleElixir (1.0 or 0.0)]
+     */
+    public double[] parseGameStateSync() {
+        if (type != NetworkMessageType.GAME_STATE_SYNC) return null;
+        try {
+            String[] parts = data.split(";");
+            if (parts.length < 6) return null;
+            return new double[] {
+                Double.parseDouble(parts[0]),  // gameTime
+                Double.parseDouble(parts[1]),  // playerElixir
+                Double.parseDouble(parts[2]),  // botElixir
+                Double.parseDouble(parts[3]),  // playerScore
+                Double.parseDouble(parts[4]),  // botScore
+                Boolean.parseBoolean(parts[5]) ? 1.0 : 0.0  // isDoubleElixir
+            };
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Parses score sync data from the message.
+     * @return int array with [playerScore, botScore] or null if invalid
+     */
+    public int[] parseScoreSync() {
+        if (type != NetworkMessageType.SCORE_SYNC) return null;
+        try {
+            String[] parts = data.split(";");
+            if (parts.length < 2) return null;
+            return new int[] {
+                Integer.parseInt(parts[0]),
+                Integer.parseInt(parts[1])
+            };
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Parses game over data from the message.
+     * @return String array with [hostWon (true/false), reason] or null if invalid
+     */
+    public String[] parseGameOver() {
+        if (type != NetworkMessageType.GAME_OVER) return null;
+        String[] parts = data.split(";", 2);
+        return parts.length >= 2 ? parts : null;
+    }
+    
+    /**
+     * Gets the raw tower sync data string.
+     * @return Tower data string or null
+     */
+    public String getTowerSyncData() {
+        if (type != NetworkMessageType.TOWER_SYNC) return null;
+        return data;
     }
     
     @Override
