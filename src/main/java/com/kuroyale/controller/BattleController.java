@@ -1,10 +1,10 @@
 package com.kuroyale.controller;
 
-import com.kuroyale.model.entities.*;
-import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.model.state.dto.*;
 import com.kuroyale.util.ui.SceneLoader;
-import com.kuroyale.model.dto.*;
+import com.kuroyale.model.core.entities.*;
+import com.kuroyale.model.core.enums.*;
 import com.kuroyale.view.battle.BattleArenaView;
 import com.kuroyale.view.battle.ui.ElixirBarView;
 import com.kuroyale.view.battle.ui.HandView;
@@ -203,7 +203,7 @@ public class BattleController {
         com.kuroyale.event.GameEventBus.getInstance().subscribe(new com.kuroyale.event.GameEventListener() {
             @Override
             public void onCardPlayed(boolean isPlayer, Card card,
-                    java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
+                    java.util.List<com.kuroyale.model.core.entities.ICombatant> spawnedUnits) {
             }
 
             @Override
@@ -239,14 +239,15 @@ public class BattleController {
             }
 
             @Override
-            public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
+            public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.core.entities.Vector2 center,
+                    double radius,
                     double duration,
                     String effectType) {
             }
 
             @Override
-            public void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
-                    java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
+            public void onComboTriggered(com.kuroyale.model.core.enums.ComboType combo,
+                    java.util.List<com.kuroyale.model.core.entities.ICombatant> affectedUnits) {
                 javafx.application.Platform.runLater(() -> {
                     // 1. Show Text Feedback via View
                     if (arenaView != null) {
@@ -415,20 +416,20 @@ public class BattleController {
 
         // Track Challenge Completion (Quest)
         com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
-                .updateProgress(com.kuroyale.model.enums.QuestType.COMPLETE_CHALLENGES, 1);
+                .updateProgress(com.kuroyale.model.core.enums.QuestType.COMPLETE_CHALLENGES, 1);
 
         if (playerWon) {
             // Track Win Quests
             com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
-                    .updateProgress(com.kuroyale.model.enums.QuestType.WIN_MATCHES, 1);
+                    .updateProgress(com.kuroyale.model.core.enums.QuestType.WIN_MATCHES, 1);
 
             // Track Achievements
             com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
-                    .updateProgress(com.kuroyale.model.enums.AchievementType.CHALLENGE_MASTER, 1);
+                    .updateProgress(com.kuroyale.model.core.enums.AchievementType.CHALLENGE_MASTER, 1);
 
             if (stars == 3) {
                 com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
-                        .updateProgress(com.kuroyale.model.enums.AchievementType.THREE_STAR_HERO, 1);
+                        .updateProgress(com.kuroyale.model.core.enums.AchievementType.THREE_STAR_HERO, 1);
             }
         }
 
@@ -526,7 +527,7 @@ public class BattleController {
 
         // Track Matches Played (Veteran Player Achievement)
         com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
-                .updateProgress(com.kuroyale.model.enums.AchievementType.VETERAN_PLAYER, 1);
+                .updateProgress(com.kuroyale.model.core.enums.AchievementType.VETERAN_PLAYER, 1);
 
         int baseGold = 0;
         String titleText = "";
@@ -539,21 +540,21 @@ public class BattleController {
 
             // Track Win Quests
             com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
-                    .updateProgress(com.kuroyale.model.enums.QuestType.WIN_MATCHES, 1);
+                    .updateProgress(com.kuroyale.model.core.enums.QuestType.WIN_MATCHES, 1);
             com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
-                    .updateProgress(com.kuroyale.model.enums.QuestType.WIN_PVP_MATCH, 1);
+                    .updateProgress(com.kuroyale.model.core.enums.QuestType.WIN_PVP_MATCH, 1);
 
             // Track Win Without Losing Tower
             if (gameState.getBotScore() == 0) {
                 com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
-                        .updateProgress(com.kuroyale.model.enums.QuestType.WIN_WITHOUT_LOSING_TOWER, 1);
+                        .updateProgress(com.kuroyale.model.core.enums.QuestType.WIN_WITHOUT_LOSING_TOWER, 1);
             }
 
             // Track Win Achievements
             com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
-                    .updateProgress(com.kuroyale.model.enums.AchievementType.FIRST_BLOOD, 1);
+                    .updateProgress(com.kuroyale.model.core.enums.AchievementType.FIRST_BLOOD, 1);
             com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
-                    .updateProgress(com.kuroyale.model.enums.AchievementType.UNDEFEATED, 1);
+                    .updateProgress(com.kuroyale.model.core.enums.AchievementType.UNDEFEATED, 1);
         } else if (isDraw) {
             baseGold = 75;
             titleText = "DRAW";

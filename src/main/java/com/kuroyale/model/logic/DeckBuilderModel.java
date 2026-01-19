@@ -1,12 +1,12 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.entities.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.DeckManagementService;
+import com.kuroyale.model.core.entities.*;
+import com.kuroyale.service.auth.AuthenticationService;
+import com.kuroyale.service.management.DeckManagementService;
 import com.kuroyale.util.common.ServiceFactory;
 
 /*The Model component for the Deck Builder screen.
@@ -15,7 +15,7 @@ public class DeckBuilderModel {
 
     private final AuthenticationService authService;
     private final DeckManagementService deckService;
-    private final com.kuroyale.model.entities.CardCatalog cardCatalog;
+    private final com.kuroyale.model.core.entities.CardCatalog cardCatalog;
 
     public DeckBuilderModel() {
         ServiceFactory factory = ServiceFactory.getInstance();

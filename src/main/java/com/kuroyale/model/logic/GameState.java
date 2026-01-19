@@ -1,9 +1,9 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.entities.*;
-import com.kuroyale.model.enums.*;
 import com.kuroyale.service.battle.BotLogic;
-import com.kuroyale.model.dto.*;
+import com.kuroyale.model.core.entities.*;
+import com.kuroyale.model.core.enums.*;
+import com.kuroyale.model.state.dto.*;
 import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;
@@ -21,8 +21,8 @@ public class GameState implements IBattleState {
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
     private final List<Projectile> activeProjectiles;
-    private final com.kuroyale.service.battle.TroopMovementService troopMovementService = new com.kuroyale.service.battle.TroopMovementService();
-    private final com.kuroyale.service.battle.CombatService combatService = new com.kuroyale.service.battle.CombatService();
+    private final com.kuroyale.service.battle.core.TroopMovementService troopMovementService = new com.kuroyale.service.battle.core.TroopMovementService();
+    private final com.kuroyale.service.battle.core.CombatService combatService = new com.kuroyale.service.battle.core.CombatService();
 
     private double gameTime = 180.0; // 3 minutes
     private int playerScore = 0, botScore = 0;
@@ -708,10 +708,10 @@ public class GameState implements IBattleState {
             // Set unit state for proper animation rendering
             if (state != null && !state.isEmpty()) {
                 try {
-                    troop.setUnitState(com.kuroyale.model.enums.UnitState.valueOf(state));
+                    troop.setUnitState(com.kuroyale.model.core.enums.UnitState.valueOf(state));
                 } catch (IllegalArgumentException e) {
                     // Default to MOVING if state is invalid
-                    troop.setUnitState(com.kuroyale.model.enums.UnitState.MOVING);
+                    troop.setUnitState(com.kuroyale.model.core.enums.UnitState.MOVING);
                 }
             }
 

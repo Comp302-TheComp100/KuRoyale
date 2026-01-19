@@ -1,12 +1,12 @@
 package com.kuroyale.controller;
 
-import com.kuroyale.model.dto.NetworkMessage;
-import com.kuroyale.model.entities.ArenaLayout;
-import com.kuroyale.model.entities.User;
-import com.kuroyale.service.ArenaService;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.NetworkService;
-import com.kuroyale.service.NetworkService.ConnectionState;
+import com.kuroyale.model.core.entities.ArenaLayout;
+import com.kuroyale.model.core.entities.User;
+import com.kuroyale.model.state.dto.NetworkMessage;
+import com.kuroyale.service.auth.AuthenticationService;
+import com.kuroyale.service.management.ArenaManagementService;
+import com.kuroyale.service.network.NetworkService;
+import com.kuroyale.service.network.NetworkService.ConnectionState;
 import com.kuroyale.util.audio.SoundEffectUtil;
 import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.config.NetworkConfig;
@@ -377,7 +377,7 @@ public class NetworkLobbyController {
 
         // Load and send the host's arena layout to the client
         // This ensures both players see the same arena design
-        ArenaService arenaService = ServiceFactory.getInstance().getArenaService();
+        ArenaManagementService arenaService = ServiceFactory.getInstance().getArenaService();
         User currentUser = ServiceFactory.getInstance().getAuthenticationService().getCurrentUser();
         if (currentUser != null) {
             arenaService.setCurrentUser(currentUser);

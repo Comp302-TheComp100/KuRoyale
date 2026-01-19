@@ -1,9 +1,10 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.entities.*;
 import java.util.List;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.GameStartValidator;
+
+import com.kuroyale.model.core.entities.*;
+import com.kuroyale.service.auth.AuthenticationService;
+import com.kuroyale.service.management.GameStartValidator;
 import com.kuroyale.util.common.ServiceFactory;
 
 /*The Model component for the Main Menu.

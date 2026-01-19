@@ -1,6 +1,6 @@
 package com.kuroyale.service.battle;
 
-import com.kuroyale.model.entities.*;
+import com.kuroyale.model.core.entities.*;
 import com.kuroyale.model.logic.*;
 
 import java.util.Random;
@@ -151,8 +151,8 @@ public class BotLogic {
             return true;
 
         // Building Defense
-        if (lastPlayedCard.getType() == com.kuroyale.model.enums.CardType.BUILDING &&
-                current.getType() == com.kuroyale.model.enums.CardType.BUILDING)
+        if (lastPlayedCard.getType() == com.kuroyale.model.core.enums.CardType.BUILDING &&
+                current.getType() == com.kuroyale.model.core.enums.CardType.BUILDING)
             return true;
 
         // Royal Combo
@@ -166,7 +166,7 @@ public class BotLogic {
 
     // --- Helpers from ComboService (Duplicated simplified) ---
     private boolean isDefensiveBuilding(Card c) {
-        return c.getType() == com.kuroyale.model.enums.CardType.BUILDING &&
+        return c.getType() == com.kuroyale.model.core.enums.CardType.BUILDING &&
                 !c.getName().equals("Mortar") && !c.getName().equals("X-Bow");
     }
 

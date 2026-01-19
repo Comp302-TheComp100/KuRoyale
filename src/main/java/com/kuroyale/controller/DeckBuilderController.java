@@ -7,21 +7,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import com.kuroyale.view.*;
 import com.kuroyale.view.card.CardView;
 import com.kuroyale.view.card.DeckSlotView;
 import com.kuroyale.view.dialog.CardInfoDialog;
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.Deck;
 import com.kuroyale.model.logic.DeckBuilderModel;
-import com.kuroyale.model.entities.User;
-import com.kuroyale.model.enums.ComboType;
-import com.kuroyale.service.DeckComboAnalyzer;
+import com.kuroyale.model.core.entities.Card;
+import com.kuroyale.model.core.entities.Deck;
+import com.kuroyale.model.core.entities.User;
+import com.kuroyale.model.core.enums.ComboType;
 import com.kuroyale.util.audio.SoundEffectUtil;
 import com.kuroyale.util.ui.ButtonFactory;
 import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.util.ui.StyleHelper;
 import com.kuroyale.model.state.PvPDeckBuilderSession;
+import com.kuroyale.service.management.DeckComboAnalyzer;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Bounds;

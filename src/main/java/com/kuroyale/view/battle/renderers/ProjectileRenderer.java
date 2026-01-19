@@ -1,7 +1,5 @@
 package com.kuroyale.view.battle.renderers;
 
-import com.kuroyale.model.entities.Projectile;
-import com.kuroyale.model.entities.Vector2;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -11,6 +9,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import com.kuroyale.model.core.entities.Projectile;
+import com.kuroyale.model.core.entities.Vector2;
 
 public class ProjectileRenderer {
     private final Pane unitLayer;
@@ -85,8 +86,8 @@ public class ProjectileRenderer {
             return "Fireball".equalsIgnoreCase(name) || "Baby Dragon".equalsIgnoreCase(name)
                     || "Wizard".equalsIgnoreCase(name) || "Witch".equalsIgnoreCase(name);
         }
-        if (p.getOwner() instanceof com.kuroyale.model.entities.Troop) {
-            com.kuroyale.model.entities.Troop t = (com.kuroyale.model.entities.Troop) p.getOwner();
+        if (p.getOwner() instanceof com.kuroyale.model.core.entities.Troop) {
+            com.kuroyale.model.core.entities.Troop t = (com.kuroyale.model.core.entities.Troop) p.getOwner();
             String name = t.getBaseCard().getName();
             return "Wizard".equalsIgnoreCase(name) || "Fireball".equalsIgnoreCase(name)
                     || "Baby Dragon".equalsIgnoreCase(name) || "Witch".equalsIgnoreCase(name);

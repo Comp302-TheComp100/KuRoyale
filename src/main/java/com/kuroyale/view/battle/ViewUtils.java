@@ -1,6 +1,6 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.enums.TileType;
+import com.kuroyale.model.core.enums.TileType;
 import com.kuroyale.util.config.GameColors;
 
 import javafx.scene.paint.Paint;

@@ -3,8 +3,8 @@ package com.kuroyale.controller;
 import java.io.IOException;
 import java.util.List;
 
-import com.kuroyale.model.entities.BattleStrategyFactory;
-import com.kuroyale.model.enums.BattleMode;
+import com.kuroyale.model.core.entities.BattleStrategyFactory;
+import com.kuroyale.model.core.enums.BattleMode;
 import com.kuroyale.model.logic.MenuModel;
 import com.kuroyale.model.strategy.battle.BattleStrategy;
 import com.kuroyale.util.audio.SoundEffectUtil;

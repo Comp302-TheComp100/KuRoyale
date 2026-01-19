@@ -1,10 +1,9 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.entities.*;
-import com.kuroyale.model.dto.*;
-
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.GameSaveService;
+import com.kuroyale.model.core.entities.*;
+import com.kuroyale.model.state.dto.*;
+import com.kuroyale.service.auth.AuthenticationService;
+import com.kuroyale.service.game.GameSaveService;
 import com.kuroyale.util.common.ServiceFactory;
 
 import java.util.List;

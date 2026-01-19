@@ -2,8 +2,8 @@ package com.kuroyale.controller;
 
 import java.io.IOException;
 
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.Deck;
+import com.kuroyale.model.core.entities.Card;
+import com.kuroyale.model.core.entities.Deck;
 import com.kuroyale.model.state.PvPDeckBuilderSession;
 import com.kuroyale.model.strategy.deck.CustomDeckStrategy;
 import com.kuroyale.model.strategy.deck.DeckBuildingStrategy;

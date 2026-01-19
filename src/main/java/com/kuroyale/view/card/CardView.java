@@ -1,6 +1,7 @@
 package com.kuroyale.view.card;
 
-import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.core.entities.Card;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;

@@ -3,8 +3,8 @@ package com.kuroyale.view.battle.renderers;
 import com.kuroyale.model.logic.GameState;
 import com.kuroyale.view.battle.component.AnimatedSprite;
 import com.kuroyale.view.battle.component.PngSequenceSprite;
-import com.kuroyale.model.entities.Troop;
-import com.kuroyale.model.enums.UnitState;
+import com.kuroyale.model.core.entities.Troop;
+import com.kuroyale.model.core.enums.UnitState;
 
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
@@ -122,7 +122,7 @@ public class TroopRenderer {
     }
 
     private void renderTroopPvP(Troop troop, com.kuroyale.model.logic.PvPGameState pvpGameState) {
-        com.kuroyale.model.entities.Vector2 worldPos = troop.getWorldPosition();
+        com.kuroyale.model.core.entities.Vector2 worldPos = troop.getWorldPosition();
         if (worldPos == null)
             return;
 
@@ -197,7 +197,7 @@ public class TroopRenderer {
     }
 
     private void renderTroop(Troop troop, GameState gameState) {
-        com.kuroyale.model.entities.Vector2 worldPos = troop.getWorldPosition();
+        com.kuroyale.model.core.entities.Vector2 worldPos = troop.getWorldPosition();
         if (worldPos == null)
             return;
 

@@ -1,6 +1,6 @@
 package com.kuroyale.view.dialog;
 
-import com.kuroyale.model.entities.Challenge;
+import com.kuroyale.model.core.entities.Challenge;
 import com.kuroyale.util.audio.SoundEffectUtil;
 
 import javafx.geometry.Insets;

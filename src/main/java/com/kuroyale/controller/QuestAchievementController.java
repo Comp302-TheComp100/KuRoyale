@@ -3,10 +3,10 @@ package com.kuroyale.controller;
 import java.io.IOException;
 import java.util.List;
 
-import com.kuroyale.model.entities.Achievement;
-import com.kuroyale.model.entities.Quest;
-import com.kuroyale.service.AchievementService;
-import com.kuroyale.service.QuestService;
+import com.kuroyale.model.core.entities.Achievement;
+import com.kuroyale.model.core.entities.Quest;
+import com.kuroyale.service.game.AchievementService;
+import com.kuroyale.service.game.QuestService;
 import com.kuroyale.util.audio.SoundEffectUtil;
 import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.ui.SceneLoader;
@@ -45,7 +45,7 @@ public class QuestAchievementController {
     private final SceneLoader sceneLoader = new SceneLoader();
     private final QuestService questService = ServiceFactory.getInstance().getQuestService();
     private final AchievementService achievementService = ServiceFactory.getInstance().getAchievementService();
-    private final com.kuroyale.service.AuthenticationService authService = ServiceFactory.getInstance()
+    private final com.kuroyale.service.auth.AuthenticationService authService = ServiceFactory.getInstance()
             .getAuthenticationService();
     private Timeline timerTimeline;
 
@@ -92,7 +92,7 @@ public class QuestAchievementController {
         SoundEffectUtil.playButtonClick();
         int reward = questService.claimReward(questId);
         if (reward > 0) {
-            com.kuroyale.model.entities.User currentUser = authService.getCurrentUser();
+            com.kuroyale.model.core.entities.User currentUser = authService.getCurrentUser();
             if (currentUser != null) {
                 currentUser.setGold(currentUser.getGold() + reward);
                 try {
@@ -127,18 +127,18 @@ public class QuestAchievementController {
     }
 
     private void addAchievementCard(String name, String description, int progress, int target, int reward,
-            boolean unlocked, boolean claimed, com.kuroyale.model.enums.AchievementType type) {
+            boolean unlocked, boolean claimed, com.kuroyale.model.core.enums.AchievementType type) {
         com.kuroyale.view.card.AchievementCardView card = new com.kuroyale.view.card.AchievementCardView(
                 name, description, progress, target, reward, unlocked, claimed, () -> handleClaimAchievement(type));
         achievementsContainer.getChildren().add(card);
     }
 
     // Handles claiming an achievement reward.
-    private void handleClaimAchievement(com.kuroyale.model.enums.AchievementType type) {
+    private void handleClaimAchievement(com.kuroyale.model.core.enums.AchievementType type) {
         SoundEffectUtil.playButtonClick();
         int reward = achievementService.claimReward(type);
         if (reward > 0) {
-            com.kuroyale.model.entities.User currentUser = authService.getCurrentUser();
+            com.kuroyale.model.core.entities.User currentUser = authService.getCurrentUser();
             if (currentUser != null) {
                 currentUser.setGold(currentUser.getGold() + reward);
                 try {

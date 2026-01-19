@@ -1,6 +1,6 @@
 package com.kuroyale.controller;
 
-import com.kuroyale.model.entities.*;
+import com.kuroyale.model.core.entities.*;
 import com.kuroyale.model.logic.*;
 import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.battle.BattleArenaView;
@@ -142,7 +142,7 @@ public class PvPBattleController {
         com.kuroyale.event.GameEventBus.getInstance().subscribe(new com.kuroyale.event.GameEventListener() {
             @Override
             public void onCardPlayed(boolean isPlayer, Card card,
-                    java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
+                    java.util.List<com.kuroyale.model.core.entities.ICombatant> spawnedUnits) {
             }
 
             @Override
@@ -180,13 +180,14 @@ public class PvPBattleController {
             }
 
             @Override
-            public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
+            public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.core.entities.Vector2 center,
+                    double radius,
                     double duration, String effectType) {
             }
 
             @Override
-            public void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
-                    java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
+            public void onComboTriggered(com.kuroyale.model.core.enums.ComboType combo,
+                    java.util.List<com.kuroyale.model.core.entities.ICombatant> affectedUnits) {
                 javafx.application.Platform.runLater(() -> {
                     // 1. Show Text Feedback & Visuals via View
                     if (arenaView != null) {
@@ -220,7 +221,7 @@ public class PvPBattleController {
             // Get hand from game state
             Hand hand = isPlayer1 ? gameState.getPlayer1Hand() : gameState.getPlayer2Hand();
             Card card = hand.getCard(index);
-            boolean isSpell = (card != null && card.getType() == com.kuroyale.model.enums.CardType.SPELL);
+            boolean isSpell = (card != null && card.getType() == com.kuroyale.model.core.enums.CardType.SPELL);
 
             if (isPlayer1) {
                 arenaView.highlightValidCells(true, isSpell);

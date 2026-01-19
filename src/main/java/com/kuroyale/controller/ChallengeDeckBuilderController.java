@@ -9,13 +9,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import com.kuroyale.view.*;
 import com.kuroyale.view.card.CardView;
 import com.kuroyale.view.card.DeckSlotView;
 import com.kuroyale.view.dialog.CardInfoDialog;
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.Challenge;
-import com.kuroyale.model.entities.Deck;
+import com.kuroyale.model.core.entities.Card;
+import com.kuroyale.model.core.entities.Challenge;
+import com.kuroyale.model.core.entities.Deck;
 import com.kuroyale.model.logic.DeckBuilderModel;
 import com.kuroyale.util.audio.SoundEffectUtil;
 import com.kuroyale.util.ui.ButtonFactory;

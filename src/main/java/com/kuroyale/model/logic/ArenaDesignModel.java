@@ -1,13 +1,12 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.entities.*;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kuroyale.service.ArenaService;
-import com.kuroyale.service.AuthenticationService;
+import com.kuroyale.model.core.entities.*;
+import com.kuroyale.service.auth.AuthenticationService;
+import com.kuroyale.service.management.ArenaManagementService;
 import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.config.GameConstants;
 
@@ -16,7 +15,7 @@ import com.kuroyale.util.config.GameConstants;
 public class ArenaDesignModel {
 
     private final AuthenticationService authService;
-    private final ArenaService arenaService;
+    private final ArenaManagementService arenaService;
 
     public ArenaDesignModel() {
         ServiceFactory factory = ServiceFactory.getInstance();

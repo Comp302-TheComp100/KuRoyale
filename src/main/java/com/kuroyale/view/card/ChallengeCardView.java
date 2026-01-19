@@ -1,6 +1,7 @@
 package com.kuroyale.view.card;
 
-import com.kuroyale.model.entities.Challenge;
+import com.kuroyale.model.core.entities.Challenge;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;

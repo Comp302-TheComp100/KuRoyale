@@ -1,16 +1,16 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.entities.*;
-import com.kuroyale.model.enums.*;
-import com.kuroyale.model.dto.*;
+import com.kuroyale.model.core.entities.*;
+import com.kuroyale.model.core.enums.*;
+import com.kuroyale.model.state.dto.*;
 
 import java.util.List;
 
-import com.kuroyale.service.ArenaService;
-import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.GameSaveService;
+import com.kuroyale.service.auth.AuthenticationService;
+import com.kuroyale.service.game.ChallengeService;
+import com.kuroyale.service.game.GameSaveService;
+import com.kuroyale.service.management.ArenaManagementService;
 import com.kuroyale.util.common.ServiceFactory;
-import com.kuroyale.service.ChallengeService;
 
 /*The Model component for the Battle screen.
  * Encapsulates business logic for game initialization, save/load operations.*/
@@ -21,10 +21,10 @@ public class BattleModel {
     private static final int DEFEAT_GOLD = 50;
 
     private final AuthenticationService authService;
-    private final ArenaService arenaService;
+    private final ArenaManagementService arenaService;
     private final GameSaveService gameSaveService;
     private final ChallengeService challengeService;
-    private final com.kuroyale.model.entities.CardCatalog cardCatalog;
+    private final com.kuroyale.model.core.entities.CardCatalog cardCatalog;
 
     public BattleModel() {
         ServiceFactory factory = ServiceFactory.getInstance();
@@ -236,7 +236,7 @@ public class BattleModel {
 
             // Track GOLD_HOARDER achievement
             ServiceFactory.getInstance().getAchievementService()
-                    .updateProgress(com.kuroyale.model.enums.AchievementType.GOLD_HOARDER, bonus);
+                    .updateProgress(com.kuroyale.model.core.enums.AchievementType.GOLD_HOARDER, bonus);
         }
     }
 

@@ -1,7 +1,7 @@
 package com.kuroyale.view.dialog;
 
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.User;
+import com.kuroyale.model.core.entities.Card;
+import com.kuroyale.model.core.entities.User;
 import com.kuroyale.util.ui.StyleHelper;
 
 import javafx.geometry.Insets;
@@ -193,7 +193,7 @@ public class UpgradeDialog extends StackPane {
     }
 
     private void handleConfirm() {
-        com.kuroyale.service.CardService service = new com.kuroyale.service.CardService();
+        com.kuroyale.service.management.CardManagementService service = new com.kuroyale.service.management.CardManagementService();
         try {
             service.upgradeCard(card, user);
 

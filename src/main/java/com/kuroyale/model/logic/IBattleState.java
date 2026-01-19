@@ -1,12 +1,12 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.entities.Arena;
-import com.kuroyale.model.entities.Building;
-import com.kuroyale.model.entities.Troop;
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.GridPosition;
-
 import java.util.List;
+
+import com.kuroyale.model.core.entities.Arena;
+import com.kuroyale.model.core.entities.Building;
+import com.kuroyale.model.core.entities.Card;
+import com.kuroyale.model.core.entities.GridPosition;
+import com.kuroyale.model.core.entities.Troop;
 
 /**
  * Common interface for accessing and subtly modifying battle-related
@@ -27,7 +27,7 @@ public interface IBattleState {
 
     ElixirManager getElixirManager(boolean isPlayerSide);
 
-    List<com.kuroyale.model.entities.Projectile> getProjectiles();
+    List<com.kuroyale.model.core.entities.Projectile> getProjectiles();
 
-    void addProjectile(com.kuroyale.model.entities.Projectile p);
+    void addProjectile(com.kuroyale.model.core.entities.Projectile p);
 }

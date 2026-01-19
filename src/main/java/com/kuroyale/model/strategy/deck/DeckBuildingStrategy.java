@@ -1,6 +1,6 @@
 package com.kuroyale.model.strategy.deck;
 
-import com.kuroyale.model.entities.Deck;
+import com.kuroyale.model.core.entities.Deck;
 
 /**
  * Strategy Pattern: Defines different strategies for building a deck.

@@ -3,8 +3,8 @@ package com.kuroyale.model.state;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.Deck;
+import com.kuroyale.model.core.entities.Card;
+import com.kuroyale.model.core.entities.Deck;
 
 /**
  * Observer Pattern: Manages deck building state and notifies listeners of
