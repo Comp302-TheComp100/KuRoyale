@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import com.kuroyale.view.*;
 import com.kuroyale.view.card.CardView;
 import com.kuroyale.view.card.DeckSlotView;
 import com.kuroyale.view.dialog.CardInfoDialog;
