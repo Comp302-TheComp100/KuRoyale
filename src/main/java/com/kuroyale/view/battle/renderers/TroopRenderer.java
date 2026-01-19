@@ -108,7 +108,7 @@ public class TroopRenderer {
     /**
      * Render method for PvP mode (uses PvPGameState).
      */
-    public void renderPvP(com.kuroyale.model.logic.PvPGameState pvpGameState) {
+    public void renderPvP(com.kuroyale.model.state.PvPGameState pvpGameState) {
         List<Troop> troops = pvpGameState.getActiveTroops();
 
         currentTroops.clear();
@@ -121,8 +121,8 @@ public class TroopRenderer {
         }
     }
 
-    private void renderTroopPvP(Troop troop, com.kuroyale.model.logic.PvPGameState pvpGameState) {
-        com.kuroyale.model.entities.Vector2 worldPos = troop.getWorldPosition();
+    private void renderTroopPvP(Troop troop, com.kuroyale.model.state.PvPGameState pvpGameState) {
+        com.kuroyale.model.arena.Vector2 worldPos = troop.getWorldPosition();
         if (worldPos == null)
             return;
 
@@ -197,7 +197,7 @@ public class TroopRenderer {
     }
 
     private void renderTroop(Troop troop, GameState gameState) {
-        com.kuroyale.model.entities.Vector2 worldPos = troop.getWorldPosition();
+        com.kuroyale.model.arena.Vector2 worldPos = troop.getWorldPosition();
         if (worldPos == null)
             return;
 

@@ -1,8 +1,10 @@
 package com.kuroyale.service.battle.core;
 
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
-import com.kuroyale.model.logic.*;
 import com.kuroyale.model.state.IBattleState;
 import com.kuroyale.util.game.CombatUtils;
 
@@ -66,7 +68,7 @@ public class TargetingService {
         }
 
         // Optimize with SpatialGrid for detection radius query (using Vector2)
-        com.kuroyale.model.logic.SpatialGrid grid = state.getArena().getSpatialGrid();
+        com.kuroyale.model.arena.SpatialGrid grid = state.getArena().getSpatialGrid();
         java.util.List<ICombatant> candidates;
 
         if (grid != null) {

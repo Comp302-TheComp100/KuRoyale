@@ -10,9 +10,9 @@ import javafx.scene.shape.Rectangle;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.kuroyale.model.entities.Arena;
-import com.kuroyale.model.entities.ArenaLayout;
-import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.ArenaLayout;
+import com.kuroyale.model.arena.GridPosition;
 import com.kuroyale.model.entities.Tower;
 
 public class TowerRenderer {

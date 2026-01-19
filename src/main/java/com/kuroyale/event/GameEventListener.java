@@ -8,7 +8,7 @@ public interface GameEventListener {
         }
 
         default void onSpellCast(boolean isPlayer, com.kuroyale.model.entities.Card spell,
-                        com.kuroyale.model.entities.GridPosition center) {
+                        com.kuroyale.model.arena.GridPosition center) {
         }
 
         default void onTowerDestroyed(boolean isPlayerTower, com.kuroyale.model.entities.Tower tower) {
@@ -21,7 +21,7 @@ public interface GameEventListener {
                         int amount) {
         }
 
-        default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center,
+        default void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.arena.Vector2 center,
                         double radius,
                         double duration, String effectType) {
         }

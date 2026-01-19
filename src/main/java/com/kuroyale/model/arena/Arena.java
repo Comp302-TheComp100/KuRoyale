@@ -1,9 +1,12 @@
-package com.kuroyale.model.entities;
+package com.kuroyale.model.arena;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.kuroyale.model.entities.Building;
+import com.kuroyale.model.entities.Tower;
+import com.kuroyale.model.entities.Tower.TowerType;
 import com.kuroyale.model.enums.*;
 
 /*Represents the active game board during a match.
@@ -17,13 +20,13 @@ public class Arena {
     private final GridCell[][] grid;
     private final ArenaLayout layout;
     private final java.util.Map<GridPosition, Tower> towerMap;
-    private final com.kuroyale.model.logic.SpatialGrid spatialGrid;
+    private final com.kuroyale.model.arena.SpatialGrid spatialGrid;
 
     public Arena(ArenaLayout layout) {
         this.layout = layout;
         this.grid = new GridCell[WIDTH][HEIGHT];
         this.towerMap = new java.util.HashMap<>();
-        this.spatialGrid = new com.kuroyale.model.logic.SpatialGrid(WIDTH, HEIGHT);
+        this.spatialGrid = new com.kuroyale.model.arena.SpatialGrid(WIDTH, HEIGHT);
         initializeGrid();
     }
 
@@ -421,7 +424,7 @@ public class Arena {
         }
     }
 
-    public com.kuroyale.model.logic.SpatialGrid getSpatialGrid() {
+    public com.kuroyale.model.arena.SpatialGrid getSpatialGrid() {
         return spatialGrid;
     }
 }

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.kuroyale.model.arena.ArenaLayout;
 import com.kuroyale.service.auth.PasswordUtil;
 
 /*Represents a user account with username, password hash, and saved deck

@@ -41,7 +41,7 @@ public class CombatService {
                 // Death Spawn handling (e.g. Tombstone)
                 Card base = building.getBaseCard();
                 if (base != null && base.getDeathSpawnUnitName() != null) {
-                    com.kuroyale.model.entities.GridPosition spawnPos = state.getFrontPosition(building);
+                    com.kuroyale.model.arena.GridPosition spawnPos = state.getFrontPosition(building);
                     if (spawnPos == null) {
                         spawnPos = building.getPosition();
                     }
@@ -70,7 +70,7 @@ public class CombatService {
                 // Hit target
                 if (p.isAreaEffect()) {
                     // Use Vector2 directly for sub-tile precision
-                    com.kuroyale.model.entities.Vector2 impactPos = p.getPosition();
+                    com.kuroyale.model.arena.Vector2 impactPos = p.getPosition();
                     if (impactPos != null) {
                         double radius = 1.0;
                         double stun = 0.0;
@@ -191,7 +191,7 @@ public class CombatService {
         if (base == null || base.getSpawnUnitName() == null)
             return;
 
-        com.kuroyale.model.entities.GridPosition spawnPos = state.getFrontPosition(b);
+        com.kuroyale.model.arena.GridPosition spawnPos = state.getFrontPosition(b);
         if (spawnPos == null)
             return;
 
@@ -219,12 +219,12 @@ public class CombatService {
         if (isMelee) {
             // Instant Damage
             if (attacker.isAreaEffect()) {
-                com.kuroyale.model.entities.GridPosition targetPos = target.getPosition();
+                com.kuroyale.model.arena.GridPosition targetPos = target.getPosition();
                 if (target instanceof Tower || target instanceof Building) {
                     targetPos = target.getCenterPosition();
                 }
 
-                applyAreaDamage(state, com.kuroyale.model.entities.Vector2.fromGridPosition(targetPos), 1.0,
+                applyAreaDamage(state, com.kuroyale.model.arena.Vector2.fromGridPosition(targetPos), 1.0,
                         attacker.getDamage(), attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0,
                         "Generic");
             } else {
@@ -239,7 +239,7 @@ public class CombatService {
     private ICombatant findNearestTarget(ICombatant attacker, com.kuroyale.model.state.IBattleState state) {
         ICombatant best = null;
         double bestDist = Double.MAX_VALUE;
-        com.kuroyale.model.entities.Vector2 center = attacker.getCenterWorldPosition();
+        com.kuroyale.model.arena.Vector2 center = attacker.getCenterWorldPosition();
         if (center == null)
             return null;
 
@@ -254,7 +254,7 @@ public class CombatService {
         }
 
         // Optimize with SpatialGrid (using Vector2)
-        com.kuroyale.model.logic.SpatialGrid grid = state.getArena().getSpatialGrid();
+        com.kuroyale.model.arena.SpatialGrid grid = state.getArena().getSpatialGrid();
         if (grid == null)
             return null;
 
@@ -304,11 +304,11 @@ public class CombatService {
      * This is used for spell area damage to ensure spells hitting any part of a
      * structure apply damage.
      */
-    private double calculateDistanceToStructure(com.kuroyale.model.entities.Vector2 from, ICombatant structure) {
+    private double calculateDistanceToStructure(com.kuroyale.model.arena.Vector2 from, ICombatant structure) {
         if (from == null || structure == null)
             return Double.MAX_VALUE;
 
-        com.kuroyale.model.entities.GridPosition pos = structure.getPosition();
+        com.kuroyale.model.arena.GridPosition pos = structure.getPosition();
         if (pos == null)
             return Double.MAX_VALUE;
 
@@ -342,7 +342,7 @@ public class CombatService {
      * Centralized Area Damage logic using world coordinates (Vector2).
      */
     public void applyAreaDamage(com.kuroyale.model.state.IBattleState gameState,
-            com.kuroyale.model.entities.Vector2 center,
+            com.kuroyale.model.arena.Vector2 center,
             double radiusTiles,
             double damage,
             com.kuroyale.model.enums.TargetType targetType,
@@ -358,7 +358,7 @@ public class CombatService {
         int totalSpellDamage = 0; // Track total damage dealt by spell
 
         // Use SpatialGrid (Vector2) to efficiently find all potential targets
-        com.kuroyale.model.logic.SpatialGrid grid = gameState.getArena().getSpatialGrid();
+        com.kuroyale.model.arena.SpatialGrid grid = gameState.getArena().getSpatialGrid();
         if (grid == null)
             return;
 
@@ -388,7 +388,7 @@ public class CombatService {
             }
 
             // Precise Distance Check using world coordinates
-            com.kuroyale.model.entities.Vector2 candidatePos = candidate.getCenterWorldPosition();
+            com.kuroyale.model.arena.Vector2 candidatePos = candidate.getCenterWorldPosition();
             if (candidatePos == null)
                 continue;
 

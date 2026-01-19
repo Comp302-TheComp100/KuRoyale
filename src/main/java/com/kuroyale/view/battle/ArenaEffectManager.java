@@ -1,10 +1,10 @@
 package com.kuroyale.view.battle;
 
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.GridPosition;
 import com.kuroyale.model.entities.ICombatant;
 import com.kuroyale.model.entities.Tower;
-import com.kuroyale.model.entities.Vector2;
 import com.kuroyale.model.enums.CardType;
 import com.kuroyale.model.enums.ComboType;
 import com.kuroyale.view.battle.component.PngSequenceSprite;
@@ -322,8 +322,8 @@ public class ArenaEffectManager {
 
     private void playSpellSynergyEffect() {
         javafx.application.Platform.runLater(() -> {
-            double cx = com.kuroyale.model.entities.Arena.WIDTH * TILE_SIZE / 2.0;
-            double cy = com.kuroyale.model.entities.Arena.HEIGHT * TILE_SIZE / 2.0;
+            double cx = com.kuroyale.model.arena.Arena.WIDTH * TILE_SIZE / 2.0;
+            double cy = com.kuroyale.model.arena.Arena.HEIGHT * TILE_SIZE / 2.0;
 
             for (int i = 0; i < 10; i++) {
                 Circle sparkle = new Circle(cx, cy, 5, Color.CYAN);

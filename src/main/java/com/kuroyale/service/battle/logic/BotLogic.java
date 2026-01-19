@@ -1,5 +1,9 @@
 package com.kuroyale.service.battle.logic;
 
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridCell;
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.CardType;
 import com.kuroyale.model.enums.TargetType;

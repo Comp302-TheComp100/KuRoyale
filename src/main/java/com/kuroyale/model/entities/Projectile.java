@@ -1,5 +1,7 @@
 package com.kuroyale.model.entities;
 
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.enums.TargetType;
 
 public class Projectile {

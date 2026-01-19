@@ -10,8 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.entities.Projectile;
-import com.kuroyale.model.entities.Vector2;
 
 public class ProjectileRenderer {
     private final Pane unitLayer;

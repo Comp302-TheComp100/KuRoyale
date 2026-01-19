@@ -1,8 +1,14 @@
-package com.kuroyale.model.logic;
+package com.kuroyale.model.state;
 
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridCell;
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
-import com.kuroyale.model.state.IBattleState;
+import com.kuroyale.model.logic.ElixirManager;
+import com.kuroyale.model.logic.TurnManager;
+import com.kuroyale.model.logic.TurnManager.Turn;
 import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;

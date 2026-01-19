@@ -3,7 +3,7 @@ package com.kuroyale.service.management;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.arena.ArenaLayout;
 import com.kuroyale.model.entities.User;
 
 /*Service for validating game start conditions.

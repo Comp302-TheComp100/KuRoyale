@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.ArenaLayout;
+import com.kuroyale.model.arena.GridPosition;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.service.management.ArenaManagementService;

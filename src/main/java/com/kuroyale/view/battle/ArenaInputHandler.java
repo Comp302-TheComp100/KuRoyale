@@ -1,7 +1,7 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.entities.Arena;
-import com.kuroyale.model.entities.GridCell;
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridCell;
 import com.kuroyale.model.enums.TileType;
 
 import javafx.scene.canvas.Canvas;

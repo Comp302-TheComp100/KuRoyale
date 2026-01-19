@@ -1,5 +1,10 @@
 package com.kuroyale.service.battle.core;
 
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridCell;
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.SpatialGrid;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;

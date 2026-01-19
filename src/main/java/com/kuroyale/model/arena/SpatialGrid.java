@@ -1,10 +1,8 @@
-package com.kuroyale.model.logic;
+package com.kuroyale.model.arena;
 
 import java.util.*;
 
-import com.kuroyale.model.entities.GridPosition;
 import com.kuroyale.model.entities.ICombatant;
-import com.kuroyale.model.entities.Vector2;
 
 /*A spatial partitioning grid (Bin-Lattice) to optimize spatial queries.
  * The arena is divided into larger buckets (cells). Entities are stored in these buckets based on their position.

@@ -1,7 +1,7 @@
 package com.kuroyale.view.battle;
 
-import com.kuroyale.model.entities.Arena;
-import com.kuroyale.model.entities.GridCell;
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridCell;
 import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.enums.TileType;
 import com.kuroyale.model.state.GameState;
@@ -33,7 +33,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private final Canvas debugLayer;
     private final Pane arenaPane;
     private final GameState gameState;
-    private final com.kuroyale.model.logic.PvPGameState pvpGameState;
+    private final com.kuroyale.model.state.PvPGameState pvpGameState;
     private final java.util.Map<Long, javafx.scene.Node> cellIndex = new java.util.HashMap<>();
 
     private static final int TILE_SIZE = com.kuroyale.util.config.GameConstants.TILE_SIZE;
@@ -51,7 +51,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     /**
      * Constructor for PvP mode.
      */
-    public BattleArenaView(com.kuroyale.model.logic.PvPGameState pvpGameState) {
+    public BattleArenaView(com.kuroyale.model.state.PvPGameState pvpGameState) {
         this.getStylesheets().add(getClass().getResource("/com/kuroyale/view/battle.css").toExternalForm());
         this.gameState = null;
         this.pvpGameState = pvpGameState;
@@ -262,14 +262,14 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     // ==========================================
 
     @Override
-    public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
+    public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.arena.Vector2 center, double radius,
             double duration, String effectType) {
         effectManager.playAreaEffect(isPlayerSource, center, radius, duration, effectType);
     }
 
     @Override
     public void onSpellCast(boolean isPlayer, com.kuroyale.model.entities.Card spell,
-            com.kuroyale.model.entities.GridPosition center) {
+            com.kuroyale.model.arena.GridPosition center) {
         effectManager.playSpellCast(isPlayer, spell, center);
     }
 
@@ -293,7 +293,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         }
 
         // Fallback: Calculate from grid position and type
-        com.kuroyale.model.entities.GridPosition pos = tower.getPosition();
+        com.kuroyale.model.arena.GridPosition pos = tower.getPosition();
         if (pos == null)
             return null;
 

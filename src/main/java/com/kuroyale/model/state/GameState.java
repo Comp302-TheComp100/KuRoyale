@@ -1,5 +1,9 @@
 package com.kuroyale.model.state;
 
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridCell;
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;

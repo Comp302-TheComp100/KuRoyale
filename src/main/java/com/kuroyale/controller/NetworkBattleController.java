@@ -1,5 +1,9 @@
 package com.kuroyale.controller;
 
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.ArenaLayout;
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.dto.NetworkMessage;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
@@ -256,7 +260,8 @@ public class NetworkBattleController implements GameEventListener {
             }
             if (networkService.getHostArenaLayout() != null) {
                 layoutToUse = mirrorLayoutForClient(networkService.getHostArenaLayout());
-                System.out.println("[NetworkBattle] CLIENT: Received HOST's layout after wait: " + layoutToUse.getName());
+                System.out
+                        .println("[NetworkBattle] CLIENT: Received HOST's layout after wait: " + layoutToUse.getName());
             } else {
                 // Fallback to own layout if HOST's not received (shouldn't happen normally)
                 layoutToUse = model.loadArenaLayout();
@@ -1197,8 +1202,9 @@ public class NetworkBattleController implements GameEventListener {
      * 
      * For PRINCESS towers, we must use position to distinguish left from right.
      * 
-     * IMPORTANT: Also detects towers that are MISSING from HOST's sync - 
-     * these were destroyed and removed from HOST's arena, so CLIENT must remove them too.
+     * IMPORTANT: Also detects towers that are MISSING from HOST's sync -
+     * these were destroyed and removed from HOST's arena, so CLIENT must remove
+     * them too.
      */
     private void handleTowerSync(NetworkMessage message) {
         String towerData = message.getTowerSyncData();
@@ -1206,7 +1212,7 @@ public class NetworkBattleController implements GameEventListener {
             return;
 
         Arena arena = gameState.getArena();
-        
+
         // Track which towers we received from HOST (to detect missing/destroyed towers)
         java.util.Set<Tower> towersInSync = new java.util.HashSet<>();
 
@@ -1240,14 +1246,14 @@ public class NetworkBattleController implements GameEventListener {
 
                     if (targetTower != null) {
                         towersInSync.add(targetTower);
-                        
+
                         // IMPORTANT: Check if tower was alive BEFORE updating health
                         boolean wasAlive = targetTower.isAlive();
-                        
+
                         targetTower.setCurrentHealth(currentHealth);
 
                         if (!isAlive && wasAlive) {
-                            System.out.println("[NetworkBattle] Tower destroyed (via sync): " + type + 
+                            System.out.println("[NetworkBattle] Tower destroyed (via sync): " + type +
                                     " (client side: " + clientIsPlayerSide + ") at X=" + clientGridX);
 
                             // Remove the dead tower from the arena so visuals update correctly
@@ -1276,9 +1282,9 @@ public class NetworkBattleController implements GameEventListener {
         java.util.Set<Tower> clientTowers = new java.util.HashSet<>(arena.getAllTowers());
         for (Tower clientTower : clientTowers) {
             if (!towersInSync.contains(clientTower)) {
-                System.out.println("[NetworkBattle] Tower missing from HOST sync, removing: " + 
+                System.out.println("[NetworkBattle] Tower missing from HOST sync, removing: " +
                         clientTower.getType() + " (player side: " + clientTower.isPlayerSide() + ")");
-                
+
                 // Check win/lose conditions before removing
                 if (clientTower.getType() == Tower.TowerType.KING) {
                     if (clientTower.isPlayerSide()) {
@@ -1287,7 +1293,7 @@ public class NetworkBattleController implements GameEventListener {
                         showVictory("You destroyed the enemy King Tower!");
                     }
                 }
-                
+
                 arena.removeTower(clientTower);
             }
         }
@@ -1457,7 +1463,8 @@ public class NetworkBattleController implements GameEventListener {
      * 
      * For 180° rotation:
      * - Bridge X: mirroredX = WIDTH - 1 - x
-     * - Tower X: mirroredX = WIDTH - towerSize - x (so the mirrored top-left is correct)
+     * - Tower X: mirroredX = WIDTH - towerSize - x (so the mirrored top-left is
+     * correct)
      */
     private ArenaLayout mirrorLayoutForClient(ArenaLayout hostLayout) {
         ArenaLayout clientLayout = new ArenaLayout(hostLayout.getName());
@@ -1482,9 +1489,9 @@ public class NetworkBattleController implements GameEventListener {
             clientLayout.setKingTowerPosition(mirroredX, kingPos.getY());
         }
 
-        System.out.println("[NetworkBattle] Mirrored layout for CLIENT - Bridges: " + 
-            clientLayout.getBridgePositions().size() + ", Princess towers: " + 
-            clientLayout.getPrincessTowerPositions().size());
+        System.out.println("[NetworkBattle] Mirrored layout for CLIENT - Bridges: " +
+                clientLayout.getBridgePositions().size() + ", Princess towers: " +
+                clientLayout.getPrincessTowerPositions().size());
 
         return clientLayout;
     }

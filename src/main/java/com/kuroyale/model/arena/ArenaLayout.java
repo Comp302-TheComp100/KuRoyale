@@ -1,4 +1,4 @@
-package com.kuroyale.model.entities;
+package com.kuroyale.model.arena;
 
 import java.io.Serializable;
 import java.util.ArrayList;

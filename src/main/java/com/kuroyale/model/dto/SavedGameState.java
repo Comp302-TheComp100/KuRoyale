@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.kuroyale.model.arena.ArenaLayout;
 import com.kuroyale.model.entities.*;
 
 /*Represents a saved game state that can be persisted and reloaded.

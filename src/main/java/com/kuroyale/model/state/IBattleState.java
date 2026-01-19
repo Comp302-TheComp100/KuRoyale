@@ -2,10 +2,10 @@ package com.kuroyale.model.state;
 
 import java.util.List;
 
-import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridPosition;
 import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.GridPosition;
 import com.kuroyale.model.entities.Troop;
 import com.kuroyale.model.logic.ElixirManager;
 

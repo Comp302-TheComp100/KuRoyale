@@ -3,6 +3,8 @@ package com.kuroyale.model.entities;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.enums.*;
 
 public class Troop implements ICombatant {

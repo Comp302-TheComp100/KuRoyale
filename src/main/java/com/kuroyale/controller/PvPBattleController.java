@@ -1,7 +1,10 @@
 package com.kuroyale.controller;
 
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.ArenaLayout;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.model.state.PvPGameState;
 import com.kuroyale.service.game.BattleSessionService;
 import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.battle.BattleArenaView;
@@ -181,7 +184,7 @@ public class PvPBattleController {
             }
 
             @Override
-            public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center,
+            public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.arena.Vector2 center,
                     double radius,
                     double duration, String effectType) {
             }

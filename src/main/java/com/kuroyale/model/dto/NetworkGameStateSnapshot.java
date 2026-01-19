@@ -1,14 +1,14 @@
 package com.kuroyale.model.dto;
 
-import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridPosition;
+import com.kuroyale.model.arena.Vector2;
 import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.GridPosition;
 import com.kuroyale.model.entities.ICombatant;
 import com.kuroyale.model.entities.Projectile;
 import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.entities.Troop;
-import com.kuroyale.model.entities.Vector2;
 import com.kuroyale.model.state.GameState;
 
 import java.util.ArrayList;

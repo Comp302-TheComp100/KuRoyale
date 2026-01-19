@@ -1,7 +1,7 @@
 package com.kuroyale.model.dto;
 
-import com.kuroyale.model.entities.ArenaLayout;
-import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.arena.ArenaLayout;
+import com.kuroyale.model.arena.GridPosition;
 import com.kuroyale.model.enums.NetworkMessageType;
 
 import java.io.Serializable;

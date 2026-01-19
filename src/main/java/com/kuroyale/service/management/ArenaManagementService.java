@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.kuroyale.model.entities.Arena;
-import com.kuroyale.model.entities.ArenaLayout;
-import com.kuroyale.model.entities.GridCell;
-import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.ArenaLayout;
+import com.kuroyale.model.arena.GridCell;
+import com.kuroyale.model.arena.GridPosition;
 import com.kuroyale.model.entities.User;
 import com.kuroyale.repository.UserRepository;
 

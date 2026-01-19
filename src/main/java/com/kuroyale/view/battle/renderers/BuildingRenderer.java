@@ -84,7 +84,7 @@ public class BuildingRenderer {
     /**
      * Render method for PvP mode (uses PvPGameState).
      */
-    public void renderPvP(com.kuroyale.model.logic.PvPGameState pvpGameState) {
+    public void renderPvP(com.kuroyale.model.state.PvPGameState pvpGameState) {
         java.util.List<Building> buildings = pvpGameState.getActiveBuildings();
         Set<Building> currentBuildings = new HashSet<>(buildings);
 
@@ -278,8 +278,8 @@ public class BuildingRenderer {
         if (visual.laserBeam != null) {
             com.kuroyale.model.entities.ICombatant target = b.getTarget();
             if (target != null && target.isAlive()) {
-                com.kuroyale.model.entities.GridPosition myPos = b.getCenterPosition();
-                com.kuroyale.model.entities.GridPosition targetPos = target.getCenterPosition();
+                com.kuroyale.model.arena.GridPosition myPos = b.getCenterPosition();
+                com.kuroyale.model.arena.GridPosition targetPos = target.getCenterPosition();
 
                 if (myPos != null && targetPos != null) {
                     double sx = myPos.getX() * TILE_SIZE + TILE_SIZE / 2.0;

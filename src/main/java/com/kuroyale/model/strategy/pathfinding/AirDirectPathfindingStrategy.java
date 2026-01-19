@@ -2,6 +2,8 @@ package com.kuroyale.model.strategy.pathfinding;
 
 import java.util.*;
 
+import com.kuroyale.model.arena.Arena;
+import com.kuroyale.model.arena.GridPosition;
 import com.kuroyale.model.entities.*;
 
 public class AirDirectPathfindingStrategy implements PathfindingStrategy {
