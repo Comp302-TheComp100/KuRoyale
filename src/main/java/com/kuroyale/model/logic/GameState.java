@@ -2,6 +2,7 @@ package com.kuroyale.model.logic;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
+import com.kuroyale.service.battle.BotLogic;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.event.GameEventBus;
 
@@ -20,8 +21,8 @@ public class GameState implements IBattleState {
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
     private final List<Projectile> activeProjectiles;
-    private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
-    private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
+    private final com.kuroyale.service.battle.TroopMovementService troopMovementService = new com.kuroyale.service.battle.TroopMovementService();
+    private final com.kuroyale.service.battle.CombatService combatService = new com.kuroyale.service.battle.CombatService();
 
     private double gameTime = 180.0; // 3 minutes
     private int playerScore = 0, botScore = 0;
@@ -364,7 +365,7 @@ public class GameState implements IBattleState {
     public boolean isDraw() {
         return isDraw;
     }
-    
+
     /**
      * Returns whether tiebreaker mode is active.
      * In tiebreaker mode, the player with the lowest health tower loses.
@@ -452,7 +453,7 @@ public class GameState implements IBattleState {
     public void setGameTime(double gameTime) {
         this.gameTime = Math.max(0, gameTime);
     }
-    
+
     /**
      * Sets the scores (used for network sync where host is authoritative).
      */
@@ -460,21 +461,21 @@ public class GameState implements IBattleState {
         this.playerScore = playerScore;
         this.botScore = botScore;
     }
-    
+
     /**
      * Sets the player score directly (used for network sync).
      */
     public void setPlayerScore(int score) {
         this.playerScore = score;
     }
-    
+
     /**
      * Sets the bot/opponent score directly (used for network sync).
      */
     public void setBotScore(int score) {
         this.botScore = score;
     }
-    
+
     /**
      * Sets the double elixir state (used for network sync).
      */
@@ -485,7 +486,7 @@ public class GameState implements IBattleState {
             botElixir.setDoubleElixir(true);
         }
     }
-    
+
     /**
      * Applies a full game state sync from the authoritative host.
      * Used by the client to update its local state.
@@ -495,19 +496,21 @@ public class GameState implements IBattleState {
         this.gameTime = Math.max(0, gameTime);
         this.playerScore = playerScore;
         this.botScore = botScore;
-        
-        // Sync elixir values - client sees these inverted (their elixir is the "bot" from host's perspective)
-        // The client's "player" elixir should match the host's "bot" elixir (since client is the opponent)
-        this.playerElixir.setCurrentElixir(botElixirValue);  // Client's elixir = Host's opponent elixir
-        this.botElixir.setCurrentElixir(playerElixirValue);  // Client's opponent = Host's player
-        
+
+        // Sync elixir values - client sees these inverted (their elixir is the "bot"
+        // from host's perspective)
+        // The client's "player" elixir should match the host's "bot" elixir (since
+        // client is the opponent)
+        this.playerElixir.setCurrentElixir(botElixirValue); // Client's elixir = Host's opponent elixir
+        this.botElixir.setCurrentElixir(playerElixirValue); // Client's opponent = Host's player
+
         if (isDoubleElixir && !this.isDoubleElixir) {
             this.isDoubleElixir = true;
             this.playerElixir.setDoubleElixir(true);
             this.botElixir.setDoubleElixir(true);
         }
     }
-    
+
     /**
      * Light update for client - updates movement and visuals but NOT scoring.
      * The authoritative scores and game state come from the host.
@@ -517,11 +520,11 @@ public class GameState implements IBattleState {
         // Update elixir regeneration for responsive UI
         playerElixir.update(deltaTime);
         botElixir.update(deltaTime);
-        
+
         // Update timer locally (will be corrected by host sync)
         if (gameTime > 0) {
             gameTime -= deltaTime;
-            
+
             // Check for Double Elixir locally (host will confirm)
             if (gameTime <= 60.0 && !isDoubleElixir) {
                 isDoubleElixir = true;
@@ -529,24 +532,24 @@ public class GameState implements IBattleState {
                 botElixir.setDoubleElixir(true);
             }
         }
-        
+
         // Update troop movement for visual smoothness
         troopMovementService.updateTroops(deltaTime, this, activeTroops);
-        
+
         // Update buildings (lifetime, animations)
         for (Building b : activeBuildings) {
             if (b.isAlive()) {
                 b.update(deltaTime);
             }
         }
-        
+
         // Run combat for visual effects (damage numbers, animations)
         // But do NOT calculate scores - those come from host
         combatService.update(deltaTime, this);
-        
+
         // Remove dead troops (visual cleanup)
         activeTroops.removeIf(t -> !t.isAlive());
-        
+
         // Cleanup dead buildings
         java.util.Iterator<Building> it = activeBuildings.iterator();
         while (it.hasNext()) {
@@ -556,14 +559,14 @@ public class GameState implements IBattleState {
                 it.remove();
             }
         }
-        
+
         // Remove dead towers (visual cleanup - scores come from host)
         arena.removeDeadTowers();
-        
+
         // NOTE: Do NOT update scores or check win conditions here
         // Those are authoritative from the host
     }
-    
+
     /**
      * Render-only update for network client.
      * Client receives all entity positions from host and just renders them.
@@ -572,11 +575,11 @@ public class GameState implements IBattleState {
     public void updateRenderOnly(double deltaTime) {
         // Only update elixir for responsive UI (will be corrected by host sync)
         playerElixir.update(deltaTime);
-        
+
         // Everything else (troops, combat, towers) comes from host via full state sync
         // No local simulation!
     }
-    
+
     /**
      * Serializes all troops for network transmission.
      * Format: cardName,worldX,worldY,health,isPlayer,state|cardName,...
@@ -584,25 +587,26 @@ public class GameState implements IBattleState {
     public String serializeTroops() {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
-        
+
         for (Troop troop : activeTroops) {
-            if (!first) sb.append("|");
+            if (!first)
+                sb.append("|");
             first = false;
-            
+
             Card card = troop.getBaseCard();
             Vector2 pos = troop.getWorldPosition();
-            
+
             sb.append(card != null ? card.getName() : "Unknown")
-              .append(",").append(String.format("%.2f", pos.getX()))
-              .append(",").append(String.format("%.2f", pos.getY()))
-              .append(",").append(troop.getCurrentHealth())
-              .append(",").append(troop.isPlayerSide())
-              .append(",").append(troop.getUnitState().name());
+                    .append(",").append(String.format("%.2f", pos.getX()))
+                    .append(",").append(String.format("%.2f", pos.getY()))
+                    .append(",").append(troop.getCurrentHealth())
+                    .append(",").append(troop.isPlayerSide())
+                    .append(",").append(troop.getUnitState().name());
         }
-        
+
         return sb.toString();
     }
-    
+
     /**
      * Serializes all buildings for network transmission.
      * Format: cardName,gridX,gridY,health,isPlayer,lifetime|...
@@ -610,24 +614,25 @@ public class GameState implements IBattleState {
     public String serializeBuildings() {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
-        
+
         for (Building building : activeBuildings) {
-            if (!first) sb.append("|");
+            if (!first)
+                sb.append("|");
             first = false;
-            
+
             GridPosition pos = building.getPosition();
-            
+
             sb.append(building.getCardName() != null ? building.getCardName() : "Building")
-              .append(",").append(pos.getX())
-              .append(",").append(pos.getY())
-              .append(",").append(building.getCurrentHealth())
-              .append(",").append(building.isPlayerSide())
-              .append(",").append(String.format("%.1f", building.getRemainingLifetime()));
+                    .append(",").append(pos.getX())
+                    .append(",").append(pos.getY())
+                    .append(",").append(building.getCurrentHealth())
+                    .append(",").append(building.isPlayerSide())
+                    .append(",").append(String.format("%.1f", building.getRemainingLifetime()));
         }
-        
+
         return sb.toString();
     }
-    
+
     /**
      * Clears all troops and buildings - used before applying host state.
      */
@@ -639,11 +644,11 @@ public class GameState implements IBattleState {
         for (Building building : activeBuildings) {
             arena.getSpatialGrid().remove(building);
         }
-        
+
         activeTroops.clear();
         activeBuildings.clear();
     }
-    
+
     /**
      * Removes a specific troop (for network sync when troop dies on host).
      */
@@ -653,7 +658,7 @@ public class GameState implements IBattleState {
             activeTroops.remove(troop);
         }
     }
-    
+
     /**
      * Clears only buildings - used for smarter network sync.
      */
@@ -663,9 +668,10 @@ public class GameState implements IBattleState {
         }
         activeBuildings.clear();
     }
-    
+
     /**
-     * Removes a specific building (for network sync when building is destroyed on host).
+     * Removes a specific building (for network sync when building is destroyed on
+     * host).
      */
     public void removeBuilding(Building building) {
         if (building != null) {
@@ -673,32 +679,32 @@ public class GameState implements IBattleState {
             activeBuildings.remove(building);
         }
     }
-    
+
     /**
      * Spawns a troop at exact world position (for network sync).
      * Used by client to recreate host's troop state.
      */
-    public void spawnTroopAtPosition(String cardName, double worldX, double worldY, int health, boolean isPlayer, String state) {
+    public void spawnTroopAtPosition(String cardName, double worldX, double worldY, int health, boolean isPlayer,
+            String state) {
         Card card = getCardByName(cardName);
         if (card == null) {
             System.err.println("[GameState] Unknown card for troop spawn: " + cardName);
             return;
         }
-        
+
         // Create troop at approximate grid position
         int gridX = (int) worldX;
         int gridY = (int) worldY;
         GridPosition spawn = GridPosition.tryCreate(
-            Math.max(0, Math.min(gridX, Arena.WIDTH - 1)),
-            Math.max(0, Math.min(gridY, Arena.HEIGHT - 1))
-        );
-        
+                Math.max(0, Math.min(gridX, Arena.WIDTH - 1)),
+                Math.max(0, Math.min(gridY, Arena.HEIGHT - 1)));
+
         if (spawn != null) {
             Troop troop = new Troop(card, spawn, isPlayer);
             // Set exact world position
             troop.setWorldPosition(new Vector2(worldX, worldY));
             troop.setCurrentHealth(health);
-            
+
             // Set unit state for proper animation rendering
             if (state != null && !state.isEmpty()) {
                 try {
@@ -708,93 +714,103 @@ public class GameState implements IBattleState {
                     troop.setUnitState(com.kuroyale.model.enums.UnitState.MOVING);
                 }
             }
-            
+
             activeTroops.add(troop);
             arena.getSpatialGrid().add(troop);
         }
     }
-    
+
     /**
      * Spawns a building at position (for network sync).
      */
-    public void spawnBuildingAtPosition(String cardName, int gridX, int gridY, int health, boolean isPlayer, double lifetime) {
+    public void spawnBuildingAtPosition(String cardName, int gridX, int gridY, int health, boolean isPlayer,
+            double lifetime) {
         Card card = getCardByName(cardName);
         if (card == null) {
-            System.err.println("[GameState] Unknown card for building spawn: '" + cardName + "' - cardCatalog is " + (cardCatalog != null ? "set" : "NULL"));
+            System.err.println("[GameState] Unknown card for building spawn: '" + cardName + "' - cardCatalog is "
+                    + (cardCatalog != null ? "set" : "NULL"));
             return;
         }
-        
+
         int bw = Math.max(1, card.getFootprintWidthTiles());
         int bh = Math.max(1, card.getFootprintHeightTiles());
-        
+
         // Clamp position to valid bounds
         int clampedX = Math.max(0, Math.min(gridX, Arena.WIDTH - bw));
         int clampedY = Math.max(0, Math.min(gridY, Arena.HEIGHT - bh));
-        
+
         GridPosition pos = GridPosition.tryCreate(clampedX, clampedY);
         if (pos != null) {
-            Building building = new Building(pos, bw, bh, isPlayer, card.getHp(), card.getImagePath(), card.getLifetime());
+            Building building = new Building(pos, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
+                    card.getLifetime());
             building.configureCombatFromCard(card);
             building.setCurrentHealth(health);
             building.setRemainingLifetime(lifetime);
-            
+
             activeBuildings.add(building);
             arena.getSpatialGrid().add(building);
-            System.out.println("[GameState] Building '" + cardName + "' spawned at (" + clampedX + ", " + clampedY + ") size " + bw + "x" + bh);
+            System.out.println("[GameState] Building '" + cardName + "' spawned at (" + clampedX + ", " + clampedY
+                    + ") size " + bw + "x" + bh);
         } else {
-            System.err.println("[GameState] Failed to create GridPosition for building at (" + clampedX + ", " + clampedY + ")");
+            System.err.println(
+                    "[GameState] Failed to create GridPosition for building at (" + clampedX + ", " + clampedY + ")");
         }
     }
-    
+
     /**
-     * Spawns a building directly without relying on card catalog (for network sync).
+     * Spawns a building directly without relying on card catalog (for network
+     * sync).
      * This is a fallback method when card lookup fails.
      */
     public boolean spawnBuildingDirect(String cardName, int gridX, int gridY, int health, int maxHealth,
             boolean isPlayer, double lifetime, int width, int height, String imagePath) {
-        
+
         // First try using card catalog
         Card card = getCardByName(cardName);
         if (card != null) {
             // Use card-based spawn
             int bw = Math.max(1, card.getFootprintWidthTiles());
             int bh = Math.max(1, card.getFootprintHeightTiles());
-            
+
             int clampedX = Math.max(0, Math.min(gridX, Arena.WIDTH - bw));
             int clampedY = Math.max(0, Math.min(gridY, Arena.HEIGHT - bh));
-            
+
             GridPosition pos = GridPosition.tryCreate(clampedX, clampedY);
             if (pos != null) {
-                Building building = new Building(pos, bw, bh, isPlayer, card.getHp(), card.getImagePath(), card.getLifetime());
+                Building building = new Building(pos, bw, bh, isPlayer, card.getHp(), card.getImagePath(),
+                        card.getLifetime());
                 building.configureCombatFromCard(card);
                 building.setCurrentHealth(health);
                 building.setRemainingLifetime(lifetime);
-                
+
                 activeBuildings.add(building);
                 arena.getSpatialGrid().add(building);
-                System.out.println("[GameState] Building '" + cardName + "' spawned via card at (" + clampedX + ", " + clampedY + ")");
+                System.out.println("[GameState] Building '" + cardName + "' spawned via card at (" + clampedX + ", "
+                        + clampedY + ")");
                 return true;
             }
         }
-        
+
         // Fallback: Create building directly with provided data
         int clampedX = Math.max(0, Math.min(gridX, Arena.WIDTH - width));
         int clampedY = Math.max(0, Math.min(gridY, Arena.HEIGHT - height));
-        
+
         GridPosition pos = GridPosition.tryCreate(clampedX, clampedY);
         if (pos != null) {
-            String imgPath = (imagePath != null && !imagePath.isEmpty()) ? imagePath : "images/cards/building_default.png";
+            String imgPath = (imagePath != null && !imagePath.isEmpty()) ? imagePath
+                    : "images/cards/building_default.png";
             Building building = new Building(pos, width, height, isPlayer, maxHealth, imgPath, (int) lifetime);
             building.setCardName(cardName);
             building.setCurrentHealth(health);
             building.setRemainingLifetime(lifetime);
-            
+
             activeBuildings.add(building);
             arena.getSpatialGrid().add(building);
-            System.out.println("[GameState] Building '" + cardName + "' spawned DIRECTLY at (" + clampedX + ", " + clampedY + ") size " + width + "x" + height);
+            System.out.println("[GameState] Building '" + cardName + "' spawned DIRECTLY at (" + clampedX + ", "
+                    + clampedY + ") size " + width + "x" + height);
             return true;
         }
-        
+
         System.err.println("[GameState] Failed to spawn building '" + cardName + "' at (" + gridX + ", " + gridY + ")");
         return false;
     }
@@ -1122,7 +1138,7 @@ public class GameState implements IBattleState {
     public List<Troop> getActiveTroops() {
         return activeTroops;
     }
-    
+
     /**
      * Alias for getActiveTroops() - used for network sync compatibility.
      */
@@ -1133,7 +1149,7 @@ public class GameState implements IBattleState {
     public List<Building> getActiveBuildings() {
         return activeBuildings;
     }
-    
+
     /**
      * Alias for getActiveBuildings() - used for network sync compatibility.
      */

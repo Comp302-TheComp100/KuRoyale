@@ -196,7 +196,7 @@ public class MainMenuController {
     }
 
     private void showError(String message) {
-        com.kuroyale.view.ThemedAlertController.show(root.getScene().getWindow(), "Error", message, null);
+        com.kuroyale.util.ThemedAlertManager.show(root.getScene().getWindow(), "Error", message, null);
     }
 
     private void updateGoldDisplay() {

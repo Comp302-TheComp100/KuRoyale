@@ -1,4 +1,4 @@
-package com.kuroyale.model.logic;
+package com.kuroyale.model.state;
 
 import com.kuroyale.model.entities.*;
 

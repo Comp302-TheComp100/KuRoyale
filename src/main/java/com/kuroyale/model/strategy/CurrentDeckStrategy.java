@@ -3,10 +3,10 @@ package com.kuroyale.model.strategy;
 import java.util.List;
 
 import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.CardCatalog;
 import com.kuroyale.model.entities.Deck;
 import com.kuroyale.model.entities.User;
 import com.kuroyale.service.AuthenticationService;
-import com.kuroyale.service.CardCatalog;
 import com.kuroyale.util.ServiceFactory;
 
 /**

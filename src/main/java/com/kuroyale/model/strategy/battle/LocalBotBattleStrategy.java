@@ -1,4 +1,4 @@
-package com.kuroyale.service.battle;
+package com.kuroyale.model.strategy.battle;
 
 import com.kuroyale.controller.BattleController;
 

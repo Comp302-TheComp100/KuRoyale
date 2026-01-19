@@ -7,6 +7,11 @@ import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.entities.Vector2;
 import com.kuroyale.model.enums.CardType;
 import com.kuroyale.model.enums.ComboType;
+import com.kuroyale.view.battle.effects.ActiveSpellVisual;
+import com.kuroyale.view.battle.effects.ArrowsEffect;
+import com.kuroyale.view.battle.effects.FireballEffect;
+import com.kuroyale.view.battle.effects.RocketEffect;
+import com.kuroyale.view.battle.effects.ZapEffect;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
@@ -29,16 +34,6 @@ public class ArenaEffectManager {
     private final Pane effectLayer;
 
     private final java.util.List<ActiveSpellVisual> activeSpellVisuals = new java.util.ArrayList<>();
-
-    private static class ActiveSpellVisual {
-        final javafx.scene.Node node;
-        double timeRemaining;
-
-        ActiveSpellVisual(javafx.scene.Node node, double timeRemaining) {
-            this.node = node;
-            this.timeRemaining = timeRemaining;
-        }
-    }
 
     public ArenaEffectManager(Pane arenaPane, Pane unitLayer, Pane effectLayer) {
         this.arenaPane = arenaPane;
@@ -187,159 +182,15 @@ public class ArenaEffectManager {
             double rPixels = radius * TILE_SIZE;
 
             if (isFireball) {
-                com.kuroyale.view.util.FireballFactory.playExplosionEffect(unitLayer, cx, cy, rPixels);
+                FireballEffect.playExplosionEffect(unitLayer, cx, cy, rPixels);
             } else if (isRocket) {
-                com.kuroyale.view.util.RocketFactory.playExplosionEffect(unitLayer, cx, cy, rPixels);
+                RocketEffect.playExplosionEffect(unitLayer, cx, cy, rPixels);
             } else if (isZap) {
-                playZapEffect(cx, cy, rPixels, duration);
+                ZapEffect.play(unitLayer, cx, cy, rPixels, duration, activeSpellVisuals);
             } else if (isArrow) {
-                playArrowsEffect(isPlayerSource, cx, cy, rPixels, duration);
+                ArrowsEffect.play(unitLayer, isPlayerSource, cx, cy, rPixels, duration, activeSpellVisuals);
             }
         });
-    }
-
-    private void playZapEffect(double cx, double cy, double rPixels, double duration) {
-        double radiusX = rPixels;
-        double radiusY = rPixels * 0.9;
-
-        javafx.scene.shape.Ellipse areaEllipse = new javafx.scene.shape.Ellipse(cx, cy, radiusX, radiusY);
-        areaEllipse.setFill(Color.rgb(255, 255, 0, 0.3));
-        areaEllipse.setStroke(Color.WHITE);
-        areaEllipse.setStrokeWidth(3.0);
-
-        javafx.scene.effect.DropShadow zapGlow = new javafx.scene.effect.DropShadow();
-        zapGlow.setColor(Color.WHITE);
-        zapGlow.setRadius(25);
-        zapGlow.setSpread(0.6);
-        areaEllipse.setEffect(zapGlow);
-        areaEllipse.setMouseTransparent(true);
-
-        unitLayer.getChildren().add(areaEllipse);
-        activeSpellVisuals.add(new ActiveSpellVisual(areaEllipse, duration));
-
-        // Lightning GIF
-        javafx.scene.image.Image gifImage = new javafx.scene.image.Image(
-                getClass().getResourceAsStream("/gifs/zap.gif"));
-        javafx.scene.image.ImageView gifView = new javafx.scene.image.ImageView(gifImage);
-
-        double spellWidth = rPixels * 2.0;
-        double visualOffset = 100.0;
-        double lightningHeight = cy + visualOffset;
-
-        gifView.setFitWidth(spellWidth);
-        gifView.setFitHeight(lightningHeight);
-        gifView.setPreserveRatio(false);
-        gifView.setLayoutX(cx - (spellWidth / 2.0));
-        gifView.setLayoutY(cy - lightningHeight + (radiusY / 2));
-
-        gifView.setMouseTransparent(true);
-        unitLayer.getChildren().add(gifView);
-        activeSpellVisuals.add(new ActiveSpellVisual(gifView, duration));
-    }
-
-    private void playArrowsEffect(boolean isPlayerSource, double cx, double cy, double rPixels, double duration) {
-        int arrowCount = 8;
-        double spreadRadius = rPixels * 0.8;
-
-        // Area indicator
-        Circle areaIndicator = new Circle(cx, cy, rPixels);
-        areaIndicator.setFill(Color.rgb(255, 100, 0, 0.15));
-        areaIndicator.setStroke(Color.rgb(255, 150, 0, 0.5));
-        areaIndicator.setStrokeWidth(2.0);
-        areaIndicator.setMouseTransparent(true);
-        unitLayer.getChildren().add(areaIndicator);
-        activeSpellVisuals.add(new ActiveSpellVisual(areaIndicator, duration));
-
-        double startY = isPlayerSource ? (cy + 200) : (cy - 200);
-
-        for (int i = 0; i < arrowCount; i++) {
-            double offsetX = (Math.random() - 0.5) * spreadRadius * 2;
-            double offsetY = (Math.random() - 0.5) * spreadRadius * 2;
-            double targetX = cx + offsetX;
-            double targetY = cy + offsetY;
-            double startX = targetX + (Math.random() - 0.5) * 80;
-
-            Rectangle arrowVisual = new Rectangle(25, 3);
-            arrowVisual.setArcWidth(3);
-            arrowVisual.setArcHeight(3);
-            arrowVisual.setFill(Color.rgb(139, 90, 43));
-
-            javafx.scene.effect.DropShadow trailGlow = new javafx.scene.effect.DropShadow();
-            trailGlow.setColor(Color.ORANGE);
-            trailGlow.setRadius(8);
-            trailGlow.setSpread(0.3);
-            arrowVisual.setEffect(trailGlow);
-            arrowVisual.setMouseTransparent(true);
-            arrowVisual.setVisible(false);
-            unitLayer.getChildren().add(arrowVisual);
-
-            javafx.scene.shape.QuadCurve arrowPath = new javafx.scene.shape.QuadCurve();
-            arrowPath.setStartX(startX);
-            arrowPath.setStartY(startY);
-            arrowPath.setEndX(targetX);
-            arrowPath.setEndY(targetY);
-
-            double midX = (startX + targetX) / 2.0;
-            double midY = (startY + targetY) / 2.0;
-            double arcAmount = isPlayerSource ? 60.0 : -60.0;
-            arrowPath.setControlX(midX);
-            arrowPath.setControlY(midY + arcAmount);
-            arrowPath.setVisible(false);
-            unitLayer.getChildren().add(arrowPath);
-
-            javafx.animation.PathTransition pathTransition = new javafx.animation.PathTransition();
-            double delayMs = (i * 40) + Math.random() * 60;
-            pathTransition.setDuration(javafx.util.Duration.millis(300 + Math.random() * 100));
-            pathTransition.setPath(arrowPath);
-            pathTransition.setNode(arrowVisual);
-            pathTransition
-                    .setOrientation(javafx.animation.PathTransition.OrientationType.ORTHOGONAL_TO_TANGENT);
-            pathTransition.setCycleCount(1);
-
-            final Rectangle fArrow = arrowVisual;
-            final javafx.scene.shape.QuadCurve fPath = arrowPath;
-            final double fTargetX = targetX, fTargetY = targetY;
-
-            pathTransition.setOnFinished(e -> {
-                unitLayer.getChildren().remove(fArrow);
-                unitLayer.getChildren().remove(fPath);
-                createImpactEffect(fTargetX, fTargetY);
-            });
-
-            javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(
-                    javafx.util.Duration.millis(delayMs));
-            delay.setOnFinished(e -> {
-                fArrow.setVisible(true);
-                pathTransition.play();
-            });
-            delay.play();
-        }
-    }
-
-    private void createImpactEffect(double x, double y) {
-        Circle impact = new Circle(x, y, 0);
-        impact.setFill(Color.rgb(255, 200, 0, 0.8));
-        impact.setStroke(Color.WHITE);
-        impact.setStrokeWidth(2.0);
-        impact.setMouseTransparent(true);
-
-        unitLayer.getChildren().add(impact);
-
-        javafx.animation.ScaleTransition scale = new javafx.animation.ScaleTransition(javafx.util.Duration.millis(300),
-                impact);
-        scale.setFromX(0.1);
-        scale.setFromY(0.1);
-        scale.setToX(1.5);
-        scale.setToY(1.5);
-
-        javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(javafx.util.Duration.millis(300),
-                impact);
-        fade.setFromValue(1.0);
-        fade.setToValue(0.0);
-
-        javafx.animation.ParallelTransition impactAnim = new javafx.animation.ParallelTransition(scale, fade);
-        impactAnim.setOnFinished(e -> unitLayer.getChildren().remove(impact));
-        impactAnim.play();
     }
 
     /**

@@ -25,8 +25,8 @@ public class PvPGameState implements IBattleState {
     private final List<Troop> activeTroops;
     private final List<Building> activeBuildings;
     private final List<Projectile> activeProjectiles;
-    private final com.kuroyale.service.TroopMovementService troopMovementService = new com.kuroyale.service.TroopMovementService();
-    private final com.kuroyale.service.CombatService combatService = new com.kuroyale.service.CombatService();
+    private final com.kuroyale.service.battle.TroopMovementService troopMovementService = new com.kuroyale.service.battle.TroopMovementService();
+    private final com.kuroyale.service.battle.CombatService combatService = new com.kuroyale.service.battle.CombatService();
 
     private double gameTime = 180.0; // 3 minutes
     private int player1Score = 0, player2Score = 0;
@@ -67,9 +67,9 @@ public class PvPGameState implements IBattleState {
         activeProjectiles.add(p);
     }
 
-    private final com.kuroyale.service.ComboService comboService = new com.kuroyale.service.ComboService();
+    private final com.kuroyale.service.battle.ComboService comboService = new com.kuroyale.service.battle.ComboService();
 
-    public com.kuroyale.service.ComboService getComboService() {
+    public com.kuroyale.service.battle.ComboService getComboService() {
         return comboService;
     }
 

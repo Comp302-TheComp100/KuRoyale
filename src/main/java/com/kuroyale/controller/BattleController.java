@@ -87,7 +87,7 @@ public class BattleController {
 
     private boolean doubleElixirShown = false;
     private boolean gameOverShown = false;
-    private com.kuroyale.service.ComboService comboService;
+    private com.kuroyale.service.battle.ComboService comboService;
     private int savedComboCount = 0; // For restoring combo count from saved games
 
     /**
@@ -265,7 +265,7 @@ public class BattleController {
         // Initialize Combo Service
         if (comboService != null)
             comboService.cleanup();
-        comboService = new com.kuroyale.service.ComboService();
+        comboService = new com.kuroyale.service.battle.ComboService();
         comboService.setGameState(gameState);
 
         // Restore combo count from saved game if applicable
@@ -771,7 +771,7 @@ public class BattleController {
     }
 
     private void showSaveConfirmation() {
-        com.kuroyale.view.ThemedAlertController.show(
+        com.kuroyale.util.ThemedAlertManager.show(
                 "Game Saved",
                 "Match saved successfully! You can resume it later from the main menu.");
     }

@@ -1,8 +1,13 @@
-package com.kuroyale.service;
+package com.kuroyale.service.battle;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.model.strategy.*;
+import com.kuroyale.model.strategy.pathfinding.AirDirectPathfindingStrategy;
+import com.kuroyale.model.strategy.pathfinding.GroundPathfindingStrategy;
+import com.kuroyale.model.strategy.pathfinding.PathfindingStrategy;
+
 import java.util.*;
 
 public class TroopMovementService {

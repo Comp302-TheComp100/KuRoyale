@@ -1,4 +1,4 @@
-package com.kuroyale.service;
+package com.kuroyale.model.strategy.pathfinding;
 
 import com.kuroyale.model.entities.Arena;
 import com.kuroyale.model.entities.GridPosition;

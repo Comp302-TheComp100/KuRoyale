@@ -34,9 +34,9 @@ public class ProjectileRenderer {
             if (node == null) {
                 // Create new visual
                 if (isFireball(p)) {
-                    node = com.kuroyale.view.util.FireballFactory.createProceduralFireball(6.0);
+                    node = com.kuroyale.view.battle.effects.FireballEffect.createProceduralFireball(6.0);
                 } else if (isRocket(p)) {
-                    node = com.kuroyale.view.util.RocketFactory.createProceduralRocket(8.0);
+                    node = com.kuroyale.view.battle.effects.RocketEffect.createProceduralRocket(8.0);
                 } else {
                     Circle dot = new Circle(3.0);
                     dot.setFill(p.isPlayerSide() ? Color.LIGHTSKYBLUE : Color.ORANGERED);

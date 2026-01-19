@@ -1,6 +1,7 @@
-package com.kuroyale.service.battle;
+package com.kuroyale.model.entities;
 
 import com.kuroyale.model.enums.BattleMode;
+import com.kuroyale.model.strategy.battle.*;
 
 /**
  * Factory for creating BattleStrategy instances (GoF Factory Method Pattern).

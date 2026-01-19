@@ -3,10 +3,10 @@ package com.kuroyale.controller;
 import java.io.IOException;
 import java.util.List;
 
+import com.kuroyale.model.entities.BattleStrategyFactory;
 import com.kuroyale.model.enums.BattleMode;
 import com.kuroyale.model.logic.MenuModel;
-import com.kuroyale.service.battle.BattleStrategy;
-import com.kuroyale.service.battle.BattleStrategyFactory;
+import com.kuroyale.model.strategy.battle.BattleStrategy;
 import com.kuroyale.util.SceneLoader;
 import com.kuroyale.util.SoundEffectUtil;
 
@@ -164,10 +164,10 @@ public class BattleModeSelectionController {
     }
 
     private void showError(String message) {
-        com.kuroyale.view.ThemedAlertController.show("Error", message);
+        com.kuroyale.util.ThemedAlertManager.show("Error", message);
     }
 
     private void showComingSoon(String modeName, String message) {
-        com.kuroyale.view.ThemedAlertController.show(modeName, message);
+        com.kuroyale.util.ThemedAlertManager.show(modeName, message);
     }
 }

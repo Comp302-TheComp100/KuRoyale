@@ -1,4 +1,4 @@
-package com.kuroyale.service;
+package com.kuroyale.service.battle;
 
 import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.entities.Troop;
@@ -290,11 +290,11 @@ public class CombatService {
     }
 
     private boolean isInAttackRange(ICombatant attacker, ICombatant target) {
-        return com.kuroyale.model.logic.CombatUtils.isInRange(attacker, target);
+        return com.kuroyale.util.CombatUtils.isInRange(attacker, target);
     }
 
     private double getDistanceToTarget(ICombatant attacker, ICombatant target) {
-        return com.kuroyale.model.logic.CombatUtils.getDistance(attacker, target);
+        return com.kuroyale.util.CombatUtils.getDistance(attacker, target);
     }
 
     /**

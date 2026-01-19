@@ -15,7 +15,7 @@ public class DeckBuilderModel {
 
     private final AuthenticationService authService;
     private final DeckManagementService deckService;
-    private final com.kuroyale.service.CardCatalog cardCatalog;
+    private final com.kuroyale.model.entities.CardCatalog cardCatalog;
 
     public DeckBuilderModel() {
         ServiceFactory factory = ServiceFactory.getInstance();

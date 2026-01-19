@@ -1,6 +1,7 @@
-package com.kuroyale.model.logic;
+package com.kuroyale.service.battle;
 
 import com.kuroyale.model.entities.*;
+import com.kuroyale.model.logic.*;
 
 import java.util.Random;
 

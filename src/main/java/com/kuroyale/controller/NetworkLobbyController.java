@@ -495,6 +495,6 @@ public class NetworkLobbyController {
     }
 
     private void showError(String message) {
-        com.kuroyale.view.ThemedAlertController.show("Network Error", message);
+        com.kuroyale.util.ThemedAlertManager.show("Network Error", message);
     }
 }

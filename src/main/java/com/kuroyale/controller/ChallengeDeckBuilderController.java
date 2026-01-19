@@ -701,7 +701,7 @@ public class ChallengeDeckBuilderController {
 
         List<String> errors = currentChallenge.validateDeck(deck.getCards());
         if (!errors.isEmpty() || !deck.isFull()) {
-            com.kuroyale.view.ThemedAlertController.show(
+            com.kuroyale.util.ThemedAlertManager.show(
                     "Invalid Deck",
                     errors.isEmpty() ? "You need 8 cards in your deck." : errors.get(0));
             return;
@@ -726,7 +726,7 @@ public class ChallengeDeckBuilderController {
             // Start game logic (handled by controller.startChallengeGame -> startGame)
         } catch (IOException e) {
             e.printStackTrace();
-            com.kuroyale.view.ThemedAlertController.show(
+            com.kuroyale.util.ThemedAlertManager.show(
                     "Error",
                     "Failed to start challenge: " + e.getMessage());
         }

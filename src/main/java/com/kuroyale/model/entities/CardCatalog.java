@@ -1,14 +1,10 @@
-package com.kuroyale.service;
+package com.kuroyale.model.entities;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.kuroyale.model.entities.Card;
-import com.kuroyale.model.entities.CardFactory;
-import com.kuroyale.model.entities.User;
 
 /*Service that manages the catalog of available cards in the game
  * Information Expert: CardCatalog knows about all available cards

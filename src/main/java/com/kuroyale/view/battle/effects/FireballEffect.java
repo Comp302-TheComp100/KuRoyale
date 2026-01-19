@@ -1,4 +1,4 @@
-package com.kuroyale.view.util;
+package com.kuroyale.view.battle.effects;
 
 import javafx.scene.Node;
 import javafx.scene.effect.BlurType;
@@ -10,7 +10,7 @@ import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
 
-public class FireballFactory {
+public class FireballEffect {
 
     /**
      * Kod ile dinamik bir Ateş Topu (Fireball) oluşturur.

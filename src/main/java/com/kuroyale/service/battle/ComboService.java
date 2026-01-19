@@ -1,4 +1,4 @@
-package com.kuroyale.service;
+package com.kuroyale.service.battle;
 
 import com.kuroyale.event.GameEventBus;
 import com.kuroyale.event.GameEventListener;

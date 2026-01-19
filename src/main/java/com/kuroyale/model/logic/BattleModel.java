@@ -24,7 +24,7 @@ public class BattleModel {
     private final ArenaService arenaService;
     private final GameSaveService gameSaveService;
     private final ChallengeService challengeService;
-    private final com.kuroyale.service.CardCatalog cardCatalog;
+    private final com.kuroyale.model.entities.CardCatalog cardCatalog;
 
     public BattleModel() {
         ServiceFactory factory = ServiceFactory.getInstance();

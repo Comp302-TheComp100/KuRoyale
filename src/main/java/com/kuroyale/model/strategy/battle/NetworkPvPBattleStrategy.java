@@ -1,4 +1,4 @@
-package com.kuroyale.service.battle;
+package com.kuroyale.model.strategy.battle;
 
 import com.kuroyale.controller.BattleController;
 
@@ -21,7 +21,8 @@ public class NetworkPvPBattleStrategy implements BattleStrategy {
     public void initialize(BattleController controller) {
         // Note: For network mode, we navigate to network-lobby.fxml first
         // The actual battle initialization happens in NetworkBattleController
-        // This method is called but the navigation is handled by BattleModeSelectionController
+        // This method is called but the navigation is handled by
+        // BattleModeSelectionController
     }
 
     @Override

@@ -1,8 +1,10 @@
-package com.kuroyale.service;
+package com.kuroyale.service.battle;
 
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
+import com.kuroyale.util.CombatUtils;
+
 import java.util.ArrayList;
 
 public class TargetingService {

@@ -1,6 +1,4 @@
-package com.kuroyale.view;
-
-import com.kuroyale.util.SoundEffectUtil;
+package com.kuroyale.util;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -14,7 +12,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-public class ThemedAlertController {
+public class ThemedAlertManager {
 
     @FXML
     private Label titleLabel;
@@ -159,9 +157,9 @@ public class ThemedAlertController {
             boolean isConfirmation) {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    ThemedAlertController.class.getResource("/fxml/components/themed_alert.fxml"));
+                    ThemedAlertManager.class.getResource("/fxml/components/themed_alert.fxml"));
             Parent root = loader.load();
-            ThemedAlertController controller = loader.getController();
+            ThemedAlertManager controller = loader.getController();
 
             Stage stage = new Stage();
             controller.setStage(stage);

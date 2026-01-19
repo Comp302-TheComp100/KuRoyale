@@ -282,7 +282,7 @@ public class ArenaDesignController {
             }
             try {
                 model.saveArenaLayout(currentLayout);
-                com.kuroyale.view.ThemedAlertController.show(arenaGrid.getScene().getWindow(), "Success",
+                com.kuroyale.util.ThemedAlertManager.show(arenaGrid.getScene().getWindow(), "Success",
                         "Arena layout saved successfully!",
                         this::handleBack);
             } catch (IOException e) {
@@ -302,6 +302,6 @@ public class ArenaDesignController {
     }
 
     private void showAlert(String title, String content) {
-        com.kuroyale.view.ThemedAlertController.show(arenaGrid.getScene().getWindow(), title, content, null);
+        com.kuroyale.util.ThemedAlertManager.show(arenaGrid.getScene().getWindow(), title, content, null);
     }
 }
