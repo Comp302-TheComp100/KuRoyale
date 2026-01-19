@@ -164,6 +164,9 @@ public class BattleController {
             }
         }
 
+        // Notify quest system that a match is starting
+        com.kuroyale.event.GameEventBus.getInstance().publishMatchStart();
+
         // Initialize UI Components
         arenaView = new BattleArenaView(gameState);
         arenaContainer.getChildren().add(arenaView);
@@ -406,6 +409,9 @@ public class BattleController {
         // Record attempt
         model.recordChallengeAttempt(currentChallenge.getId(), playerWon, timeSeconds, damageTaken);
 
+        // Notify quest system about match end
+        com.kuroyale.event.GameEventBus.getInstance().publishMatchEnd(playerWon);
+
         // Track Challenge Completion (Quest)
         com.kuroyale.util.ServiceFactory.getInstance().getQuestService()
                 .updateProgress(com.kuroyale.model.enums.QuestType.COMPLETE_CHALLENGES, 1);
@@ -513,6 +519,9 @@ public class BattleController {
         if (gameState.getPlayerScore() == gameState.getBotScore()) {
             isDraw = true;
         }
+
+        // Notify quest system about match end
+        com.kuroyale.event.GameEventBus.getInstance().publishMatchEnd(playerWon);
 
         // Track Matches Played (Veteran Player Achievement)
         com.kuroyale.util.ServiceFactory.getInstance().getAchievementService()

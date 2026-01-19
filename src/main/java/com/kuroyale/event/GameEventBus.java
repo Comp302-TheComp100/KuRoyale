@@ -79,4 +79,12 @@ public class GameEventBus {
     public void publishSpellDamageDealt(boolean isPlayer, int damage) {
         new ArrayList<>(listeners).forEach(l -> l.onSpellDamageDealt(isPlayer, damage));
     }
+
+    public void publishMatchStart() {
+        new ArrayList<>(listeners).forEach(l -> l.onMatchStart());
+    }
+
+    public void publishMatchEnd(boolean playerWon) {
+        new ArrayList<>(listeners).forEach(l -> l.onMatchEnd(playerWon));
+    }
 }
