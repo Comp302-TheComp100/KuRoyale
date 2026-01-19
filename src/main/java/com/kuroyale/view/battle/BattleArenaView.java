@@ -619,8 +619,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     public void onAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center, double radius,
             double duration, String effectType) {
         javafx.application.Platform.runLater(() -> {
-            boolean isFireball = "Fireball".equalsIgnoreCase(effectType) || "Wizard".equalsIgnoreCase(effectType)
-                    || "Baby Dragon".equalsIgnoreCase(effectType);
+            boolean isFireball = "Fireball".equalsIgnoreCase(effectType);
+            boolean isRocket = "Rocket".equalsIgnoreCase(effectType);
             boolean isZap = "Zap".equalsIgnoreCase(effectType);
 
             double cx = center.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
@@ -630,33 +630,49 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             if (isFireball) {
                 // Use the procedural explosion effect
                 com.kuroyale.view.util.FireballFactory.playExplosionEffect(unitLayer, cx, cy, rPixels);
+            } else if (isRocket) {
+                // Use the rocket explosion effect (bigger and with smoke)
+                com.kuroyale.view.util.RocketFactory.playExplosionEffect(unitLayer, cx, cy, rPixels);
             } else if (isZap) {
-                // Use zap.gif for Zap spell animation with visible area indicator
-                double size = rPixels * 2.0;
+                // 1. ZEMİN EFEKTİ (Perspektifli Elips)
+                // 2D oyunlarda derinlik hissi için Y ekseni X'in yarısı veya 0.6'sı kadar
+                // olmalıdır.
+                double radiusX = rPixels;
+                double radiusY = rPixels * 0.9; // Basıklık katsayısı (0.6 iyi bir orandır)
 
-                // Add a glowing circle to show the affected area
-                javafx.scene.shape.Circle areaCircle = new javafx.scene.shape.Circle(cx, cy, rPixels);
-                areaCircle.setFill(javafx.scene.paint.Color.rgb(255, 255, 0, 0.2)); // Yellow transparent
-                areaCircle.setStroke(javafx.scene.paint.Color.YELLOW);
-                areaCircle.setStrokeWidth(3.0);
+                javafx.scene.shape.Ellipse areaEllipse = new javafx.scene.shape.Ellipse(cx, cy, radiusX, radiusY);
+
+                areaEllipse.setFill(javafx.scene.paint.Color.rgb(255, 255, 0, 0.3)); // Biraz daha belirgin sarı
+                areaEllipse.setStroke(javafx.scene.paint.Color.WHITE);
+                areaEllipse.setStrokeWidth(3.0);
+
+                // Glow efekti
                 javafx.scene.effect.DropShadow zapGlow = new javafx.scene.effect.DropShadow();
-                zapGlow.setColor(javafx.scene.paint.Color.YELLOW);
-                zapGlow.setRadius(20);
-                zapGlow.setSpread(0.5);
-                areaCircle.setEffect(zapGlow);
-                areaCircle.setMouseTransparent(true);
-                unitLayer.getChildren().add(areaCircle);
-                activeSpellVisuals.add(new ActiveSpellVisual(areaCircle, duration));
+                zapGlow.setColor(javafx.scene.paint.Color.WHITE); // Merkezi sarı, parlaması turuncu daha hoş durur
+                zapGlow.setRadius(25);
+                zapGlow.setSpread(0.6);
+                areaEllipse.setEffect(zapGlow);
+                areaEllipse.setMouseTransparent(true);
 
-                // Add the GIF animation on top
+                unitLayer.getChildren().add(areaEllipse);
+                activeSpellVisuals.add(new ActiveSpellVisual(areaEllipse, duration));
+
+                // 2. YILDIRIM GIF'İ (Tepeden Düşen)
                 javafx.scene.image.Image gifImage = new javafx.scene.image.Image(
                         getClass().getResourceAsStream("/gifs/zap.gif"));
                 javafx.scene.image.ImageView gifView = new javafx.scene.image.ImageView(gifImage);
-                gifView.setFitWidth(size);
-                gifView.setFitHeight(size);
-                gifView.setPreserveRatio(false);
-                gifView.setLayoutX(cx - size / 2.0);
-                gifView.setLayoutY(cy - size / 2.0);
+
+                double spellWidth = rPixels * 2.0;
+
+                double visualOffset = 100.0; // Ekranın üstünden de yukarıda başlasın
+                double lightningHeight = cy + visualOffset;
+
+                gifView.setFitWidth(spellWidth);
+                gifView.setFitHeight(lightningHeight);
+                gifView.setPreserveRatio(false); // Uzunlamasına sündürmek için oranı bozuyoruz
+                gifView.setLayoutX(cx - (spellWidth / 2.0));
+                gifView.setLayoutY(cy - lightningHeight + (radiusY / 2));
+
                 gifView.setMouseTransparent(true);
                 unitLayer.getChildren().add(gifView);
                 activeSpellVisuals.add(new ActiveSpellVisual(gifView, duration));

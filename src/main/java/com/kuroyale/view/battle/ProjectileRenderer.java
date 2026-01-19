@@ -35,6 +35,8 @@ public class ProjectileRenderer {
                 // Create new visual
                 if (isFireball(p)) {
                     node = com.kuroyale.view.util.FireballFactory.createProceduralFireball(6.0);
+                } else if (isRocket(p)) {
+                    node = com.kuroyale.view.util.RocketFactory.createProceduralRocket(8.0);
                 } else {
                     Circle dot = new Circle(3.0);
                     dot.setFill(p.isPlayerSide() ? Color.LIGHTSKYBLUE : Color.ORANGERED);
@@ -82,6 +84,14 @@ public class ProjectileRenderer {
             String name = t.getBaseCard().getName();
             return "Wizard".equalsIgnoreCase(name) || "Fireball".equalsIgnoreCase(name)
                     || "Baby Dragon".equalsIgnoreCase(name) || "Witch".equalsIgnoreCase(name);
+        }
+        return false;
+    }
+
+    private boolean isRocket(Projectile p) {
+        if (p.getSourceCard() != null) {
+            String name = p.getSourceCard().getName();
+            return "Rocket".equalsIgnoreCase(name);
         }
         return false;
     }
