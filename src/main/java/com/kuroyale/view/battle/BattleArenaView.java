@@ -1,11 +1,12 @@
 package com.kuroyale.view.battle;
 
-import om.k
+import com.kuroyale.view.battle.renderers.BuildingRenderer;
 
 import com.kuroyale.model.arena.GridCell;
-import com.kuroyale.model.entities.Tower;import com.kuroyale.model.enums.TileType;
+import com.kuroyale.model.entities.Tower;
+import com.kuroyale.model.enums.TileType;
 import com.kuroyale.model.state.GameState;
-import com.kuroyale.view.battle.renderersimport om.kuroyale.view.battle.renderers.ProjectileRenderer;
+import com.kuroyale.view.battle.renderers.ProjectileRenderer;
 import com.kuroyale.view.battle.renderers.TowerRenderer;
 import com.kuroyale.view.battle.renderers.TroopRenderer;
 
@@ -17,6 +18,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.control.Button;
 import java.util.function.BiConsumer;
+import com.kuroyale.model.arena.Arena;
 
 /**
  * Refactored BattleArenaView with improved cohesion.
@@ -67,9 +69,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         this.gameState = null;
         this.pvpGameState = pvpGameState;
 
-           Aren
+        Arena arena = pvpGameState.getArena();
 
-    
         // Initialize layers
         this.grid = new GridPane();
         this.grid.setHgap(0);

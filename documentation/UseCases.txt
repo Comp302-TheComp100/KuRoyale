@@ -1,0 +1,509 @@
+1.	UC1: Start New Match 
+Primary Actor: Player
+Supporting Actor: The system (Game Manager)
+Offstage actor: The computer opponent
+Stakeholders and Interests:
+Player: Wants to start a new battle with their saved arena layout. Wants to build a valid 8 card deck for the battle. 
+System (Game Manager): Wants to enforce the rule of 8 unique card for deck selection. Wants to load the saved area layout. Wants to initialize the match for both players(the player and the computer opponent).
+Computer Opponent: Wants to be assigned with a deck for the match.
+ Preconditions:
+The player must be in the Main Menu.
+A valid arena must have been previously saved by the Player.
+	Postconditions:
+The new match has begun.
+The match timer has started and is counting down from 3 minutes.
+Main Flow (Success Scenario):
+The player selects the New Game option. 
+The system checks if there is an existing saved arena.
+The system shows "Deck Building" part displaying all 28 cards.
+The player builds their deck by selecting exactly 8 unique cards.
+The player confirms their deck and the system validates it.
+The system assigns a random valid deck for the computer opponent.
+The system begins the match. It loads arena layout at the starting state (3 minute timer, 5 elixir at the start with 4 card hand for both sides.
+Extensions (or Alternative Flows): 
+*a. At any time, System fails:
+The player restarts the system and starts at the Main Menu.
+The system recreates all saved games and saved arena.
+1a. The system has problems preventing recovery:
+The system displays an error and enters a clean state, deleting all information.
+2a. There is no saved arena layout: 
+The system informs the player that an arena layout has to be created to play.
+The system returns the player to the Main Menu.
+3-5a. The player wants to quit while building the deck.
+The player selects the Quit option.
+The system terminates the progress and returns the player to the Main Menu.
+5a. Invalid Deck Submission
+The system informs the player that the deck has to contain 8 unique cards.
+The process continues at step 3.
+Special Requirements:
+Game UI must be clearly displayed, and  card text and icons must be readable  during deck selection.
+The match must begin within 3 seconds after the system confirms the player's deck.
+The system must allow recovery when assets fail to load.
+Technology and Data Variations List:	
+2a. The arena data must be read from a saved file.It may be implemented as text, serialized Java objects, JSON, or another format.
+6a. The computer opponent deck may be chosen with a modified random card distribution algorithm to create more balanced decks (always 2 spells for one deck, etc.). 		
+6b. The computer opponent deck can be chosen randomly from deck library.
+Frequency of Occurrence: Can be multiple times in a single session.
+Open Issues:
+Can players arrange their deck to choose their first 4 card hand before the match?
+Should the difficulty be chosable by the player?
+
+
+2.	UC2: Build Deck
+Primary Actor: Player
+Supporting Actor: Game Manager
+Stakeholders and Interests:
+Player: Wants to view all 28 available cards and their attributes. Wants to select, remove, and confirm a 8 card deck.
+System (Game Manager): Wants to present all 28 cards. Must enforce the exactly 8 unique cards rule. Wants to record the final deck selection after confirmation.
+Preconditions:
+Start New Match use case must be in progress.
+	Postconditions:
+The Player's deck, which consists of 8 unique cards, is saved for the match.
+The System starts the battle.
+
+
+Main Flow (Success Scenario):
+The system displays all 28 cards and 8 empty slots for the Player's battle deck.
+The player selects a card from the card library.
+The system adds selected card to one of empty slots.
+The player repeats steps 2-3 until all 8 deck slots are filled.
+The player confirms their deck.
+The system checks whether the deck contains exactly 8 unique cards.
+The system saves this 8 card deck for the match.
+
+
+Extensions (or Alternative Flows):
+a*The player wants to quit building a deck.
+The player chooses the quit option.
+The system takes the Player to the Main Menu, terminating the Start New Match use case additionally.
+	1-4a. The player wants to see the information of a card.
+The player chooses a card. 
+The system displays chosen card stats such as DPS (damage per second) and health.
+2-4a Player clicks a card that is already in the deck.
+The system does not complete the process and waits at step 5.
+2-4b. Player wants to remove a card.
+The Player selects Remove option and chooses cards to remove.
+The system removes them from the deck, freeing the deck slot additionally.
+	4a. The player attempts to add more than 8 cards.
+The system displays an error about 8 card limit. 
+The system does not complete the process and waits at step 5.
+5a. The player clicks "Confirm" with fewer than 8 cards.
+The system displays an error and forces the player to select 8 cards.
+	Special Requirements:
+Card text, data and icons must be readable during deck selection.
+The selected card icons should be visible at the deck slots.
+Technology and Data Variations List:	
+7a. The deck is saved to a file or is held in memory for upcoming game.
+7b. The file format for a saved deck is not specified. It may be implemented as plain text, serialized Java objects, etc.
+Frequency of Occurrence: Can be multiple times in a single session.
+Open Issues: 
+Can players arrange their deck order?
+Should removing cards rearrange the deck slot order?
+How the selection of cards will be designed (clicking on them or dragging to the deck slot, etc.)
+3.	UC3: Design Arena
+Primary Actor: Player
+Supporting Actor: Game Manager
+Stakeholders and Interests:
+Player: Wants to place their towers and bridges. Wants their layout to be saved and used for all their games.
+System (Game Manager): Has to present the arena grid. Must enforce all placement rules and save a valid layout.
+Preconditions:
+The player is at the Main Menu.
+Postconditions: 
+The arena layout is saved and exists after the game is closed.
+The computer opponent will use a mirrored version of the player’s tower positions.
+The saved layout will be loaded for all future matches.
+Main Flow (Success Scenario):
+The player selects"Arena Editor" on the Main Menu.
+The system displays the arena layout screen.
+The player places their 2 Crown Towers and 1 King Tower on their side of the arena.
+The player places 1 to 3 bridges across the river.
+The system checks whether the layout is valid.
+The player confirms their custom arena layout.
+The system saves tower and bridge positions, confirms that the layout is saved.
+Extensions (or Alternative Flows):
+5a. The Player tries to place a tower on an invalid tile.
+The System prevents the placement and provides feedback.
+The use case resumes at step 3.
+5b. Player attempts invalid bridge placement:
+The System prevents the placement and provides feedback.
+The use case resumes at step 4.
+6a. The player layout does not have minimum features (1 bridge, 2 crown and 1 king tower).
+The System prevents the save and provides feedback..
+The use case resumes at step 3.
+	Special Requirements:
+Card text, data and icons must remain readable during deck selection.
+The selected card icons should be visible at the deck slots during the process.
+Technology and Data Variations List:	
+3a. The layer places items by clicking or by dragging and dropping.                      
+7a. The arena data is saved to a file. The format of the file  may be implemented as plain text, serialized Java objects, JSON, etc.
+Frequency of Occurrence: Can be zero or multiple times in a single session.
+Open Issues: 
+Can players have customizable visuals?
+Can the game manager record more than one layout?
+Should opponent computer tower placement be created immediately after the save?
+4.	UC4: Deploy Card
+Primary Actor: Player
+Supporting Actor: Game Manager
+Offstage Actor: The Computer Opponent
+Stakeholders and Interests:
+Player: Wants to play a card from their hand to the arena at a location of their choice. Wants the action to happen in an instant if they have enough elixir.
+System (Game Manager): Has to validate the deployment and update the game state.
+Computer Opponent: Will be impacted by a new player troop, building, or spell deployed on the battlefield.
+Preconditions:
+A match is in progress. (Start New Match use case must be in progress).
+The Player has a card that they wanted to play in their hand.
+	Postconditions:
+The Player's elixir is reduced by the card's elixir cost.
+The Player's hand has one new card from the deck with removing the played card.
+A new troop, building, or spell has been created in the arena.
+Main Flow (Success Scenario):
+The player chooses a card from their hand to play.
+The player waits for their elixir to be sufficient.
+The player chooses a tile position for placement.
+The system checks that the player has sufficient elixir to play the chosen card.
+The system subtracts the chosen card’s elixir cost from elixir resources, and removes the card from the player’s hand. The card is played on the selected tile.
+The System draws the next card from the player’s deck into their hand.
+Extensions (or Alternative Flows):
+	3a. The Player tries to play a card with insufficient elixir.
+The System informs the Player  and does not spend any Elixir.
+The use case ends or resumes at step 1.
+3b. The Player tries to play a card on an invalid tile:
+The System informs the Player and does not spend any Elixir.
+The use case resumes at step 3 and  allows the Player to select a new tile position.
+	Special Requirements:
+Troops and buildings can only be placed on the player's territory.
+Spells can be placed anywhere on the arena.
+The next card drawn in step 6 must be the next one in the player's 8 card cycle.
+The validation and deployment must be instantaneous to the Player.
+Technology and Data Variations List:	
+1a. The player selects a card by clicking it.
+2a. Tile Selection: Player selects a tile by clicking a position on the arena, or by "dragging" the card from the hand and "dropping" it on the tile.
+Frequency of Occurrence: This is the most fundamental action of the game, and it can happen multiple times in a single match.
+Open Issues: 
+How should the system handle card deployment if there is a delay between the click and the response?
+Should visual feedback appear before confirming tile validation?
+What happens if the arena tile changes state during placement (a troop walks while deployment) ?
+5.	UC5: Move Troop
+Primary Actor: The Troop (Deployed troop or spawned troop)
+Supporting Actor: Game Manager
+Offstage Actor: Player and Computer Opponent 
+Stakeholders and Interests:
+The Troop: Wants to find and destroy the nearest valid enemy target.
+System (Game Manager): Has to update the position and state of all troops based on the game rules.
+Player and Computer opponent: Wants their troops to move and target toward enemy units following their targeting rules.
+Preconditions:
+A match is in progress. (Start New Match use case must be in progress).
+The deployed troop, or spawned troop, has just started to move.
+	Postconditions:
+The troop has moved from its spawn point to a valid target.
+Troop’s position on the arena has been continuously updated.
+Main Flow (Success Scenario):
+The troop looks for the closest attackable enemy.
+If there are no nearby enemies on its side of the river, the troop starts moving toward the enemy towers.
+The troop moves toward the closest bridge to cross the river.
+Once the troop reaches the other side, it again looks for the nearest enemy to move, processing step 1-2.
+Extensions (or Alternative Flows):
+a*.  A new attackable target appears within the range.
+Troop identifies the new enemy troop as the nearest target. 
+The Troop stops its current path to the tower/bridge and moves towards the new enemy.
+b*. The deployed troop is a building targeting troops.
+The troop ignores all enemy troops and uses the path to the nearest enemy building.
+c*. The deployed troop is an air unit.
+The troop bypasses step 3 by flying in a straight line over the arena.
+Special Requirements:
+Movement should appear smooth to the Player.
+Troops must change paths instantly on new enemies appearing.
+Technology and Data Variations List:	
+1a. Different algorithms (Djisktra, A* Search, etc.) may be used to guide movement depending on performance.
+2a. The type, move speed, and range are data that vary for each troop and are used by algorithm.
+Frequency of Occurrence: This is one of the most fundamental actions of the game, and it can happen multiple times in a single match.
+Open Issues: 
+How should tight areas like bridges handle many troops at once?
+What if a troop gets pushed out of its intended path?
+
+
+6.	UC6: Combat System
+Primary Actor: The Unit (troop or buildings, including towers) 
+Supporting Actor: Game Manager
+Offstage Actor: Player and Computer Opponent 
+Stakeholders and Interests:
+The Troop: Wants to destroy the nearest valid enemy target.
+System (Game Manager): Has to continuously update the state and health of all troops based on the game rules.
+Player and Computer opponent: Wants their troops to move and target toward enemy units/buildings following their targeting rules.
+
+
+Preconditions:
+A match is in progress. (Start New Match use case must be in progress).
+A player unit and a computer opponent unit are in the arena. 
+One unit is in the attack zone of another unit.
+
+
+	Postconditions:
+The attacked unit has taken damage, or has been destroyed.
+The destroyed unit is removed from the arena.
+The enemy unit, if still alive and there are no other targets in its range, will revert to its initial state. If it is a movable unit, “Move Troop” use case will be initiated.
+Surviving units may continue movement, retarget, or idle based on current game logic.
+If no valid targets remain nearby, the attacking unit reverts to its default behavior (e.g., moving forward).
+
+
+Main Flow (Success Scenario):
+The system detects that one unit has entered another enemy unit’s target range.
+The enemy unit tries to identify that unit as the valid target.
+The enemy unit stops and begins to attack.
+The Game Manager calculates the attacker’s damage (DMG) and applies it to the target’s health (HP).
+The Game Manager updates the target’s health bar in the user interface.
+The enemy unit waits for their “Hit Speed”.
+The enemy troop repeats steps 4-5 until the attacked unit’s “HP” <= 0. 
+When the target’s HP reaches 0, the system removes it from the arena and updates all nearby units’ states.
+
+
+Extensions (or Alternative Flows):
+2a. The targeted unit is not a valid target for the enemy unit.
+  The enemy unit ignores that unit and continues its movement toward its original target.
+6a. The enemy unit is destroyed first.
+The enemy unit has been removed from the arena.
+The attacked unit continues its movement with its remaining HP and a modified health bar.
+	7a. The target moves out of the attacker’s range before the next hit.
+The attacker stops attacking and transitions back to “Move Troop” state (initiates “Move Troop” use case).
+
+
+	Special Requirements: 
+The combat update frequency must be synchronized with the game’s frame rate (e.g., 30 FPS). 
+The Game Manager must ensure deterministic results across all clients (no desync). 
+Damage, hit speed, and targeting behavior must follow the unit’s configuration data (no random variation). 
+Damage calculations should be completed within 50 ms to ensure smooth animation timing. 
+Visual feedback (attack animation, health reduction, sound effects) must occur in sync with combat logic. 
+
+
+Technology and Data Variations List: 
+	4a. To keep track of the health of units, special animation or bar tops can be added.
+8a. When a unit has been destroyed, special animation can be used to show that event.
+
+
+Frequency of Occurrence: This is one of the most fundamental actions of the game, and it can happen multiple times in a single match.
+
+
+Open Issues: 
+When the game is pasued or saved,  how should the game manager keep track of the attack order of units?
+How the system should handle cases where two units destroy each other at the exact same time. Should both units be removed, or should priority rules (e.g., higher damage, faster hit speed) apply?
+
+
+7.	UC7: Win Match (By Destroying the King Tower)
+Primary Actor: Player
+Supporting Actor: Game Manager
+Offstage Actor: The Computer Opponent 
+Stakeholders and Interests:
+Player: Wants to win the game, regardless of anything else. Playing games without facing any errors and also using the mobility of pausing and saving matches. 
+System (Game Manager): Wants to end the match successfully and without errors. 
+Computer Opponent: Wants to win the game, regardless of anything else
+
+
+Pre-conditions:
+A match is in progress. (Start New Match use case must be in progress).
+A player unit and a computer opponent unit are on the arena. 
+The match is ongoing and both King Towers are intact.
+The player or computer can deploy troops.
+
+
+Postconditions:
+The match has ended.
+One of the sides wins, or the game ends in a draw (tie-break).
+If the player selects a new game, UC: Start New Match begins.
+Otherwise, the player is returned to the Main Menu page.
+
+
+Main Flow (Success Scenario): 
+The player and computer opponent play during the match.
+The player destroys the opponent’s King Tower.
+The Game Manager detects the King Tower destruction event.
+The Game Manager ends the match immediately.
+The system displays the victory screen and offers a new game or Main Menu.
+
+
+Extensions (or Alternative Flows):
+2a. Connection is lost before the King Tower destruction:
+ The match is paused or saved depending on the system state.
+ 	2b. The player’s King Tower is destroyed first:
+The player loses, Game Manager shows the defeat screen. 
+2c. Both King Towers are destroyed at the same time:
+The system declares a draw.
+
+
+Special Requirements 
+The system must instantly detect the destruction of the King Tower without delay (< 100 ms).
+The game must display victory and defeat animations and results without lag.
+The outcome logic must handle simultaneous destruction events (no inconsistent results).
+
+
+Technology and Data Variations List
+The data structure for towers should include health_points, is_king_tower, and owner_id fields for consistent event handling.
+	
+	Frequency of Occurrence: Can be multiple times in a single session.
+
+
+	Open Issues: 
+What happens if the Game Manager does not detect the King Tower destruction event, even one of the towers is  destroyed?
+
+
+
+
+8.	UC8: Determine Match Outcome After Timeout
+Primary Actor: Player
+Supporting Actor: Game Manager
+Offstage Actor: The Computer Opponent 
+Stakeholders and Interests:
+Player: Wants to win the game, regardless of anything else. Playing games without facing any errors and also using the mobility of pausing and saving matches. 
+System (Game Manager): Wants to end the match successfully and without errors. 
+Computer Opponent: Wants to win the game, regardless of anything else
+
+
+Pre-conditions:
+A match is in progress. (Start New Match use case must be in progress).
+A player unit and a computer opponent unit are in the arena. 
+No King Tower was destroyed.
+The standard match duration (3 minutes) has expired.
+
+
+	Postconditions:
+One of the sides wins, or the game ends in a draw (tie-break).
+If the player chooses “New Game”, UC: Start New Match begins.
+Otherwise, the player is returned to the Main Menu page.
+
+
+Main Flow (Success Scenario):
+The Game Manager detects that match time has expired.
+It compares the number of destroyed crown towers for each side.
+If the player destroys more, the player wins; otherwise loses.
+The system displays the outcome and offers options to play again or return to the Main Menu.
+	
+Extensions (or Alternative Flows):
+	2a. Equal number of crown towers destroyed:
+The game enters sudden death mode.
+All towers begin to lose health gradually at the same rate.
+The side whose tower reaches 0 first loses.
+3a. If two sides reaches 0 at the same time:
+The system declares a draw.
+
+
+Special Requirements 
+The system must accurately track match duration (3:00 minutes) with no time drift. 
+Tower health data and destruction counts must be synchronized between both players continuously. 
+Sudden Death mode (extension 2a) must begin automatically within 1 second after timeout detection. 
+The UI must clearly display “Time’s Up” and “Sudden Death” transitions. 
+The Game Manager must calculate destroyed tower counts deterministically on both clients to avoid desyncs. 
+In case of a tie, the health reduction rate must be consistent for all remaining towers.
+
+
+Technology and Data Variations List
+If the device performance drops below 30 FPS, animation frames may skip, but logical time continues accurately. 
+Tower destruction and health values are stored in a synchronized server-side data structure: tower_id, current_health, owner_id, destroyed_at, match_id.
+	
+	Frequency of Occurrence: Can be multiple times in a single session.
+
+
+	Open Issues: 
+What will happen if the system does not notice 3 minutes has expired and continues the regular  match?
+
+
+9.	UC9: Reload Match 
+Primary Actor: Player
+Supporting Actor: Game Manager
+Offstage Actor: The computer opponent 
+Stakeholders and Interests:
+Player: Wants to continue the game from where they left off.  They want their saved game to be loaded without any errors and data loss. Want their deck, elixir, and tower HP to be accurately loaded.
+System (Game Manager): Wants the player's saved game data to be loaded correctly.
+Computer Opponent: Wants its deck, elixir, and tower HP to be accurately loaded.
+Preconditions:
+The player must have saved a match that they previously played.
+The player must be in the Main Menu.
+Postconditions:
+The match has been successfully started from the saved point.
+The player continues the match from where they left off.
+The system managed to start from where it was saved without resetting the variables required for the game (elixir, duration, tower HPs, card order, etc.).
+Main Flow (Success Scenario):
+The player selects the "Resume Game" option in the main menu.
+The system loads the past recorded matches with showing their information(arena status, tower HPs, elixir amounts, remaining time, cards in hand, etc.).
+The player chooses a match to continue.
+The system loads and displays the current status of the match.
+The player continues the match from where they left off, according to current game rules.
+
+
+Extensions (or Alternative Flows): 
+2a. There is no saved data or the file is corrupted:
+The system displays an error message to the player saying "Saved match could not be loaded or found.".
+The system directs the player to the main menu.
+	*a. At any time, Player chooses to exit instead of continuing the loaded match:
+The system cancels the loaded match and returns to the main menu.
+	Special Requirements:
+UI must properly load card icons, tower HPs, and time bars in a clear and readable manner during the loading process.
+The system should load the saved match within 3 seconds and should load in a way that the player can continue from where they left off.
+Technology and Data Variations List:	
+When reloading the match, it should be able to show the user how much time is left by showing a progress bar.
+	Frequency of Occurrence: Can be multiple times in a single session.
+	Open Issues: 
+How will the system notice and react that there is error in the saved data (e.g. wrong deck order, missing   number of cards, wrong deck, wrong elixir etc.) ?
+What will be the limit of the saved games?
+	
+
+
+10.	UC10: Save Match
+Primary Actor: Player
+Supporting Actor: Game Manager
+Offstage Actor: Computer Opponent
+Stakeholders and Interests: 
+Player: Wants to pause the current match and be able to continue later from where they left off. Wants a confirmation that the game was saved
+System (Game Manager): Wants to capture the entire match state (time, elixir, tower health, cards in hand, deployed cards on the board) so that Reload Match can resume the match without any data loss
+Computer Opponent: Wants its deck, elixir, deck, tower health to be saved, so that the match can resume fairly
+Preconditions:
+A match is currently in progress or paused (Start New Match has already been executed)
+The match has not ended (No Win Match use case has been executed)
+Postconditions:
+A saved match data exits containing all necessary data (time, elixir, tower health, deck info, units on board) to Reload Match
+The player is informed that the match has been successfully saved
+The game remains paused or returns to Main Menu
+Main Flow (Success Scenario):
+Player presses pause in-match
+System freezes the match
+Stops the timer
+Stops elixir generation
+Freezes troop movements
+Player selects Save Match in the pause menu
+System (Game Manager) collects all required match data
+Timer state, elixir state, deck state, arena state (tower health, troop position / HP), spawner state
+System saves the data and writes it to storage
+System validates that the data was successfully saved
+System displays “Match saved successfully” and offers:
+Resume (to return to paused match)
+Exit to Main Menu
+Player chooses an option
+The chosen option is executed
+
+
+Extensions (or Alternative Flows):
+*a. Match already ended / on Victory-Defeat screen:
+System detects the match has ended, so saving is not allowed
+The system shows: “This match has already ended and cannot be saved”
+The system directs player into the Main Menu
+	2a. Player chooses to resume after stopping
+Player presses pause but chooses to resume instead of saving
+System does not save & store the match data, does not write to any file
+System returns to the paused match
+Special Requirements: 
+Save operation must be completed & user must be confirmed in less than 1 second
+Saving the game must keep the game paused
+Frequency of Occurrence: Can be multiple times in a single session
+Open Issues
+What happens when the user saves exactly when a tower is destroyed?
+What happens if storage is full? 
+
+
+
+
+
+
+
+
+
+
+
+
