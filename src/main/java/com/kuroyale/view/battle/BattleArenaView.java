@@ -43,7 +43,10 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
 
     private EmojiButton emojiButton;
     private EmojiPanel emojiPanel;
+
     // Delegated components
+    private BiConsumer<Integer, Integer> onGridClick;
+
     private ArenaInputHandler inputHandler;
     private ArenaEffectManager effectManager;
 
@@ -52,10 +55,6 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     private ProjectileRenderer projectileRenderer;
     private TowerRenderer towerRenderer;
     private BuildingRenderer buildingRenderer;
-
-    // moji System
-    private EmojiButton emojiButton;
-    private EmojiPanel emojiPanel;
 
     private int currentHoveredTileX = -1;
     private int currentHoveredTileY = -1;
