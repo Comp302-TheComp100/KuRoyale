@@ -38,6 +38,8 @@ public enum NetworkMessageType {
     TOWER_SYNC("Tower health synchronization from host"),
     GAME_OVER("Game over with winner info from host"),
     FULL_STATE_SYNC("Complete entity state sync - troops, buildings, projectiles from host"),
+    AREA_EFFECT("Area effect visual sync - explosions, splash damage effects"),
+    SPELL_CAST("Spell cast visual sync - spell animations like arrows, zap"),
     
     // Match End Messages
     VICTORY("Player won the match"),

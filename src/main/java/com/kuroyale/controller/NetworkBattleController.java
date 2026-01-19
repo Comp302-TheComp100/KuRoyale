@@ -234,10 +234,12 @@ public class NetworkBattleController implements GameEventListener {
         Deck playerDeck = model.createDeckFromNames(currentUser.getDeck());
 
         // Determine arena layout (HOST's layout is used by both)
+        // CLIENT mirrors bridge X positions for correct perspective
         ArenaLayout layoutToUse;
         if (!isHost && networkService.getHostArenaLayout() != null) {
-            layoutToUse = networkService.getHostArenaLayout();
-            System.out.println("[NetworkBattle] CLIENT using HOST's arena layout: " + layoutToUse.getName());
+            ArenaLayout hostLayout = networkService.getHostArenaLayout();
+            layoutToUse = mirrorBridgesForClient(hostLayout);
+            System.out.println("[NetworkBattle] CLIENT using HOST's arena layout with mirrored bridges: " + layoutToUse.getName());
         } else {
             layoutToUse = model.loadArenaLayout();
             System.out.println("[NetworkBattle] HOST using own arena layout: " + layoutToUse.getName());
@@ -593,12 +595,94 @@ public class NetworkBattleController implements GameEventListener {
             case OPPONENT_DISCONNECTED:
                 handleOpponentDisconnected();
                 break;
-
+                
+            case AREA_EFFECT:
+                if (!isHost) {
+                    handleAreaEffectSync(message);
+                }
+                break;
+                
+            case SPELL_CAST:
+                if (!isHost) {
+                    handleSpellCastSync(message);
+                }
+                break;
+                
             default:
                 break;
         }
     }
 
+    /**
+     * CLIENT: Handles area effect sync from HOST for visual effects.
+     * Mirrors the position for client's perspective.
+     */
+    private void handleAreaEffectSync(NetworkMessage message) {
+        String data = message.getData();
+        if (data == null || data.isEmpty()) return;
+        
+        try {
+            String[] parts = data.split(";");
+            if (parts.length < 6) return;
+            
+            boolean hostIsPlayerSource = Boolean.parseBoolean(parts[0]);
+            double centerX = Double.parseDouble(parts[1]);
+            double centerY = Double.parseDouble(parts[2]);
+            double radius = Double.parseDouble(parts[3]);
+            double duration = Double.parseDouble(parts[4]);
+            String effectType = parts[5];
+            
+            // Mirror for client perspective (180° rotation)
+            boolean clientIsPlayerSource = !hostIsPlayerSource;
+            double clientCenterX = Arena.WIDTH - centerX;
+            double clientCenterY = Arena.HEIGHT - centerY;
+            
+            // Trigger the visual effect on the client's arena view
+            Vector2 clientCenter = new Vector2(clientCenterX, clientCenterY);
+            arenaView.onAreaEffect(clientIsPlayerSource, clientCenter, radius, duration, effectType);
+            
+        } catch (Exception e) {
+            System.err.println("[NetworkBattle] Error parsing area effect: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * CLIENT: Handles spell cast sync from HOST for spell animations.
+     * Mirrors the position for client's perspective.
+     */
+    private void handleSpellCastSync(NetworkMessage message) {
+        String data = message.getData();
+        if (data == null || data.isEmpty()) return;
+        
+        try {
+            String[] parts = data.split(";");
+            if (parts.length < 5) return;
+            
+            boolean hostIsPlayer = Boolean.parseBoolean(parts[0]);
+            String cardName = parts[1];
+            int centerX = Integer.parseInt(parts[2]);
+            int centerY = Integer.parseInt(parts[3]);
+            double range = Double.parseDouble(parts[4]);
+            
+            // Mirror for client perspective (180° rotation)
+            boolean clientIsPlayer = !hostIsPlayer;
+            int clientCenterX = Arena.WIDTH - 1 - centerX;
+            int clientCenterY = Arena.HEIGHT - 1 - centerY;
+            
+            // Get the spell card for visual effect
+            Card spell = model.getCardByName(cardName);
+            if (spell != null) {
+                GridPosition clientCenter = GridPosition.tryCreate(clientCenterX, clientCenterY);
+                if (clientCenter != null) {
+                    arenaView.onSpellCast(clientIsPlayer, spell, clientCenter);
+                }
+            }
+            
+        } catch (Exception e) {
+            System.err.println("[NetworkBattle] Error parsing spell cast: " + e.getMessage());
+        }
+    }
+    
     /**
      * CLIENT: Handles projectile sync from HOST for visual effects.
      */
@@ -1283,9 +1367,49 @@ public class NetworkBattleController implements GameEventListener {
     }
 
     @Override
-    public void onAreaEffect(boolean isPlayerSource, Vector2 center, double radius, double duration,
-            String effectType) {
-        // Visual effects handled by arena view
+    public void onAreaEffect(boolean isPlayerSource, Vector2 center, double radius, double duration, String effectType) {
+        // HOST: Send area effect to CLIENT for visual sync
+        if (isHost && networkService != null && networkService.isConnected()) {
+            networkService.send(NetworkMessage.areaEffect(isPlayerSource, center.getX(), center.getY(), 
+                    radius, duration, effectType));
+        }
+    }
+    
+    @Override
+    public void onSpellCast(boolean isPlayer, Card spell, GridPosition center) {
+        // HOST: Send spell cast to CLIENT for visual sync
+        if (isHost && networkService != null && networkService.isConnected() && spell != null && center != null) {
+            networkService.send(NetworkMessage.spellCast(isPlayer, spell.getName(), 
+                    center.getX(), center.getY(), spell.getRange()));
+        }
+    }
+    
+    /**
+     * Mirrors bridge X positions for the CLIENT's perspective.
+     * If HOST has bridges at X=1,2,3, CLIENT sees them at X=16,17,18.
+     * Formula: mirroredX = WIDTH - 1 - x
+     */
+    private ArenaLayout mirrorBridgesForClient(ArenaLayout hostLayout) {
+        ArenaLayout clientLayout = new ArenaLayout(hostLayout.getName());
+        
+        // Mirror bridge X positions
+        for (GridPosition bridgePos : hostLayout.getBridgePositions()) {
+            int mirroredX = Arena.WIDTH - 1 - bridgePos.getX();
+            clientLayout.addBridgePosition(mirroredX, bridgePos.getY());
+        }
+        
+        // Copy princess tower positions as-is (towers are already mirrored in Arena)
+        for (GridPosition princessPos : hostLayout.getPrincessTowerPositions()) {
+            clientLayout.addPrincessTowerPosition(princessPos.getX(), princessPos.getY());
+        }
+        
+        // Copy king tower position as-is
+        GridPosition kingPos = hostLayout.getKingTowerPosition();
+        if (kingPos != null) {
+            clientLayout.setKingTowerPosition(kingPos.getX(), kingPos.getY());
+        }
+        
+        return clientLayout;
     }
 
     // ==================== UI Actions ====================
