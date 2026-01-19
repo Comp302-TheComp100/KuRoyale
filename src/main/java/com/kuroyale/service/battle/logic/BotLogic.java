@@ -22,9 +22,6 @@ public class BotLogic {
     private double timeSinceLastMove;
     private static final double MOVE_DELAY = 2.0; // Seconds between moves
 
-    // Tracking for combo logic
-    private Card lastPlayedCard;
-
     private static final double FORCE_PLAY_ELIXIR = 9.5;
     private static final double PASSIVE_ELIXIR_THRESHOLD = 9.0;
     private static final double OFFENSE_ELIXIR_THRESHOLD = 6.0;
@@ -86,8 +83,6 @@ public class BotLogic {
         hand.playCard(playedIndex);
         timeSinceLastMove = 0;
 
-        lastPlayedCard = cardToPlay;
-
         return move;
     }
 
@@ -142,84 +137,6 @@ public class BotLogic {
             return null;
         }
         return new Move(best.card, best.x, best.y);
-    }
-
-    private int findComboCard(java.util.List<Integer> indices) {
-        // Priority 1: Siege Mode (Mortar + Defensive Building)
-        for (int i : indices) {
-            if (checkSiegeMode(hand.getCard(i)))
-                return i;
-        }
-
-        // Priority 2: Air Assault (Minion + Minion)
-        for (int i : indices) {
-            if (checkAirAssault(hand.getCard(i)))
-                return i;
-        }
-
-        // Priority 3: Other Combos (Tank+Support, etc.)
-        for (int i : indices) {
-            if (checkOtherCombos(hand.getCard(i)))
-                return i;
-        }
-
-        return -1;
-    }
-
-    // --- Combo Check Helpers ---
-
-    private boolean checkSiegeMode(Card current) {
-        boolean mortarPlayed = lastPlayedCard.getName().equals("Mortar") || current.getName().equals("Mortar");
-        boolean defensePlayed = isDefensiveBuilding(lastPlayedCard) || isDefensiveBuilding(current);
-        return mortarPlayed && defensePlayed;
-    }
-
-    private boolean checkAirAssault(Card current) {
-        return lastPlayedCard.getName().contains("Minion") && current.getName().contains("Minion");
-    }
-
-    private boolean checkOtherCombos(Card current) {
-        // Tank + Support
-        if (isTank(lastPlayedCard) && isRangedTroop(current))
-            return true;
-
-        // Swarm
-        if (isSwarm(lastPlayedCard) && isSwarm(current))
-            return true;
-
-        // Building Defense
-        if (lastPlayedCard.getType() == com.kuroyale.model.enums.CardType.BUILDING &&
-                current.getType() == com.kuroyale.model.enums.CardType.BUILDING)
-            return true;
-
-        // Royal Combo
-        boolean knight = lastPlayedCard.getName().equals("Knight") || current.getName().equals("Knight");
-        boolean archers = lastPlayedCard.getName().equals("Archers") || current.getName().equals("Archers");
-        if (knight && archers)
-            return true;
-
-        return false;
-    }
-
-    // --- Helpers from ComboService (Duplicated simplified) ---
-    private boolean isDefensiveBuilding(Card c) {
-        return c.getType() == com.kuroyale.model.enums.CardType.BUILDING &&
-                !c.getName().equals("Mortar") && !c.getName().equals("X-Bow");
-    }
-
-    private boolean isTank(Card c) {
-        return c.getName().equals("Giant") || c.getName().equals("Knight") ||
-                c.getName().equals("Golem") || c.getName().equals("P.E.K.K.A");
-    }
-
-    private boolean isRangedTroop(Card c) {
-        String n = c.getName();
-        return n.equals("Musketeer") || n.equals("Archers") || n.equals("Spear Goblins") ||
-                n.equals("Wizard") || n.equals("Witch");
-    }
-
-    private boolean isSwarm(Card c) {
-        return c.getCount() >= 3;
     }
 
     private List<Troop> extractEnemyTroops(GameState gameState) {
