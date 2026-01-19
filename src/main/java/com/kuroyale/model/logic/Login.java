@@ -1,6 +1,6 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.core.entities.*;
+import com.kuroyale.model.entities.*;
 import com.kuroyale.service.auth.AuthenticationService;
 
 import java.io.IOException;

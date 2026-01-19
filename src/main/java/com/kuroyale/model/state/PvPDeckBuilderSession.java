@@ -1,6 +1,6 @@
 package com.kuroyale.model.state;
 
-import com.kuroyale.model.core.entities.Deck;
+import com.kuroyale.model.entities.Deck;
 
 /**
  * Singleton session to hold deck state across navigation between screens.

@@ -1,8 +1,8 @@
 package com.kuroyale.view.dialog;
 
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.User;
-import com.kuroyale.model.core.enums.SpeedType;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.User;
+import com.kuroyale.model.enums.SpeedType;
 import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.ui.StyleHelper;
@@ -233,7 +233,7 @@ public class CardInfoDialog extends StackPane {
             addStat(statsBox, "Speed", formatSpeed(card.getSpeed().toString()));
         }
         addStat(statsBox, "Target", card.getTarget().toString());
-        if (card.getType() == com.kuroyale.model.core.enums.CardType.TROOP) {
+        if (card.getType() == com.kuroyale.model.enums.CardType.TROOP) {
             addStat(statsBox, "Unit Type", card.isAirUnit() ? "Air" : "Ground");
         }
         if (card.isAreaEffect()) {

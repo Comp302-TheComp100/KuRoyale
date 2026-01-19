@@ -1,6 +1,6 @@
 package com.kuroyale.view.battle.renderers;
 
-import com.kuroyale.model.core.entities.Building;
+import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.logic.GameState;
 import com.kuroyale.util.config.GameColors;
 import com.kuroyale.util.config.GameConstants;
@@ -276,10 +276,10 @@ public class BuildingRenderer {
 
         // Update Laser Beam
         if (visual.laserBeam != null) {
-            com.kuroyale.model.core.entities.ICombatant target = b.getTarget();
+            com.kuroyale.model.entities.ICombatant target = b.getTarget();
             if (target != null && target.isAlive()) {
-                com.kuroyale.model.core.entities.GridPosition myPos = b.getCenterPosition();
-                com.kuroyale.model.core.entities.GridPosition targetPos = target.getCenterPosition();
+                com.kuroyale.model.entities.GridPosition myPos = b.getCenterPosition();
+                com.kuroyale.model.entities.GridPosition targetPos = target.getCenterPosition();
 
                 if (myPos != null && targetPos != null) {
                     double sx = myPos.getX() * TILE_SIZE + TILE_SIZE / 2.0;

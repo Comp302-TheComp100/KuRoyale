@@ -1,6 +1,6 @@
 package com.kuroyale.model.strategy.deck;
 
-import com.kuroyale.model.core.entities.Deck;
+import com.kuroyale.model.entities.Deck;
 
 /**
  * Strategy Pattern: Marker strategy indicating deck should be built via UI.

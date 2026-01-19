@@ -1,9 +1,9 @@
 package com.kuroyale.model.logic;
 
 import com.kuroyale.service.battle.BotLogic;
-import com.kuroyale.model.core.entities.*;
-import com.kuroyale.model.core.enums.*;
-import com.kuroyale.model.state.dto.*;
+import com.kuroyale.model.dto.*;
+import com.kuroyale.model.entities.*;
+import com.kuroyale.model.enums.*;
 import com.kuroyale.event.GameEventBus;
 
 import java.util.ArrayList;
@@ -708,10 +708,10 @@ public class GameState implements IBattleState {
             // Set unit state for proper animation rendering
             if (state != null && !state.isEmpty()) {
                 try {
-                    troop.setUnitState(com.kuroyale.model.core.enums.UnitState.valueOf(state));
+                    troop.setUnitState(com.kuroyale.model.enums.UnitState.valueOf(state));
                 } catch (IllegalArgumentException e) {
                     // Default to MOVING if state is invalid
-                    troop.setUnitState(com.kuroyale.model.core.enums.UnitState.MOVING);
+                    troop.setUnitState(com.kuroyale.model.enums.UnitState.MOVING);
                 }
             }
 

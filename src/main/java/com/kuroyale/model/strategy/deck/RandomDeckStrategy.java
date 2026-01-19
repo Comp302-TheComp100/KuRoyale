@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.CardCatalog;
-import com.kuroyale.model.core.entities.Deck;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.CardCatalog;
+import com.kuroyale.model.entities.Deck;
 import com.kuroyale.util.common.ServiceFactory;
 
 /**

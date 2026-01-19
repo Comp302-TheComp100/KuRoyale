@@ -2,10 +2,10 @@ package com.kuroyale.model.strategy.deck;
 
 import java.util.List;
 
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.CardCatalog;
-import com.kuroyale.model.core.entities.Deck;
-import com.kuroyale.model.core.entities.User;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.CardCatalog;
+import com.kuroyale.model.entities.Deck;
+import com.kuroyale.model.entities.User;
 import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.util.common.ServiceFactory;
 

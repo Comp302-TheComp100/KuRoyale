@@ -2,11 +2,11 @@ package com.kuroyale.service.game;
 
 import com.kuroyale.event.GameEventBus;
 import com.kuroyale.event.GameEventListener;
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.Quest;
-import com.kuroyale.model.core.entities.Tower;
-import com.kuroyale.model.core.enums.CardType;
-import com.kuroyale.model.core.enums.QuestType;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Quest;
+import com.kuroyale.model.entities.Tower;
+import com.kuroyale.model.enums.CardType;
+import com.kuroyale.model.enums.QuestType;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -209,7 +209,7 @@ public class QuestService implements GameEventListener {
 
     @Override
     public void onCardPlayed(boolean isPlayer, Card card,
-            java.util.List<com.kuroyale.model.core.entities.ICombatant> spawnedUnits) {
+            java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
         if (!isPlayer)
             return;
 

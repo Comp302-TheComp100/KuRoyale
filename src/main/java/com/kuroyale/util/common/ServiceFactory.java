@@ -1,6 +1,6 @@
 package com.kuroyale.util.common;
 
-import com.kuroyale.model.core.entities.CardCatalog;
+import com.kuroyale.model.entities.CardCatalog;
 import com.kuroyale.repository.JsonUserRepository;
 import com.kuroyale.repository.UserRepository;
 import com.kuroyale.service.auth.AuthenticationService;

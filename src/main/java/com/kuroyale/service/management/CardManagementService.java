@@ -1,7 +1,7 @@
 package com.kuroyale.service.management;
 
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.User;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.User;
 import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.util.common.ServiceFactory;
 

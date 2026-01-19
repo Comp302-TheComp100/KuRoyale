@@ -14,10 +14,10 @@ import java.util.Map;
 
 import org.json.JSONObject;
 
-import com.kuroyale.model.core.entities.Achievement;
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.Tower;
-import com.kuroyale.model.core.enums.AchievementType;
+import com.kuroyale.model.entities.Achievement;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Tower;
+import com.kuroyale.model.enums.AchievementType;
 
 /*Service for managing permanent achievements.
  * Handles achievement tracking, unlocking, and persistence.*/
@@ -188,11 +188,11 @@ public class AchievementService implements GameEventListener {
 
     @Override
     public void onCardPlayed(boolean isPlayer, Card card,
-            java.util.List<com.kuroyale.model.core.entities.ICombatant> spawnedUnits) {
+            java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
         if (!isPlayer)
             return;
 
-        if (card.getType() == com.kuroyale.model.core.enums.CardType.TROOP && card.getCount() > 1) {
+        if (card.getType() == com.kuroyale.model.enums.CardType.TROOP && card.getCount() > 1) {
             updateProgress(AchievementType.ARMY_BUILDER, card.getCount());
         }
     }
@@ -213,8 +213,8 @@ public class AchievementService implements GameEventListener {
     }
 
     @Override
-    public void onComboTriggered(com.kuroyale.model.core.enums.ComboType combo,
-            java.util.List<com.kuroyale.model.core.entities.ICombatant> affectedUnits) {
+    public void onComboTriggered(com.kuroyale.model.enums.ComboType combo,
+            java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
         updateProgress(AchievementType.COMBO_EXPERT, 1);
     }
 

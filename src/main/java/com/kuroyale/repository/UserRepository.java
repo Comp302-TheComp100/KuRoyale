@@ -3,7 +3,7 @@ package com.kuroyale.repository;
 import java.io.IOException;
 import java.util.List;
 
-import com.kuroyale.model.core.entities.User;
+import com.kuroyale.model.entities.User;
 
 /* Repository interface for User persistence operations
  * Pure Fabrication and Polymorphism patterns, provides abstraction for data access*/

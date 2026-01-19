@@ -1,10 +1,10 @@
 package com.kuroyale.service.battle.core;
 
-import com.kuroyale.model.core.entities.Building;
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.ICombatant;
-import com.kuroyale.model.core.entities.Tower;
-import com.kuroyale.model.core.entities.Troop;
+import com.kuroyale.model.entities.Building;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.ICombatant;
+import com.kuroyale.model.entities.Tower;
+import com.kuroyale.model.entities.Troop;
 
 public class CombatService {
 
@@ -41,7 +41,7 @@ public class CombatService {
                 // Death Spawn handling (e.g. Tombstone)
                 Card base = building.getBaseCard();
                 if (base != null && base.getDeathSpawnUnitName() != null) {
-                    com.kuroyale.model.core.entities.GridPosition spawnPos = state.getFrontPosition(building);
+                    com.kuroyale.model.entities.GridPosition spawnPos = state.getFrontPosition(building);
                     if (spawnPos == null) {
                         spawnPos = building.getPosition();
                     }
@@ -61,16 +61,16 @@ public class CombatService {
         }
 
         // 4. Projectiles (Orphaned or Active)
-        java.util.List<com.kuroyale.model.core.entities.Projectile> projectiles = state.getProjectiles();
-        java.util.Iterator<com.kuroyale.model.core.entities.Projectile> it = projectiles.iterator();
+        java.util.List<com.kuroyale.model.entities.Projectile> projectiles = state.getProjectiles();
+        java.util.Iterator<com.kuroyale.model.entities.Projectile> it = projectiles.iterator();
         while (it.hasNext()) {
-            com.kuroyale.model.core.entities.Projectile p = it.next();
+            com.kuroyale.model.entities.Projectile p = it.next();
             p.update(deltaTime);
             if (!p.isActive()) {
                 // Hit target
                 if (p.isAreaEffect()) {
                     // Use Vector2 directly for sub-tile precision
-                    com.kuroyale.model.core.entities.Vector2 impactPos = p.getPosition();
+                    com.kuroyale.model.entities.Vector2 impactPos = p.getPosition();
                     if (impactPos != null) {
                         double radius = 1.0;
                         double stun = 0.0;
@@ -125,7 +125,7 @@ public class CombatService {
         // If stunned, skip all combat logic
         if (attacker.isStunned()) {
             if (attacker instanceof Troop t) {
-                t.setUnitState(com.kuroyale.model.core.enums.UnitState.STUNNED);
+                t.setUnitState(com.kuroyale.model.enums.UnitState.STUNNED);
             }
             return;
         }
@@ -147,13 +147,13 @@ public class CombatService {
         // 3. State Management (for Troops)
         if (attacker instanceof Troop troop) {
             if (target != null) {
-                troop.setUnitState(com.kuroyale.model.core.enums.UnitState.ATTACKING);
+                troop.setUnitState(com.kuroyale.model.enums.UnitState.ATTACKING);
                 troop.setTarget(target);
             } else {
                 // Target died or moved out of range - clear everything so movement service can
                 // retarget
-                if (troop.getUnitState() == com.kuroyale.model.core.enums.UnitState.ATTACKING) {
-                    troop.setUnitState(com.kuroyale.model.core.enums.UnitState.IDLE);
+                if (troop.getUnitState() == com.kuroyale.model.enums.UnitState.ATTACKING) {
+                    troop.setUnitState(com.kuroyale.model.enums.UnitState.IDLE);
                     troop.setTarget(null);
                     troop.setTargetWorldPosition(null); // Clear so TroopMovementService finds new target
                     troop.clearPath();
@@ -191,7 +191,7 @@ public class CombatService {
         if (base == null || base.getSpawnUnitName() == null)
             return;
 
-        com.kuroyale.model.core.entities.GridPosition spawnPos = state.getFrontPosition(b);
+        com.kuroyale.model.entities.GridPosition spawnPos = state.getFrontPosition(b);
         if (spawnPos == null)
             return;
 
@@ -219,12 +219,12 @@ public class CombatService {
         if (isMelee) {
             // Instant Damage
             if (attacker.isAreaEffect()) {
-                com.kuroyale.model.core.entities.GridPosition targetPos = target.getPosition();
+                com.kuroyale.model.entities.GridPosition targetPos = target.getPosition();
                 if (target instanceof Tower || target instanceof Building) {
                     targetPos = target.getCenterPosition();
                 }
 
-                applyAreaDamage(state, com.kuroyale.model.core.entities.Vector2.fromGridPosition(targetPos), 1.0,
+                applyAreaDamage(state, com.kuroyale.model.entities.Vector2.fromGridPosition(targetPos), 1.0,
                         attacker.getDamage(), attacker.getTargetType(), attacker.isPlayerSide(), false, 0.0,
                         "Generic");
             } else {
@@ -232,23 +232,23 @@ public class CombatService {
             }
         } else {
             // Ranged / Projectile
-            state.addProjectile(new com.kuroyale.model.core.entities.Projectile(attacker, target));
+            state.addProjectile(new com.kuroyale.model.entities.Projectile(attacker, target));
         }
     }
 
     private ICombatant findNearestTarget(ICombatant attacker, com.kuroyale.model.logic.IBattleState state) {
         ICombatant best = null;
         double bestDist = Double.MAX_VALUE;
-        com.kuroyale.model.core.entities.Vector2 center = attacker.getCenterWorldPosition();
+        com.kuroyale.model.entities.Vector2 center = attacker.getCenterWorldPosition();
         if (center == null)
             return null;
 
         double range = attacker.getRange();
 
         if (attacker instanceof Troop troop) {
-            com.kuroyale.model.core.entities.CombatStats stats = troop.getCombatStats();
+            com.kuroyale.model.entities.CombatStats stats = troop.getCombatStats();
             if (stats != null
-                    && stats.getAttackType() == com.kuroyale.model.core.entities.CombatStats.AttackType.MELEE) {
+                    && stats.getAttackType() == com.kuroyale.model.entities.CombatStats.AttackType.MELEE) {
                 range = Math.max(range, com.kuroyale.util.config.GameConstants.MELEE_ATTACK_BUFFER);
             }
         }
@@ -304,11 +304,11 @@ public class CombatService {
      * This is used for spell area damage to ensure spells hitting any part of a
      * structure apply damage.
      */
-    private double calculateDistanceToStructure(com.kuroyale.model.core.entities.Vector2 from, ICombatant structure) {
+    private double calculateDistanceToStructure(com.kuroyale.model.entities.Vector2 from, ICombatant structure) {
         if (from == null || structure == null)
             return Double.MAX_VALUE;
 
-        com.kuroyale.model.core.entities.GridPosition pos = structure.getPosition();
+        com.kuroyale.model.entities.GridPosition pos = structure.getPosition();
         if (pos == null)
             return Double.MAX_VALUE;
 
@@ -342,10 +342,10 @@ public class CombatService {
      * Centralized Area Damage logic using world coordinates (Vector2).
      */
     public void applyAreaDamage(com.kuroyale.model.logic.IBattleState gameState,
-            com.kuroyale.model.core.entities.Vector2 center,
+            com.kuroyale.model.entities.Vector2 center,
             double radiusTiles,
             double damage,
-            com.kuroyale.model.core.enums.TargetType targetType,
+            com.kuroyale.model.enums.TargetType targetType,
             boolean isPlayerSource,
             boolean isSpell,
             double stunDuration,
@@ -373,22 +373,22 @@ public class CombatService {
 
             // Handle Target Types
             if (candidate instanceof Troop t) {
-                if (targetType == com.kuroyale.model.core.enums.TargetType.GROUND && t.isAirUnit())
+                if (targetType == com.kuroyale.model.enums.TargetType.GROUND && t.isAirUnit())
                     continue;
-                if (targetType == com.kuroyale.model.core.enums.TargetType.AIR && !t.isAirUnit())
+                if (targetType == com.kuroyale.model.enums.TargetType.AIR && !t.isAirUnit())
                     continue;
-                if (targetType == com.kuroyale.model.core.enums.TargetType.NONE)
+                if (targetType == com.kuroyale.model.enums.TargetType.NONE)
                     continue;
             } else if ((candidate instanceof Building || candidate instanceof Tower)) {
                 // Buildings/Towers are always "Ground" for targeting purposes usually
-                boolean canHitGround = (targetType != com.kuroyale.model.core.enums.TargetType.AIR
-                        && targetType != com.kuroyale.model.core.enums.TargetType.NONE);
+                boolean canHitGround = (targetType != com.kuroyale.model.enums.TargetType.AIR
+                        && targetType != com.kuroyale.model.enums.TargetType.NONE);
                 if (!canHitGround)
                     continue;
             }
 
             // Precise Distance Check using world coordinates
-            com.kuroyale.model.core.entities.Vector2 candidatePos = candidate.getCenterWorldPosition();
+            com.kuroyale.model.entities.Vector2 candidatePos = candidate.getCenterWorldPosition();
             if (candidatePos == null)
                 continue;
 

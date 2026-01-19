@@ -6,10 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.CardCatalog;
-import com.kuroyale.model.core.entities.Deck;
-import com.kuroyale.model.core.entities.User;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.CardCatalog;
+import com.kuroyale.model.entities.Deck;
+import com.kuroyale.model.entities.User;
 import com.kuroyale.repository.UserRepository;
 
 /*Service for managing deck operations

@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.kuroyale.model.core.entities.Arena;
-import com.kuroyale.model.core.entities.ArenaLayout;
-import com.kuroyale.model.core.entities.GridCell;
-import com.kuroyale.model.core.entities.GridPosition;
-import com.kuroyale.model.core.entities.User;
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.entities.GridCell;
+import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.entities.User;
 import com.kuroyale.repository.UserRepository;
 
 /* Service for managing Arena operations.

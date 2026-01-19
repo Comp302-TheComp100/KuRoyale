@@ -1,6 +1,6 @@
 package com.kuroyale.view.menu;
 
-import com.kuroyale.model.state.dto.SavedGameState;
+import com.kuroyale.model.dto.SavedGameState;
 
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;

@@ -3,8 +3,8 @@ package com.kuroyale.event;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.Tower;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Tower;
 
 /* Event Bus for broadcasting game events to registered listeners.
  * Facilitates loose coupling between the game engine (GameState) and
@@ -34,13 +34,13 @@ public class GameEventBus {
     }
 
     public void publishCardPlayed(boolean isPlayer, Card card,
-            java.util.List<com.kuroyale.model.core.entities.ICombatant> spawnedUnits) {
+            java.util.List<com.kuroyale.model.entities.ICombatant> spawnedUnits) {
         // Create a copy to avoid ConcurrentModificationException if a listener
         // unsubscribes during notify
         new ArrayList<>(listeners).forEach(l -> l.onCardPlayed(isPlayer, card, spawnedUnits));
     }
 
-    public void publishSpellCast(boolean isPlayer, Card spell, com.kuroyale.model.core.entities.GridPosition center) {
+    public void publishSpellCast(boolean isPlayer, Card spell, com.kuroyale.model.entities.GridPosition center) {
         new ArrayList<>(listeners).forEach(l -> l.onSpellCast(isPlayer, spell, center));
     }
 
@@ -52,25 +52,25 @@ public class GameEventBus {
         new ArrayList<>(listeners).forEach(l -> l.onElixirSpent(isPlayer, amount));
     }
 
-    public void publishBuildingProduction(com.kuroyale.model.core.entities.Building building, String resource,
+    public void publishBuildingProduction(com.kuroyale.model.entities.Building building, String resource,
             int amount) {
         new ArrayList<>(listeners).forEach(l -> l.onBuildingProduction(building, resource, amount));
     }
 
-    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.core.entities.Vector2 center,
+    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.Vector2 center,
             double radius, double duration, String effectType) {
         new ArrayList<>(listeners).forEach(l -> l.onAreaEffect(isPlayerSource, center, radius, duration, effectType));
     }
 
-    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.core.entities.GridPosition center,
+    public void publishAreaEffect(boolean isPlayerSource, com.kuroyale.model.entities.GridPosition center,
             double radius, double duration, String effectType) {
-        publishAreaEffect(isPlayerSource, com.kuroyale.model.core.entities.Vector2.fromGridPosition(center), radius,
+        publishAreaEffect(isPlayerSource, com.kuroyale.model.entities.Vector2.fromGridPosition(center), radius,
                 duration,
                 effectType);
     }
 
-    public void publishComboTriggered(com.kuroyale.model.core.enums.ComboType combo,
-            java.util.List<com.kuroyale.model.core.entities.ICombatant> affectedUnits) {
+    public void publishComboTriggered(com.kuroyale.model.enums.ComboType combo,
+            java.util.List<com.kuroyale.model.entities.ICombatant> affectedUnits) {
         new ArrayList<>(listeners).forEach(l -> l.onComboTriggered(combo, affectedUnits));
     }
 

@@ -1,9 +1,9 @@
 package com.kuroyale.controller;
 
 import com.kuroyale.model.logic.ArenaDesignModel;
-import com.kuroyale.model.core.entities.Arena;
-import com.kuroyale.model.core.entities.ArenaLayout;
-import com.kuroyale.model.core.enums.TileType;
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.enums.TileType;
 import com.kuroyale.util.config.GameConstants;
 import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.battle.renderers.ArenaRenderer;

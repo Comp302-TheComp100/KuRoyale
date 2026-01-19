@@ -1,9 +1,9 @@
 package com.kuroyale.service.game;
 
 import com.kuroyale.model.logic.*;
-import com.kuroyale.model.state.dto.*;
-import com.kuroyale.model.core.entities.*;
-import com.kuroyale.model.core.enums.*;
+import com.kuroyale.model.dto.*;
+import com.kuroyale.model.entities.*;
+import com.kuroyale.model.enums.*;
 
 import java.io.*;
 import java.nio.file.*;
@@ -258,7 +258,7 @@ public class GameSaveService {
 
             // Map old package class to new package class
             if (name.equals("com.kuroyale.model.SavedGameState")) {
-                return com.kuroyale.model.state.dto.SavedGameState.class;
+                return com.kuroyale.model.dto.SavedGameState.class;
             }
             // Handle inner classes like SavedGameState$SavedTower
             if (name.startsWith("com.kuroyale.model.SavedGameState$")) {
@@ -269,7 +269,7 @@ public class GameSaveService {
 
             // Handle ArenaLayout if it moved from enums to entities
             if (name.equals("com.kuroyale.model.enums.ArenaLayout")) {
-                return com.kuroyale.model.core.entities.ArenaLayout.class;
+                return com.kuroyale.model.entities.ArenaLayout.class;
             }
 
             return super.resolveClass(desc);

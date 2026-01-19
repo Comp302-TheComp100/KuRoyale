@@ -3,7 +3,7 @@ package com.kuroyale.controller;
 import java.io.IOException;
 import java.util.List;
 
-import com.kuroyale.model.core.entities.Challenge;
+import com.kuroyale.model.entities.Challenge;
 import com.kuroyale.util.audio.SoundEffectUtil;
 import com.kuroyale.util.ui.SceneLoader;
 import com.kuroyale.view.dialog.ChallengeDetailDialog;

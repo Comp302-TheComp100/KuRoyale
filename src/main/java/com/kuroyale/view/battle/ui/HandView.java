@@ -1,7 +1,7 @@
 package com.kuroyale.view.battle.ui;
 
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.Hand;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Hand;
 import com.kuroyale.model.logic.ElixirManager;
 import com.kuroyale.view.card.CardView;
 

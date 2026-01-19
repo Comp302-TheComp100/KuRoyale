@@ -2,10 +2,10 @@ package com.kuroyale.service.battle;
 
 import com.kuroyale.event.GameEventBus;
 import com.kuroyale.event.GameEventListener;
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.ICombatant;
-import com.kuroyale.model.core.enums.CardType;
-import com.kuroyale.model.core.enums.ComboType;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.ICombatant;
+import com.kuroyale.model.enums.CardType;
+import com.kuroyale.model.enums.ComboType;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -209,8 +209,8 @@ public class ComboService implements GameEventListener {
             allUnits.addAll(currUnits);
             // Effect: +10% Movement Speed
             for (ICombatant u : allUnits) {
-                if (u instanceof com.kuroyale.model.core.entities.Troop) {
-                    ((com.kuroyale.model.core.entities.Troop) u).modifySpeed(1.10);
+                if (u instanceof com.kuroyale.model.entities.Troop) {
+                    ((com.kuroyale.model.entities.Troop) u).modifySpeed(1.10);
                 }
             }
             triggerCombo(isPlayer, ComboType.SWARM_ATTACK, allUnits);
@@ -227,9 +227,9 @@ public class ComboService implements GameEventListener {
             allUnits.addAll(currUnits);
 
             for (ICombatant u : allUnits) {
-                if (u instanceof com.kuroyale.model.core.entities.Building) {
-                    ((com.kuroyale.model.core.entities.Building) u)
-                            .heal((int) (((com.kuroyale.model.core.entities.Building) u).getMaxHealth() * 0.20));
+                if (u instanceof com.kuroyale.model.entities.Building) {
+                    ((com.kuroyale.model.entities.Building) u)
+                            .heal((int) (((com.kuroyale.model.entities.Building) u).getMaxHealth() * 0.20));
                 }
             }
             triggerCombo(isPlayer, ComboType.BUILDING_DEFENSE, allUnits);
@@ -266,9 +266,9 @@ public class ComboService implements GameEventListener {
             allUnits.addAll(currUnits);
 
             for (ICombatant u : allUnits) {
-                if (u instanceof com.kuroyale.model.core.entities.Troop) {
-                    if (((com.kuroyale.model.core.entities.Troop) u).getBaseCard().getName().equals("Knight")) {
-                        ((com.kuroyale.model.core.entities.Troop) u).heal(100);
+                if (u instanceof com.kuroyale.model.entities.Troop) {
+                    if (((com.kuroyale.model.entities.Troop) u).getBaseCard().getName().equals("Knight")) {
+                        ((com.kuroyale.model.entities.Troop) u).heal(100);
                         knightUnits.add(u);
                     }
                 }
@@ -294,8 +294,8 @@ public class ComboService implements GameEventListener {
 
             List<ICombatant> mortars = new ArrayList<>();
             for (ICombatant u : allUnits) {
-                if (u instanceof com.kuroyale.model.core.entities.Building) {
-                    com.kuroyale.model.core.entities.Building b = (com.kuroyale.model.core.entities.Building) u;
+                if (u instanceof com.kuroyale.model.entities.Building) {
+                    com.kuroyale.model.entities.Building b = (com.kuroyale.model.entities.Building) u;
                     boolean fromMortarCard = false;
 
                     if (prev.spawnedUnits.contains(u) && prev.card.getName().equals("Mortar"))
@@ -330,8 +330,8 @@ public class ComboService implements GameEventListener {
 
             List<ICombatant> hogs = new ArrayList<>();
             for (ICombatant u : allUnits) {
-                if (u instanceof com.kuroyale.model.core.entities.Troop) {
-                    com.kuroyale.model.core.entities.Troop t = (com.kuroyale.model.core.entities.Troop) u;
+                if (u instanceof com.kuroyale.model.entities.Troop) {
+                    com.kuroyale.model.entities.Troop t = (com.kuroyale.model.entities.Troop) u;
                     if (t.getBaseCard().getName().equals("Hog Rider")) {
                         t.modifySpeed(1.20);
                         hogs.add(t);
@@ -371,8 +371,8 @@ public class ComboService implements GameEventListener {
 
     private void applyDamageBuff(List<ICombatant> units, double percent) {
         for (ICombatant u : units) {
-            if (u instanceof com.kuroyale.model.core.entities.Troop) {
-                ((com.kuroyale.model.core.entities.Troop) u).buffDamage(percent);
+            if (u instanceof com.kuroyale.model.entities.Troop) {
+                ((com.kuroyale.model.entities.Troop) u).buffDamage(percent);
             }
         }
     }

@@ -1,7 +1,7 @@
 package com.kuroyale.service.network;
 
-import com.kuroyale.model.core.entities.ArenaLayout;
-import com.kuroyale.model.state.dto.NetworkMessage;
+import com.kuroyale.model.dto.NetworkMessage;
+import com.kuroyale.model.entities.ArenaLayout;
 import com.kuroyale.util.config.NetworkConfig;
 
 import java.io.*;

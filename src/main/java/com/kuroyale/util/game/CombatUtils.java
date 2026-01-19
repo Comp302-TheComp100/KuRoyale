@@ -1,6 +1,6 @@
 package com.kuroyale.util.game;
 
-import com.kuroyale.model.core.entities.*;
+import com.kuroyale.model.entities.*;
 
 /**
  * Utility class for spatial and combat math.

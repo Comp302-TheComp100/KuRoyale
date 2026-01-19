@@ -2,7 +2,7 @@ package com.kuroyale.model.strategy.pathfinding;
 
 import java.util.*;
 
-import com.kuroyale.model.core.entities.*;
+import com.kuroyale.model.entities.*;
 
 public class GroundPathfindingStrategy implements PathfindingStrategy {
     @Override

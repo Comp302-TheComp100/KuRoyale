@@ -1,9 +1,9 @@
 package com.kuroyale.service.management;
 
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.Deck;
-import com.kuroyale.model.core.enums.CardType;
-import com.kuroyale.model.core.enums.ComboType;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.Deck;
+import com.kuroyale.model.enums.CardType;
+import com.kuroyale.model.enums.ComboType;
 
 import java.util.ArrayList;
 import java.util.List;

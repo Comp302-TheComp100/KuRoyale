@@ -1,7 +1,7 @@
 package com.kuroyale.service.battle.core;
 
-import com.kuroyale.model.core.entities.*;
-import com.kuroyale.model.core.enums.*;
+import com.kuroyale.model.entities.*;
+import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
 import com.kuroyale.util.game.CombatUtils;
 

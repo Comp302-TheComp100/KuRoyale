@@ -10,10 +10,10 @@ import javafx.scene.shape.Rectangle;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.kuroyale.model.core.entities.Arena;
-import com.kuroyale.model.core.entities.ArenaLayout;
-import com.kuroyale.model.core.entities.GridPosition;
-import com.kuroyale.model.core.entities.Tower;
+import com.kuroyale.model.entities.Arena;
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.entities.GridPosition;
+import com.kuroyale.model.entities.Tower;
 
 public class TowerRenderer {
     private final GridPane grid;

@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kuroyale.model.core.entities.*;
+import com.kuroyale.model.entities.*;
 import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.service.management.ArenaManagementService;
 import com.kuroyale.util.common.ServiceFactory;

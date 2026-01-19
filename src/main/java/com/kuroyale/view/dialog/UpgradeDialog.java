@@ -1,7 +1,7 @@
 package com.kuroyale.view.dialog;
 
-import com.kuroyale.model.core.entities.Card;
-import com.kuroyale.model.core.entities.User;
+import com.kuroyale.model.entities.Card;
+import com.kuroyale.model.entities.User;
 import com.kuroyale.util.ui.StyleHelper;
 
 import javafx.geometry.Insets;

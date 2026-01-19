@@ -1,8 +1,8 @@
 package com.kuroyale.controller;
 
-import com.kuroyale.model.core.entities.ArenaLayout;
-import com.kuroyale.model.core.entities.User;
-import com.kuroyale.model.state.dto.NetworkMessage;
+import com.kuroyale.model.dto.NetworkMessage;
+import com.kuroyale.model.entities.ArenaLayout;
+import com.kuroyale.model.entities.User;
 import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.service.management.ArenaManagementService;
 import com.kuroyale.service.network.NetworkService;

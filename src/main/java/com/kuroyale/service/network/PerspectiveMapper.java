@@ -1,8 +1,8 @@
 package com.kuroyale.service.network;
 
-import com.kuroyale.model.core.entities.Arena;
-import com.kuroyale.model.state.dto.NetworkGameStateSnapshot;
-import com.kuroyale.model.state.dto.NetworkGameStateSnapshot.*;
+import com.kuroyale.model.dto.NetworkGameStateSnapshot;
+import com.kuroyale.model.dto.NetworkGameStateSnapshot.*;
+import com.kuroyale.model.entities.Arena;
 
 import java.util.ArrayList;
 import java.util.List;

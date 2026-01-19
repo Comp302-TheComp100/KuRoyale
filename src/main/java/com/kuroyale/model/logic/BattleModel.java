@@ -1,8 +1,8 @@
 package com.kuroyale.model.logic;
 
-import com.kuroyale.model.core.entities.*;
-import com.kuroyale.model.core.enums.*;
-import com.kuroyale.model.state.dto.*;
+import com.kuroyale.model.dto.*;
+import com.kuroyale.model.entities.*;
+import com.kuroyale.model.enums.*;
 
 import java.util.List;
 
@@ -24,7 +24,7 @@ public class BattleModel {
     private final ArenaManagementService arenaService;
     private final GameSaveService gameSaveService;
     private final ChallengeService challengeService;
-    private final com.kuroyale.model.core.entities.CardCatalog cardCatalog;
+    private final com.kuroyale.model.entities.CardCatalog cardCatalog;
 
     public BattleModel() {
         ServiceFactory factory = ServiceFactory.getInstance();
@@ -236,7 +236,7 @@ public class BattleModel {
 
             // Track GOLD_HOARDER achievement
             ServiceFactory.getInstance().getAchievementService()
-                    .updateProgress(com.kuroyale.model.core.enums.AchievementType.GOLD_HOARDER, bonus);
+                    .updateProgress(com.kuroyale.model.enums.AchievementType.GOLD_HOARDER, bonus);
         }
     }
 

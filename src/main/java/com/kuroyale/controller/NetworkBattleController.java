@@ -1,9 +1,9 @@
 package com.kuroyale.controller;
 
-import com.kuroyale.model.core.entities.*;
-import com.kuroyale.model.core.enums.*;
+import com.kuroyale.model.dto.NetworkMessage;
+import com.kuroyale.model.entities.*;
+import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
-import com.kuroyale.model.state.dto.NetworkMessage;
 import com.kuroyale.service.network.NetworkService;
 import com.kuroyale.service.network.NetworkService.ConnectionState;
 import com.kuroyale.util.audio.SoundEffectUtil;
@@ -939,9 +939,9 @@ public class NetworkBattleController implements GameEventListener {
                     matchedTroop.setCurrentHealth(health);
                     if (state != null && !state.isEmpty()) {
                         try {
-                            matchedTroop.setUnitState(com.kuroyale.model.core.enums.UnitState.valueOf(state));
+                            matchedTroop.setUnitState(com.kuroyale.model.enums.UnitState.valueOf(state));
                         } catch (IllegalArgumentException e) {
-                            matchedTroop.setUnitState(com.kuroyale.model.core.enums.UnitState.MOVING);
+                            matchedTroop.setUnitState(com.kuroyale.model.enums.UnitState.MOVING);
                         }
                     }
                     matchedTroops.add(matchedTroop);
