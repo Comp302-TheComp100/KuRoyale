@@ -220,6 +220,7 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
                     fadeIn, stay, fadeOut);
             //
             sequence.setOnFinished(e -> effectLayer.getChildren().remove(emojiView));
+            sequence.play();
 
         } catch (Exception e) {
             System.err.println("[BattleArenaView] Failed to play emoji: " + emojiName);

@@ -86,10 +86,14 @@ public class EmojiPanel extends VBox {
         });
 
         // Hover effect
-        container.setOnMouseEntered(e -> container.setScaleX(1.1));
-        container.setOnMouseEntered(e -> container.setScaleY(1.1));
-        container.setOnMouseExited(e -> container.setScaleX(1.0));
-        container.setOnMouseExited(e -> container.setScaleY(1.0));
+        container.setOnMouseEntered(e -> {
+            container.setScaleX(1.1);
+            container.setScaleY(1.1);
+        });
+        container.setOnMouseExited(e -> {
+            container.setScaleX(1.0);
+            container.setScaleY(1.0);
+        });
 
         return container;
     }
