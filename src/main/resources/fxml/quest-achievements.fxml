@@ -60,7 +60,8 @@
         
         <!-- Achievements Tab -->
         <Tab text="Achievements" closable="false">
-            <ScrollPane fitToWidth="true" styleClass="achievement-scroll">
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER" styleClass="achievement-scroll scroll-pane-transparent"
+                        style="-fx-background: transparent; -fx-background-color: transparent; -fx-control-inner-background: transparent;">
                 <VBox fx:id="achievementsContainer" spacing="15" alignment="TOP_CENTER">
                     <padding>
                         <Insets top="30" right="30" bottom="30" left="30"/>

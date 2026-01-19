@@ -60,7 +60,7 @@
 }
 
 .deck-builder-background {
-  -fx-background-image: url("/images/main_menu_background.png");
+  -fx-background-image: url("/images/clean_main_menu_background.png");
   -fx-background-size: cover;
   -fx-background-position: center;
   -fx-background-repeat: no-repeat;
@@ -405,20 +405,34 @@
 .scroll-pane-transparent {
   -fx-background-color: transparent;
   -fx-background: transparent;
+  -fx-control-inner-background: transparent;
+}
+
+.scroll-pane-transparent > .viewport {
+  -fx-background-color: transparent;
 }
 
 .scroll-pane-transparent .viewport {
   -fx-background-color: transparent;
 }
 
+.scroll-pane-transparent .corner {
+  -fx-background-color: transparent;
+  -fx-background: transparent;
+}
+
 /* Hide scrollbars */
 .scroll-pane-transparent .scroll-bar:vertical {
   -fx-pref-width: 0;
+  -fx-min-width: 0;
+  -fx-max-width: 0;
   -fx-opacity: 0;
 }
 
 .scroll-pane-transparent .scroll-bar:horizontal {
   -fx-pref-height: 0;
+  -fx-min-height: 0;
+  -fx-max-height: 0;
   -fx-opacity: 0;
 }
 
@@ -426,8 +440,18 @@
   -fx-opacity: 0;
 }
 
-.scroll-pane-transparent .scroll-bar .thumb {
-  -fx-opacity: 0;
+.achievement-scroll {
+  -fx-background-color: transparent;
+  -fx-background: transparent;
+  -fx-control-inner-background: transparent;
+}
+
+.achievement-scroll > .viewport {
+  -fx-background-color: transparent;
+}
+
+.achievement-scroll .viewport {
+  -fx-background-color: transparent;
 }
 
 /* ============================================
@@ -689,6 +713,11 @@
 .achievement-scroll {
   -fx-background-color: transparent;
   -fx-background: transparent;
+  -fx-control-inner-background: transparent;
+}
+
+.achievement-scroll > .viewport {
+  -fx-background-color: transparent;
 }
 
 .achievement-scroll .viewport {
