@@ -1,4 +1,4 @@
-package com.kuroyale.view.battle;
+package com.kuroyale.view.battle.renderers;
 
 import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.logic.GameState;
@@ -12,6 +12,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 import com.kuroyale.util.GameConstants;
+import com.kuroyale.view.battle.PngSequenceSprite;
 import com.kuroyale.util.GameColors;
 import java.io.InputStream;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package com.kuroyale.view.battle;
+package com.kuroyale.view.battle.renderers;
 
 import com.kuroyale.util.GameColors;
 

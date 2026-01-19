@@ -5,7 +5,7 @@ import com.kuroyale.model.enums.*;
 import com.kuroyale.model.logic.*;
 import com.kuroyale.model.dto.*;
 import com.kuroyale.view.battle.BattleArenaView;
-import com.kuroyale.view.battle.ElixirBar;
+import com.kuroyale.view.battle.ElixirBarView;
 import com.kuroyale.view.battle.HandView;
 import com.kuroyale.util.SceneLoader;
 import javafx.animation.AnimationTimer;
@@ -71,7 +71,7 @@ public class BattleController {
 
     private GameState gameState;
     private BattleArenaView arenaView;
-    private ElixirBar elixirBar;
+    private ElixirBarView elixirBar;
     private HandView handView;
     private AnimationTimer gameLoop;
     private ArenaLayout currentArenaLayout;
@@ -180,7 +180,7 @@ public class BattleController {
             handleArenaClick(tileX, tileY);
         });
 
-        elixirBar = new ElixirBar(gameState.getPlayerElixir());
+        elixirBar = new ElixirBarView(gameState.getPlayerElixir());
         elixirContainer.getChildren().add(elixirBar);
 
         handView = new HandView(gameState.getPlayerHand(), gameState.getPlayerElixir());

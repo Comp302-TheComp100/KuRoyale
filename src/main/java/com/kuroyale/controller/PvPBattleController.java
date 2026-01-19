@@ -3,7 +3,7 @@ package com.kuroyale.controller;
 import com.kuroyale.model.entities.*;
 import com.kuroyale.model.logic.*;
 import com.kuroyale.view.battle.BattleArenaView;
-import com.kuroyale.view.battle.ElixirBar;
+import com.kuroyale.view.battle.ElixirBarView;
 import com.kuroyale.view.battle.HandView;
 import com.kuroyale.util.SceneLoader;
 
@@ -65,8 +65,8 @@ public class PvPBattleController {
 
     private PvPGameState gameState;
     private BattleArenaView arenaView;
-    private ElixirBar player1ElixirBar;
-    private ElixirBar player2ElixirBar;
+    private ElixirBarView player1ElixirBar;
+    private ElixirBarView player2ElixirBar;
     private HandView player1HandView;
     private HandView player2HandView;
     private AnimationTimer gameLoop;
@@ -113,7 +113,7 @@ public class PvPBattleController {
         setupArenaClickHandler();
 
         // Initialize Player 1 UI (left side)
-        player1ElixirBar = new ElixirBar(gameState.getPlayer1Elixir());
+        player1ElixirBar = new ElixirBarView(gameState.getPlayer1Elixir());
         player1ElixirContainer.getChildren().add(player1ElixirBar);
 
         player1HandView = new HandView(gameState.getPlayer1Hand(), gameState.getPlayer1Elixir());
@@ -121,7 +121,7 @@ public class PvPBattleController {
         player1HandContainer.getChildren().add(player1HandView);
 
         // Initialize Player 2 UI (right side)
-        player2ElixirBar = new ElixirBar(gameState.getPlayer2Elixir());
+        player2ElixirBar = new ElixirBarView(gameState.getPlayer2Elixir());
         player2ElixirContainer.getChildren().add(player2ElixirBar);
 
         player2HandView = new HandView(gameState.getPlayer2Hand(), gameState.getPlayer2Elixir());

@@ -9,13 +9,13 @@ import javafx.scene.layout.VBox;
 
 /*Visual elixir meter.
  * Shows current/max elixir and an animated progress bar.*/
-public class ElixirBar extends VBox {
+public class ElixirBarView extends VBox {
     private final ProgressBar progressBar;
     private final Label elixirLabel;
     private final Label doubleElixirLabel;
     private final ElixirManager elixirManager;
 
-    public ElixirBar(ElixirManager elixirManager) {
+    public ElixirBarView(ElixirManager elixirManager) {
         this.getStylesheets().add(getClass().getResource("/com/kuroyale/view/battle.css").toExternalForm());
         this.elixirManager = elixirManager;
 

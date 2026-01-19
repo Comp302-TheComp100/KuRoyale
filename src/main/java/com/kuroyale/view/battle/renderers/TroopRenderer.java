@@ -1,6 +1,8 @@
-package com.kuroyale.view.battle;
+package com.kuroyale.view.battle.renderers;
 
 import com.kuroyale.model.logic.GameState;
+import com.kuroyale.view.battle.AnimatedSprite;
+import com.kuroyale.view.battle.PngSequenceSprite;
 import com.kuroyale.model.entities.Troop;
 import com.kuroyale.model.enums.UnitState;
 

@@ -1,4 +1,4 @@
-package com.kuroyale.model.strategy;
+package com.kuroyale.model.strategy.deck;
 
 import java.util.ArrayList;
 import java.util.Collections;

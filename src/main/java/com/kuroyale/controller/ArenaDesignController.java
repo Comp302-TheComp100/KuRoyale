@@ -5,8 +5,8 @@ import com.kuroyale.model.logic.ArenaDesignModel;
 import com.kuroyale.model.entities.ArenaLayout;
 import com.kuroyale.util.GameConstants;
 import com.kuroyale.model.enums.TileType;
-import com.kuroyale.view.battle.ArenaRenderer;
 import com.kuroyale.util.SceneLoader;
+import com.kuroyale.view.battle.renderers.ArenaRenderer;
 
 import javafx.fxml.FXML;
 

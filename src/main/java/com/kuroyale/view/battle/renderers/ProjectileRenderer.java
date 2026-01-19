@@ -1,4 +1,4 @@
-package com.kuroyale.view.battle;
+package com.kuroyale.view.battle.renderers;
 
 import com.kuroyale.model.entities.Projectile;
 import com.kuroyale.model.entities.Vector2;
