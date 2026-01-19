@@ -837,7 +837,7 @@ public class DeckBuilderController {
         // Style the scroll pane
         if (comboScrollPane != null) {
             comboScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-            comboScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+            comboScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         }
     }
 

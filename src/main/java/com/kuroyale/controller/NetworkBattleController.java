@@ -237,13 +237,31 @@ public class NetworkBattleController implements GameEventListener {
         Deck playerDeck = model.createDeckFromNames(currentUser.getDeck());
 
         // Determine arena layout (HOST's layout is used by both)
-        // CLIENT mirrors bridge X positions for correct perspective
+        // CLIENT uses HOST's layout for complete synchronization
         ArenaLayout layoutToUse;
         if (!isHost && networkService.getHostArenaLayout() != null) {
             ArenaLayout hostLayout = networkService.getHostArenaLayout();
-            layoutToUse = mirrorBridgesForClient(hostLayout);
+            // CLIENT uses HOST's layout with mirrored bridges AND tower positions
+            // This ensures projectiles and effects appear at correct positions
+            layoutToUse = mirrorLayoutForClient(hostLayout);
             System.out.println(
-                    "[NetworkBattle] CLIENT using HOST's arena layout with mirrored bridges: " + layoutToUse.getName());
+                    "[NetworkBattle] CLIENT using HOST's arena layout (fully mirrored): " + layoutToUse.getName());
+        } else if (!isHost) {
+            // CLIENT but no host layout received - wait briefly and check again
+            System.out.println("[NetworkBattle] CLIENT: Waiting for HOST's arena layout...");
+            try {
+                Thread.sleep(500); // Brief wait for layout to arrive
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            if (networkService.getHostArenaLayout() != null) {
+                layoutToUse = mirrorLayoutForClient(networkService.getHostArenaLayout());
+                System.out.println("[NetworkBattle] CLIENT: Received HOST's layout after wait: " + layoutToUse.getName());
+            } else {
+                // Fallback to own layout if HOST's not received (shouldn't happen normally)
+                layoutToUse = model.loadArenaLayout();
+                System.out.println("[NetworkBattle] CLIENT: WARNING - Using own layout as fallback!");
+            }
         } else {
             layoutToUse = model.loadArenaLayout();
             System.out.println("[NetworkBattle] HOST using own arena layout: " + layoutToUse.getName());
@@ -1055,9 +1073,11 @@ public class NetworkBattleController implements GameEventListener {
                 // Mirror for client perspective
                 boolean clientIsPlayerSide = !hostIsPlayerSide;
 
-                // Mirror for client perspective
+                // Mirror for client perspective (180° rotation)
+                // For a building at (X, Y) with width W and height H:
+                // New position = (WIDTH - W - X, HEIGHT - H - Y)
                 int clientGridX = Arena.WIDTH - width - gridX;
-                int clientGridY = Arena.HEIGHT - 1 - height - gridY;
+                int clientGridY = Arena.HEIGHT - height - gridY;
 
                 // Clamp to valid arena bounds
                 clientGridX = Math.max(0, Math.min(Arena.WIDTH - width, clientGridX));
@@ -1176,62 +1196,99 @@ public class NetworkBattleController implements GameEventListener {
      * HOST's enemy towers = CLIENT's player towers (at bottom)
      * 
      * For PRINCESS towers, we must use position to distinguish left from right.
+     * 
+     * IMPORTANT: Also detects towers that are MISSING from HOST's sync - 
+     * these were destroyed and removed from HOST's arena, so CLIENT must remove them too.
      */
     private void handleTowerSync(NetworkMessage message) {
         String towerData = message.getTowerSyncData();
-        if (towerData == null || towerData.isEmpty() || gameState == null)
+        if (gameState == null)
             return;
 
-        String[] towers = towerData.split(";");
         Arena arena = gameState.getArena();
+        
+        // Track which towers we received from HOST (to detect missing/destroyed towers)
+        java.util.Set<Tower> towersInSync = new java.util.HashSet<>();
 
-        for (String towerStr : towers) {
-            String[] parts = towerStr.split(",");
-            if (parts.length < 7)
-                continue;
+        if (towerData != null && !towerData.isEmpty()) {
+            String[] towers = towerData.split(";");
 
-            try {
-                Tower.TowerType type = Tower.TowerType.valueOf(parts[0]);
-                boolean hostIsPlayerSide = Boolean.parseBoolean(parts[1]);
-                int currentHealth = Integer.parseInt(parts[2]);
-                int maxHealth = Integer.parseInt(parts[3]);
-                int hostGridX = Integer.parseInt(parts[4]);
-                int hostGridY = Integer.parseInt(parts[5]);
-                boolean isAlive = Boolean.parseBoolean(parts[6]);
+            for (String towerStr : towers) {
+                String[] parts = towerStr.split(",");
+                if (parts.length < 7)
+                    continue;
 
-                // MIRROR for client perspective:
-                // HOST's player towers = CLIENT's enemy towers
-                boolean clientIsPlayerSide = !hostIsPlayerSide;
+                try {
+                    Tower.TowerType type = Tower.TowerType.valueOf(parts[0]);
+                    boolean hostIsPlayerSide = Boolean.parseBoolean(parts[1]);
+                    int currentHealth = Integer.parseInt(parts[2]);
+                    // maxHealth and hostGridY are unused but kept for protocol compatibility
+                    int hostGridX = Integer.parseInt(parts[4]);
+                    boolean isAlive = Boolean.parseBoolean(parts[6]);
 
-                // Mirror the X position: (W-x)
-                int clientGridX = Arena.WIDTH - hostGridX;
+                    // MIRROR for client perspective:
+                    // HOST's player towers = CLIENT's enemy towers
+                    boolean clientIsPlayerSide = !hostIsPlayerSide;
 
-                // Find the tower by type, side, AND position (important for princess towers)
-                Tower targetTower = findTowerByTypeAndPosition(arena, type, clientIsPlayerSide, clientGridX);
+                    // Mirror the X position accounting for tower size
+                    // PRINCESS = 3x3, KING = 4x4
+                    int towerSize = (type == Tower.TowerType.KING) ? 4 : 3;
+                    int clientGridX = Arena.WIDTH - towerSize - hostGridX;
 
-                if (targetTower != null) {
-                    targetTower.setCurrentHealth(currentHealth);
+                    // Find the tower by type, side, AND position (important for princess towers)
+                    Tower targetTower = findTowerByTypeAndPosition(arena, type, clientIsPlayerSide, clientGridX);
 
-                    if (!isAlive && targetTower.isAlive()) {
-                        targetTower.setCurrentHealth(0);
-                        System.out.println("[NetworkBattle] Tower destroyed: " + type + " (client side: "
-                                + clientIsPlayerSide + ")");
+                    if (targetTower != null) {
+                        towersInSync.add(targetTower);
+                        
+                        // IMPORTANT: Check if tower was alive BEFORE updating health
+                        boolean wasAlive = targetTower.isAlive();
+                        
+                        targetTower.setCurrentHealth(currentHealth);
 
-                        // Check win/lose conditions
-                        if (type == Tower.TowerType.KING) {
-                            if (clientIsPlayerSide) {
-                                // Our king destroyed = we lost
-                                showDefeat("Your King Tower was destroyed!");
-                            } else {
-                                // Enemy king destroyed = we won
-                                showVictory("You destroyed the enemy King Tower!");
+                        if (!isAlive && wasAlive) {
+                            System.out.println("[NetworkBattle] Tower destroyed (via sync): " + type + 
+                                    " (client side: " + clientIsPlayerSide + ") at X=" + clientGridX);
+
+                            // Remove the dead tower from the arena so visuals update correctly
+                            arena.removeTower(targetTower);
+                            towersInSync.remove(targetTower);
+
+                            // Check win/lose conditions
+                            if (type == Tower.TowerType.KING) {
+                                if (clientIsPlayerSide) {
+                                    showDefeat("Your King Tower was destroyed!");
+                                } else {
+                                    showVictory("You destroyed the enemy King Tower!");
+                                }
                             }
                         }
                     }
-                }
 
-            } catch (Exception e) {
-                System.err.println("[NetworkBattle] Failed to parse tower sync: " + towerStr);
+                } catch (Exception e) {
+                    System.err.println("[NetworkBattle] Failed to parse tower sync: " + towerStr);
+                }
+            }
+        }
+
+        // CRITICAL: Remove any CLIENT towers that weren't in HOST's sync
+        // This handles the case where HOST already removed the tower before syncing
+        java.util.Set<Tower> clientTowers = new java.util.HashSet<>(arena.getAllTowers());
+        for (Tower clientTower : clientTowers) {
+            if (!towersInSync.contains(clientTower)) {
+                System.out.println("[NetworkBattle] Tower missing from HOST sync, removing: " + 
+                        clientTower.getType() + " (player side: " + clientTower.isPlayerSide() + ")");
+                
+                // Check win/lose conditions before removing
+                if (clientTower.getType() == Tower.TowerType.KING) {
+                    if (clientTower.isPlayerSide()) {
+                        showDefeat("Your King Tower was destroyed!");
+                    } else {
+                        showVictory("You destroyed the enemy King Tower!");
+                    }
+                }
+                
+                arena.removeTower(clientTower);
             }
         }
     }
@@ -1394,11 +1451,15 @@ public class NetworkBattleController implements GameEventListener {
     }
 
     /**
-     * Mirrors bridge X positions for the CLIENT's perspective.
-     * If HOST has bridges at X=1,2,3, CLIENT sees them at X=16,17,18.
-     * Formula: mirroredX = WIDTH - 1 - x
+     * Mirrors the entire layout for CLIENT's 180° rotated perspective.
+     * This ensures towers, bridges, and all elements appear at correct positions
+     * when HOST sends projectile/effect data that gets mirrored.
+     * 
+     * For 180° rotation:
+     * - Bridge X: mirroredX = WIDTH - 1 - x
+     * - Tower X: mirroredX = WIDTH - towerSize - x (so the mirrored top-left is correct)
      */
-    private ArenaLayout mirrorBridgesForClient(ArenaLayout hostLayout) {
+    private ArenaLayout mirrorLayoutForClient(ArenaLayout hostLayout) {
         ArenaLayout clientLayout = new ArenaLayout(hostLayout.getName());
 
         // Mirror bridge X positions
@@ -1407,16 +1468,23 @@ public class NetworkBattleController implements GameEventListener {
             clientLayout.addBridgePosition(mirroredX, bridgePos.getY());
         }
 
-        // Copy princess tower positions as-is (towers are already mirrored in Arena)
+        // Mirror princess tower X positions (3x3 towers)
+        // For a tower at X with width 3, after 180° rotation: newX = WIDTH - 3 - X
         for (GridPosition princessPos : hostLayout.getPrincessTowerPositions()) {
-            clientLayout.addPrincessTowerPosition(princessPos.getX(), princessPos.getY());
+            int mirroredX = Arena.WIDTH - 3 - princessPos.getX();
+            clientLayout.addPrincessTowerPosition(mirroredX, princessPos.getY());
         }
 
-        // Copy king tower position as-is
+        // Mirror king tower X position (4x4 tower)
         GridPosition kingPos = hostLayout.getKingTowerPosition();
         if (kingPos != null) {
-            clientLayout.setKingTowerPosition(kingPos.getX(), kingPos.getY());
+            int mirroredX = Arena.WIDTH - 4 - kingPos.getX();
+            clientLayout.setKingTowerPosition(mirroredX, kingPos.getY());
         }
+
+        System.out.println("[NetworkBattle] Mirrored layout for CLIENT - Bridges: " + 
+            clientLayout.getBridgePositions().size() + ", Princess towers: " + 
+            clientLayout.getPrincessTowerPositions().size());
 
         return clientLayout;
     }

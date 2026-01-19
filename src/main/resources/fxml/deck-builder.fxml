@@ -75,6 +75,9 @@
             <ScrollPane fx:id="comboScrollPane" 
                         prefHeight="290" 
                         fitToWidth="true"
+                        hbarPolicy="NEVER"
+                        vbarPolicy="NEVER"
+                        styleClass="scroll-pane-transparent"
                         style="-fx-background: transparent; -fx-background-color: transparent;">
                 <VBox fx:id="comboList" spacing="10" style="-fx-padding: 5;"/>
             </ScrollPane>
