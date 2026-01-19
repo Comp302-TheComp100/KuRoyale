@@ -144,14 +144,12 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
     }
 
     private void setUpEmojiSystem() {
-        // Create emoji button
+        // Create emoji button - will be positioned in the left sidebar area (outside
+        // arena)
         emojiButton = new EmojiButton();
-        emojiButton.setLayoutX(10);
-        emojiButton.setLayoutY(10);
 
+        // Create emoji panel - opens downward below the button
         emojiPanel = new EmojiPanel();
-        emojiPanel.setLayoutX(60); // To the right of the button
-        emojiPanel.setLayoutY(10);
 
         emojiButton.setOnAction(e -> emojiPanel.toggle());
 
@@ -160,7 +158,16 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
             com.kuroyale.event.GameEventBus.getInstance().publishEmojiPlayed(true, emojiName);
         });
 
-        arenaPane.getChildren().addAll(emojiButton, emojiPanel);
+        // Create a container for emoji button and panel in left sidebar
+        // This will be added to the left side of BorderPane, not inside arenaPane
+        javafx.scene.layout.VBox emojiContainer = new javafx.scene.layout.VBox(5);
+        emojiContainer.setAlignment(javafx.geometry.Pos.TOP_LEFT);
+        emojiContainer.setPadding(new javafx.geometry.Insets(10, 10, 10, 10));
+        emojiContainer.getChildren().addAll(emojiButton, emojiPanel);
+        emojiContainer.setPickOnBounds(false); // Allow clicks to pass through empty areas
+
+        // Set the emoji container to the left side of this BorderPane
+        this.setLeft(emojiContainer);
     }
 
     private void playEmoji(boolean isPlayer, String emojiName) {

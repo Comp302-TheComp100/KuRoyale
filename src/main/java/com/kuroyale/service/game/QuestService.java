@@ -279,8 +279,9 @@ public class QuestService implements GameEventListener {
             }
         } else {
             currentWinStreak = 0;
+            // Only reset progress if quest is NOT completed yet
             for (Quest quest : dailyQuests) {
-                if (quest.getType() == QuestType.WIN_MATCHES_IN_ROW && !quest.isClaimed()) {
+                if (quest.getType() == QuestType.WIN_MATCHES_IN_ROW && !quest.isCompleted() && !quest.isClaimed()) {
                     quest.setProgress(0);
                     break;
                 }

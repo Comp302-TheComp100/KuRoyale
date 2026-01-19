@@ -226,11 +226,12 @@ public class AchievementService implements GameEventListener {
             setProgress(AchievementType.UNDEFEATED, currentWinStreak);
         } else {
             currentWinStreak = 0;
-            // Reset UNDEFEATED progress on loss (if not already unlocked)
+            // Only reset UNDEFEATED progress if NOT already unlocked (completed)
             Achievement undefeated = achievements.get(AchievementType.UNDEFEATED);
-            if (undefeated != null && !undefeated.isUnlocked()) {
+            if (undefeated != null && !undefeated.isUnlocked() && !undefeated.isClaimed()) {
                 undefeated.setProgress(0);
             }
+            // If already unlocked, keep the progress as is
         }
         saveAchievements();
     }

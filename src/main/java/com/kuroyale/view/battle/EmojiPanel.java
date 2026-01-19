@@ -10,33 +10,46 @@ import javafx.scene.layout.VBox;
 import java.util.function.Consumer;
 
 /**
- * Emoji selection panel with a 2x2 grid layout.
- * Displays 4 emojis that can be clicked to play.
+ * Emoji selection panel with a 4x2 grid layout.
+ * Displays 8 emojis that can be clicked to play.
+ * Opens downward when emoji button is clicked.
  */
 public class EmojiPanel extends VBox {
 
-    private static final int EMOJI_SIZE = 60;
+    private static final int EMOJI_SIZE = 65;
     private static final int GRID_GAP = 10;
-    private static final int PADDING = 15;
+    private static final int PADDING = 12;
+
+    // Emoji names matching the files in /gifs/emojis/
+    private static final String[] EMOJI_NAMES = {
+            "emoji_1",
+            "emoji_2",
+            "emoji_3",
+            "emoji_4",
+            "king emote",
+            "sticker emote",
+            "yanan emoji",
+            "ağlayan kral emoji"
+    };
 
     private Consumer<String> onEmojiSelected;
 
     public EmojiPanel() {
         getStyleClass().add("emoji-panel");
-        setAlignment(Pos.CENTER);
+        setAlignment(Pos.TOP_LEFT);
         setPadding(new Insets(PADDING));
         setSpacing(5);
         setVisible(false); // Hidden by default
 
-        // Create grid for emojis (2x2)
+        // Create grid for emojis (4x2)
         GridPane emojiGrid = new GridPane();
         emojiGrid.setHgap(GRID_GAP);
         emojiGrid.setVgap(GRID_GAP);
         emojiGrid.setAlignment(Pos.CENTER);
 
-        // Load and add 4 emojis
-        for (int i = 0; i < 4; i++) {
-            String emojiName = "emoji_" + (i + 1);
+        // Load and add 8 emojis (4 rows, 2 columns)
+        for (int i = 0; i < EMOJI_NAMES.length; i++) {
+            String emojiName = EMOJI_NAMES[i];
             StackPane emojiItem = createEmojiItem(emojiName);
 
             int row = i / 2;
@@ -46,9 +59,9 @@ public class EmojiPanel extends VBox {
 
         getChildren().add(emojiGrid);
 
-        // Set preferred size
+        // Set preferred size (2 columns, 4 rows)
         double totalWidth = (EMOJI_SIZE * 2) + GRID_GAP + (PADDING * 2);
-        double totalHeight = (EMOJI_SIZE * 2) + GRID_GAP + (PADDING * 2);
+        double totalHeight = (EMOJI_SIZE * 4) + (GRID_GAP * 3) + (PADDING * 2);
         setPrefSize(totalWidth, totalHeight);
         setMaxSize(totalWidth, totalHeight);
     }
