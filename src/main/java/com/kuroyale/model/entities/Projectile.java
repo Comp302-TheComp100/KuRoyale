@@ -41,9 +41,30 @@ public class Projectile {
 
         // Calculate speed such that travel time = owner's hit speed
         // Speed = Distance / Time
-        double dist = owner.getRange();
         double hitSpeed = Math.max(0.1, owner.getHitSpeed()); // Sanity check: min 0.1s
+        double dist = (targetPosSnapshot != null) ? position.distanceTo(targetPosSnapshot) : owner.getRange();
         this.speed = Math.max(1.0, dist / hitSpeed); // Ensure it actually moves (min speed 1.0)
+    }
+
+    public Projectile(ICombatant owner, ICombatant target, double travelTimeSeconds) {
+        this.owner = owner;
+        this.target = target;
+        this.damage = owner.getDamage();
+        this.areaEffect = owner.isAreaEffect();
+        this.targetType = owner.getTargetType();
+        this.isPlayerSide = owner.isPlayerSide();
+
+        GridPosition start = owner.getCenterPosition();
+        if (start != null) {
+            this.position = new Vector2(start.getX() + 0.5, start.getY() + 0.5);
+        } else {
+            this.position = new Vector2(0, 0);
+        }
+        updateTargetSnapshot();
+
+        double t = Math.max(0.05, travelTimeSeconds);
+        double dist = (targetPosSnapshot != null) ? position.distanceTo(targetPosSnapshot) : owner.getRange();
+        this.speed = Math.max(1.0, dist / t);
     }
 
     /**
