@@ -465,6 +465,10 @@
   -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 15, 0, 0, 5);
 }
 
+.overlay-card-container.card-info-container {
+  -fx-background-color: -fx-brown-dark;
+}
+
 /* ============================================
    CHALLENGE MODE STYLES
    ============================================ */

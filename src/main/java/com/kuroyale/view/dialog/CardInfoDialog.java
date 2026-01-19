@@ -7,7 +7,6 @@ import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.ui.StyleHelper;
 
-import javafx.animation.TranslateTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -19,17 +18,17 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.TextAlignment;
-import javafx.util.Duration;
 
 //Dialog showing detailed card information with swipeable pages
 public class CardInfoDialog extends StackPane {
     private final Card card;
     private int currentPage = 0; // 0 = basic info, 1 = detailed stats
     private final StackPane contentPane;
-    private final VBox page1;
-    private final VBox page2;
-    private double startX;
+    private VBox page1;
+    private VBox page2;
     private final HBox pageIndicator;
+    private Button prevPageButton;
+    private Button nextPageButton;
     private final AuthenticationService authService;
     @SuppressWarnings("unused")
     private final Runnable onClose;
@@ -54,6 +53,8 @@ public class CardInfoDialog extends StackPane {
         mainContainer.setMaxWidth(350);
         mainContainer.setMaxHeight(550);
         mainContainer.getStyleClass().add("overlay-card-container");
+        mainContainer.getStyleClass().add("card-info-container");
+        mainContainer.setStyle("-fx-background-color: " + StyleHelper.COLOR_BROWN_DARK + ";");
 
         // Content pane for swipeable pages
         contentPane = new StackPane();
@@ -68,6 +69,16 @@ public class CardInfoDialog extends StackPane {
 
         // Create page indicator
         pageIndicator = createPageIndicator();
+
+        prevPageButton = createNavButton("<");
+        nextPageButton = createNavButton(">");
+
+        prevPageButton.setOnAction(e -> switchToPage(0));
+        nextPageButton.setOnAction(e -> switchToPage(1));
+
+        HBox navigationRow = new HBox(12);
+        navigationRow.setAlignment(Pos.CENTER);
+        navigationRow.getChildren().addAll(prevPageButton, pageIndicator, nextPageButton);
 
         // Create buttons container with Upgrade and Close buttons
         HBox buttonsContainer = new HBox(10);
@@ -107,11 +118,10 @@ public class CardInfoDialog extends StackPane {
 
         buttonsContainer.getChildren().addAll(upgradeButton, closeButton);
 
-        mainContainer.getChildren().addAll(contentPane, pageIndicator, buttonsContainer);
+        mainContainer.getChildren().addAll(contentPane, navigationRow, buttonsContainer);
         getChildren().add(mainContainer);
 
-        // Setup swipe gesture
-        setupSwipeGesture();
+        updateNavButtonState();
 
         // Click outside to close
         setOnMouseClicked(event -> {
@@ -121,10 +131,26 @@ public class CardInfoDialog extends StackPane {
         });
     }
 
+    private Button createNavButton(String text) {
+        Button button = new Button(text);
+        button.setPrefWidth(38);
+        button.setPrefHeight(38);
+        button.setFocusTraversable(false);
+        button.setStyle(
+                "-fx-background-color: " + StyleHelper.COLOR_GRAY + ";" +
+                        "-fx-text-fill: " + StyleHelper.COLOR_BROWN_DARK + ";" +
+                        "-fx-font-size: 16px;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-background-radius: 19;" +
+                        "-fx-cursor: hand;");
+        return button;
+    }
+
     private VBox createPage1() {
         VBox page = new VBox(10);
         page.setAlignment(Pos.TOP_CENTER);
         page.setPadding(new Insets(10));
+        page.setStyle("-fx-background-color: " + StyleHelper.COLOR_BROWN_DARK + "; -fx-background-radius: 10;");
 
         // Card image
         ImageView imageView = createLargeCardImage();
@@ -133,7 +159,7 @@ public class CardInfoDialog extends StackPane {
         Label nameLabel = new Label(card.getName());
         nameLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; " +
                 "-fx-font-family: '" + StyleHelper.FONT_FAMILY + "', Arial; " +
-                "-fx-text-fill: " + StyleHelper.COLOR_DARK + ";");
+                "-fx-text-fill: " + StyleHelper.COLOR_WHITE + ";");
         nameLabel.setWrapText(true);
         nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setMaxWidth(300);
@@ -152,12 +178,12 @@ public class CardInfoDialog extends StackPane {
             elixirIcon.setFitHeight(30);
 
             Label costLabel = new Label(String.valueOf(card.getCost()));
-            costLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+            costLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
 
             costBox.getChildren().addAll(elixirIcon, costLabel);
         } catch (Exception e) {
             Label costLabel = new Label("Cost: " + card.getCost());
-            costLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+            costLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
             costBox.getChildren().add(costLabel);
         }
 
@@ -195,10 +221,13 @@ public class CardInfoDialog extends StackPane {
         VBox page = new VBox(8);
         page.setAlignment(Pos.TOP_LEFT);
         page.setPadding(new Insets(15));
+        page.setPrefHeight(400);
+        page.setMinHeight(400);
+        page.setStyle("-fx-background-color: " + StyleHelper.COLOR_BROWN_DARK + "; -fx-background-radius: 10;");
 
         // Card name header - wrapped in HBox for centering
         Label nameLabel = new Label(card.getName());
-        nameLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        nameLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
         nameLabel.setWrapText(true);
         nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setMaxWidth(300);
@@ -248,7 +277,7 @@ public class CardInfoDialog extends StackPane {
 
         // Description
         Label descLabel = new Label(card.getDescription());
-        descLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b; -fx-wrap-text: true;");
+        descLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(255, 255, 255, 0.8); -fx-wrap-text: true;");
         descLabel.setWrapText(true);
         descLabel.setMaxWidth(300);
 
@@ -260,11 +289,11 @@ public class CardInfoDialog extends StackPane {
         HBox statRow = new HBox(5);
 
         Label labelText = new Label(label + ":");
-        labelText.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #475569;");
+        labelText.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: rgba(255, 255, 255, 0.85);");
         labelText.setMinWidth(100);
 
         Label valueText = new Label(value);
-        valueText.setStyle("-fx-font-size: 13px; -fx-text-fill: #1e293b;");
+        valueText.setStyle("-fx-font-size: 13px; -fx-text-fill: white;");
 
         statRow.getChildren().addAll(labelText, valueText);
         container.getChildren().add(statRow);
@@ -340,36 +369,6 @@ public class CardInfoDialog extends StackPane {
         return indicator;
     }
 
-    private void setupSwipeGesture() {
-        contentPane.setOnMousePressed(event -> {
-            startX = event.getSceneX();
-        });
-        contentPane.setOnMouseDragged(event -> {
-            double deltaX = event.getSceneX() - startX;
-
-            if (Math.abs(deltaX) > 5) {
-                contentPane.setTranslateX(deltaX * 0.3);
-            }
-        });
-
-        contentPane.setOnMouseReleased(event -> {
-            double deltaX = event.getSceneX() - startX;
-
-            // Swipe threshold
-            if (Math.abs(deltaX) > 50) {
-                if (deltaX > 0 && currentPage == 1) {
-                    switchToPage(0);
-                } else if (deltaX < 0 && currentPage == 0) {
-                    switchToPage(1);
-                }
-            }
-            // Reset position
-            TranslateTransition transition = new TranslateTransition(Duration.millis(200), contentPane);
-            transition.setToX(0);
-            transition.play();
-        });
-    }
-
     private void switchToPage(int pageIndex) {
         currentPage = pageIndex;
         page1.setVisible(pageIndex == 0);
@@ -385,6 +384,17 @@ public class CardInfoDialog extends StackPane {
         } else {
             dot1.setStyle("-fx-fill: " + StyleHelper.COLOR_GRAY + ";"); // Inactive
             dot2.setStyle("-fx-fill: " + StyleHelper.COLOR_BLUE + ";"); // Active
+        }
+
+        updateNavButtonState();
+    }
+
+    private void updateNavButtonState() {
+        if (prevPageButton != null) {
+            prevPageButton.setDisable(currentPage == 0);
+        }
+        if (nextPageButton != null) {
+            nextPageButton.setDisable(currentPage == 1);
         }
     }
 
@@ -441,11 +451,11 @@ public class CardInfoDialog extends StackPane {
 
         // Recreate pages with updated card info
         contentPane.getChildren().clear();
-        VBox newPage1 = createPage1();
-        VBox newPage2 = createPage2();
-        contentPane.getChildren().addAll(newPage1, newPage2);
-        newPage2.setVisible(currentPage == 1);
-        newPage1.setVisible(currentPage == 0);
+        page1 = createPage1();
+        page2 = createPage2();
+        contentPane.getChildren().addAll(page1, page2);
+        page2.setVisible(currentPage == 1);
+        page1.setVisible(currentPage == 0);
 
         // Update upgrade button state
         VBox mainContainer = (VBox) getChildren().get(0);
