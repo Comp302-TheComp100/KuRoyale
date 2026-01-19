@@ -254,6 +254,26 @@ public class NetworkMessage implements Serializable {
         return new NetworkMessage(NetworkMessageType.OPPONENT_DISCONNECTED, 0, "");
     }
     
+    /**
+     * Creates an area effect message for visual sync (explosions, splash damage).
+     * Format: isPlayerSource;centerX;centerY;radius;duration;effectType
+     */
+    public static NetworkMessage areaEffect(boolean isPlayerSource, double centerX, double centerY, 
+            double radius, double duration, String effectType) {
+        String data = String.format("%b;%.2f;%.2f;%.2f;%.2f;%s", 
+                isPlayerSource, centerX, centerY, radius, duration, effectType);
+        return new NetworkMessage(NetworkMessageType.AREA_EFFECT, 1, data);
+    }
+    
+    /**
+     * Creates a spell cast message for visual sync (arrows, zap, etc.).
+     * Format: isPlayer;cardName;centerX;centerY;range
+     */
+    public static NetworkMessage spellCast(boolean isPlayer, String cardName, int centerX, int centerY, double range) {
+        String data = String.format("%b;%s;%d;%d;%.2f", isPlayer, cardName, centerX, centerY, range);
+        return new NetworkMessage(NetworkMessageType.SPELL_CAST, 1, data);
+    }
+    
     // Getters
     
     public NetworkMessageType getType() {

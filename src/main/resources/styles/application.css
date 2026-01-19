@@ -698,6 +698,13 @@
 /* Tab Pane Styling - Match with Background */
 .tab-pane {
   -fx-background-color: transparent;
+  -fx-focus-color: transparent;
+  -fx-faint-focus-color: transparent;
+}
+
+.tab-pane:focused {
+  -fx-focus-color: transparent;
+  -fx-faint-focus-color: transparent;
 }
 
 .tab-pane .tab-header-area {
@@ -715,12 +722,23 @@
   -fx-background-radius: 8 8 0 0;
   -fx-padding: 8 20 8 20;
   -fx-border-color: transparent;
+  -fx-border-width: 0;
+  -fx-focus-color: transparent;
+  -fx-faint-focus-color: transparent;
 }
 
 .tab-pane .tab:selected {
   -fx-background-color: rgba(251, 191, 36, 0.3);
-  -fx-border-color: #fbbf24;
-  -fx-border-width: 0 0 2 0;
+  -fx-border-color: transparent;
+  -fx-border-width: 0;
+}
+
+.tab-pane .tab:focused {
+  -fx-focus-color: transparent;
+  -fx-faint-focus-color: transparent;
+  -fx-background-insets: 0;
+  -fx-border-color: transparent;
+  -fx-border-width: 0;
 }
 
 .tab-pane .tab:hover {

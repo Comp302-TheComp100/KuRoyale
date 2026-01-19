@@ -34,4 +34,10 @@ public interface GameEventListener {
 
         default void onSpellDamageDealt(boolean isPlayer, int damage) {
         }
+
+        default void onMatchStart() {
+        }
+
+        default void onMatchEnd(boolean playerWon) {
+        }
 }
