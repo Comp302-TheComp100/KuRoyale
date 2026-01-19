@@ -67,9 +67,9 @@ public class PvPGameState implements IBattleState {
         activeProjectiles.add(p);
     }
 
-    private final com.kuroyale.service.battle.ComboService comboService = new com.kuroyale.service.battle.ComboService();
+    private final com.kuroyale.service.battle.logic.ComboService comboService = new com.kuroyale.service.battle.logic.ComboService();
 
-    public com.kuroyale.service.battle.ComboService getComboService() {
+    public com.kuroyale.service.battle.logic.ComboService getComboService() {
         return comboService;
     }
 
