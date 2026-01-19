@@ -233,6 +233,10 @@ public class BattleModel {
 
         if (bonus > 0) {
             authService.awardGoldToCurrentUser(bonus);
+
+            // Track GOLD_HOARDER achievement
+            ServiceFactory.getInstance().getAchievementService()
+                    .updateProgress(com.kuroyale.model.enums.AchievementType.GOLD_HOARDER, bonus);
         }
     }
 
