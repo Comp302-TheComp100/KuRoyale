@@ -10,7 +10,7 @@ import javafx.scene.text.Font;
 public class EmojiButton extends Button {
 
     public EmojiButton() {
-        super("⋮"); // Vertical ellipsis (3 dots)
+        super("..."); // Horizontal ellipsis (3 dots)
 
         getStyleClass().add("emoji-menu-button");
 
