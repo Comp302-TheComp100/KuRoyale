@@ -44,6 +44,17 @@
                     </ImageView>
                 </graphic>
             </Button>
+
+            <!-- Draft Mode Button -->
+            <Button fx:id="draftButton" text="DRAFT" onAction="#handleDraftMode" prefWidth="350" prefHeight="70" styleClass="menu-button">
+                <graphic>
+                    <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
+                        <image>
+                            <Image url="@../images/battle_icon.png"/>
+                        </image>
+                    </ImageView>
+                </graphic>
+            </Button>
         </VBox>
     </VBox>
 

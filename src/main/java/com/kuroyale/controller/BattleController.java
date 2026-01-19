@@ -95,6 +95,10 @@ public class BattleController {
     private int savedComboCount = 0; // For restoring combo count from saved games
     private double elixirMultiplier = 1.0; // Custom elixir regeneration multiplier (e.g., 7.0 for 7x Elixir mode)
 
+    // Draft Mode Context
+    private Deck draftedPlayerDeck;
+    private Deck draftedBotDeck;
+
     /**
      * Returns the arena container for external navigation (used by strategies).
      */
@@ -122,6 +126,15 @@ public class BattleController {
         this.currentChallenge = challenge;
         this.challengePlayerDeck = playerDeck;
         startGame();
+    }
+
+    /**
+     * Sets pre-drafted decks for draft mode.
+     * Must be called BEFORE startGame().
+     */
+    public void setDraftedDecks(Deck playerDeck, Deck botDeck) {
+        this.draftedPlayerDeck = playerDeck;
+        this.draftedBotDeck = botDeck;
     }
 
     @FXML
@@ -156,7 +169,11 @@ public class BattleController {
 
             // Determine Player Deck
             Deck playerDeck;
-            if (currentChallenge != null) {
+            if (draftedPlayerDeck != null) {
+                // Draft mode - use drafted deck
+                playerDeck = draftedPlayerDeck;
+                System.out.println("\uD83C\uDFB4 USING DRAFTED PLAYER DECK");
+            } else if (currentChallenge != null) {
                 playerDeck = challengePlayerDeck;
             } else {
                 playerDeck = model.createDeckFromNames(currentUser.getDeck());
@@ -168,8 +185,16 @@ public class BattleController {
             // Create Arena
             Arena arena = model.createArena(playerLayout);
 
-            // Create Bot Deck (Random or fixed)
-            Deck botDeck = model.createBotDeck(currentUser);
+            // Determine Bot Deck
+            Deck botDeck;
+            if (draftedBotDeck != null) {
+                // Draft mode - use drafted deck
+                botDeck = draftedBotDeck;
+                System.out.println("\uD83C\uDFB4 USING DRAFTED BOT DECK");
+            } else {
+                // Create Bot Deck (Random or fixed)
+                botDeck = model.createBotDeck(currentUser);
+            }
 
             // Initialize GameState
             gameState = new GameState(playerDeck, botDeck, arena);
@@ -182,7 +207,7 @@ public class BattleController {
             if (elixirMultiplier != 1.0) {
                 gameState.getPlayerElixir().setElixirMultiplier(elixirMultiplier);
                 gameState.getBotElixir().setElixirMultiplier(elixirMultiplier);
-                System.out.println("⚡ ELIXIR MULTIPLIER SET TO: " + elixirMultiplier + "x");
+                System.out.println("ELIXIR MULTIPLIER SET TO: " + elixirMultiplier + "x");
             }
         }
 

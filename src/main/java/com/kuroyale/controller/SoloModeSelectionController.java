@@ -26,6 +26,8 @@ public class SoloModeSelectionController {
     @FXML
     private Button sevenXElixirButton;
     @FXML
+    private Button draftButton;
+    @FXML
     private Button backButton;
 
     private final SceneLoader sceneLoader = new SceneLoader();
@@ -44,6 +46,7 @@ public class SoloModeSelectionController {
 
         addMenuButtonHoverEffects(normalButton);
         addMenuButtonHoverEffects(sevenXElixirButton);
+        addMenuButtonHoverEffects(draftButton);
         addMenuButtonHoverEffects(backButton);
     }
 
@@ -77,6 +80,17 @@ public class SoloModeSelectionController {
     private void handleSevenXElixirMode() {
         SoundEffectUtil.playButtonClick();
         startBattleWithMultiplier(7.0);
+    }
+
+    @FXML
+    private void handleDraftMode() {
+        SoundEffectUtil.playButtonClick();
+        try {
+            sceneLoader.load(root, "/fxml/draft-phase.fxml", "KU Royale - Draft Mode", null);
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Draft Mode: " + e.getMessage());
+        }
     }
 
     /**
