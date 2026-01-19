@@ -12,9 +12,25 @@ public class ElixirManager {
 
     private double currentElixir;
     private boolean doubleElixirActive = false;
+    private double elixirMultiplier = 1.0; // Custom multiplier for game modes like 7x Elixir
 
     public ElixirManager() {
         this.currentElixir = STARTING_ELIXIR;
+    }
+
+    /**
+     * Sets a custom elixir regeneration multiplier.
+     * This stacks with double elixir mode (e.g., 7x multiplier + double elixir =
+     * 14x speed).
+     * 
+     * @param multiplier The multiplier to apply (1.0 = normal, 7.0 = 7x faster)
+     */
+    public void setElixirMultiplier(double multiplier) {
+        this.elixirMultiplier = Math.max(0.1, multiplier); // Minimum 0.1x to prevent zero/negative
+    }
+
+    public double getElixirMultiplier() {
+        return elixirMultiplier;
     }
 
     public void setDoubleElixir(boolean active) {
@@ -29,10 +45,9 @@ public class ElixirManager {
     public void update(double deltaTime) {
         if (currentElixir < MAX_ELIXIR) {
             double rate = doubleElixirActive ? REGENERATION_RATE_DOUBLE : REGENERATION_RATE_NORMAL;
+            // Apply custom multiplier (e.g., 7x for 7x Elixir mode)
+            rate *= elixirMultiplier;
             currentElixir += rate * deltaTime;
-            if (currentElixir > MAX_ELIXIR) {
-                currentElixir = MAX_ELIXIR;
-            }
             if (currentElixir > MAX_ELIXIR) {
                 currentElixir = MAX_ELIXIR;
             }

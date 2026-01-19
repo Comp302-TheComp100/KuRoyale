@@ -81,7 +81,13 @@ public class BattleModeSelectionController {
     @FXML
     private void handleLocalVsBot() {
         SoundEffectUtil.playButtonClick();
-        startBattle(BattleMode.LOCAL_VS_BOT);
+        // Navigate to solo mode selection (Normal / 7x Elixir)
+        try {
+            sceneLoader.load(root, "/fxml/solo-mode-selection.fxml", "KU Royale - Solo Mode", null);
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Solo Mode Selection: " + e.getMessage());
+        }
     }
 
     @FXML

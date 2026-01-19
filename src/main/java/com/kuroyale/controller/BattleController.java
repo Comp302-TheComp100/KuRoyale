@@ -93,6 +93,7 @@ public class BattleController {
     private boolean gameOverShown = false;
     private com.kuroyale.service.battle.logic.ComboService comboService;
     private int savedComboCount = 0; // For restoring combo count from saved games
+    private double elixirMultiplier = 1.0; // Custom elixir regeneration multiplier (e.g., 7.0 for 7x Elixir mode)
 
     /**
      * Returns the arena container for external navigation (used by strategies).
@@ -106,6 +107,15 @@ public class BattleController {
         this.loadedSavedGame = savedGame;
     }
 
+    /**
+     * Sets a custom elixir regeneration multiplier for special game modes.
+     * Must be called BEFORE startGame().
+     * 
+     * @param multiplier The multiplier to apply (1.0 = normal, 7.0 = 7x faster)
+     */
+    public void setElixirMultiplier(double multiplier) {
+        this.elixirMultiplier = multiplier;
+    }
 
     // Starts a challenge match with specific rules and deck.
     public void startChallengeGame(Challenge challenge, Deck playerDeck) {
@@ -166,6 +176,13 @@ public class BattleController {
             gameState.setCardCatalog(name -> model.getCardByName(name));
             if (currentChallenge != null) {
                 gameState.setActiveChallenge(currentChallenge.getType());
+            }
+
+            // Apply elixir multiplier for special game modes (e.g., 7x Elixir)
+            if (elixirMultiplier != 1.0) {
+                gameState.getPlayerElixir().setElixirMultiplier(elixirMultiplier);
+                gameState.getBotElixir().setElixirMultiplier(elixirMultiplier);
+                System.out.println("⚡ ELIXIR MULTIPLIER SET TO: " + elixirMultiplier + "x");
             }
         }
 
