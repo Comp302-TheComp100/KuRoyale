@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.kuroyale.model.factory.CardFactory;
+
 /*Service that manages the catalog of available cards in the game
  * Information Expert: CardCatalog knows about all available cards
  * Indirection: Provides interface between controllers and CardFactory

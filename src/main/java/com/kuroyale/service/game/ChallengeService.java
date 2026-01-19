@@ -13,7 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.kuroyale.model.entities.Challenge;
-import com.kuroyale.model.entities.ChallengeFactory;
+import com.kuroyale.model.factory.ChallengeFactory;
 
 /* Service for managing challenge progression and state.
  * Handles saving and loading challenge progress (unlocks, stars, attempts) locally.*/

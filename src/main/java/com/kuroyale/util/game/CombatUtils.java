@@ -176,11 +176,6 @@ public class CombatUtils {
         return gridResult != null ? Vector2.fromGridPosition(gridResult) : null;
     }
 
-    /**
-     * @deprecated Use getNearestPerimeterPosition(Arena, ICombatant, Vector2) for
-     *             sub-tile precision.
-     */
-    @Deprecated
     public static GridPosition getNearestPerimeterTile(Arena arena, ICombatant combatant, GridPosition from) {
         GridPosition pos = combatant.getPosition();
         if (pos == null)
