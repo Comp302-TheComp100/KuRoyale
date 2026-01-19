@@ -23,8 +23,8 @@
     <VBox alignment="CENTER" spacing="30" AnchorPane.topAnchor="150.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
 
         <VBox alignment="CENTER" spacing="20">
-            <!-- Normal Mode Button -->
-            <Button fx:id="normalButton" text="NORMAL" onAction="#handleNormalMode" prefWidth="350" prefHeight="70" styleClass="menu-button">
+            <!-- Classical Mode Button -->
+            <Button fx:id="normalButton" text="CLASSICAL" onAction="#handleNormalMode" prefWidth="350" prefHeight="70" styleClass="menu-button">
                 <graphic>
                     <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
                         <image>
@@ -39,7 +39,7 @@
                 <graphic>
                     <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
                         <image>
-                            <Image url="@../images/elixir_icon.png"/>
+                            <Image url="@../images/battle_icon.png"/>
                         </image>
                     </ImageView>
                 </graphic>
@@ -47,6 +47,17 @@
 
             <!-- Draft Mode Button -->
             <Button fx:id="draftButton" text="DRAFT" onAction="#handleDraftMode" prefWidth="350" prefHeight="70" styleClass="menu-button">
+                <graphic>
+                    <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
+                        <image>
+                            <Image url="@../images/battle_icon.png"/>
+                        </image>
+                    </ImageView>
+                </graphic>
+            </Button>
+
+            <!-- Mega Draft Mode Button -->
+            <Button fx:id="megaDraftButton" text="MEGA DRAFT" onAction="#handleMegaDraftMode" prefWidth="350" prefHeight="70" styleClass="menu-button">
                 <graphic>
                     <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
                         <image>

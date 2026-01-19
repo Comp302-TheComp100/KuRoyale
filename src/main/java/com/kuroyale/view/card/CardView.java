@@ -12,6 +12,7 @@ import javafx.scene.layout.StackPane;
 public class CardView extends StackPane {
     private final Card card;
     private final javafx.scene.shape.Rectangle dimmer;
+    private boolean hoverScalingEnabled = true;
 
     public CardView(Card card) {
         this.card = card;
@@ -30,13 +31,17 @@ public class CardView extends StackPane {
 
         // Add programmatic hover effects for scale transforms
         setOnMouseEntered(e -> {
-            setScaleX(1.02);
-            setScaleY(1.02);
+            if (hoverScalingEnabled) {
+                setScaleX(1.02);
+                setScaleY(1.02);
+            }
         });
 
         setOnMouseExited(e -> {
-            setScaleX(1.0);
-            setScaleY(1.0);
+            if (hoverScalingEnabled) {
+                setScaleX(1.0);
+                setScaleY(1.0);
+            }
         });
 
         // Card image fills entire space
@@ -163,5 +168,9 @@ public class CardView extends StackPane {
 
     public void setDimmed(boolean dimmed) {
         dimmer.setVisible(dimmed);
+    }
+
+    public void setHoverScalingEnabled(boolean enabled) {
+        this.hoverScalingEnabled = enabled;
     }
 }

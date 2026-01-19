@@ -28,6 +28,8 @@ public class SoloModeSelectionController {
     @FXML
     private Button draftButton;
     @FXML
+    private Button megaDraftButton;
+    @FXML
     private Button backButton;
 
     private final SceneLoader sceneLoader = new SceneLoader();
@@ -47,6 +49,7 @@ public class SoloModeSelectionController {
         addMenuButtonHoverEffects(normalButton);
         addMenuButtonHoverEffects(sevenXElixirButton);
         addMenuButtonHoverEffects(draftButton);
+        addMenuButtonHoverEffects(megaDraftButton);
         addMenuButtonHoverEffects(backButton);
     }
 
@@ -90,6 +93,17 @@ public class SoloModeSelectionController {
         } catch (IOException e) {
             e.printStackTrace();
             showError("Failed to load Draft Mode: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleMegaDraftMode() {
+        SoundEffectUtil.playButtonClick();
+        try {
+            sceneLoader.load(root, "/fxml/mega-draft-phase.fxml", "KU Royale - Mega Draft Mode", null);
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Mega Draft Mode: " + e.getMessage());
         }
     }
 
