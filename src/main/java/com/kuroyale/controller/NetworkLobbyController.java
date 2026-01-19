@@ -15,7 +15,6 @@ import com.kuroyale.util.ui.SceneLoader;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
@@ -27,7 +26,6 @@ import javafx.scene.input.ClipboardContent;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Controller for the Network Lobby screen.

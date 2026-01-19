@@ -52,7 +52,6 @@ public class AuthoritativeMatchLoop {
 
     // Callbacks
     private Consumer<NetworkGameStateSnapshot> onStateSnapshot;
-    private Consumer<MatchEvent> onMatchEvent;
     private Runnable onMatchEnd;
 
     // Instrumentation
@@ -301,10 +300,6 @@ public class AuthoritativeMatchLoop {
 
     public void setOnStateSnapshot(Consumer<NetworkGameStateSnapshot> callback) {
         this.onStateSnapshot = callback;
-    }
-
-    public void setOnMatchEvent(Consumer<MatchEvent> callback) {
-        this.onMatchEvent = callback;
     }
 
     public void setOnMatchEnd(Runnable callback) {
