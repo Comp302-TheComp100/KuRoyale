@@ -279,6 +279,8 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         grid.getChildren().clear();
         cellIndex.clear();
 
+        boolean[][] handled = new boolean[Arena.WIDTH][Arena.HEIGHT];
+
         for (int x = 0; x < Arena.WIDTH; x++) {
             for (int y = 0; y < Arena.HEIGHT; y++) {
                 GridCell cell = gameState.getArena().getCell(x, y);
@@ -291,12 +293,57 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
                 indexCellNode(x, y, rect);
             }
         }
+
+        // Render Bridges (2x2)
+        for (int x = 0; x < Arena.WIDTH; x++) {
+            for (int y = 0; y < Arena.HEIGHT; y++) {
+                if (handled[x][y])
+                    continue;
+                GridCell cell = gameState.getArena().getCell(x, y);
+                if (cell.getTileType() == TileType.BRIDGE) {
+                    boolean is2x2 = false;
+                    if (x + 1 < Arena.WIDTH && y + 1 < Arena.HEIGHT) {
+                        // Check neighbors
+                        if (gameState.getArena().getCell(x + 1, y).getTileType() == TileType.BRIDGE
+                                && !handled[x + 1][y] &&
+                                gameState.getArena().getCell(x, y + 1).getTileType() == TileType.BRIDGE
+                                && !handled[x][y + 1] &&
+                                gameState.getArena().getCell(x + 1, y + 1).getTileType() == TileType.BRIDGE
+                                && !handled[x + 1][y + 1]) {
+                            is2x2 = true;
+                        }
+                    }
+
+                    javafx.scene.image.Image bridgeImg = com.kuroyale.util.ui.GameAssets.getInstance().getBridge();
+                    if (bridgeImg != null) {
+                        javafx.scene.image.ImageView bridgeView = new javafx.scene.image.ImageView(bridgeImg);
+                        if (is2x2) {
+                            bridgeView.setFitWidth(TILE_SIZE * 2);
+                            bridgeView.setFitHeight(TILE_SIZE * 2);
+                            grid.add(bridgeView, x, y, 2, 2);
+                            handled[x][y] = true;
+                            handled[x + 1][y] = true;
+                            handled[x][y + 1] = true;
+                            handled[x + 1][y + 1] = true;
+                        } else {
+                            bridgeView.setFitWidth(TILE_SIZE);
+                            bridgeView.setFitHeight(TILE_SIZE);
+                            grid.add(bridgeView, x, y);
+                            handled[x][y] = true;
+                        }
+                        bridgeView.setMouseTransparent(true);
+                    }
+                }
+            }
+        }
         towerRenderer.renderTowers(gameState.getArena());
     }
 
     private void renderArenaPvP(Arena arena) {
         grid.getChildren().clear();
         cellIndex.clear();
+
+        boolean[][] handled = new boolean[Arena.WIDTH][Arena.HEIGHT];
 
         for (int x = 0; x < Arena.WIDTH; x++) {
             for (int y = 0; y < Arena.HEIGHT; y++) {
@@ -308,6 +355,47 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
                 rect.setStrokeWidth(0.0);
                 grid.add(rect, x, y);
                 indexCellNode(x, y, rect);
+            }
+        }
+
+        // Render Bridges (2x2) PvP
+        for (int x = 0; x < Arena.WIDTH; x++) {
+            for (int y = 0; y < Arena.HEIGHT; y++) {
+                if (handled[x][y])
+                    continue;
+                GridCell cell = arena.getCell(x, y);
+                if (cell.getTileType() == TileType.BRIDGE) {
+                    boolean is2x2 = false;
+                    if (x + 1 < Arena.WIDTH && y + 1 < Arena.HEIGHT) {
+                        // Check neighbors
+                        if (arena.getCell(x + 1, y).getTileType() == TileType.BRIDGE && !handled[x + 1][y] &&
+                                arena.getCell(x, y + 1).getTileType() == TileType.BRIDGE && !handled[x][y + 1] &&
+                                arena.getCell(x + 1, y + 1).getTileType() == TileType.BRIDGE
+                                && !handled[x + 1][y + 1]) {
+                            is2x2 = true;
+                        }
+                    }
+
+                    javafx.scene.image.Image bridgeImg = com.kuroyale.util.ui.GameAssets.getInstance().getBridge();
+                    if (bridgeImg != null) {
+                        javafx.scene.image.ImageView bridgeView = new javafx.scene.image.ImageView(bridgeImg);
+                        if (is2x2) {
+                            bridgeView.setFitWidth(TILE_SIZE * 2);
+                            bridgeView.setFitHeight(TILE_SIZE * 2);
+                            grid.add(bridgeView, x, y, 2, 2);
+                            handled[x][y] = true;
+                            handled[x + 1][y] = true;
+                            handled[x][y + 1] = true;
+                            handled[x + 1][y + 1] = true;
+                        } else {
+                            bridgeView.setFitWidth(TILE_SIZE);
+                            bridgeView.setFitHeight(TILE_SIZE);
+                            grid.add(bridgeView, x, y);
+                            handled[x][y] = true;
+                        }
+                        bridgeView.setMouseTransparent(true);
+                    }
+                }
             }
         }
         towerRenderer.renderTowers(arena);

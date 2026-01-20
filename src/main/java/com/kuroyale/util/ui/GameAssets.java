@@ -18,12 +18,14 @@ public class GameAssets {
     public static final String PRINCESS_TOWER_COMPUTER = "princess_tower_computer";
     public static final String KING_TOWER_USER = "king_tower_user";
     public static final String KING_TOWER_COMPUTER = "king_tower_computer";
+    public static final String BRIDGE = "bridge";
 
     // Asset Paths
     private static final String ATH_PRINCESS_TOWER_USER = "/images/tower_archer_blue.png";
     private static final String PATH_PRINCESS_TOWER_COMPUTER = "/images/tower_archer_red.png";
     private static final String PATH_KING_TOWER_USER = "/images/Clash_Royale_icon_King_Tower_Blue.png";
     private static final String PATH_KING_TOWER_COMPUTER = "/images/Clash_Royale_icon_King_Tower_Red.png";
+    private static final String PATH_BRIDGE = "/images/Bridge.png";
 
     private GameAssets() {
         // Private constructor
@@ -42,6 +44,7 @@ public class GameAssets {
         getImage(PRINCESS_TOWER_COMPUTER, PATH_PRINCESS_TOWER_COMPUTER);
         getImage(KING_TOWER_USER, PATH_KING_TOWER_USER);
         getImage(KING_TOWER_COMPUTER, PATH_KING_TOWER_COMPUTER);
+        getImage(BRIDGE, PATH_BRIDGE);
     }
 
     // Gets a cached image or loads it if not present.
@@ -81,5 +84,9 @@ public class GameAssets {
 
     public Image getKingTowerComputer() {
         return getImage(KING_TOWER_COMPUTER, PATH_KING_TOWER_COMPUTER);
+    }
+
+    public Image getBridge() {
+        return getImage(BRIDGE, PATH_BRIDGE);
     }
 }

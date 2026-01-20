@@ -42,6 +42,8 @@ public class ArenaRenderer {
         arenaGrid.getRowConstraints().clear();
 
         // Pass 1: Render Grid (Ground)
+        boolean[][] handled = new boolean[Arena.WIDTH][Arena.HEIGHT];
+
         for (int x = 0; x < Arena.WIDTH; x++) {
             for (int y = 0; y < Arena.HEIGHT; y++) {
                 GridCell cell = arena.getCell(x, y);
@@ -67,6 +69,57 @@ public class ArenaRenderer {
                 }
 
                 arenaGrid.add(rect, x, y);
+            }
+        }
+
+        // Pass 1.5: Render Bridges (Greedy 2x2 Tiling)
+        // We do this in a separate pass or efficiently interlaced?
+        // Separate pass over the grid allows us to layer images on top of the base
+        // rects we just added.
+        for (int x = 0; x < Arena.WIDTH; x++) {
+            for (int y = 0; y < Arena.HEIGHT; y++) {
+                if (handled[x][y])
+                    continue;
+
+                GridCell cell = arena.getCell(x, y);
+                if (cell.getTileType() == TileType.BRIDGE) {
+                    // Check for 2x2 block
+                    // Needs: (x+1, y), (x, y+1), (x+1, y+1) to be BRIDGE and !handled
+                    boolean is2x2 = false;
+                    if (x + 1 < Arena.WIDTH && y + 1 < Arena.HEIGHT) {
+                        GridCell r = arena.getCell(x + 1, y);
+                        GridCell b = arena.getCell(x, y + 1);
+                        GridCell rb = arena.getCell(x + 1, y + 1);
+
+                        if (r.getTileType() == TileType.BRIDGE && !handled[x + 1][y] &&
+                                b.getTileType() == TileType.BRIDGE && !handled[x][y + 1] &&
+                                rb.getTileType() == TileType.BRIDGE && !handled[x + 1][y + 1]) {
+                            is2x2 = true;
+                        }
+                    }
+
+                    Image bridgeImg = com.kuroyale.util.ui.GameAssets.getInstance().getBridge();
+                    if (bridgeImg != null) {
+                        ImageView bridgeView = new ImageView(bridgeImg);
+                        if (is2x2) {
+                            bridgeView.setFitWidth(GameConstants.TILE_SIZE * 2);
+                            bridgeView.setFitHeight(GameConstants.TILE_SIZE * 2);
+                            arenaGrid.add(bridgeView, x, y, 2, 2);
+
+                            handled[x][y] = true;
+                            handled[x + 1][y] = true;
+                            handled[x][y + 1] = true;
+                            handled[x + 1][y + 1] = true;
+                        } else {
+                            // Fallback 1x1
+                            bridgeView.setFitWidth(GameConstants.TILE_SIZE);
+                            bridgeView.setFitHeight(GameConstants.TILE_SIZE);
+                            arenaGrid.add(bridgeView, x, y);
+                            handled[x][y] = true;
+                        }
+                        bridgeView.setMouseTransparent(true);
+                    }
+                }
             }
         }
 
