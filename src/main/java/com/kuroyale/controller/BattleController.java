@@ -601,6 +601,28 @@ public class BattleController {
                     .updateProgress(com.kuroyale.model.enums.AchievementType.FIRST_BLOOD, 1);
             com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
                     .updateProgress(com.kuroyale.model.enums.AchievementType.UNDEFEATED, 1);
+
+            // Track Draft Wins
+            if (draftedPlayerDeck != null) {
+                com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
+                        .updateProgress(com.kuroyale.model.enums.QuestType.WIN_DRAFT_MATCH, 1);
+                com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
+                        .updateProgress(com.kuroyale.model.enums.AchievementType.DRAFT_CHAMPION, 1);
+            }
+
+            // Track Quick Victory (< 120 seconds) & Speed Demon
+            if (gameState.getGameTime() < 120) {
+                com.kuroyale.util.common.ServiceFactory.getInstance().getQuestService()
+                        .updateProgress(com.kuroyale.model.enums.QuestType.QUICK_VICTORY, 1);
+                com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
+                        .updateProgress(com.kuroyale.model.enums.AchievementType.SPEED_DEMON, 1);
+            }
+
+            // Track Perfect Strategist (0 Damage Taken)
+            if (gameState.getPlayerDamageTaken() == 0) {
+                com.kuroyale.util.common.ServiceFactory.getInstance().getAchievementService()
+                        .updateProgress(com.kuroyale.model.enums.AchievementType.PERFECT_STRATEGIST, 1);
+            }
         } else if (isDraw) {
             baseGold = 75;
             titleText = "DRAW";

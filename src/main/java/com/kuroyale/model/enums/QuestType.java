@@ -17,7 +17,12 @@ public enum QuestType {
     PLAY_CARDS_IN_SINGLE_MATCH(20, 150, "Play %d cards in a single match"),
     WIN_MATCHES_IN_ROW(2, 300, "Win %d matches in a row"),
     DESTROY_KING_TOWER(1, 350, "Destroy an enemy King Tower"),
-    WIN_PVP_MATCH(1, 200, "Win a PvP match");
+    WIN_PVP_MATCH(1, 200, "Win a PvP match"),
+    WIN_DRAFT_MATCH(1, 250, "Win %d Draft matches"),
+    KILL_TROOPS(50, 200, "Kill %d enemy troops"),
+    PLAY_HEAVY_CARDS(5, 150, "Play %d cards costing 5+ Elixir"),
+    PLAY_CYCLE_CARDS(10, 150, "Play %d cards costing 2 or less Elixir"),
+    QUICK_VICTORY(1, 400, "Win a match in under 2 minutes");
 
     private final int targetValue;
     private final int goldReward;

@@ -14,7 +14,11 @@ public enum AchievementType {
     GOLD_HOARDER(5000, 500, "Gold Hoarder", "Accumulate 5,000 total gold earned"),
     VETERAN_PLAYER(50, 600, "Veteran Player", "Play 50 matches"),
     COMBO_EXPERT(25, 750, "Combo Expert", "Trigger 25 card combos"),
-    UNDEFEATED(5, 1000, "Undefeated", "Win 5 matches in a row");
+    UNDEFEATED(5, 1000, "Undefeated", "Win 5 matches in a row"),
+    DRAFT_CHAMPION(50, 2000, "Draft Champion", "Win 50 Draft matches"),
+    EXECUTIONER(1000, 1500, "Executioner", "Kill 1000 enemy troops"),
+    SPEED_DEMON(20, 1000, "Speed Demon", "Win 20 matches in under 2 minutes"),
+    PERFECT_STRATEGIST(10, 2500, "Perfect Strategist", "Win 10 matches taking 0 tower damage");
 
     private final int targetValue;
     private final int goldReward;

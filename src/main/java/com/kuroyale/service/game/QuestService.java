@@ -223,6 +223,14 @@ public class QuestService implements GameEventListener {
         } else if (card.getType() == CardType.BUILDING) {
             updateProgress(QuestType.PLAY_BUILDING_CARDS, 1);
         }
+
+        // Elixir Cost Quests
+        int cost = card.getCost();
+        if (cost >= 5) {
+            updateProgress(QuestType.PLAY_HEAVY_CARDS, 1);
+        } else if (cost <= 2) {
+            updateProgress(QuestType.PLAY_CYCLE_CARDS, 1);
+        }
     }
 
     @Override
@@ -290,5 +298,17 @@ public class QuestService implements GameEventListener {
 
         cardsPlayedThisMatch = 0;
         saveQuests();
+    }
+
+    @Override
+    public void onUnitDied(com.kuroyale.model.entities.ICombatant victim,
+            com.kuroyale.model.entities.ICombatant killer) {
+        // Track KILL_TROOPS
+        // Only count if player's unit killed an enemy troop
+        if (killer != null && killer.isPlayerSide() && !victim.isPlayerSide()) {
+            if (victim instanceof com.kuroyale.model.entities.Troop) {
+                updateProgress(QuestType.KILL_TROOPS, 1);
+            }
+        }
     }
 }

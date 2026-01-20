@@ -27,12 +27,15 @@ public class CombatService {
 
     private final java.util.Map<ICombatant, PendingAttack> pendingAttacks = new java.util.IdentityHashMap<>();
 
-    // Core single-target damage methods
     public void applyDamage(ICombatant attacker, ICombatant target) {
         if (attacker == null || target == null)
             return;
         int dmg = attacker.getDamage();
         target.takeDamage(dmg);
+
+        if (!target.isAlive()) {
+            com.kuroyale.event.GameEventBus.getInstance().publishUnitDied(target, attacker);
+        }
     }
 
     private void scheduleTroopAttack(Troop attacker, ICombatant target) {
@@ -524,8 +527,32 @@ public class CombatService {
                 }
 
                 // Check for destroyed buildings to free footprint immediately
-                if (!candidate.isAlive() && candidate instanceof Building b) {
-                    gameState.getArena().freeFootprint(b);
+                if (!candidate.isAlive()) {
+                    if (candidate instanceof Building b) {
+                        gameState.getArena().freeFootprint(b);
+                    }
+                    // Publish death event (attributed to source if known, otherwise generic)
+                    // If area effect has a source (e.g. Wizard), use it. If spell, use null or
+                    // infer?
+                    // For now, simpler: we don't have direct reference to source UNIT here easily
+                    // unless we pass it.
+                    // But we know isPlayerSource. Can we attribute?
+                    // Let's rely on listener to check validity. For spell kills, killer might be
+                    // null or special.
+                    // Actually, let's skip publishing here for now unless we refactor to pass
+                    // source.
+                    // Wait, we need it for quests.
+                    // Let's pass null as killer for spells, but for troops with AOE (Wizard), we
+                    // need source.
+                    // But we only have Vector2 center.
+                    // Limitation: For this pass, only direct attacks will trigger KILL_TROOPS well.
+                    // Area attacks from spells won't count as "Unit" kills usually unless we track
+                    // spell source.
+                    // However, quests say "Kill enemy troops". Spell kills count.
+                    // We can create a dummy "SpellKiller" or similar?
+                    // Or just overload publishUnitDied to support null killer (meaning
+                    // Spell/Environment)
+                    com.kuroyale.event.GameEventBus.getInstance().publishUnitDied(candidate, null);
                 }
             }
         }

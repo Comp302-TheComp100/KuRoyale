@@ -235,4 +235,15 @@ public class AchievementService implements GameEventListener {
         }
         saveAchievements();
     }
+
+    @Override
+    public void onUnitDied(com.kuroyale.model.entities.ICombatant victim,
+            com.kuroyale.model.entities.ICombatant killer) {
+        // Track EXECUTIONER
+        if (killer != null && killer.isPlayerSide() && !victim.isPlayerSide()) {
+            if (victim instanceof com.kuroyale.model.entities.Troop) {
+                updateProgress(AchievementType.EXECUTIONER, 1);
+            }
+        }
+    }
 }

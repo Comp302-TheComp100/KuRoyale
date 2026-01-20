@@ -44,4 +44,8 @@ public interface GameEventListener {
 
         public default void onEmojiPlayed(boolean isPlayer, String emojiName) {
         }
+
+        public default void onUnitDied(com.kuroyale.model.entities.ICombatant victim,
+                        com.kuroyale.model.entities.ICombatant killer) {
+        }
 }

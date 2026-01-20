@@ -93,4 +93,9 @@ public class GameEventBus {
     public void publishEmojiPlayed(boolean isPlayer, String emojiName) {
         new ArrayList<>(listeners).forEach(l -> l.onEmojiPlayed(isPlayer, emojiName));
     }
+
+    public void publishUnitDied(com.kuroyale.model.entities.ICombatant victim,
+            com.kuroyale.model.entities.ICombatant killer) {
+        new ArrayList<>(listeners).forEach(l -> l.onUnitDied(victim, killer));
+    }
 }
