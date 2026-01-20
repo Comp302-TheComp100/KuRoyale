@@ -12,8 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
 
 /**
- * Controller for PvP Mode Selection screen.
- * Allows players to choose between Classical PvP and Tower Defense modes.
+ * Controller for selecting between Classical PvP and Mega Draft PvP.
  */
 public class PvPModeSelectionController {
 
@@ -22,9 +21,9 @@ public class PvPModeSelectionController {
     @FXML
     private Label titleLabel;
     @FXML
-    private Button classicalButton;
+    private Button classicPvPButton;
     @FXML
-    private Button towerDefenseButton;
+    private Button megaDraftPvPButton;
     @FXML
     private Button backButton;
 
@@ -42,8 +41,8 @@ public class PvPModeSelectionController {
             titleLabel.getStyleClass().add("title-label");
         }
 
-        addMenuButtonHoverEffects(classicalButton);
-        addMenuButtonHoverEffects(towerDefenseButton);
+        addMenuButtonHoverEffects(classicPvPButton);
+        addMenuButtonHoverEffects(megaDraftPvPButton);
         addMenuButtonHoverEffects(backButton);
     }
 
@@ -68,10 +67,10 @@ public class PvPModeSelectionController {
     }
 
     @FXML
-    private void handleClassicalMode() {
+    private void handleClassicPvP() {
         SoundEffectUtil.playButtonClick();
         try {
-            // Navigate to existing PvP deck selection
+            // Navigate to existing Classical PvP Deck Selection
             sceneLoader.load(root, "/fxml/pvp-deck-selection.fxml", "KU Royale - PvP Deck Selection", null);
         } catch (IOException e) {
             e.printStackTrace();
@@ -80,14 +79,14 @@ public class PvPModeSelectionController {
     }
 
     @FXML
-    private void handleTowerDefenseMode() {
+    private void handleMegaDraftPvP() {
         SoundEffectUtil.playButtonClick();
         try {
-            // Navigate to Tower Defense draft phase
-            sceneLoader.load(root, "/fxml/tower-defense-draft.fxml", "KU Royale - Tower Defense", null);
+            // Navigate to new Mega Draft PvP Phase
+            sceneLoader.load(root, "/fxml/pvp-mega-draft-phase.fxml", "KU Royale - PvP Mega Draft", null);
         } catch (IOException e) {
             e.printStackTrace();
-            showError("Failed to load Tower Defense: " + e.getMessage());
+            showError("Failed to load Mega Draft PvP: " + e.getMessage());
         }
     }
 
@@ -95,10 +94,11 @@ public class PvPModeSelectionController {
     private void handleBack() {
         SoundEffectUtil.playButtonClick();
         try {
+            // Go back to Battle Mode Selection
             sceneLoader.load(root, "/fxml/battle-mode-selection.fxml", "KU Royale - Battle Mode", null);
         } catch (IOException e) {
             e.printStackTrace();
-            showError("Failed to return to battle mode selection: " + e.getMessage());
+            showError("Failed to return to menu: " + e.getMessage());
         }
     }
 

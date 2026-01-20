@@ -76,12 +76,14 @@ public class MegaDraftView extends BorderPane {
         // === LEFT PANEL - Player Picks with ScrollPane ===
         VBox leftPanel = createPicksPanelWithScroll("YOUR DECK", "#22c55e");
         playerPicksContent = (VBox) ((ScrollPane) leftPanel.getChildren().get(1)).getContent();
+        leftPanel.setUserData("leftPanel"); // Tag for lookup
         setLeft(leftPanel);
         BorderPane.setMargin(leftPanel, new Insets(0, 10, 0, 0));
 
         // === RIGHT PANEL - Bot Picks with ScrollPane ===
         VBox rightPanel = createPicksPanelWithScroll("OPPONENT", "#ef4444");
         botPicksContent = (VBox) ((ScrollPane) rightPanel.getChildren().get(1)).getContent();
+        rightPanel.setUserData("rightPanel"); // Tag for lookup
         setRight(rightPanel);
         BorderPane.setMargin(rightPanel, new Insets(0, 0, 0, 10));
 
@@ -246,9 +248,46 @@ public class MegaDraftView extends BorderPane {
             turnIndicatorLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #22c55e;");
             startCountdown();
         } else {
-            turnIndicatorLabel.setText("⏳ OPPONENT PICKING...");
             turnIndicatorLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #94a3b8;");
             stopCountdown();
+        }
+    }
+
+    /**
+     * Updates the view for PvP Hotseat turn.
+     * Always valid input, just updates text.
+     */
+    public void setHotseatTurn(String playerName, boolean isLeftPlayer, int picksRemaining) {
+        // For hotseat, input is always enabled (since it's same mouse)
+        // We set isPlayerTurn = true so click handler works
+        this.isPlayerTurn = true;
+        this.inputEnabled = true;
+
+        String pickText = picksRemaining == 1 ? "Pick 1 card" : "Pick " + picksRemaining + " cards";
+        turnIndicatorLabel.setText("🎯 " + playerName + " - " + pickText);
+
+        // Color code based on player side (Left=Green/Blue, Right=Red)
+        String color = isLeftPlayer ? "#22c55e" : "#ef4444";
+        turnIndicatorLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
+
+        startCountdown();
+    }
+
+    /**
+     * Customizes the panel titles (e.g. "PLAYER 1", "PLAYER 2").
+     */
+    public void setTitles(String leftTitle, String rightTitle) {
+        // Helper to find label in panel
+        updatePanelTitle(getLeft(), leftTitle);
+        updatePanelTitle(getRight(), rightTitle);
+    }
+
+    private void updatePanelTitle(javafx.scene.Node node, String title) {
+        if (node instanceof VBox) {
+            VBox panel = (VBox) node;
+            if (!panel.getChildren().isEmpty() && panel.getChildren().get(0) instanceof Label) {
+                ((Label) panel.getChildren().get(0)).setText(title);
+            }
         }
     }
 

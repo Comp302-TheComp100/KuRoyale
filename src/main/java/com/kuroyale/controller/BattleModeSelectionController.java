@@ -134,12 +134,12 @@ public class BattleModeSelectionController {
 
         // Handle different modes differently
         if (mode == BattleMode.LOCAL_PVP) {
-            // Local PvP mode: Navigate to PvP deck selection
+            // Local PvP mode: Navigate to PvP Mode Selection (Classical / Mega Draft)
             try {
-                sceneLoader.load(root, "/fxml/pvp-deck-selection.fxml", "KU Royale - PvP Deck Selection", null);
+                sceneLoader.load(root, "/fxml/pvp-mode-selection.fxml", "KU Royale - PvP Mode Selection", null);
             } catch (IOException e) {
                 e.printStackTrace();
-                showError("Failed to load PvP Deck Selection: " + e.getMessage());
+                showError("Failed to load PvP Mode Selection: " + e.getMessage());
             }
         } else if (mode == BattleMode.NETWORK_PVP) {
             // Network PvP mode: Navigate to network lobby for host/join setup
