@@ -63,4 +63,18 @@ public class ArenaLayout implements Serializable {
     public void setKingTowerPosition(int x, int y) {
         this.kingTowerPosition = new GridPosition(x, y);
     }
+
+    public ArenaLayout copy() {
+        ArenaLayout copy = new ArenaLayout(this.name);
+        for (GridPosition p : this.bridgePositions) {
+            copy.addBridgePosition(p.getX(), p.getY());
+        }
+        for (GridPosition p : this.princessTowerPositions) {
+            copy.addPrincessTowerPosition(p.getX(), p.getY());
+        }
+        if (this.kingTowerPosition != null) {
+            copy.setKingTowerPosition(this.kingTowerPosition.getX(), this.kingTowerPosition.getY());
+        }
+        return copy;
+    }
 }

@@ -43,7 +43,7 @@ public class ArenaDesignModel {
 
     // Loads the arena layout for the current user
     public ArenaLayout loadArenaLayout() {
-        return arenaService.loadArenaLayout();
+        return arenaService.loadArenaLayout().copy();
     }
 
     // Creates an arena from the given layout
