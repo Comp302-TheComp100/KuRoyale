@@ -858,3 +858,30 @@
   -fx-padding: 9 20 7 20;
   /* Adjust padding to keep text centered visually if needed, or just rely on translate */
 }
+
+/* ============================================
+   HIDDEN SCROLLBAR
+   ============================================ */
+
+.hidden-scrollbar {
+  -fx-background-color: transparent;
+  -fx-background: transparent;
+}
+
+.hidden-scrollbar > .viewport {
+  -fx-background-color: transparent;
+}
+
+.hidden-scrollbar .scroll-bar:vertical {
+  -fx-pref-width: 0;
+  -fx-min-width: 0;
+  -fx-max-width: 0;
+  -fx-opacity: 0;
+}
+
+.hidden-scrollbar .scroll-bar:horizontal {
+  -fx-pref-height: 0;
+  -fx-min-height: 0;
+  -fx-max-height: 0;
+  -fx-opacity: 0;
+}

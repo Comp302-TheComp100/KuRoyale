@@ -72,6 +72,8 @@ public class CardView extends StackPane {
         pane.setPrefSize(35, 35);
         pane.setMinSize(35, 35);
 
+        int cost = card != null ? card.getCost() : 0;
+
         try {
             // Load elixir icon
             ImageView elixirIcon = new ImageView(new Image(getClass().getResourceAsStream("/images/cost.png")));
@@ -80,14 +82,14 @@ public class CardView extends StackPane {
             elixirIcon.setPreserveRatio(true);
 
             // Cost label - centered on icon
-            Label costLabel = new Label(String.valueOf(card.getCost()));
+            Label costLabel = new Label(String.valueOf(cost));
             costLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
             StackPane.setAlignment(costLabel, Pos.CENTER);
 
             pane.getChildren().addAll(elixirIcon, costLabel);
         } catch (Exception e) {
             // Fallback without icon
-            Label costLabel = new Label(String.valueOf(card.getCost()));
+            Label costLabel = new Label(String.valueOf(cost));
             costLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #fbbf24;");
             pane.getChildren().add(costLabel);
         }
@@ -102,6 +104,10 @@ public class CardView extends StackPane {
         imageView.setPreserveRatio(false);
         imageView.setSmooth(true);
 
+        if (card == null) {
+            return imageView; // Empty image for null card
+        }
+
         try {
             String imagePath = card.getImagePath();
             Image image = new Image(getClass().getResourceAsStream(imagePath), 90, 120, false, true);
@@ -113,7 +119,7 @@ public class CardView extends StackPane {
     }
 
     private Label createLevelIndicator() {
-        int level = card.getLevel();
+        int level = card != null ? card.getLevel() : 0;
         String stars = "";
         for (int i = 0; i < level; i++) {
             stars += "★";
@@ -131,6 +137,9 @@ public class CardView extends StackPane {
     }
 
     private String getRarityColor() {
+        if (card == null) {
+            return "#4b5563"; // Dark gray for null card
+        }
         switch (card.getRarity()) {
             case COMMON:
                 return "#9ca3af"; // Gray

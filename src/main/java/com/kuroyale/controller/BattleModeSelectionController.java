@@ -93,7 +93,13 @@ public class BattleModeSelectionController {
     @FXML
     private void handleLocalPvP() {
         SoundEffectUtil.playButtonClick();
-        startBattle(BattleMode.LOCAL_PVP);
+        // Navigate to PvP mode selection (Classical / Tower Defense)
+        try {
+            sceneLoader.load(root, "/fxml/pvp-mode-selection.fxml", "KU Royale - PvP Mode", null);
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            showError("Failed to load PvP Mode Selection: " + e.getMessage());
+        }
     }
 
     @FXML
