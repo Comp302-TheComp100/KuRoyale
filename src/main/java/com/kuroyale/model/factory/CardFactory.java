@@ -7,10 +7,16 @@ import java.util.List;
 
 import com.kuroyale.model.enums.*;
 
-/*Factory class for creating all card instances in the game
- * Separates card creation logic from the Card model
- * Creator  - Factory has initialization data for cards
- * Made instance based to support Low Coupling*/
+/**
+ * Implements the **Factory Method** pattern to create all card instances in the
+ * game.
+ * <p>
+ * <b>GRASP Pattern: Creator</b><br>
+ * This class has the specific knowledge (initialization data) required to
+ * create {@link Card} objects,
+ * separating complex creation logic from the Card model itself.
+ * </p>
+ */
 public class CardFactory {
     public Card createKnight() {
         return new Card("Knight", 3, CardType.TROOP, Rarity.COMMON, 600, 75, 1.1, 0,

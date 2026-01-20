@@ -11,9 +11,22 @@ import com.kuroyale.service.game.QuestService;
 import com.kuroyale.service.management.ArenaManagementService;
 import com.kuroyale.service.management.DeckManagementService;
 
-/*Service Factory for managing service instances and dependencies
- * Pure Fabrication - created to manage object creation and dependencies
- * Low Coupling - centralizes dependency management*/
+/**
+ * Central Dependency Injection container implementing the **Singleton** and
+ * **Factory** patterns.
+ * <p>
+ * <b>GRASP Pattern: Pure Fabrication</b><br>
+ * This class does not represent a domain concept but was created to manage
+ * object creation and dependencies,
+ * promoting **Low Coupling** by centralizing dependency management.
+ * </p>
+ * <p>
+ * <b>GRASP Pattern: Creator</b><br>
+ * It creates and manages the lifecycle of all service instances, ensuring they
+ * are initialized with
+ * their required dependencies.
+ * </p>
+ */
 public class ServiceFactory {
 
     private static ServiceFactory instance;

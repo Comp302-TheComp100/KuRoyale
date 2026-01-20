@@ -14,7 +14,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
-//Central game state manager.Holds references to player and bot states, arena, and manages the game loop updates.
+/**
+ * Represents the Model in the Model-View-Controller (MVC) architectural
+ * pattern.
+ * <p>
+ * This class encapsulates the core business logic and state of the game,
+ * including
+ * player and bot status, elixir management, and the arena state. It notifies
+ * observers (via the {@link GameEventBus}) of state changes, decoupling the
+ * internal representation from the user interface.
+ * </p>
+ */
 public class GameState extends AbstractGameState {
     private final Hand playerHand;
     private final ElixirManager playerElixir, botElixir;

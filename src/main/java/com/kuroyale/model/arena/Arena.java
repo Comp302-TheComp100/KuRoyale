@@ -8,10 +8,16 @@ import com.kuroyale.model.entities.Building;
 import com.kuroyale.model.entities.Tower;
 import com.kuroyale.model.enums.*;
 
-/*Represents the active game board during a match.
- * Information Expert: Knows the state of the board (cells, valid positions, occupancy).
- * Creator: Creates and manages GridCell instances.
- * High Cohesion: Focuses solely on map geometry and state. */
+/**
+ * Represents the active game board during a match.
+ * <p>
+ * <b>Flyweight Pattern Usage:</b><br>
+ * The grid is composed of {@link GridCell}s which use the {@link TileType} enum
+ * (Flyweight) to represent
+ * shared terrain properties (GRASS, BRIDGE, WATER) across thousands of grid
+ * cells, optimizing memory usage.
+ * </p>
+ */
 public class Arena {
     public static final int WIDTH = 18;
     public static final int HEIGHT = 32;

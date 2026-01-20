@@ -5,8 +5,21 @@ import java.util.List;
 
 import com.kuroyale.model.entities.User;
 
-/* Repository interface for User persistence operations
- * Pure Fabrication and Polymorphism patterns, provides abstraction for data access*/
+/**
+ * Defines the contract for user data persistence operations.
+ * <p>
+ * <b>Repository Pattern:</b><br>
+ * Encapsulates the logic required to access data sources, providing a
+ * collection-like interface for accessing objects.
+ * </p>
+ * <p>
+ * <b>GRASP Pattern: Protected Variations</b><br>
+ * This interface isolates the business logic from the details of the
+ * persistence mechanism. Client code
+ * depends on this stable interface rather than concrete storage implementations
+ * (e.g., JSON, SQL).
+ * </p>
+ */
 public interface UserRepository {
 
     // Finds a user by username
