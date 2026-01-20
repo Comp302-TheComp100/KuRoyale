@@ -29,7 +29,11 @@ public class EmojiPanel extends VBox {
             "king emote",
             "sticker emote",
             "yanan emoji",
-            "ağlayan kral emoji"
+            "ağlayan kral emoji",
+            "angry emote",
+            "clash-royale first emotes",
+            "crying emote",
+            "first emotes 2"
     };
 
     private Consumer<String> onEmojiSelected;
@@ -59,9 +63,10 @@ public class EmojiPanel extends VBox {
 
         getChildren().add(emojiGrid);
 
-        // Set preferred size (2 columns, 4 rows)
+        // Set preferred size (2 columns, variable rows)
+        int rows = (int) Math.ceil(EMOJI_NAMES.length / 2.0);
         double totalWidth = (EMOJI_SIZE * 2) + GRID_GAP + (PADDING * 2);
-        double totalHeight = (EMOJI_SIZE * 4) + (GRID_GAP * 3) + (PADDING * 2);
+        double totalHeight = (EMOJI_SIZE * rows) + (GRID_GAP * (rows - 1)) + (PADDING * 2);
         setPrefSize(totalWidth, totalHeight);
         setMaxSize(totalWidth, totalHeight);
     }
