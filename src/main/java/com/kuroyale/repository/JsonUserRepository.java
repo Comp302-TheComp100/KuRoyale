@@ -169,6 +169,13 @@ public class JsonUserRepository implements UserRepository {
                     layout.setKingTowerPosition(kingTower.getInt("x"), kingTower.getInt("y"));
                 }
 
+                if (arenaJson.has("gridColor")) {
+                    layout.setGridColor(arenaJson.getString("gridColor"));
+                }
+                if (arenaJson.has("gridColorAlt")) {
+                    layout.setGridColorAlt(arenaJson.getString("gridColorAlt"));
+                }
+
                 user.setArenaLayout(layout);
             }
 
@@ -248,6 +255,13 @@ public class JsonUserRepository implements UserRepository {
                     kingTower.put("x", layout.getKingTowerPosition().getX());
                     kingTower.put("y", layout.getKingTowerPosition().getY());
                     arenaJson.put("kingTower", kingTower);
+                }
+
+                if (layout.getGridColor() != null) {
+                    arenaJson.put("gridColor", layout.getGridColor());
+                }
+                if (layout.getGridColorAlt() != null) {
+                    arenaJson.put("gridColorAlt", layout.getGridColorAlt());
                 }
 
                 jsonUser.put("arenaLayout", arenaJson);
