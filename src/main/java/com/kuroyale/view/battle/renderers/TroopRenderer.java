@@ -42,8 +42,11 @@ public class TroopRenderer {
         }
         String cardKey = PngSequenceSprite.toCardKey(troop.getBaseCard().getName());
 
-        if ("giant".equals(cardKey) || "hog_rider".equals(cardKey) || "valkyrie".equals(cardKey)) {
-            return 1.0;
+        if ("giant".equals(cardKey) || "valkyrie".equals(cardKey)) {
+            return 1.5;
+        }
+        if ("hog_rider".equals(cardKey)) {
+            return 1.5;
         }
         return troop.getBaseCard().getHeight() * 1.5;
     }

@@ -6,9 +6,18 @@ import java.util.List;
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.Tower;
 
-/* Event Bus for broadcasting game events to registered listeners.
- * Facilitates loose coupling between the game engine (GameState) and
- * auxiliary systems like Quests and Achievements.*/
+/**
+ * Represents the Subject in the **Observer** design pattern and utilizes the
+ * **Singleton** pattern
+ * to provide a global access point.
+ * <p>
+ * This class broadcasts game events (e.g., card played, tower destroyed) to all
+ * registered listeners,
+ * facilitating loose coupling between the game engine
+ * ({@link com.kuroyale.model.state.GameState})
+ * and auxiliary systems like Quests and Achievements.
+ * </p>
+ */
 public class GameEventBus {
     private static GameEventBus instance;
     private final List<GameEventListener> listeners = new ArrayList<>();

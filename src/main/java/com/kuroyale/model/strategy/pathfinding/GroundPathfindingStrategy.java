@@ -7,6 +7,14 @@ import com.kuroyale.model.arena.GridCell;
 import com.kuroyale.model.arena.GridPosition;
 import com.kuroyale.model.entities.*;
 
+/**
+ * Concrete implementation of the **Strategy** pattern for ground units.
+ * <p>
+ * Implements A* pathfinding logic specifically for troops that navigate the
+ * arena grid,
+ * accounting for obstacles and terrain costs.
+ * </p>
+ */
 public class GroundPathfindingStrategy implements PathfindingStrategy {
     @Override
     public Deque<GridPosition> computePath(Arena arena, Troop troop, GridPosition destination) {

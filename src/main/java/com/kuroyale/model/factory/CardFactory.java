@@ -7,15 +7,21 @@ import java.util.List;
 
 import com.kuroyale.model.enums.*;
 
-/*Factory class for creating all card instances in the game
- * Separates card creation logic from the Card model
- * Creator  - Factory has initialization data for cards
- * Made instance based to support Low Coupling*/
+/**
+ * Implements the **Factory Method** pattern to create all card instances in the
+ * game.
+ * <p>
+ * <b>GRASP Pattern: Creator</b><br>
+ * This class has the specific knowledge (initialization data) required to
+ * create {@link Card} objects,
+ * separating complex creation logic from the Card model itself.
+ * </p>
+ */
 public class CardFactory {
     public Card createKnight() {
         return new Card("Knight", 3, CardType.TROOP, Rarity.COMMON, 600, 75, 1.1, 0,
                 SpeedType.MEDIUM, TargetType.GROUND, false, false,
-                "A tough soldier with a sword. Good for soaking up damage.", 1, 0);
+                "A tough soldier with a sword. Good for soaking up damage.", 1, 0, 1.15, 1.15);
     }
 
     public Card createMusketeer() {
@@ -45,7 +51,7 @@ public class CardFactory {
     public Card createBomber() {
         return new Card("Bomber", 3, CardType.TROOP, Rarity.COMMON, 150, 100, 1.9, 5.0,
                 SpeedType.MEDIUM, TargetType.GROUND, false, true,
-                "Throws bombs that explode on impact.", 1, 0, 0.8, 0.8);
+                "Throws bombs that explode on impact.", 1, 0, 0.95, 0.95);
     }
 
     public Card createValkyrie() {
@@ -63,43 +69,43 @@ public class CardFactory {
     public Card createSkeletons() {
         return new Card("Skeletons", 1, CardType.TROOP, Rarity.COMMON, 30, 30, 1.0, 0,
                 SpeedType.VERY_FAST, TargetType.GROUND, false, false,
-                "Spawns 4 very weak but very fast soldiers.", 4, 0, 0.75, 0.75);
+                "Spawns 4 very weak but very fast soldiers.", 4, 0, 0.85, 0.85);
     }
 
     public Card createGoblins() {
         return new Card("Goblins", 2, CardType.TROOP, Rarity.COMMON, 80, 50, 1.1, 0,
                 SpeedType.FAST, TargetType.GROUND, false, false,
-                "Spawns 3 fast, weak melee fighters.", 3, 0, 0.8, 0.8);
+                "Spawns 3 fast, weak melee fighters.", 3, 0, 0.85, 0.85);
     }
 
     public Card createSpearGoblins() {
         return new Card("Spear Goblins", 2, CardType.TROOP, Rarity.COMMON, 52, 24, 1.3, 5.5,
                 SpeedType.FAST, TargetType.BOTH, false, false,
-                "Spawns 3 ranged goblins (can hit air).", 3, 0, 0.8, 0.8);
+                "Spawns 3 ranged goblins (can hit air).", 3, 0, 0.85, 0.85);
     }
 
     public Card createArchers() {
         return new Card("Archers", 3, CardType.TROOP, Rarity.COMMON, 125, 40, 1.2, 5.5,
                 SpeedType.MEDIUM, TargetType.BOTH, false, false,
-                "Spawns 2 ranged soldiers (can hit air).", 2, 0, 0.85, 0.85);
+                "Spawns 2 ranged soldiers (can hit air).", 2, 0, 0.95, 0.95);
     }
 
     public Card createMinions() {
         return new Card("Minions", 3, CardType.TROOP, Rarity.RARE, 90, 40, 1.0, 2.5,
                 SpeedType.VERY_FAST, TargetType.BOTH, true, false,
-                "Spawns 3 flying units that attack from the air.", 3, 0, 0.8, 0.8);
+                "Spawns 3 flying units that attack from the air.", 3, 0, 0.85, 0.85);
     }
 
     public Card createMinionHorde() {
         return new Card("Minion Horde", 5, CardType.TROOP, Rarity.LEGENDARY, 90, 40, 1.0, 2.5,
                 SpeedType.VERY_FAST, TargetType.BOTH, true, false,
-                "Spawns 6 flying units (double the Minions).", 6, 0, 0.8, 0.8);
+                "Spawns 6 flying units (double the Minions).", 6, 0, 0.85, 0.85);
     }
 
     public Card createBarbarians() {
         return new Card("Barbarians", 5, CardType.TROOP, Rarity.RARE, 300, 75, 1.5, 0,
                 SpeedType.FAST, TargetType.GROUND, false, false,
-                "Spawns 4 tough melee fighters.", 4, 0);
+                "Spawns 4 tough melee fighters.", 4, 0, 1.15, 1.15);
     }
 
     // BUILDINGS

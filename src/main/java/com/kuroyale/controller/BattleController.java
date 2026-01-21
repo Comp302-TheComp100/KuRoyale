@@ -18,8 +18,23 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
-/*Controller for the Battle screen.
- * Manages the game loop, user input, and UI updates.*/
+/**
+ * Represents the Controller in the Model-View-Controller (MVC) architectural
+ * pattern.
+ * <p>
+ * This class mediates between the {@link com.kuroyale.model.state.GameState}
+ * (Model)
+ * and the {@link com.kuroyale.view.battle.BattleArenaView} (View). It handles
+ * user inputs,
+ * updates the game loop, and synchronizes the view with the model state.
+ * </p>
+ * <p>
+ * It also acts as an Observer by subscribing to events from the
+ * {@link com.kuroyale.event.GameEventBus}
+ * to react to game events such as card plays, tower destruction, and elixir
+ * updates.
+ * </p>
+ */
 public class BattleController {
 
     @FXML

@@ -8,10 +8,21 @@ import java.util.Set;
 
 import com.kuroyale.model.factory.CardFactory;
 
-/*Service that manages the catalog of available cards in the game
- * Information Expert: CardCatalog knows about all available cards
- * Indirection: Provides interface between controllers and CardFactory
- * Acts as a facade to card creation logic */
+/**
+ * Manages the catalog of available cards in the game.
+ * <p>
+ * <b>Flyweight Pattern:</b><br>
+ * Acts as a Flyweight Factory, maintaining a single immutable instance of each
+ * {@link Card} type (metadata).
+ * Game entities reference these shared card definitions to save memory.
+ * </p>
+ * <p>
+ * <b>GRASP Pattern: Information Expert</b><br>
+ * This class is the expert on all available cards, possessing the information
+ * needed to look up,
+ * validate, and retrieve card definitions.
+ * </p>
+ */
 public class CardCatalog {
 
     private final CardFactory cardFactory;

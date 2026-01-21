@@ -25,8 +25,16 @@ import java.util.UUID;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/*Service for managing daily quests.
- * Handles quest generation, progress tracking, and persistence.*/
+/**
+ * Represents an Observer in the **Observer** design pattern.
+ * <p>
+ * This service implements {@link GameEventListener} to listen for game events
+ * broadcast by the
+ * {@link GameEventBus}. It reacts to events like card plays, damage dealt, and
+ * match completion
+ * to update quest progress in real-time.
+ * </p>
+ */
 public class QuestService implements GameEventListener {
 
     private static final String QUEST_FILE_TEMPLATE = "quests_%s.json";

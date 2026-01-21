@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.shape.Circle?>
+
+<AnchorPane fx:id="root" xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.kuroyale.controller.PlayerProfileController"
+            styleClass="main-menu-background"
+            prefWidth="1280" prefHeight="720">
+
+    <!-- Top Bar -->
+    <HBox spacing="20" alignment="CENTER_LEFT"
+          AnchorPane.topAnchor="20.0"
+          AnchorPane.leftAnchor="20.0"
+          AnchorPane.rightAnchor="20.0">
+        
+        <Button fx:id="backButton"
+                text="BACK"
+                onAction="#handleBack"
+                styleClass="back-button"/>
+        
+        <Region HBox.hgrow="ALWAYS"/>
+        
+        <Label text="PLAYER PROFILE" 
+               style="-fx-font-size: 36px; -fx-font-weight: bold; -fx-font-family: 'Clash', Arial; -fx-text-fill: white; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 5, 0, 0, 2);"/>
+        
+        <Region HBox.hgrow="ALWAYS"/>
+        
+        <!-- Empty region to balance the back button -->
+        <Region prefWidth="100"/>
+    </HBox>
+
+    <!-- Content Container -->
+    <HBox spacing="40" alignment="CENTER"
+          AnchorPane.topAnchor="100.0"
+          AnchorPane.bottomAnchor="40.0"
+          AnchorPane.leftAnchor="40.0"
+          AnchorPane.rightAnchor="40.0">
+
+        <!-- Left Column: Player Info & Stats -->
+        <VBox spacing="10" prefWidth="400" alignment="TOP_CENTER"
+              styleClass="profile-container">
+            
+            <!-- Profile Accessibility -->
+            <ImageView fitHeight="100" fitWidth="100" pickOnBounds="true" preserveRatio="true" style="-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0, 0, 5);">
+                <image>
+                    <Image url="@../images/user_profile.png"/>
+                </image>
+                <clip>
+                    <Circle centerX="50" centerY="50" radius="50"/>
+                </clip>
+            </ImageView>
+
+            <!-- Player Name -->
+            <Label fx:id="playerNameLabel" text="Player Name"
+                   styleClass="profile-name" style="-fx-font-size: 32px;"/>
+            
+            <!-- Gold Balance -->
+            <HBox spacing="10" alignment="CENTER">
+                <ImageView fitHeight="30" fitWidth="30" preserveRatio="true">
+                    <image>
+                        <Image url="@../images/gold_icon.png"/>
+                    </image>
+                </ImageView>
+                <Label fx:id="goldLabel" text="0" style="-fx-font-size: 24px; -fx-text-fill: #fbbf24; -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.6), 10, 0, 0, 0);"/>
+            </HBox>
+
+            <Region prefHeight="10"/>
+            
+            <!-- Stats Title -->
+            <Label text="LIFETIME STATISTICS" 
+                   style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white; -fx-opacity: 0.9; -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.5), 10, 0, 0, 0);"/>
+            
+            <!-- Stats Grid -->
+            <GridPane fx:id="statsGrid" hgap="25" vgap="5" alignment="CENTER">
+                <!-- Populated dynamically or defined here -->
+                <Label text="Matches Played:" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="stat-label"/>
+                <Label fx:id="totalMatchesLabel" text="0" GridPane.columnIndex="1" GridPane.rowIndex="0" styleClass="stat-value"/>
+                
+                <Label text="Wins:" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="stat-label"/>
+                <Label fx:id="winsLabel" text="0" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="stat-value"/>
+                
+                <Label text="Losses:" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="stat-label"/>
+                <Label fx:id="lossesLabel" text="0" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="stat-value" style="-fx-text-fill: #f87171;"/>
+                
+                <Label text="Win Rate:" GridPane.columnIndex="0" GridPane.rowIndex="3" styleClass="stat-label"/>
+                <Label fx:id="winRateLabel" text="0%" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="stat-value" style="-fx-text-fill: #34d399;"/>
+                
+                <Label text="Best Streak:" GridPane.columnIndex="0" GridPane.rowIndex="4" styleClass="stat-label"/>
+                <Label fx:id="bestStreakLabel" text="0" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="stat-value"/>
+                
+                <Label text="Towers Destroyed:" GridPane.columnIndex="0" GridPane.rowIndex="5" styleClass="stat-label"/>
+                <Label fx:id="towersDestroyedLabel" text="0" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="stat-value"/>
+            </GridPane>
+            
+            <Region prefHeight="10"/>
+
+            <!-- Gold Spent -->
+            <VBox spacing="5" alignment="CENTER" styleClass="gold-spent-container">
+                <Label text="Total Gold Spent on Upgrades" style="-fx-text-fill: #e2e8f0; -fx-font-size: 16px;"/>
+                <HBox spacing="5" alignment="CENTER">
+                     <Label fx:id="totalGoldSpentLabel" text="0" style="-fx-font-size: 26px; -fx-text-fill: #fbbf24; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.5), 10, 0, 0, 0);"/>
+                     <ImageView fitHeight="26" fitWidth="26" preserveRatio="true">
+                        <image>
+                            <Image url="@../images/gold_icon.png"/>
+                        </image>
+                    </ImageView>
+                </HBox>
+            </VBox>
+
+        </VBox>
+
+        <!-- Right Column: Card Collection -->
+        <VBox spacing="10" HBox.hgrow="ALWAYS" alignment="TOP_CENTER"
+              styleClass="profile-container">
+            
+            <Label text="CARD COLLECTION" 
+                   style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.8), 2, 0, 0, 2);"/>
+            
+             <Label fx:id="collectionProgressLabel" text="Found: 0/28" style="-fx-text-fill: #aaaaaa; -fx-font-size: 16px;"/>
+
+            <ScrollPane fx:id="cardsScrollPane" fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent;" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                <GridPane fx:id="cardsGrid" hgap="15" vgap="15" alignment="CENTER" style="-fx-padding: 10;">
+                    <!-- Cards will be populated here -->
+                </GridPane>
+            </ScrollPane>
+        </VBox>
+
+    </HBox>
+
+</AnchorPane>

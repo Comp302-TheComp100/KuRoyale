@@ -30,7 +30,7 @@ A Clash Royale clone game built with Java and JavaFX, featuring user authenticat
 
 ## 🛠️ Technologies
 
-- **Java 25 LTS** - Latest Long-Term Support release
+- **Java 21 LTS** - Latest Long-Term Support release
 - **JavaFX 21.0.5 LTS** - Modern UI framework for rich desktop applications
 - **Maven 3.9.11** - Build automation (via wrapper)
 - **JSON** - User data persistence (org.json library)
@@ -38,10 +38,10 @@ A Clash Royale clone game built with Java and JavaFX, featuring user authenticat
 
 ## 📋 Prerequisites
 
-- **Java 25 LTS** - The latest Long-Term Support release
+- **Java 21 LTS** - The latest Long-Term Support release
 - **Maven is NOT required** - this project uses Maven Wrapper (`mvnw`)
 
-> **Note:** This project uses Java 25 LTS and JavaFX 21 LTS - all LTS versions for maximum stability!
+> **Note:** This project uses Java 21 LTS and JavaFX 21 LTS - all LTS versions for maximum stability!
 
 ## 🚀 Getting Started
 
@@ -142,22 +142,41 @@ KuRoyale/
 
 ## 🏗️ Architecture
 
-This project follows **GRASP (General Responsibility Assignment Software Patterns)** principles and the **MVC (Model-View-Controller)** design pattern:
+This project strictly follows **GRASP (General Responsibility Assignment Software Patterns)** principles and implements standard GOF Design Patterns to ensure maintainability, scalability, and testability.
 
-### Design Patterns Used
-- **Information Expert** - Objects manage their own data (User validates own password)
-- **Creator** - CardFactory creates all card instances with initialization data
-- **Low Coupling** - ServiceFactory provides centralized dependency injection
-- **Controller** - Separate controller classes handle UI logic
-- **Pure Fabrication** - Utility classes (PasswordUtil, ValidationUtil)
+### 🏛️ Architectural Patterns
+- **Model-View-Controller (MVC)**
+  - **Model**: `GameState`, `BattleModel` (Business logic & state)
+  - **View**: `BattleArenaView`, FXML files (UI rendering)
+  - **Controller**: `BattleController`, `MainMenuController` (Input handling & mediation)
 
-### Key Components
-- **Models** - Data structures (User, Card, Arena, Deck)
-- **Views** - FXML layouts + custom JavaFX components
-- **Controllers** - UI event handlers and business logic coordinators
-- **Services** - Business logic (Authentication, DeckManagement, Arena)
-- **Repository** - Data persistence layer (JSON-based user storage)
-- **Utilities** - Reusable helpers (Audio, Validation, Styling)
+### 🧩 Design Patterns
+- **Singleton**
+  - `GameEventBus`: Global event dispatcher.
+  - `ServiceFactory`: Central dependency injection container.
+  - `GameAssets`: Facade for asset loading and caching.
+- **Factory Method**
+  - `CardFactory`: Encapsulates complex logic for creating 28+ unique troops and buildings.
+- **Strategy**
+  - `PathfindingStrategy`: Interchangeable algorithms for movement (e.g., `GroundPathfindingStrategy` vs. Air movement).
+- **Observer**
+  - **Subject**: `GameEventBus` broadcasts events (card played, tower destroyed).
+  - **Observers**: `QuestService` (tracks progress), `BattleController` (updates UI), `AchievementService`.
+- **Flyweight**
+  - `CardCatalog`: Stores shared immutable metadata for cards preventing memory duplication.
+  - `TileType`: Enums used by grid cells to share common terrain properties.
+- **Repository**
+  - `UserRepository`: Interface for data access.
+  - `JsonUserRepository`: Concrete implementation handling JSON persistence.
+
+### 📏 GRASP Principles
+- **Information Expert**: Classes like `User` and `Deck` manage and validate their own data.
+- **Creator**: `CardFactory` handles `Card` instantiation; `ServiceFactory` manages Service lifecycles.
+- **Low Coupling**: Dependencies are injected via `ServiceFactory`; Layers communicate via interfaces.
+- **High Cohesion**: Services are specialized (`AuthenticationService`, `DeckManagementService`) with single responsibilities.
+- **Pure Fabrication**: `ServiceFactory` and `JsonUserRepository` exist to support architectural needs (DI, Persistence) rather than representing domain concepts.
+- **Protected Variations**: `UserRepository` interface isolates business logic from storage implementation details.
+- **Controller**: Dedicated controllers (`BattleController`) mediate between UI and Domain logic.
 
 ## 🎴 Available Cards
 

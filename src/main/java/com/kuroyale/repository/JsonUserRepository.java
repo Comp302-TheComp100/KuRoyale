@@ -18,10 +18,16 @@ import com.kuroyale.model.arena.GridPosition;
 import com.kuroyale.model.entities.Card;
 import com.kuroyale.model.entities.User;
 
-/*JSON-based implementation of UserRepository
- * Handles persistence of User objects to JSON file
- * Pure Fabrication - created to handle persistence concerns
- * Low Coupling - separated from business logic */
+/**
+ * Concrete implementation of the {@link UserRepository} using JSON files for
+ * storage.
+ * <p>
+ * <b>Repository Pattern:</b><br>
+ * Handles the actual low-level details of serializing and deserializing User
+ * objects to/from JSON,
+ * hiding these file I/O complexities from the rest of the application.
+ * </p>
+ */
 public class JsonUserRepository implements UserRepository {
 
     private static final String DATA_DIR = System.getProperty("user.home") + File.separator + ".kuroyale";

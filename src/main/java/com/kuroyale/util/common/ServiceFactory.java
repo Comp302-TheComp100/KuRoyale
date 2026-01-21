@@ -8,12 +8,26 @@ import com.kuroyale.service.game.AchievementService;
 import com.kuroyale.service.game.ChallengeService;
 import com.kuroyale.service.game.GameSaveService;
 import com.kuroyale.service.game.QuestService;
+import com.kuroyale.service.game.PlayerStatsService;
 import com.kuroyale.service.management.ArenaManagementService;
 import com.kuroyale.service.management.DeckManagementService;
 
-/*Service Factory for managing service instances and dependencies
- * Pure Fabrication - created to manage object creation and dependencies
- * Low Coupling - centralizes dependency management*/
+/**
+ * Central Dependency Injection container implementing the **Singleton** and
+ * **Factory** patterns.
+ * <p>
+ * <b>GRASP Pattern: Pure Fabrication</b><br>
+ * This class does not represent a domain concept but was created to manage
+ * object creation and dependencies,
+ * promoting **Low Coupling** by centralizing dependency management.
+ * </p>
+ * <p>
+ * <b>GRASP Pattern: Creator</b><br>
+ * It creates and manages the lifecycle of all service instances, ensuring they
+ * are initialized with
+ * their required dependencies.
+ * </p>
+ */
 public class ServiceFactory {
 
     private static ServiceFactory instance;
@@ -28,6 +42,7 @@ public class ServiceFactory {
     private ChallengeService challengeService; // Lazy initialized
     private QuestService questService; // Lazy initialized
     private AchievementService achievementService; // Lazy initialized
+    private PlayerStatsService playerStatsService; // Lazy initialized
 
     /*
      * Private constructor to enforce singleton pattern
@@ -57,7 +72,13 @@ public class ServiceFactory {
 
     // Initializes the ServiceFactory
     public static void initialize() {
-        getInstance();
+        ServiceFactory factory = getInstance();
+        // Force initialization of lazy services to ensure event listeners are
+        // registered
+        factory.getAchievementService();
+        factory.getQuestService();
+        factory.getPlayerStatsService();
+        factory.getChallengeService();
     }
 
     // Gets the UserRepository instance
@@ -112,6 +133,14 @@ public class ServiceFactory {
             achievementService = new AchievementService();
         }
         return achievementService;
+    }
+
+    // Gets the PlayerStatsService instance
+    public PlayerStatsService getPlayerStatsService() {
+        if (playerStatsService == null) {
+            playerStatsService = new PlayerStatsService();
+        }
+        return playerStatsService;
     }
 
     // Resets the singleton instance

@@ -5,8 +5,15 @@ import javafx.scene.image.Image;
 import java.util.HashMap;
 import java.util.Map;
 
-/* Singleton class for managing and caching game assets (images, audio).
- * Prevents redundant loading of resources. */
+/**
+ * Implements the **Singleton** pattern to manage and cache game assets (images,
+ * audio).
+ * <p>
+ * Acts as a **Facade** for the asset loading subsystem, providing a simplified
+ * interface
+ * for retrieving resources and preventing redundant I/O operations.
+ * </p>
+ */
 public class GameAssets {
     private static GameAssets instance;
 
