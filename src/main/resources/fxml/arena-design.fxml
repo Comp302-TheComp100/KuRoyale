@@ -22,8 +22,33 @@
             <!-- Grid content will be populated by controller -->
         </GridPane>
     </center>
+    <left>
+        <VBox alignment="CENTER" prefWidth="300.0" spacing="20.0" style="-fx-background-color: rgba(0, 0, 0, 0.5); -fx-padding: 20;" BorderPane.alignment="CENTER">
+            <children>
+                <VBox alignment="CENTER" spacing="10.0" style="-fx-border-color: white; -fx-border-width: 1; -fx-padding: 10;">
+                    <children>
+                        <Label styleClass="text-label" text="Bridge Palette" textFill="WHITE" />
+                        <Label text="Drag to River" textFill="#cccccc" />
+                        <Rectangle fx:id="draggableBridge" arcHeight="5.0" arcWidth="5.0" fill="SADDLEBROWN" height="40.0" stroke="BLACK" strokeType="INSIDE" width="40.0" />
+                    </children>
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" style="-fx-border-color: white; -fx-border-width: 1; -fx-padding: 10;">
+                    <children>
+                         <Label styleClass="text-label" text="Grid Palette" textFill="WHITE" />
+                         <VBox spacing="5" alignment="CENTER">
+                            <Label text="Primary Color" textFill="#cccccc" style="-fx-font-size: 10px;"/>
+                            <javafx.scene.control.ColorPicker fx:id="gridColorPicker" promptText="Primary" />
+                            <Label text="Secondary Color" textFill="#cccccc" style="-fx-font-size: 10px;"/>
+                            <javafx.scene.control.ColorPicker fx:id="gridColorPicker2" promptText="Secondary" />
+                         </VBox>
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+    </left>
     <right>
-        <VBox alignment="CENTER" prefWidth="450.0" spacing="20.0" style="-fx-background-color: rgba(0, 0, 0, 0.5); -fx-padding: 20;" BorderPane.alignment="CENTER">
+        <VBox alignment="CENTER" prefWidth="300.0" spacing="20.0" style="-fx-background-color: rgba(0, 0, 0, 0.5); -fx-padding: 20;" BorderPane.alignment="CENTER">
             <children>
                 <Label styleClass="title-label" text="DESIGN"/>
                 <Label styleClass="text-label" style="-fx-text-fill: rgba(255, 255, 255, 0.5);" text="Drag and drop to design your arena"/>
@@ -32,14 +57,6 @@
                     <children>
                         <Label styleClass="text-label" text="Arena Name:" textFill="WHITE" />
                         <TextField fx:id="arenaNameField" promptText="Enter arena name" />
-                    </children>
-                </VBox>
-
-                <VBox alignment="CENTER" spacing="10.0" style="-fx-border-color: white; -fx-border-width: 1; -fx-padding: 10;">
-                    <children>
-                        <Label styleClass="text-label" text="Bridge Palette" textFill="WHITE" />
-                        <Label text="Drag to River" textFill="#cccccc" />
-                        <Rectangle fx:id="draggableBridge" arcHeight="5.0" arcWidth="5.0" fill="SADDLEBROWN" height="40.0" stroke="BLACK" strokeType="INSIDE" width="40.0" />
                     </children>
                 </VBox>
 

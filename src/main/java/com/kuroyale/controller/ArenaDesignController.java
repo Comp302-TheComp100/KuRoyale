@@ -35,6 +35,11 @@ public class ArenaDesignController {
     @FXML
     private javafx.scene.shape.Rectangle draggableKingTower;
 
+    @FXML
+    private javafx.scene.control.ColorPicker gridColorPicker;
+    @FXML
+    private javafx.scene.control.ColorPicker gridColorPicker2;
+
     private final ArenaDesignModel model = new ArenaDesignModel();
     private ArenaLayout currentLayout;
     private ArenaRenderer renderer;
@@ -63,8 +68,55 @@ public class ArenaDesignController {
             arenaNameField.setText(currentLayout.getName());
         }
 
+        if (gridColorPicker != null) {
+            // Initialize picker if layout has save value
+            if (currentLayout.getGridColor() != null) {
+                try {
+                    gridColorPicker.setValue(javafx.scene.paint.Color.valueOf(currentLayout.getGridColor()));
+                } catch (Exception e) {
+                    // ignore invalid color
+                }
+            }
+
+            // Add listener
+            gridColorPicker.setOnAction(e -> {
+                javafx.scene.paint.Color color = gridColorPicker.getValue();
+                if (color != null) {
+                    currentLayout.setGridColor(toHexString(color));
+                    renderArena();
+                }
+            });
+        }
+
+        if (gridColorPicker2 != null) {
+            // Initialize picker if layout has save value
+            if (currentLayout.getGridColorAlt() != null) {
+                try {
+                    gridColorPicker2.setValue(javafx.scene.paint.Color.valueOf(currentLayout.getGridColorAlt()));
+                } catch (Exception e) {
+                    // ignore invalid color
+                }
+            }
+
+            // Add listener
+            gridColorPicker2.setOnAction(e -> {
+                javafx.scene.paint.Color color = gridColorPicker2.getValue();
+                if (color != null) {
+                    currentLayout.setGridColorAlt(toHexString(color));
+                    renderArena();
+                }
+            });
+        }
+
         setupDragSource();
         renderArena();
+    }
+
+    private String toHexString(javafx.scene.paint.Color color) {
+        return String.format("#%02X%02X%02X",
+                (int) (color.getRed() * 255),
+                (int) (color.getGreen() * 255),
+                (int) (color.getBlue() * 255));
     }
 
     private void updatePaletteIcons() {

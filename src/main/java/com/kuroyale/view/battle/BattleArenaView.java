@@ -279,12 +279,17 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         grid.getChildren().clear();
         cellIndex.clear();
 
+        Arena arena = gameState.getArena();
+        com.kuroyale.model.arena.ArenaLayout layout = arena.getLayout();
+        String c1 = (layout != null) ? layout.getGridColor() : null;
+        String c2 = (layout != null) ? layout.getGridColorAlt() : null;
+
         for (int x = 0; x < Arena.WIDTH; x++) {
             for (int y = 0; y < Arena.HEIGHT; y++) {
-                GridCell cell = gameState.getArena().getCell(x, y);
+                GridCell cell = arena.getCell(x, y);
                 Rectangle rect = new Rectangle(TILE_SIZE, TILE_SIZE);
                 TileType type = cell.getTileType();
-                rect.setFill(com.kuroyale.view.battle.ViewUtils.getTileColor(type, x, y));
+                rect.setFill(com.kuroyale.view.battle.ViewUtils.getTileColor(type, x, y, c1, c2));
                 rect.setStroke(Color.TRANSPARENT);
                 rect.setStrokeWidth(0.0);
                 grid.add(rect, x, y);
@@ -298,12 +303,16 @@ public class BattleArenaView extends javafx.scene.layout.BorderPane implements c
         grid.getChildren().clear();
         cellIndex.clear();
 
+        com.kuroyale.model.arena.ArenaLayout layout = arena.getLayout();
+        String c1 = (layout != null) ? layout.getGridColor() : null;
+        String c2 = (layout != null) ? layout.getGridColorAlt() : null;
+
         for (int x = 0; x < Arena.WIDTH; x++) {
             for (int y = 0; y < Arena.HEIGHT; y++) {
                 GridCell cell = arena.getCell(x, y);
                 Rectangle rect = new Rectangle(TILE_SIZE, TILE_SIZE);
                 TileType type = cell.getTileType();
-                rect.setFill(com.kuroyale.view.battle.ViewUtils.getTileColor(type, x, y));
+                rect.setFill(com.kuroyale.view.battle.ViewUtils.getTileColor(type, x, y, c1, c2));
                 rect.setStroke(Color.TRANSPARENT);
                 rect.setStrokeWidth(0.0);
                 grid.add(rect, x, y);

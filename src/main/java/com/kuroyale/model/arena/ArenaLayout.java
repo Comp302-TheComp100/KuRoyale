@@ -12,12 +12,33 @@ public class ArenaLayout implements Serializable {
     private List<GridPosition> bridgePositions;
     private List<GridPosition> princessTowerPositions; // User's Princess towers (max 2)
     private GridPosition kingTowerPosition; // User's King tower
+    private String gridColor; // Hex color for the grid background
+    private String gridColorAlt; // Secondary Hex color
 
     public ArenaLayout(String name) {
         this.name = name;
         this.bridgePositions = new ArrayList<>();
         this.princessTowerPositions = new ArrayList<>();
+        this.princessTowerPositions = new ArrayList<>();
         this.kingTowerPosition = null;
+        this.gridColor = null; // Default null implies standard grass
+        this.gridColorAlt = null; // Default null
+    }
+
+    public String getGridColor() {
+        return gridColor;
+    }
+
+    public void setGridColor(String gridColor) {
+        this.gridColor = gridColor;
+    }
+
+    public String getGridColorAlt() {
+        return gridColorAlt;
+    }
+
+    public void setGridColorAlt(String gridColorAlt) {
+        this.gridColorAlt = gridColorAlt;
     }
 
     public String getName() {
@@ -75,6 +96,8 @@ public class ArenaLayout implements Serializable {
         if (this.kingTowerPosition != null) {
             copy.setKingTowerPosition(this.kingTowerPosition.getX(), this.kingTowerPosition.getY());
         }
+        copy.setGridColor(this.gridColor);
+        copy.setGridColorAlt(this.gridColorAlt);
         return copy;
     }
 }

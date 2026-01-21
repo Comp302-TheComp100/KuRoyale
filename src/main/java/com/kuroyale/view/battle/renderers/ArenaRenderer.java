@@ -49,7 +49,10 @@ public class ArenaRenderer {
 
                 // For towers, render underlying terrain (grass)
                 // Use ViewUtils for consistent coloring
-                rect.setFill(com.kuroyale.view.battle.ViewUtils.getTileColor(cell.getTileType(), x, y));
+                String gridColor = (layout != null) ? layout.getGridColor() : null;
+                String gridColorAlt = (layout != null) ? layout.getGridColorAlt() : null;
+                rect.setFill(com.kuroyale.view.battle.ViewUtils.getTileColor(cell.getTileType(), x, y, gridColor,
+                        gridColorAlt));
 
                 // Remove borders for seamless appearance
                 rect.setStroke(Color.TRANSPARENT);
