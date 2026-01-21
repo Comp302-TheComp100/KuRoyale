@@ -23,22 +23,26 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
         |-- GameEventBus.java
         |-- GameEventListener.java
     |-- model/
+        |-- arena/
+            |-- Arena.java
+            |-- ArenaLayout.java
+            |-- GridCell.java
+            |-- GridPosition.java
+            |-- SpatialGrid.java
+            |-- Vector2.java
         |-- dto/
             |-- NetworkGameStateSnapshot.java
             |-- NetworkMessage.java
             |-- SavedGameState.java
         |-- entities/
             |-- Achievement.java
-            |-- Arena.java
-            |-- ArenaLayout.java
             |-- Building.java
             |-- Card.java
             |-- CardCatalog.java
             |-- Challenge.java
+            |-- ChallengeFactory.java
             |-- CombatStats.java
             |-- Deck.java
-            |-- GridCell.java
-            |-- GridPosition.java
             |-- Hand.java
             |-- ICombatant.java
             |-- PlayerStats.java
@@ -47,7 +51,6 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
             |-- Tower.java
             |-- Troop.java
             |-- User.java
-            |-- Vector2.java
         |-- enums/
             |-- AchievementType.java
             |-- BattleMode.java
@@ -67,21 +70,20 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
             |-- ChallengeFactory.java
         |-- logic/
             |-- ArenaDesignModel.java
-            |-- BattleModel.java
             |-- DeckBuilderModel.java
             |-- ElixirManager.java
-            |-- GameState.java
-            |-- IBattleState.java
             |-- Login.java
             |-- MenuModel.java
-            |-- PvPGameState.java
             |-- SavedGamesModel.java
             |-- SettingsModel.java
-            |-- SpatialGrid.java
             |-- TurnManager.java
         |-- state/
+            |-- AbstractGameState.java
             |-- DeckBuilderState.java
+            |-- GameState.java
+            |-- IBattleState.java
             |-- PvPDeckBuilderSession.java
+            |-- PvPGameState.java
         |-- strategy/
             |-- battle/
                 |-- BattleStrategy.java
@@ -105,8 +107,6 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
             |-- AuthenticationService.java
             |-- PasswordUtil.java
         |-- battle/
-            |-- BotLogic.java
-            |-- ComboService.java
             |-- ai/
                 |-- CardProfile.java
                 |-- CardProfiles.java
@@ -116,8 +116,11 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
                 |-- TargetingService.java
                 |-- TroopMovementService.java
             |-- logic/
+                |-- BotLogic.java
+                |-- ComboService.java
         |-- game/
             |-- AchievementService.java
+            |-- BattleSessionService.java
             |-- ChallengeService.java
             |-- GameSaveService.java
             |-- QuestService.java
@@ -162,6 +165,8 @@ Scanning Java Source at: C:\Users\baris\My_projects\KuRoyale\src\main\java\com\k
             |-- ArenaEffectManager.java
             |-- ArenaInputHandler.java
             |-- BattleArenaView.java
+            |-- EmojiButton.java
+            |-- EmojiPanel.java
             |-- ViewUtils.java
             |-- component/
                 |-- AnimatedSprite.java
