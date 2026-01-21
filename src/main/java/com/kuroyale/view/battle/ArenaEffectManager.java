@@ -325,15 +325,15 @@ public class ArenaEffectManager {
             double cx = com.kuroyale.model.arena.Arena.WIDTH * TILE_SIZE / 2.0;
             double cy = com.kuroyale.model.arena.Arena.HEIGHT * TILE_SIZE / 2.0;
 
-            for (int i = 0; i < 10; i++) {
-                Circle sparkle = new Circle(cx, cy, 5, Color.CYAN);
+            for (int i = 0; i < 25; i++) {
+                Circle sparkle = new Circle(cx, cy, 7, Color.CYAN);
                 sparkle.setEffect(new javafx.scene.effect.Glow(1.0));
                 unitLayer.getChildren().add(sparkle);
 
                 javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(
                         javafx.util.Duration.seconds(1.0), sparkle);
-                tt.setByX((Math.random() - 0.5) * 100);
-                tt.setByY((Math.random() - 0.5) * 100);
+                tt.setByX((Math.random() - 0.5) * 150);
+                tt.setByY((Math.random() - 0.5) * 150);
 
                 javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(
                         javafx.util.Duration.seconds(1.0), sparkle);
@@ -373,15 +373,14 @@ public class ArenaEffectManager {
             double cx = pos.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
             double cy = pos.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
 
-            javafx.scene.shape.Line line1 = new javafx.scene.shape.Line(cx, cy + 15, cx - 25, cy + 15);
+            // Vertical speed lines
+            javafx.scene.shape.Line line1 = new javafx.scene.shape.Line(cx - 15, cy - 25, cx - 15, cy + 25);
             line1.setStroke(Color.WHITE);
             line1.setStrokeWidth(1.5);
-            line1.getStrokeDashArray().addAll(4d, 6d);
 
-            javafx.scene.shape.Line line2 = new javafx.scene.shape.Line(cx, cy - 15, cx - 25, cy - 15);
+            javafx.scene.shape.Line line2 = new javafx.scene.shape.Line(cx + 15, cy - 25, cx + 15, cy + 25);
             line2.setStroke(Color.WHITE);
             line2.setStrokeWidth(1.5);
-            line2.getStrokeDashArray().addAll(4d, 6d);
 
             unitLayer.getChildren().addAll(line1, line2);
             activeSpellVisuals.add(new ActiveSpellVisual(line1, duration));
@@ -478,15 +477,15 @@ public class ArenaEffectManager {
 
     private void addDustTrail(ICombatant unit, double duration) {
         final javafx.animation.Timeline dust = new javafx.animation.Timeline(
-                new javafx.animation.KeyFrame(javafx.util.Duration.millis(200), e -> {
+                new javafx.animation.KeyFrame(javafx.util.Duration.millis(100), e -> {
                     GridPosition pos = unit.getCenterPosition();
                     if (pos == null)
                         return;
                     double cx = pos.getX() * TILE_SIZE + (TILE_SIZE / 2.0);
                     double cy = pos.getY() * TILE_SIZE + (TILE_SIZE / 2.0);
 
-                    Circle dustParticle = new Circle(cx, cy, 5, Color.GRAY);
-                    dustParticle.setOpacity(0.6);
+                    Circle dustParticle = new Circle(cx, cy, 8, Color.GRAY);
+                    dustParticle.setOpacity(0.9);
                     unitLayer.getChildren().add(dustParticle);
 
                     javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(
@@ -495,7 +494,7 @@ public class ArenaEffectManager {
                     ft.setOnFinished(ev -> unitLayer.getChildren().remove(dustParticle));
                     ft.play();
                 }));
-        dust.setCycleCount(10);
+        dust.setCycleCount(20);
         dust.play();
     }
 
