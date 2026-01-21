@@ -439,16 +439,36 @@ This architecture supports future enhancements such as:
 
 All can be added without modifying existing code, following Open/Closed Principle.
 
+## GRASP to GoF Cross-Reference
+
+The following table shows how GRASP principles relate to Gang of Four patterns in KuRoyale:
+
+| GRASP Principle | Related GoF Pattern | Implementation Example |
+|-----------------|---------------------|------------------------|
+| Information Expert | - | `Deck.isValid()`, `Card.calculateDPS()` |
+| Creator | Factory Method | `CardFactory.createKnight()` |
+| Controller | MVC Pattern | `BattleController`, `LoginController` |
+| Low Coupling | Strategy, Observer | `PathfindingStrategy`, `GameEventListener` |
+| High Cohesion | Single Responsibility | `AuthenticationService` (auth only) |
+| Polymorphism | Strategy | `BattleStrategy` interface with 3 implementations |
+| Pure Fabrication | Facade, Service Layer | `ServiceFactory`, `CardCatalog` |
+| Indirection | Facade, Repository | `BattleModel`, `UserRepository` |
+| Protected Variations | Repository, Strategy | Interface-based abstraction |
+
+For detailed GoF pattern documentation, see [PATTERNS.md](PATTERNS.md).
+
 ## References
 
 - Craig Larman, "Applying UML and Patterns: An Introduction to Object-Oriented Analysis and Design and Iterative Development" (3rd Edition), Chapter 17: GRASP Design Patterns
 - GRASP Patterns: Information Expert, Creator, Controller, Low Coupling, High Cohesion, Polymorphism, Pure Fabrication, Indirection, Protected Variations
+- Gang of Four, "Design Patterns: Elements of Reusable Object-Oriented Software"
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** November 13, 2025  
-**Architecture Status:** Implemented and Verified
+**Document Version:** 2.0  
+**Last Updated:** January 2026  
+**Architecture Status:** Implemented and Verified  
+**Related Documentation:** [PATTERNS.md](PATTERNS.md)
 
 
 
