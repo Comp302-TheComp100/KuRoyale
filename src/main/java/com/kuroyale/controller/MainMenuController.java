@@ -3,7 +3,6 @@ package com.kuroyale.controller;
 import java.io.IOException;
 import java.util.List;
 
-import com.kuroyale.model.entities.User;
 import com.kuroyale.model.logic.MenuModel; // Import the new Model
 import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.util.audio.AudioManager;
@@ -44,19 +43,15 @@ public class MainMenuController {
     @FXML
     private Button questsButton;
     @FXML
-    private HBox goldDisplay;
-    @FXML
-    private Label goldLabel;
+    private Button profileButton;
 
     private static MediaPlayer mainMenuMusicPlayer;
     private final MenuModel model = new MenuModel();
     private final SceneLoader sceneLoader = new SceneLoader();
-    private final AuthenticationService authService = ServiceFactory.getInstance().getAuthenticationService();
 
     @FXML
     private void initialize() {
         initializeStyles();
-        updateGoldDisplay();
         playMainMenuMusic();
     }
 
@@ -75,6 +70,7 @@ public class MainMenuController {
         if (questsButton != null)
             questsButton.getStyleClass().add("menu-button");
         settingsButton.getStyleClass().add("menu-button");
+        profileButton.getStyleClass().add("menu-button");
 
         // Add programmatic hover effects for scale transforms
         addMenuButtonHoverEffects(deckBuilderButton);
@@ -84,6 +80,7 @@ public class MainMenuController {
         addMenuButtonHoverEffects(challengesButton);
         addMenuButtonHoverEffects(questsButton);
         addMenuButtonHoverEffects(settingsButton);
+        addMenuButtonHoverEffects(profileButton);
     }
 
     // Add programmatic hover effects for menu buttons (scale transforms)
@@ -195,17 +192,19 @@ public class MainMenuController {
         }
     }
 
-    private void showError(String message) {
-        com.kuroyale.util.ui.ThemedAlertManager.show(root.getScene().getWindow(), "Error", message, null);
+    @FXML
+    private void handleProfile() {
+        SoundEffectUtil.playButtonClick();
+        try {
+            sceneLoader.load(profileButton, "/fxml/player-profile.fxml", "KU Royale - Player Profile", null);
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Failed to load Profile: " + e.getMessage());
+        }
     }
 
-    private void updateGoldDisplay() {
-        User currentUser = authService.getCurrentUser();
-        if (currentUser != null && goldLabel != null) {
-            goldLabel.setText(String.valueOf(currentUser.getGold()));
-        } else if (goldLabel != null) {
-            goldLabel.setText("0");
-        }
+    private void showError(String message) {
+        com.kuroyale.util.ui.ThemedAlertManager.show(root.getScene().getWindow(), "Error", message, null);
     }
 
     private void playMainMenuMusic() {

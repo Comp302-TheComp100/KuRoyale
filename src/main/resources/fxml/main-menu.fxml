@@ -21,18 +21,18 @@
           AnchorPane.leftAnchor="20.0"
           AnchorPane.rightAnchor="20.0">
         
-        <!-- Gold Display -->
-        <HBox fx:id="goldDisplay"
-              alignment="CENTER"
-              spacing="10"
-              style="-fx-background-color: rgba(0, 0, 0, 0.5); -fx-background-radius: 25; -fx-padding: 8 20 8 20;">
-            <ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
-                <image>
-                    <Image url="@../images/gold_icon.png"/>
-                </image>
-            </ImageView>
-            <Label fx:id="goldLabel" text="0" styleClass="gold-label" style="-fx-font-size: 24px;"/>
-        </HBox>
+        <!-- Profile Button -->
+        <Button fx:id="profileButton"
+                onAction="#handleProfile"
+                style="-fx-background-color: rgba(0, 0, 0, 0.5); -fx-background-radius: 50; -fx-pref-width: 50; -fx-pref-height: 50;">
+            <graphic>
+                <ImageView fitHeight="35.0" fitWidth="35.0" pickOnBounds="true" preserveRatio="true">
+                    <image>
+                        <Image url="@../images/profile_icon.png"/>
+                    </image>
+                </ImageView>
+            </graphic>
+        </Button>
         
         <!-- Spacer -->
         <HBox HBox.hgrow="ALWAYS"/>

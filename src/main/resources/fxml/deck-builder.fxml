@@ -16,10 +16,25 @@
         
         <!-- Battle Deck Title - Centered -->
         <!-- Battle Deck Title - Left Side Vertical -->
-        <VBox layoutX="50" layoutY="50" spacing="-5" alignment="CENTER_LEFT">
+        <!-- Battle Deck Title - Left Side Vertical -->
+        <VBox layoutX="50" layoutY="60" spacing="-5" alignment="CENTER_LEFT">
             <Label text="BATTLE" styleClass="battle-deck-title-label" style="-fx-font-size: 44px;"/>
             <Label fx:id="battleDeckTitle" text="DECK" styleClass="battle-deck-title-label" style="-fx-font-size: 44px;"/>
         </VBox>
+        
+        <!-- Gold Display -->
+        <HBox fx:id="goldDisplay"
+              layoutX="50" layoutY="15"
+              alignment="CENTER"
+              spacing="10"
+              style="-fx-background-color: rgba(0, 0, 0, 0.5); -fx-background-radius: 25; -fx-padding: 8 20 8 20;">
+            <ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
+                <image>
+                    <Image url="@../images/gold_icon.png"/>
+                </image>
+            </ImageView>
+            <Label fx:id="goldLabel" text="0" styleClass="gold-label" style="-fx-font-size: 24px;"/>
+        </HBox>
         
         <!-- Deck Slots Background Area - shows empty rectangles -->
         <AnchorPane fx:id="deckSlotsBackground" 

@@ -8,6 +8,7 @@ import com.kuroyale.service.game.AchievementService;
 import com.kuroyale.service.game.ChallengeService;
 import com.kuroyale.service.game.GameSaveService;
 import com.kuroyale.service.game.QuestService;
+import com.kuroyale.service.game.PlayerStatsService;
 import com.kuroyale.service.management.ArenaManagementService;
 import com.kuroyale.service.management.DeckManagementService;
 
@@ -41,6 +42,7 @@ public class ServiceFactory {
     private ChallengeService challengeService; // Lazy initialized
     private QuestService questService; // Lazy initialized
     private AchievementService achievementService; // Lazy initialized
+    private PlayerStatsService playerStatsService; // Lazy initialized
 
     /*
      * Private constructor to enforce singleton pattern
@@ -70,7 +72,13 @@ public class ServiceFactory {
 
     // Initializes the ServiceFactory
     public static void initialize() {
-        getInstance();
+        ServiceFactory factory = getInstance();
+        // Force initialization of lazy services to ensure event listeners are
+        // registered
+        factory.getAchievementService();
+        factory.getQuestService();
+        factory.getPlayerStatsService();
+        factory.getChallengeService();
     }
 
     // Gets the UserRepository instance
@@ -125,6 +133,14 @@ public class ServiceFactory {
             achievementService = new AchievementService();
         }
         return achievementService;
+    }
+
+    // Gets the PlayerStatsService instance
+    public PlayerStatsService getPlayerStatsService() {
+        if (playerStatsService == null) {
+            playerStatsService = new PlayerStatsService();
+        }
+        return playerStatsService;
     }
 
     // Resets the singleton instance

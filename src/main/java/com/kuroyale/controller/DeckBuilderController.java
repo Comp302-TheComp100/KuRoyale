@@ -84,6 +84,8 @@ public class DeckBuilderController {
     @FXML
     private HBox averageElixirContainer;
     @FXML
+    private Label goldLabel;
+    @FXML
     private VBox comboPanel;
     @FXML
     private VBox comboList;
@@ -143,6 +145,9 @@ public class DeckBuilderController {
 
         // Initialize average elixir cost display
         updateAverageElixirCost();
+
+        // Initialize gold display
+        updateGoldDisplay();
 
         // Add scroll listener to update button positions when scrolling
         cardsScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
@@ -559,6 +564,8 @@ public class DeckBuilderController {
                             }
                         }
                     }
+                    // Update gold display after potential upgrade
+                    updateGoldDisplay();
                 });
 
         rootPane.getChildren().add(infoDialog);
@@ -732,6 +739,18 @@ public class DeckBuilderController {
         if (averageElixirValue != null) {
             double avgCost = model.getDeckAverageElixirCost(deck);
             averageElixirValue.setText(String.format(Locale.ENGLISH, "%.1f", avgCost));
+        }
+    }
+
+    // Updates the gold display
+    private void updateGoldDisplay() {
+        if (goldLabel != null) {
+            User user = model.getCurrentUser();
+            if (user != null) {
+                goldLabel.setText(String.valueOf(user.getGold()));
+            } else {
+                goldLabel.setText("0");
+            }
         }
     }
 
