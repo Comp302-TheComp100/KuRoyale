@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.shape.Circle?>
 
 <AnchorPane fx:id="root" xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -48,31 +49,41 @@
           AnchorPane.rightAnchor="40.0">
 
         <!-- Left Column: Player Info & Stats -->
-        <VBox spacing="20" prefWidth="400" alignment="TOP_CENTER"
+        <VBox spacing="10" prefWidth="400" alignment="TOP_CENTER"
               styleClass="profile-container">
             
+            <!-- Profile Accessibility -->
+            <ImageView fitHeight="100" fitWidth="100" pickOnBounds="true" preserveRatio="true" style="-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0, 0, 5);">
+                <image>
+                    <Image url="@../images/user_profile.png"/>
+                </image>
+                <clip>
+                    <Circle centerX="50" centerY="50" radius="50"/>
+                </clip>
+            </ImageView>
+
             <!-- Player Name -->
             <Label fx:id="playerNameLabel" text="Player Name"
-                   styleClass="profile-name"/>
+                   styleClass="profile-name" style="-fx-font-size: 32px;"/>
             
             <!-- Gold Balance -->
             <HBox spacing="10" alignment="CENTER">
-                <ImageView fitHeight="40" fitWidth="40" preserveRatio="true">
+                <ImageView fitHeight="30" fitWidth="30" preserveRatio="true">
                     <image>
                         <Image url="@../images/gold_icon.png"/>
                     </image>
                 </ImageView>
-                <Label fx:id="goldLabel" text="0" style="-fx-font-size: 28px; -fx-text-fill: #fbbf24; -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.6), 10, 0, 0, 0);"/>
+                <Label fx:id="goldLabel" text="0" style="-fx-font-size: 24px; -fx-text-fill: #fbbf24; -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.6), 10, 0, 0, 0);"/>
             </HBox>
 
-            <Region prefHeight="20"/>
+            <Region prefHeight="10"/>
             
             <!-- Stats Title -->
             <Label text="LIFETIME STATISTICS" 
-                   style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white; -fx-opacity: 0.9; -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.5), 10, 0, 0, 0);"/>
+                   style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white; -fx-opacity: 0.9; -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.5), 10, 0, 0, 0);"/>
             
             <!-- Stats Grid -->
-            <GridPane fx:id="statsGrid" hgap="25" vgap="15" alignment="CENTER">
+            <GridPane fx:id="statsGrid" hgap="25" vgap="5" alignment="CENTER">
                 <!-- Populated dynamically or defined here -->
                 <Label text="Matches Played:" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="stat-label"/>
                 <Label fx:id="totalMatchesLabel" text="0" GridPane.columnIndex="1" GridPane.rowIndex="0" styleClass="stat-value"/>
@@ -93,7 +104,7 @@
                 <Label fx:id="towersDestroyedLabel" text="0" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="stat-value"/>
             </GridPane>
             
-            <Region prefHeight="20"/>
+            <Region prefHeight="10"/>
 
             <!-- Gold Spent -->
             <VBox spacing="5" alignment="CENTER" styleClass="gold-spent-container">

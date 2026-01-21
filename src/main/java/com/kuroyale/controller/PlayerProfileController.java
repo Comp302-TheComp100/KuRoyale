@@ -133,9 +133,23 @@ public class PlayerProfileController {
                 displayCard = baseCard; // Fallback
 
             CardView cardView = new CardView(displayCard);
-            // Scale it down slightly if needed, or keeping default size
-            cardView.setScaleX(0.85);
-            cardView.setScaleY(0.85);
+            // Scale it down slightly if needed
+            double baseScale = 0.85;
+            cardView.setScaleX(baseScale);
+            cardView.setScaleY(baseScale);
+
+            // Disable default CardView hover scaling (which resets to 1.0)
+            cardView.setHoverScalingEnabled(false);
+
+            // Add custom hover scaling that respects the base scale
+            cardView.setOnMouseEntered(e -> {
+                cardView.setScaleX(baseScale * 1.1);
+                cardView.setScaleY(baseScale * 1.1);
+            });
+            cardView.setOnMouseExited(e -> {
+                cardView.setScaleX(baseScale);
+                cardView.setScaleY(baseScale);
+            });
 
             // Wrap in VBox to handle scaling spacing
             VBox wrapper = new VBox(cardView);

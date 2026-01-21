@@ -4,10 +4,8 @@ import java.io.IOException;
 import java.util.List;
 
 import com.kuroyale.model.logic.MenuModel; // Import the new Model
-import com.kuroyale.service.auth.AuthenticationService;
 import com.kuroyale.util.audio.AudioManager;
 import com.kuroyale.util.audio.SoundEffectUtil;
-import com.kuroyale.util.common.ServiceFactory;
 import com.kuroyale.util.ui.SceneLoader;
 
 import javafx.fxml.FXML;
@@ -16,7 +14,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 
@@ -44,6 +41,8 @@ public class MainMenuController {
     private Button questsButton;
     @FXML
     private Button profileButton;
+    @FXML
+    private Button quitButton;
 
     private static MediaPlayer mainMenuMusicPlayer;
     private final MenuModel model = new MenuModel();
@@ -81,6 +80,8 @@ public class MainMenuController {
         addMenuButtonHoverEffects(questsButton);
         addMenuButtonHoverEffects(settingsButton);
         addMenuButtonHoverEffects(profileButton);
+        if (quitButton != null)
+            addMenuButtonHoverEffects(quitButton);
     }
 
     // Add programmatic hover effects for menu buttons (scale transforms)
@@ -205,6 +206,37 @@ public class MainMenuController {
 
     private void showError(String message) {
         com.kuroyale.util.ui.ThemedAlertManager.show(root.getScene().getWindow(), "Error", message, null);
+    }
+
+    @FXML
+    private void handleQuit() {
+        SoundEffectUtil.playButtonClick();
+        try {
+            // Stop main menu music
+            if (mainMenuMusicPlayer != null) {
+                mainMenuMusicPlayer.stop();
+            }
+
+            // Create Login View
+            com.kuroyale.view.menu.LoginView loginView = new com.kuroyale.view.menu.LoginView();
+            // Initialize controller (model logic)
+            new com.kuroyale.controller.LoginController(loginView);
+
+            // Switch scene
+            javafx.stage.Stage stage = (javafx.stage.Stage) root.getScene().getWindow();
+            // Use 1024x768 for Login as per Main.java standard
+            javafx.scene.Scene scene = new javafx.scene.Scene(loginView, 1024, 768);
+
+            // Load application stylesheet
+            scene.getStylesheets().add(getClass().getResource("/styles/application.css").toExternalForm());
+
+            stage.setScene(scene);
+            stage.centerOnScreen();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Failed to return to login: " + e.getMessage());
+        }
     }
 
     private void playMainMenuMusic() {
